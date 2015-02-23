@@ -104,23 +104,22 @@ function woocommerce_razorpay_init(){
             global $woocommerce;
      
             $order = new WC_Order($order_id);
-     
+            
             $redirect_url = get_site_url() . '/?wc-api' ."=". get_class($this) ;
      
             $productinfo = "Order $order_id";
      
-            //$str = "$this->merchant_id|$txnid|$order->order_total|$productinfo|$order->billing_first_name|$order->billing_email|||||||||||$this->salt";
-            //$hash = hash('sha512', $str);
-     
             $razorpay_args = array(
               'key' => $this->key_id,
+              'name' => get_bloginfo('name'),
               'amount' => $order->order_total*100,
+              'currency' => get_woocommerce_currency(),
               'description' => $productinfo,
+              'netbanking' => true,
               'prefill.name' => $order->billing_first_name + " " + $order->billing_last_name,
               'prefill.email' => $order->billing_email,
               'prefill.contact' => $order->billing_phone,
-              'netbanking' => true,
-              'name' => 'Test'
+              'notes.woocommerce_order_id' => $order_id
               );
 
             $razorpay_form = '<form action="'.$redirect_url.'" method="POST">';
