@@ -108,7 +108,7 @@ function woocommerce_razorpay_init(){
             $redirect_url = get_site_url() . '/?wc-api' ."=". get_class($this) ;
      
             $productinfo = "Order $order_id";
-     
+
             $razorpay_args = array(
               'key' => $this->key_id,
               'name' => get_bloginfo('name'),
@@ -116,11 +116,11 @@ function woocommerce_razorpay_init(){
               'currency' => get_woocommerce_currency(),
               'description' => $productinfo,
               'netbanking' => true,
-              'prefill.name' => $order->billing_first_name + " " + $order->billing_last_name,
+              'prefill.name' => $order->billing_first_name." ".$order->billing_last_name,
               'prefill.email' => $order->billing_email,
               'prefill.contact' => $order->billing_phone,
               'notes.woocommerce_order_id' => $order_id
-              );
+            );
 
             $razorpay_form = '<form action="'.$redirect_url.'" method="POST">';
             $razorpay_form .= '<script src="'.$this->liveurl.'" ';
@@ -194,19 +194,31 @@ function woocommerce_razorpay_init(){
                     $result = curl_exec($ch);
                     $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-                    $array = json_decode($result, true);
 
-                    //close connection
-                    curl_close($ch);
-
-                    //Check success response
-                    if($http_status === 200 and isset($array['error']) === false){
-                        $success = true;    
+                    if($result === false) {
+                        $success = false;
+                        $error = 'Curl error: ' . curl_error($ch);
                     }
                     else {
-                        $error = $array['error']['code'].":".$array['error']['description'];
-                        $success = false;
+                        $response_array = json_decode($result, true);
+                        //Check success response
+                        if($http_status === 200 and isset($response_array['error']) === false){
+                            $success = true;    
+                        }
+                        else {
+                            $success = false;
+
+                            if(!empty($response_array['error']['code'])) {
+                                $error = $response_array['error']['code'].":".$response_array['error']['description'];
+                            }
+                            else {
+                                $error = "RAZORPAY_ERROR:Invalid Response <br/>".$result;
+                            }
+                        }
                     }
+                        
+                    //close connection
+                    curl_close($ch);
                 }
                 catch (Exception $e) {
                     $success = false;
