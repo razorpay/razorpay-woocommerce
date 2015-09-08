@@ -122,8 +122,7 @@ function woocommerce_razorpay_init(){
               ),
               'notes' => array(
                 'woocommerce_order_id' => $order_id
-              ),
-              'backdropClose' => false
+              )
             );
 
             $json = json_encode($razorpay_args);
@@ -144,9 +143,6 @@ function woocommerce_razorpay_init(){
         payment.razorpay_payment_id;
       document.razorpayform.submit();
     };
-    data.oncancel = function() {
-        document.razorpayform.submit();
-    }
     var razorpayCheckout = new Razorpay(data);
     razorpayCheckout.open();
 </script>
