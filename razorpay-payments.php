@@ -115,23 +115,48 @@ function woocommerce_razorpay_init(){
               'amount' => $order->order_total*100,
               'currency' => get_woocommerce_currency(),
               'description' => $productinfo,
-              'netbanking' => true,
-              'prefill.name' => $order->billing_first_name." ".$order->billing_last_name,
-              'prefill.email' => $order->billing_email,
-              'prefill.contact' => $order->billing_phone,
-              'notes.woocommerce_order_id' => $order_id
+              'prefill' => array(
+                'name' => $order->billing_first_name." ".$order->billing_last_name,
+                'email' => $order->billing_email,
+                'contact' => $order->billing_phone
+              ),
+              'notes' => array(
+                'woocommerce_order_id' => $order_id
+              ),
+              'backdropClose' => false
             );
 
-            $razorpay_form = '<form action="'.$redirect_url.'" method="POST">';
-            $razorpay_form .= '<script src="'.$this->liveurl.'" ';
-            
-            foreach($razorpay_args as $key => $value){
-                $razorpay_form .=  'data-'.$key.'="'.$value.'" ';
-            }
-            $razorpay_form .=  '></script>';
+            $json = json_encode($razorpay_args);
 
-            $razorpay_form .= '<input type="hidden" name="merchant_order_id" value="'.$order_id.'"/></form>';
-            return $razorpay_form;    
+            $html = <<<EOT
+<script src="{$this->liveurl}"></script>
+<script>
+    var data = $json;
+</script>
+<form name='razorpayform' action="$redirect_url" method="POST">
+    <input type="hidden" name="merchant_order_id" value="$order_id">
+    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+</form>
+<script>
+    data.backdropClose = false;
+    data.handler = function(payment){
+      document.getElementById('razorpay_payment_id').value = 
+        payment.razorpay_payment_id;
+      document.razorpayform.submit();
+    };
+    data.oncancel = function() {
+        document.razorpayform.submit();
+    }
+    var razorpayCheckout = new Razorpay(data);
+    razorpayCheckout.open();
+</script>
+<p>
+<button id="btn-razorpay" onclick="razorpayCheckout.open();">Pay Now</button>
+<button onclick="document.razorpayform.submit()">Cancel</button>
+</p>
+
+EOT;
+            return $html;
         }
 
         /**
@@ -216,7 +241,6 @@ function woocommerce_razorpay_init(){
                             }
                         }
                     }
-                        
                     //close connection
                     curl_close($ch);
                 }
