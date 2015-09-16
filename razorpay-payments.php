@@ -3,9 +3,9 @@
 Plugin Name: WooCommerce Razorpay Payments
 Plugin URI: https://razorpay.com
 Description: Razorpay Payment Gateway Integration for woocommerce
-Version: 1.1.0
+Version: 1.1.1
 Author: Harshil Mathur
-Author URI: http://www.razorpay.com
+Author URI: https://razorpay.com
 */
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
@@ -270,7 +270,7 @@ EOT;
                 wc_add_notice( $this->msg['message'], $this->msg['class'] );
             }
             else {
-                if($msg['class']=='success'){
+                if($this->msg['class']=='success'){
                     $woocommerce->add_message($this->msg['message']);
                 }
                 else{
