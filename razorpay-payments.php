@@ -209,7 +209,9 @@ EOT;
                     curl_setopt($ch,CURLOPT_TIMEOUT, 60);
                     curl_setopt($ch,CURLOPT_POST, 1);
                     curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
-                    curl_setopt($ch,CURLOPT_RETURNTRANSFER, TRUE);
+                    curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, true);
+                    curl_setopt($ch,CURLOPT_CAINFO, plugin_dir_path(__FILE__) . 'ca-bundle.crt');
 
                     //execute post
                     $result = curl_exec($ch);
