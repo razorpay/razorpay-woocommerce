@@ -28,3 +28,8 @@ This is the official Razorpay payment gateway plugin for WooCommerce. Allows you
 == Support ==
 
 Visit [razorpay.com](https://razorpay.com) for support requests or email us at <support@razorpay.com>.
+
+
+== License ==
+The Razorpay WooCommerce plugin is released under the GPLv2 license, same as that
+of WordPress. See the LICENSE file for the complete LICENSE text.
