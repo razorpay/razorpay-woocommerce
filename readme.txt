@@ -1,6 +1,6 @@
-=== Razorpay Payment Extension for Woocommerce ===
+=== Razorpay for WooCommerce ===
 Contributors: razorpay
-Tags: razorpay, payments
+Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.0.1
 Tested up to: 3.4.1
 Stable tag: 1.2.1
@@ -29,7 +29,7 @@ This is the official Razorpay payment gateway plugin for WooCommerce. Allows you
 
 Visit [razorpay.com](https://razorpay.com) for support requests or email us at <support@razorpay.com>.
 
-
 == License ==
+
 The Razorpay WooCommerce plugin is released under the GPLv2 license, same as that
 of WordPress. See the LICENSE file for the complete LICENSE text.
