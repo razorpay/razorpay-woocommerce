@@ -15,9 +15,13 @@ This is the official Razorpay payment gateway plugin for WooCommerce. Allows you
 
 == Installation ==
 
-1. Ensure you have latest version of WooCommerce plugin installed
-2. Unzip and upload contents of the plugin to your /wp-content/plugins/ directory
-3. Activate the plugin through the 'Plugins' menu in WordPress
+1. Download the plugin from [the wordpress plugin server](https://downloads.wordpress.org/plugin/woo-razorpay.1.2.2.zip)
+2. Ensure you have latest version of WooCommerce plugin installed
+3. Unzip and upload contents of the plugin to your /wp-content/plugins/ directory
+4. Activate the plugin through the 'Plugins' menu in WordPress
+
+If you have downloaded the plugin from GitHub or elsewhere, make sure
+that the directory is named `woo-razorpay`.
 
 == Configuration ==
 
