@@ -17,7 +17,7 @@ function woocommerce_razorpay_init(){
         public function __construct(){
             $this->id = 'razorpay';
             $this->method_title = 'Razorpay';
-            $this->icon =  plugins_url('images/logo.jpg' , __FILE__ );
+            $this->icon =  plugins_url('images/logo.png' , __FILE__ );
             $this->has_fields = false;
 
             $this->init_form_fields();
