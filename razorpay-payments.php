@@ -341,8 +341,8 @@ EOT;
 
                 $woocommerce->set_messages();
             }
-
-            $redirect_url = get_permalink(woocommerce_get_page_id('myaccount'));
+            
+            $redirect_url = $this->get_return_url($order);
             wp_redirect( $redirect_url );
             exit;
         }
