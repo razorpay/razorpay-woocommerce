@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.0.1
 Tested up to: 4.5.3
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,7 +17,7 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 
 == Installation ==
 
-1. Download the plugin from [the wordpress plugin server](https://downloads.wordpress.org/plugin/woo-razorpay.1.2.7.zip)
+1. Download the plugin from [the wordpress plugin server](https://downloads.wordpress.org/plugin/woo-razorpay.1.2.8.zip)
 2. Ensure you have latest version of WooCommerce plugin installed
 3. Unzip and upload contents of the plugin to your /wp-content/plugins/ directory
 4. Activate the plugin through the 'Plugins' menu in WordPress
