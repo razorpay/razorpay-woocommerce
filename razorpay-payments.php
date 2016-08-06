@@ -169,20 +169,54 @@ function woocommerce_razorpay_init()
     <input type="hidden" name="merchant_order_id" value="$order_id">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
 </form>
+
+<p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
+Please wait while we are processing your payment.
+</p>
+<p>
+    <button id="btn-razorpay" onclick="openCheckout();">Pay Now</button>
+    <button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>
+</p>
 <script>
-    data.backdropClose = false;
+    var setDisabled = function(id, state = true) {
+      var elem = document.getElementById(id);
+      if (state == false) {
+        elem.removeAttribute('disabled');
+      }
+      else {
+        elem.setAttribute('disabled', state); 
+      }
+    };
+
+    // Payment was closed without handler getting called
+    data.modal = {
+      ondismiss: function() {
+        setDisabled('btn-razorpay', false);
+      }
+    };
+
     data.handler = function(payment){
+      setDisabled('btn-razorpay-cancel');
+
+      var successMsg = document.getElementById('msg-razorpay-success');
+      successMsg.style.display = "block";
+
       document.getElementById('razorpay_payment_id').value =
         payment.razorpay_payment_id;
       document.razorpayform.submit();
     };
+
     var razorpayCheckout = new Razorpay(data);
-    razorpayCheckout.open();
+
+    // global method
+    function openCheckout() {
+      // Disable the pay button
+      setDisabled('btn-razorpay');
+      razorpayCheckout.open();
+    };
+    openCheckout();
 </script>
-<p>
-<button id="btn-razorpay" onclick="razorpayCheckout.open();">Pay Now</button>
-<button onclick="document.razorpayform.submit()">Cancel</button>
-</p>
+
 
 EOT;
             return $html;
