@@ -323,31 +323,45 @@ EOT;
                 $this->msg['message'] = "An Error occured";
             }
 
-            if (function_exists('wc_add_notice'))
-            {
-                wc_add_notice( $this->msg['message'], $this->msg['class'] );
-            }
-            else
-            {
-                if ($this->msg['class'] === 'success')
-                {
-                    $woocommerce->add_message($this->msg['message']);
-                }
-                else
-                {
-                    $woocommerce->add_error($this->msg['message']);
-
-                }
-
-                $woocommerce->set_messages();
-            }
+            $this->add_notice($this->msg['message'], $this->msg['class']);
 
             $redirect_url = $this->get_return_url($order);
             wp_redirect( $redirect_url );
             exit;
         }
-    }
 
+        /**
+         * Add a woocommerce notification message
+         *
+         * @param string $message Notification message
+         * @param string $type Notification type, default = notice
+         */
+        protected function add_notice($message, $type = 'notice')
+        {
+            global $woocommerce;
+            $type = in_array($type, array('notice','error','success'), true) ? $type : 'notice';
+            
+            // Check for existence of new notification api. Else use previous add_error
+            if (function_exists('wc_add_notice'))
+            {
+                wc_add_notice($message, $type);
+            }
+            else
+            {
+                // Retrocompatibility WooCommerce < 2.1
+                switch ($type)
+                {
+                    case "error" :
+                        $woocommerce->add_error($message);
+                        break;
+                    default :
+                        $woocommerce->add_message($message);
+                        break;
+                }
+            }
+        }
+
+    }
     /**
      * Add the Gateway to WooCommerce
      **/
