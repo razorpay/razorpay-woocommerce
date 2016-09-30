@@ -21,6 +21,8 @@ function woocommerce_razorpay_init()
 
         const API_VERSION = 'v1';
 
+        const SESSION_KEY = 'razorpay_wc_order_id';
+
         public function __construct()
         {
             $this->id = 'razorpay';
@@ -227,7 +229,11 @@ EOT;
          **/
         function process_payment($order_id)
         {
+            global $woocommerce;
+
             $order = new WC_Order($order_id);
+
+            $woocommerce->session->set(self::SESSION_KEY, $order_id);
 
             if ( version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>=' ) )
             {
@@ -254,9 +260,10 @@ EOT;
         {
             global $woocommerce;
 
-            if ((empty($_REQUEST['merchant_order_id']) === false) and (empty($_REQUEST['razorpay_payment_id']) === false))
+            $order_id = $woocommerce->session->get(self::SESSION_KEY);
+
+            if ($order_id  and !empty($_REQUEST['razorpay_payment_id']))
             {
-                $order_id = $_REQUEST['merchant_order_id'];
                 $razorpay_payment_id = $_REQUEST['razorpay_payment_id'];
 
                 $order = new WC_Order($order_id);
@@ -361,8 +368,15 @@ EOT;
             }
             else
             {
+                if ($order_id !== null)
+                {
+                    $order = new WC_Order($order_id);
+                    $order->update_status('failed');
+                    $order->add_order_note('Customer cancelled the payment');
+                }
+                
                 $this->msg['class'] = 'error';
-                $this->msg['message'] = "An Error occured";
+                $this->msg['message'] = "An error occured while processing this payment";
             }
 
             $this->add_notice($this->msg['message'], $this->msg['class']);
