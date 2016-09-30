@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.0.1
 Tested up to: 4.5.3
-Stable tag: 1.2.9
+Stable tag: 1.2.10
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,7 +17,7 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 
 == Installation ==
 
-1. Download the plugin from [the wordpress plugin server](https://downloads.wordpress.org/plugin/woo-razorpay.1.2.9.zip)
+1. Download the plugin from [github releases](https://github.com/razorpay/razorpay-woocommerce/archive/1.2.10.zip)
 2. Ensure you have latest version of WooCommerce plugin installed
 3. Unzip and upload contents of the plugin to your /wp-content/plugins/ directory
 4. Activate the plugin through the 'Plugins' menu in WordPress
@@ -25,11 +25,27 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 If you have downloaded the plugin from GitHub or elsewhere, make sure
 that the directory is named `woo-razorpay`.
 
+This is how your directory structure should look like:
+
+```
+wordpress/
+  wp-content/
+    plugins/
+      woo-razorpay/
+        ca-bundle.crt
+        images/
+        LICENSE
+        razorpay-payments.php
+        readme.txt
+      woocommerce/
+```
+
 == Configuration ==
 
 1. Visit the WooCommerce settings page, and click on the Checkout/Payment Gateways tab.
 2. Click on Razorpay to edit the settings. If you do not see Razorpay in the list at the top of the screen make sure you have activated the plugin in the WordPress Plugin Manager.
-3. Enable the Payment Method, name it Credit Card / Debit Card / Internet Banking (this will show up on the payment page your customer sees), add in your key id and key secret.
+3. Enable the Payment Method, name it Credit Card / Debit Card / Internet Banking (this will show up on the payment page your customer sees), add in your Key id and Key Secret.
+4. The Payment Action should be set to "Authorize and Capture". If you want to capture payments manually from the Dashboard after manual verification, set it to "Authorize".
 
 == Support ==
 
