@@ -176,14 +176,14 @@ function woocommerce_razorpay_init()
 Please wait while we are processing your payment.
 </p>
 <p>
-    <button id="btn-razorpay" onclick="openCheckout();">Pay Now</button>
+    <button id="btn-razorpay">Pay Now</button>
     <button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>
 </p>
 <script>
     (function(){
     var setDisabled = function(id, state) {
       if (typeof state === 'undefined') {
-        state = false;
+        state = true;
       }
       var elem = document.getElementById(id);
       if (state === false) {
@@ -390,7 +390,7 @@ EOT;
                     $order->update_status('failed');
                     $order->add_order_note('Customer cancelled the payment');
                 }
-                
+
                 $this->msg['class'] = 'error';
                 $this->msg['message'] = "An error occured while processing this payment";
             }
@@ -412,7 +412,7 @@ EOT;
         {
             global $woocommerce;
             $type = in_array($type, array('notice','error','success'), true) ? $type : 'notice';
-            
+
             // Check for existence of new notification api. Else use previous add_error
             if (function_exists('wc_add_notice'))
             {
