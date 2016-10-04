@@ -180,9 +180,13 @@ Please wait while we are processing your payment.
     <button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>
 </p>
 <script>
-    var setDisabled = function(id, state = true) {
+    (function(){
+    var setDisabled = function(id, state) {
+      if (typeof state === 'undefined') {
+        state = false;
+      }
       var elem = document.getElementById(id);
-      if (state == false) {
+      if (state === false) {
         elem.removeAttribute('disabled');
       }
       else {
@@ -215,8 +219,20 @@ Please wait while we are processing your payment.
       // Disable the pay button
       setDisabled('btn-razorpay');
       razorpayCheckout.open();
-    };
+    }
+
+    function addEvent(element, evnt, funct){
+      if (element.attachEvent)
+       return element.attachEvent('on'+evnt, funct);
+      else
+       return element.addEventListener(evnt, funct, false);
+    }
+
+    // Attach event listener
+    addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
+
     openCheckout();
+})();
 </script>
 
 
