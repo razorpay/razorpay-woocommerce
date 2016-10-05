@@ -17,7 +17,7 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 
 == Installation ==
 
-1. Download the plugin from [github releases](https://github.com/razorpay/razorpay-woocommerce/archive/1.2.10.zip)
+1. Download the plugin from [github releases](https://github.com/razorpay/razorpay-woocommerce/archive/1.2.11.zip)
 2. Ensure you have latest version of WooCommerce plugin installed
 3. Unzip and upload contents of the plugin to your /wp-content/plugins/ directory
 4. Activate the plugin through the 'Plugins' menu in WordPress
