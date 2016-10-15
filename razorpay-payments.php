@@ -8,7 +8,12 @@ Author: Razorpay
 Author URI: https://razorpay.com
 */
 
+require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+use Razorpay\Api\Api;
+
+
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
+
 
 function woocommerce_razorpay_init()
 {
@@ -290,79 +295,55 @@ EOT;
                 $success = false;
                 $error = "";
 
-                $ch = curl_init();
-
-                curl_setopt($ch,CURLOPT_USERPWD, $key_id . ":" . $key_secret);
-                curl_setopt($ch,CURLOPT_TIMEOUT, 60);
+                $api = new Api($key_id, $key_secret);
 
                 try
                 {
                     if ($this->payment_action === 'authorize')
-                    {
-                        $url = self::BASE_URL . self::API_VERSION . "/payments/{$razorpay_payment_id}";
-
-                        curl_setopt($ch,CURLOPT_URL, $url);
+                    {   
+                        $payment = $api->payment->fetch($razorpay_payment_id);
 
                         $status = 'authorized';
                     }
                     else
                     {
-                        $url = self::BASE_URL . self::API_VERSION . "/payments/{$razorpay_payment_id}/capture";
-                        $fields_string="amount={$amount}";
-
-                        curl_setopt($ch,CURLOPT_URL, $url);
-                        curl_setopt($ch,CURLOPT_POST, 1);
-                        curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
-
+                        $payment = $api->payment->fetch($razorpay_payment_id);
+                        $amount = $payment->amount;
+                        $capture = $payment->capture(array('amount'=>$amount));
+                        
                         $status = 'captured';
                     }
-
-                    curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, true);
-                    curl_setopt($ch,CURLOPT_CAINFO, plugin_dir_path(__FILE__) . 'ca-bundle.crt');
-
-                    //execute post
-                    $result = curl_exec($ch);
-                    $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-                    if ($result === false)
+    
+                    //Check success response
+                    if ($capture['status'] === $status)
                     {
-                        $success = false;
-                        $error = 'Curl error: ' . curl_error($ch);
+                        $success = true;
                     }
                     else
                     {
-                        $response_array = json_decode($result, true);
-                        //Check success response
-                        if (($http_status === 200) and
-                            (isset($response_array['error']) === false) and
-                            ($response_array['status'] === $status))
+                        $success = false;
+
+                        if (empty($capture['error_code']) === false)
                         {
-                            $success = true;
+                            $error = $capture['error_code'] . ": " . $capture['error_description'];
                         }
                         else
                         {
-                            $success = false;
-
-                            if (empty($response_array['error']['code']) === false)
-                            {
-                                $error = $response_array['error']['code'].": ".$response_array['error']['description'];
-                            }
-                            else
-                            {
-                                $error = "RAZORPAY_ERROR: Invalid Response <br/>".$result;
-                            }
+                            $error = "RAZORPAY_ERROR: Invalid Response <br/>";
                         }
                     }
                 }
+                catch(Requests_Exception $e){ 
+                    $success = false;
+                    $error = "REQUESTS_ERROR: ". $e->getMessage();
+                }
+
                 catch (Exception $e)
                 {
                     $success = false;
                     $error ="WOOCOMMERCE_ERROR: Request to Razorpay Failed";
                 }
 
-                //close connection
-                curl_close($ch);
 
                 if ($success === true)
                 {
