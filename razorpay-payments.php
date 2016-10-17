@@ -302,14 +302,15 @@ EOT;
                     if ($this->payment_action === 'authorize')
                     {   
                         $payment = $api->payment->fetch($razorpay_payment_id);
-
+            
                         $status = 'authorized';
                     }
                     else
                     {
                         $payment = $api->payment->fetch($razorpay_payment_id);
                         $amount = $payment->amount;
-                        $capture = $payment->capture(array('amount'=>$amount));
+                        
+                        $capture = $payment->capture(array('amount'=>$amount)); 
                         
                         $status = 'captured';
                     }
@@ -332,10 +333,6 @@ EOT;
                             $error = "RAZORPAY_ERROR: Invalid Response <br/>";
                         }
                     }
-                }
-                catch(Requests_Exception $e){ 
-                    $success = false;
-                    $error = "REQUESTS_ERROR: ". $e->getMessage();
                 }
 
                 catch (Exception $e)
