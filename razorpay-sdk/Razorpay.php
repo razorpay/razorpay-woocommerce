@@ -1,8 +1,8 @@
 <?php
 
-if(!class_exists('Requests')){
+if(class_exists('Requests') === false){
     require_once __DIR__.'/libs/Requests-1.6.1/library/Requests.php';    
-        
+
     // Register requests autoloader
     Requests::register_autoloader();
 }
