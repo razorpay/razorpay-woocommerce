@@ -8,6 +8,9 @@ Author: Razorpay
 Author URI: https://razorpay.com
 */
 
+require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+use Razorpay\Api\Api;
+
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 
 function woocommerce_razorpay_init()
@@ -290,98 +293,71 @@ EOT;
                 $success = false;
                 $error = "";
 
-                $ch = curl_init();
-
-                curl_setopt($ch,CURLOPT_USERPWD, $key_id . ":" . $key_secret);
-                curl_setopt($ch,CURLOPT_TIMEOUT, 60);
+                $api = new Api($key_id, $key_secret);
 
                 try
                 {
                     if ($this->payment_action === 'authorize')
-                    {
-                        $url = self::BASE_URL . self::API_VERSION . "/payments/{$razorpay_payment_id}";
-
-                        curl_setopt($ch,CURLOPT_URL, $url);
-
-                        $status = 'authorized';
+                    {   
+                        $payment = $api->payment->fetch($razorpay_payment_id);
+            
+                        $expectedStatus = 'authorized';
                     }
                     else
                     {
-                        $url = self::BASE_URL . self::API_VERSION . "/payments/{$razorpay_payment_id}/capture";
-                        $fields_string="amount={$amount}";
-
-                        curl_setopt($ch,CURLOPT_URL, $url);
-                        curl_setopt($ch,CURLOPT_POST, 1);
-                        curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
-
-                        $status = 'captured';
+                        $payment = $api->payment->fetch($razorpay_payment_id);
+                        $amount = $payment->amount;
+                        
+                        $payment = $payment->capture(array('amount'=>$amount)); 
+                        
+                        $expectedStatus = 'captured';
                     }
-
-                    curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, true);
-                    curl_setopt($ch,CURLOPT_CAINFO, plugin_dir_path(__FILE__) . 'ca-bundle.crt');
-
-                    //execute post
-                    $result = curl_exec($ch);
-                    $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-                    if ($result === false)
+    
+                    //Check success response
+                    if ($payment->status === $expectedStatus)
+                    {
+                        $success = true;
+                    }
+                    else
                     {
                         $success = false;
-                        $error = 'Curl error: ' . curl_error($ch);
-                    }
-                    else
-                    {
-                        $response_array = json_decode($result, true);
-                        //Check success response
-                        if (($http_status === 200) and
-                            (isset($response_array['error']) === false) and
-                            ($response_array['status'] === $status))
+
+                        if (!empty($payment['error_code']))
                         {
-                            $success = true;
+                            $error = $payment['error_code'] . ": " . $payment['error_description'];
                         }
                         else
                         {
-                            $success = false;
-
-                            if (empty($response_array['error']['code']) === false)
-                            {
-                                $error = $response_array['error']['code'].": ".$response_array['error']['description'];
-                            }
-                            else
-                            {
-                                $error = "RAZORPAY_ERROR: Invalid Response <br/>".$result;
-                            }
+                            $error = 'RAZORPAY_ERROR: Invalid Response';
                         }
                     }
                 }
                 catch (Exception $e)
                 {
                     $success = false;
-                    $error ="WOOCOMMERCE_ERROR: Request to Razorpay Failed";
+                    $error = 'WOOCOMMERCE_ERROR: Request to Razorpay Failed';
                 }
 
-                //close connection
-                curl_close($ch);
 
                 if ($success === true)
                 {
-                    $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be shipping your order to you soon. Order Id: ".$order_id;
+                    $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $order_id";
                     $this->msg['class'] = 'success';
                     $order->payment_complete();
-                    $order->add_order_note('Razorpay payment successful <br/>Razorpay Id: '.$razorpay_payment_id);
+                    $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpay_payment_id");
                     $order->add_order_note($this->msg['message']);
                     $woocommerce->cart->empty_cart();
                 }
                 else
                 {
                     $this->msg['class'] = 'error';
-                    $this->msg['message'] = "Thank you for shopping with us. However, the payment failed.";
-                    $order->add_order_note('Transaction Declined: '.$error);
-                    $order->add_order_note('Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: '.$razorpay_payment_id);
+                    $this->msg['message'] = 'Thank you for shopping with us. However, the payment failed.';
+                    $order->add_order_note("Transaction Declined: $error<br/>");
+                    $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpay_payment_id");
                     $order->update_status('failed');
                 }
             }
+            // We don't have a proper order id
             else
             {
                 if ($order_id !== null)
