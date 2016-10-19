@@ -10,6 +10,8 @@ Author URI: https://razorpay.com
 
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
+use Razorpay\Api\Order;
+use Razorpay\Api\Request;
 
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
@@ -143,11 +145,37 @@ function woocommerce_razorpay_init()
         {
             global $woocommerce;
 
+            // currently in the form only razorpay payment ID is there. But with the addition of order ID and signature, this should be straight forward
+
             $order = new WC_Order($order_id);
 
             $redirect_url = get_site_url() . '/?wc-api=' . get_class($this);
 
             $productinfo = "Order $order_id";
+
+            $api = new Api($this->key_id, $this->key_secret);
+
+            if($this->payment_action === 'authorize'){
+                $data = array(
+                'receipt'         => $order_id,
+                'amount'          => (int) ($order->order_total * 100),
+                'currency'        => get_woocommerce_currency(),
+                'payment_capture' => 0
+                );    
+            }
+
+            else{
+                $data = array(
+                'receipt'         => $order_id,
+                'amount'          => (int) ($order->order_total * 100),
+                'currency'        => get_woocommerce_currency(),
+                'payment_capture' => 1
+                );
+            }
+            
+            $razorpay_order = $api->order->create($data);
+            
+            $woocommerce->session->set('razorpay_order_id',$razorpay_order['id']);
 
             $razorpay_args = array(
               'key' => $this->key_id,
@@ -162,7 +190,8 @@ function woocommerce_razorpay_init()
               ),
               'notes' => array(
                 'woocommerce_order_id' => $order_id
-              )
+              ),
+              'razorpay_order_id' => $razorpay_order['id']
             );
 
             $json = json_encode($razorpay_args);
@@ -175,6 +204,8 @@ function woocommerce_razorpay_init()
 <form name='razorpayform' action="$redirect_url" method="POST">
     <input type="hidden" name="merchant_order_id" value="$order_id">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+    <input type="hidden" name="razorpay_order_id"   id="razorpay_order_id"  >
+    <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
 </form>
 
 <p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
@@ -212,8 +243,9 @@ Please wait while we are processing your payment.
       var successMsg = document.getElementById('msg-razorpay-success');
       successMsg.style.display = "block";
 
-      document.getElementById('razorpay_payment_id').value =
-        payment.razorpay_payment_id;
+      document.getElementById('razorpay_payment_id').value = payment.razorpay_payment_id;
+      document.getElementById('razorpay_order_id').value = payment.razorpay_order_id;
+      document.getElementById('razorpay_signature').value = payment.razorpay_signature;
       document.razorpayform.submit();
     };
 
@@ -294,9 +326,10 @@ EOT;
 
                 $success = false;
                 $error = "";
+                $status = "";
 
                 $api = new Api($key_id, $key_secret);
-
+                
                 try
                 {
                     if ($this->payment_action === 'authorize')
@@ -307,31 +340,24 @@ EOT;
                     }
                     else
                     {
-                        $payment = $api->payment->fetch($razorpay_payment_id);
-                        $amount = $payment->amount;
+                        $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
+                        $razorpay_signature = $_REQUEST['razorpay_signature'];
                         
-                        $capture = $payment->capture(array('amount'=>$amount)); 
-                        
-                        $status = 'captured';
+                        $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
+
+                        if( hash_equals($signature , $razorpay_signature) ){
+                            $status = 'captured';
+                        }
                     }
-    
-                    //Check success response
-                    if ($capture['status'] === $status)
-                    {
+
+                    if($status = 'captured'){
                         $success = true;
                     }
-                    else
-                    {
+
+                    else{
                         $success = false;
 
-                        if (empty($capture['error_code']) === false)
-                        {
-                            $error = $capture['error_code'] . ": " . $capture['error_description'];
-                        }
-                        else
-                        {
-                            $error = "RAZORPAY_ERROR: Invalid Response <br/>";
-                        }
+                        $error = "PAYMENT_ERROR: Payment could not be captured";
                     }
                 }
 
