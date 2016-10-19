@@ -155,7 +155,7 @@ function woocommerce_razorpay_init()
             }
             catch (Exception $e)
             {
-                return null;
+                echo "RAZORPAY ERROR: Api could not be reached";
             }
         }
         /**
