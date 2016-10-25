@@ -175,7 +175,7 @@ function woocommerce_razorpay_init()
 
             $json = json_encode($razorpay_args);
 
-            $html = $this->generate_order_form($redirect_url,$json);
+            $html = $this->generate_order_form($redirect_url,$json,$order_id);
 
             return $html;
         }
@@ -215,7 +215,7 @@ function woocommerce_razorpay_init()
         /**
          * Generates the order form
         **/
-        function generate_order_form($redirect_url, $json)
+        function generate_order_form($redirect_url, $json, $order_id)
         {
 
             $html = <<<EOT
