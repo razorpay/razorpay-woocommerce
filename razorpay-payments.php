@@ -8,10 +8,13 @@ Author: Razorpay
 Author URI: https://razorpay.com
 */
 
+require_once __DIR__.'/razorpay-webhook.php';
+
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
+add_action('init', 'razorpay_webhook_init');
 
 function woocommerce_razorpay_init()
 {
@@ -41,6 +44,8 @@ function woocommerce_razorpay_init()
             $this->key_id = $this->settings['key_id'];
             $this->key_secret = $this->settings['key_secret'];
             $this->payment_action = $this->settings['payment_action'];
+
+            $this->enable_webhook = $this->settings['enable_webhook'];
 
             $this->liveurl = 'https://checkout.razorpay.com/v1/checkout.js';
 
@@ -102,7 +107,14 @@ function woocommerce_razorpay_init()
                         'authorize' => 'Authorize',
                         'capture'   => 'Authorize and Capture'
                     )
-                )
+                ),
+                'enable_webhook' => array(
+                    'title' => __('Enable Webhook', 'razorpay'),
+                    'type' => 'checkbox',
+                    'description' => esc_url( admin_url('admin-post.php') ),
+                    'label' => __('Enable Razorpay Webhook with the URL listed below.', 'razorpay'),
+                    'default' => 'yes'
+                ),
             );
         }
 
@@ -217,85 +229,12 @@ function woocommerce_razorpay_init()
         **/
         function generate_order_form($redirect_url, $json, $order_id)
         {
+            $checkout_html = file_get_contents(__DIR__.'/js/checkout.phtml');
+            $keys = array("#liveurl#","#json#","#redirect_url#","#order_id#");
+            $values = array($this->liveurl,$json,$redirect_url,$order_id);
 
-            $html = <<<EOT
-<script src="{$this->liveurl}"></script>
-<script>
-    var data = $json;
-</script>
-<form name='razorpayform' action="$redirect_url" method="POST">
-    <input type="hidden" name="merchant_order_id" value="$order_id">
-    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-    <input type="hidden" name="razorpay_order_id"   id="razorpay_order_id"  >
-    <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
-</form>
+            $html = str_replace($keys,$values,$checkout_html);
 
-<p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
-Please wait while we are processing your payment.
-</p>
-<p>
-    <button id="btn-razorpay">Pay Now</button>
-    <button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>
-</p>
-<script>
-    (function(){
-    var setDisabled = function(id, state) {
-      if (typeof state === 'undefined') {
-        state = true;
-      }
-      var elem = document.getElementById(id);
-      if (state === false) {
-        elem.removeAttribute('disabled');
-      }
-      else {
-        elem.setAttribute('disabled', state);
-      }
-    };
-
-    // Payment was closed without handler getting called
-    data.modal = {
-      ondismiss: function() {
-        setDisabled('btn-razorpay', false);
-      }
-    };
-
-    data.handler = function(payment){
-      setDisabled('btn-razorpay-cancel');
-
-      var successMsg = document.getElementById('msg-razorpay-success');
-      successMsg.style.display = "block";
-
-      document.getElementById('razorpay_payment_id').value = payment.razorpay_payment_id;
-      document.getElementById('razorpay_order_id').value = payment.razorpay_order_id;
-      document.getElementById('razorpay_signature').value = payment.razorpay_signature;
-      document.razorpayform.submit();
-    };
-
-    var razorpayCheckout = new Razorpay(data);
-
-    // global method
-    function openCheckout() {
-      // Disable the pay button
-      setDisabled('btn-razorpay');
-      razorpayCheckout.open();
-    }
-
-    function addEvent(element, evnt, funct){
-      if (element.attachEvent)
-       return element.attachEvent('on'+evnt, funct);
-      else
-       return element.addEventListener(evnt, funct, false);
-    }
-
-    // Attach event listener
-    addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
-
-    openCheckout();
-})();
-</script>
-
-
-EOT;
             return $html;
         }
 
@@ -351,6 +290,7 @@ EOT;
                 $captured = false;
 
                 $api = new Api($key_id, $key_secret);
+                $payment = $api->payment->fetch($razorpay_payment_id);
                 
                 try
                 {
@@ -461,6 +401,7 @@ EOT;
         }
 
     }
+
     /**
      * Add the Gateway to WooCommerce
      **/
@@ -471,4 +412,9 @@ EOT;
     }
 
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_razorpay_gateway' );
+}
+
+function razorpay_webhook_init()
+{
+    new RZP_Webhook();
 }
