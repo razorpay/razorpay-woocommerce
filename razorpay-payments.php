@@ -14,7 +14,8 @@ require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
-add_action('init', 'razorpay_webhook_init');
+add_action('admin_post_nopriv_rzp_webhook', 'razorpay_webhook_init'); // second - admin_post_nopriv
+add_action('admin_post_rzp_webhook', 'razorpay_webhook_init'); // second - admin_post_nopriv
 
 function woocommerce_razorpay_init()
 {
@@ -111,7 +112,7 @@ function woocommerce_razorpay_init()
                 'enable_webhook' => array(
                     'title' => __('Enable Webhook', 'razorpay'),
                     'type' => 'checkbox',
-                    'description' => esc_url( admin_url('admin-post.php') ),
+                    'description' => esc_url( admin_url('admin-post.php') ) . '?action=rzp_webhook',
                     'label' => __('Enable Razorpay Webhook with the URL listed below.', 'razorpay'),
                     'default' => 'yes'
                 ),

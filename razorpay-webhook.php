@@ -14,7 +14,6 @@ class RZP_Webhook
 
     function auto_capture_webhook()
     {
-        //die("111");
         $razorpay = new WC_Razorpay();
 
         $post = file_get_contents('php://input');
@@ -61,9 +60,6 @@ class RZP_Webhook
                 $redirect_url = $razorpay->get_return_url($order);
                 wp_redirect( $redirect_url );
                 exit;
-
-                //var_dump($razorpay->msg);
-                //die;
             }
         }
     }
