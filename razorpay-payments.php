@@ -11,6 +11,8 @@ Author URI: https://razorpay.com
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
+require_once __DIR__.'/includes/string_compare.php';
+
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 
 function woocommerce_razorpay_init()
@@ -175,7 +177,7 @@ function woocommerce_razorpay_init()
 
             $json = json_encode($razorpay_args);
 
-            $html = $this->generate_order_form($redirect_url,$json,$order_id);
+            $html = $this->generate_order_form($redirect_url, $json, $order_id);
 
             return $html;
         }
@@ -224,9 +226,7 @@ function woocommerce_razorpay_init()
     var data = $json;
 </script>
 <form name='razorpayform' action="$redirect_url" method="POST">
-    <input type="hidden" name="merchant_order_id" value="$order_id">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-    <input type="hidden" name="razorpay_order_id"   id="razorpay_order_id"  >
     <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
 </form>
 
@@ -266,7 +266,6 @@ Please wait while we are processing your payment.
       successMsg.style.display = "block";
 
       document.getElementById('razorpay_payment_id').value = payment.razorpay_payment_id;
-      document.getElementById('razorpay_order_id').value = payment.razorpay_order_id;
       document.getElementById('razorpay_signature').value = payment.razorpay_signature;
       document.razorpayform.submit();
     };
@@ -357,6 +356,11 @@ EOT;
                     if ($this->payment_action === 'authorize')
                     {   
                         $payment = $api->payment->fetch($razorpay_payment_id);
+
+                        if ($payment['amount'] === $amount)
+                        {   
+                            $success = true;
+                        }
                     }
                     else
                     {
@@ -365,7 +369,7 @@ EOT;
                         
                         $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
 
-                        if (hash_equals($signature , $razorpay_signature))
+                        if (Utils::compareStrings($signature , $razorpay_signature))
                         {
                             $captured = true;;
                         }
@@ -427,6 +431,38 @@ EOT;
             $redirect_url = $this->get_return_url($order);
             wp_redirect( $redirect_url );
             exit;
+        }
+
+        function string_equals($knownString, $userInput)
+        {
+            if (!is_string($knownString)) 
+            {
+                trigger_error('Expected known_string to be a string, '.gettype($knownString).' given', E_USER_WARNING);
+                return false;
+            }
+
+            if (!is_string($userInput)) 
+            {
+                trigger_error('Expected user_input to be a string, '.gettype($userInput).' given', E_USER_WARNING);
+                return false;
+            }
+
+            $knownLen = Binary::strlen($knownString);
+            $userLen = Binary::strlen($userInput);
+
+            if ($knownLen !== $userLen) 
+            {
+                return false;
+            }
+
+            $result = 0;
+
+            for ($i = 0; $i < $knownLen; ++$i) 
+            {
+                $result |= ord($knownString[$i]) ^ ord($userInput[$i]);
+            }
+
+            return 0 === $result;
         }
 
         /**
