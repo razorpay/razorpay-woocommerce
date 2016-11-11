@@ -288,22 +288,17 @@ function woocommerce_razorpay_init()
 
                 $success = false;
                 $error = "";
-                $captured = false;
 
                 $api = new Api($key_id, $key_secret);
                 $payment = $api->payment->fetch($razorpay_payment_id);
                 
                 try
                 {
-                    if ($this->payment_action === 'authorize')
+                    if ($this->payment_action === 'authorize' && $payment['amount'] === $amount)
                     {   
-                        $payment = $api->payment->fetch($razorpay_payment_id);
-
-                        if ($payment['amount'] === $amount) 
-                        {
-                            $success = true;
-                        }
+                        $success = true;
                     }
+                    
                     else
                     {
                         $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
@@ -313,22 +308,18 @@ function woocommerce_razorpay_init()
 
                         if (hash_equals($signature , $razorpay_signature))
                         {
-                            $captured = true;;
+                            $success = true;
+                        }
+
+                        else
+                        {
+                            $success = false;
+
+                            $error = "PAYMENT_ERROR = Payment failed";
                         }
                     }
-    
-                    //Check success response
-                    if ($captured)
-                    {
-                        $success = true;
-                    }
-
-                    else{
-                        $success = false;
-
-                        $error = "PAYMENT_ERROR = Payment failed";
-                    }
                 }
+
                 catch (Exception $e)
                 {
                     $success = false;
