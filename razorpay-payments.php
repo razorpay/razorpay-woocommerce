@@ -342,24 +342,21 @@ function woocommerce_razorpay_init()
                 $captured = false;
 
                 $api = new Api($key_id, $key_secret);
+                $payment = $api->payment->fetch($razorpay_payment_id);
                 
                 // storing every order's id and razorpay_payment_id in the database
                 global $wpdb;
                 $table_name = $wpdb->prefix . "subscription";
                 $this->create_table($table_name);
-                $this->insert_payment_into_table($order_id, $razorpay_payment_id);
+                $this->insert_payment_into_table($order_id, $razorpay_payment_id);            
                 
                 try
                 {
-                    if ($this->payment_action === 'authorize')
+                    if ($this->payment_action === 'authorize' && $payment['amount'] === $amount)
                     {   
-                        $payment = $api->payment->fetch($razorpay_payment_id);
-
-                        if ($amount === $payment['amount'])
-                        {
-                            $success = true;
-                        }
+                        $success = true;
                     }
+                    
                     else
                     {
                         $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
@@ -369,7 +366,6 @@ function woocommerce_razorpay_init()
 
                         if (hash_equals($signature , $razorpay_signature))
                         {
-                            $captured = true;
                             $success = true;
                         }
 
@@ -381,6 +377,7 @@ function woocommerce_razorpay_init()
                         }
                     }
                 }
+                
                 catch (Exception $e)
                 {
                     $success = false;
