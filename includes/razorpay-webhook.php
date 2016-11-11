@@ -1,8 +1,8 @@
 <?php
 
-require_once __DIR__.'/razorpay-payments.php';
+require_once __DIR__.'/../razorpay-payments.php';
 
-require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+require_once __DIR__.'/../razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
 class RZP_Webhook 

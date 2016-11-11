@@ -8,7 +8,7 @@ Author: Razorpay
 Author URI: https://razorpay.com
 */
 
-require_once __DIR__.'/razorpay-webhook.php';
+require_once __DIR__.'/includes/razorpay-webhook.php';
 
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
