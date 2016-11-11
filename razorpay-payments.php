@@ -11,7 +11,7 @@ Author URI: https://razorpay.com
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
-require_once __DIR__.'/includes/string_compare.php';
+require_once ABSPATH . WPINC . '/compat.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 
@@ -369,7 +369,7 @@ EOT;
                         
                         $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
 
-                        if (Utils::compareStrings($signature , $razorpay_signature))
+                        if (hash_equals($signature , $razorpay_signature))
                         {
                             $captured = true;;
                         }
@@ -431,38 +431,6 @@ EOT;
             $redirect_url = $this->get_return_url($order);
             wp_redirect( $redirect_url );
             exit;
-        }
-
-        function string_equals($knownString, $userInput)
-        {
-            if (!is_string($knownString)) 
-            {
-                trigger_error('Expected known_string to be a string, '.gettype($knownString).' given', E_USER_WARNING);
-                return false;
-            }
-
-            if (!is_string($userInput)) 
-            {
-                trigger_error('Expected user_input to be a string, '.gettype($userInput).' given', E_USER_WARNING);
-                return false;
-            }
-
-            $knownLen = Binary::strlen($knownString);
-            $userLen = Binary::strlen($userInput);
-
-            if ($knownLen !== $userLen) 
-            {
-                return false;
-            }
-
-            $result = 0;
-
-            for ($i = 0; $i < $knownLen; ++$i) 
-            {
-                $result |= ord($knownString[$i]) ^ ord($userInput[$i]);
-            }
-
-            return 0 === $result;
         }
 
         /**
