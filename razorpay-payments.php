@@ -354,6 +354,11 @@ function woocommerce_razorpay_init()
                     if ($this->payment_action === 'authorize')
                     {   
                         $payment = $api->payment->fetch($razorpay_payment_id);
+
+                        if ($amount === $payment['amount'])
+                        {
+                            $success = true;
+                        }
                     }
                     else
                     {
@@ -364,20 +369,16 @@ function woocommerce_razorpay_init()
 
                         if (hash_equals($signature , $razorpay_signature))
                         {
-                            $captured = true;;
+                            $captured = true;
+                            $success = true;
                         }
-                    }
-    
-                    //Check success response
-                    if ($captured)
-                    {
-                        $success = true;
-                    }
 
-                    else{
-                        $success = false;
+                        else
+                        {
+                            $success = false;
 
-                        $error = "PAYMENT_ERROR = Payment failed";
+                            $error = "PAYMENT_ERROR = Payment failed";
+                        }
                     }
                 }
                 catch (Exception $e)
