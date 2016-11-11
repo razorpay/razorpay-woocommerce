@@ -11,8 +11,6 @@ Author URI: https://razorpay.com
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
-require_once ABSPATH . WPINC . '/compat.php';
-
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 
 function woocommerce_razorpay_init()
