@@ -13,6 +13,8 @@ require_once __DIR__.'/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
+require_once __DIR__.'/includes/hash_equals.php';
+
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_webhook', 'razorpay_webhook_init'); // second - admin_post_nopriv
 add_action('admin_post_rzp_webhook', 'razorpay_webhook_init'); // second - admin_post_nopriv
@@ -188,7 +190,7 @@ function woocommerce_razorpay_init()
 
             $json = json_encode($razorpay_args);
 
-            $html = $this->generate_order_form($redirect_url,$json,$order_id);
+            $html = $this->generate_order_form($redirect_url, $json, $order_id);
 
             return $html;
         }
@@ -231,10 +233,10 @@ function woocommerce_razorpay_init()
         function generate_order_form($redirect_url, $json, $order_id)
         {
             $checkout_html = file_get_contents(__DIR__.'/js/checkout.phtml');
-            $keys = array("#liveurl#","#json#","#redirect_url#","#order_id#");
-            $values = array($this->liveurl,$json,$redirect_url,$order_id);
+            $keys = array("#liveurl#", "#json#", "#redirect_url#");
+            $values = array($this->liveurl, $json, $redirect_url);
 
-            $html = str_replace($keys,$values,$checkout_html);
+            $html = str_replace($keys, $values, $checkout_html);
 
             return $html;
         }
@@ -298,6 +300,11 @@ function woocommerce_razorpay_init()
                     if ($this->payment_action === 'authorize')
                     {   
                         $payment = $api->payment->fetch($razorpay_payment_id);
+
+                        if ($payment['amount'] === $amount) 
+                        {
+                            $success = true;
+                        }
                     }
                     else
                     {
