@@ -13,7 +13,7 @@ require_once __DIR__.'/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
-require_once __DIR__.'/includes/string_equals.php';
+require_once ABSPATH . WPINC . '/compat.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_webhook', 'razorpay_webhook_init'); // second - admin_post_nopriv
@@ -313,7 +313,7 @@ function woocommerce_razorpay_init()
                         
                         $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
 
-                        if (Utils::compareStrings($signature , $razorpay_signature))
+                        if (hash_equals($signature , $razorpay_signature))
                         {
                             $captured = true;;
                         }
