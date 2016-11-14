@@ -373,7 +373,7 @@ function woocommerce_razorpay_init()
                         {
                             $success = false;
 
-                            $error = "PAYMENT_ERROR = Payment failed";
+                            $error = "PAYMENT_ERROR: Payment failed";
                         }
                     }
                 }
