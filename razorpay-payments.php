@@ -147,6 +147,15 @@ function woocommerce_razorpay_init()
 
             $productinfo = "Order $order_id";
 
+            $api = new Api($this->key_id, $this->key_secret);
+
+            // Calls the helper function to create order data
+            $data = $this->get_order_creation_data($order_id);
+            
+            $razorpay_order = $api->order->create($data);
+            
+            $woocommerce->session->set('razorpay_order_id', $razorpay_order['id']);
+
             $razorpay_args = array(
               'key' => $this->key_id,
               'name' => get_bloginfo('name'),
@@ -160,10 +169,54 @@ function woocommerce_razorpay_init()
               ),
               'notes' => array(
                 'woocommerce_order_id' => $order_id
-              )
+              ),
+              'order_id' => $razorpay_order['id']
             );
 
             $json = json_encode($razorpay_args);
+
+            $html = $this->generate_order_form($redirect_url, $json, $order_id);
+
+            return $html;
+        }
+
+
+        /**
+         * Creates order data
+        **/
+        function get_order_creation_data($order_id)
+        {
+            $order = new WC_Order($order_id);
+            
+            switch($this->payment_action)
+            {
+                case 'authorize':
+                    $data = array(
+                      'receipt' => $order_id,
+                      'amount' => (int) ($order->order_total * 100),
+                      'currency' => get_woocommerce_currency(),
+                      'payment_capture' => 0
+                    );    
+                    break;
+
+                default:
+                    $data = array(
+                      'receipt' => $order_id,
+                      'amount' => (int) ($order->order_total * 100),
+                      'currency' => get_woocommerce_currency(),
+                      'payment_capture' => 1
+                    );
+                    break;
+            }
+
+            return $data;
+        }
+
+        /**
+         * Generates the order form
+        **/
+        function generate_order_form($redirect_url, $json, $order_id)
+        {
 
             $html = <<<EOT
 <script src="{$this->liveurl}"></script>
@@ -171,8 +224,8 @@ function woocommerce_razorpay_init()
     var data = $json;
 </script>
 <form name='razorpayform' action="$redirect_url" method="POST">
-    <input type="hidden" name="merchant_order_id" value="$order_id">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+    <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
 </form>
 
 <p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
@@ -210,8 +263,8 @@ Please wait while we are processing your payment.
       var successMsg = document.getElementById('msg-razorpay-success');
       successMsg.style.display = "block";
 
-      document.getElementById('razorpay_payment_id').value =
-        payment.razorpay_payment_id;
+      document.getElementById('razorpay_payment_id').value = payment.razorpay_payment_id;
+      document.getElementById('razorpay_signature').value = payment.razorpay_signature;
       document.razorpayform.submit();
     };
 
@@ -281,9 +334,9 @@ EOT;
 
             $order_id = $woocommerce->session->get(self::SESSION_KEY);
 
-            if ($order_id  and !empty($_REQUEST['razorpay_payment_id']))
+            if ($order_id  and !empty($_POST['razorpay_payment_id']))
             {
-                $razorpay_payment_id = $_REQUEST['razorpay_payment_id'];
+                $razorpay_payment_id = $_POST['razorpay_payment_id'];
 
                 $order = new WC_Order($order_id);
                 $key_id = $this->key_id;
@@ -294,41 +347,32 @@ EOT;
                 $error = "";
 
                 $api = new Api($key_id, $key_secret);
-
+                $payment = $api->payment->fetch($razorpay_payment_id);
+                
                 try
                 {
-                    if ($this->payment_action === 'authorize')
+                    if ($this->payment_action === 'authorize' && $payment['amount'] === $amount)
                     {   
-                        $payment = $api->payment->fetch($razorpay_payment_id);
-            
-                        $expectedStatus = 'authorized';
-                    }
-                    else
-                    {
-                        $payment = $api->payment->fetch($razorpay_payment_id);
-                        $amount = $payment->amount;
-                        
-                        $payment = $payment->capture(array('amount'=>$amount)); 
-                        
-                        $expectedStatus = 'captured';
-                    }
-    
-                    //Check success response
-                    if ($payment->status === $expectedStatus)
-                    {
                         $success = true;
                     }
+                    
                     else
                     {
-                        $success = false;
+                        $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
+                        $razorpay_signature = $_POST['razorpay_signature'];
+                        
+                        $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
 
-                        if (!empty($payment['error_code']))
+                        if (hash_equals($signature , $razorpay_signature))
                         {
-                            $error = $payment['error_code'] . ": " . $payment['error_description'];
+                            $success = true;
                         }
+
                         else
                         {
-                            $error = 'RAZORPAY_ERROR: Invalid Response';
+                            $success = false;
+
+                            $error = "PAYMENT_ERROR: Payment failed";
                         }
                     }
                 }
