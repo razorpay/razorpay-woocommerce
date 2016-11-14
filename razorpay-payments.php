@@ -372,7 +372,7 @@ EOT;
                         {
                             $success = false;
 
-                            $error = "PAYMENT_ERROR = Payment failed";
+                            $error = "PAYMENT_ERROR: Payment failed";
                         }
                     }
                 }
