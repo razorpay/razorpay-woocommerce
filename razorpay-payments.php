@@ -432,10 +432,6 @@ function woocommerce_razorpay_init()
             );
 
             // make server to server call and then order status updated, using payment->createRecurring
-            /*$recurring = $api->payment->createRecurring($recurring_args);
-
-            var_dump($recurring); die;*/
-
             try
             {
                 $url = 'https://api.razorpay.com/v1/payments/create/recurring';
