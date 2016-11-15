@@ -184,42 +184,7 @@ function woocommerce_razorpay_init()
             
             $woocommerce->session->set('razorpay_order_id', $razorpay_order['id']);
 
-            // since 2.0 this is the new API call for subscriptions, have to check if wc_subscriptions exists in the install
-            if ( class_exists('WC_Subscriptions') && wcs_order_contains_subscription( $order_id ) )
-            {
-                // random number each time
-                $number = mt_rand();
-
-                $customer = $api->customer->create(array(
-                    'name' => $order->billing_first_name." ".$order->billing_last_name,
-                    'email' => $order->billing_email,
-                    'contact' => $number // for now, random number
-                ));
-
-                $razorpay_args = array(
-                  'key' => $this->key_id,
-                  'name' => get_bloginfo('name'),
-                  'amount' => $order->order_total*100,
-                  'currency' => get_woocommerce_currency(),
-                  'description' => $productinfo,
-                  'prefill' => array(
-                    'name' => $order->billing_first_name." ".$order->billing_last_name,
-                    'email' => $order->billing_email,
-                    'contact' => $order->billing_phone
-                  ),
-                  'notes' => array(
-                    'woocommerce_order_id' => $order_id
-                  ),
-                  'order_id' => $razorpay_order['id'],
-                  'customer_id' => $customer['id'],
-                  'recurring' => 1,
-                );
-            }
-
-            // clean up
-            else
-            {
-                $razorpay_args = array(
+            $razorpay_args = array(
                   'key' => $this->key_id,
                   'name' => get_bloginfo('name'),
                   'amount' => $order->order_total*100,
@@ -235,6 +200,21 @@ function woocommerce_razorpay_init()
                   ),
                   'order_id' => $razorpay_order['id']
                 );
+
+            // since 2.0 this is the new API call for subscriptions, have to check if wc_subscriptions exists in the install
+            if ( class_exists('WC_Subscriptions') && wcs_order_contains_subscription( $order_id ) )
+            {
+                // random number each time
+                $number = mt_rand();
+
+                $customer = $api->customer->create(array(
+                    'name' => $order->billing_first_name." ".$order->billing_last_name,
+                    'email' => $order->billing_email,
+                    'contact' => $number // for now, random number
+                ));
+
+                $razorpay_args['customer_id'] = $customer['id'];
+                $razorpay_args['recurring'] = 1;
             }
 
             $json = json_encode($razorpay_args);
@@ -426,9 +406,7 @@ function woocommerce_razorpay_init()
 
         function process_subscription($subscription_id)
         {
-            // How do we test this?
-            var_dump($subscription_id);
-            die;
+            // Tools -> Scheduled Actions, trigger manually
             $subscription = wcs_get_subscription($subscription_id);
             $order_id = $subscription->order->id; // using this we can get the payment_id stored
             $order = new WC_Order($order_id);
@@ -440,24 +418,36 @@ function woocommerce_razorpay_init()
             $payment = $api->payment->fetch($razorpay_payment_id);
 
             // payment has all our fields -> customer_id, token_id, email, contact, add recurring = 1
-
             $token_id = $payment['token_id'];
 
+            // All the fields have the right values
             $recurring_args = array(
                 'email' => $payment['email'],
                 'contact' => $payment['contact'],
                 'currency' => $payment['currency'],
-                'amount' => (int)WC_Subscriptions_Order::get_price_per_period($order)*100, // in paise
+                'amount' => (int)WC_Subscriptions_Order::get_recurring_total($order)*100, // in paise
                 'customer_id' => $payment['customer_id'],
-                'token' => $payment['token'],
+                'token' => $payment['token_id'],
                 'recurring' => 1
             );
 
-            // make server to server call and then order status updated
-            $url = BASE_URL . API_VERSION . '/payments/create/recurring';
+            // make server to server call and then order status updated, using payment->createRecurring
+            /*$recurring = $api->payment->createRecurring($recurring_args);
 
-            var_dump($subscription_id);
-            die;
+            var_dump($recurring); die;*/
+
+            try
+            {
+                $url = 'https://api.razorpay.com/v1/payments/create/recurring';
+                $options = array('auth' => array($this->key_id, $this->key_secret));
+
+                $response = Requests::post($url, array(), $recurring_args, $options);
+
+                // subscription payment received. Capture the payment and update order state on woocommerce
+                WC_Subscriptions_Manager::process_subscription_payments_on_order( $order );
+            }
+
+            catch (Exception $e) {}
         }
 
         function create_table($table_name)
