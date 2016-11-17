@@ -17,28 +17,7 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 
 == Installation ==
 
-1. Download the plugin from [github releases](https://github.com/razorpay/razorpay-woocommerce/archive/1.2.11.zip)
-2. Ensure you have latest version of WooCommerce plugin installed
-3. Unzip and upload contents of the plugin to your /wp-content/plugins/ directory
-4. Activate the plugin through the 'Plugins' menu in WordPress
-
-If you have downloaded the plugin from GitHub or elsewhere, make sure
-that the directory is named `woo-razorpay`.
-
-This is how your directory structure should look like:
-
-```
-wordpress/
-  wp-content/
-    plugins/
-      woo-razorpay/
-        ca-bundle.crt
-        images/
-        LICENSE
-        razorpay-payments.php
-        readme.txt
-      woocommerce/
-```
+Install the plugin from the [Wordpress Plugin Directory](https://wordpress.org/plugins/woo-razorpay/).
 
 == Configuration ==
 
