@@ -7,23 +7,29 @@ Version: 1.2.11
 Author: Razorpay
 Author URI: https://razorpay.com
 */
-require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+
 use Razorpay\Api\Api;
+
+require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
+
 function woocommerce_razorpay_init()
 {
     if (!class_exists('WC_Payment_Gateway'))
         return;
+
     class WC_Razorpay extends WC_Payment_Gateway
     {
         const BASE_URL = 'https://api.razorpay.com/';
         const API_VERSION = 'v1';
         const SESSION_KEY = 'razorpay_wc_order_id';
+
         public function __construct()
         {
             $this->id = 'razorpay';
             $this->method_title = 'Razorpay';
-            $this->icon =  plugins_url('images/logo.png' , __FILE__ );
+            $this->icon =  plugins_url('images/logo.png' , __FILE__);
             $this->has_fields = false;
             $this->init_form_fields();
             $this->init_settings();
@@ -32,21 +38,27 @@ function woocommerce_razorpay_init()
             $this->key_id = $this->settings['key_id'];
             $this->key_secret = $this->settings['key_secret'];
             $this->payment_action = $this->settings['payment_action'];
-            $this->liveurl = 'https://checkout.razorpay.com/v1/checkout.js';
+
             $this->msg['message'] = "";
             $this->msg['class'] = "";
+
             add_action('init', array(&$this, 'check_razorpay_response'));
             add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_razorpay_response'));
-            if ( version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>=' ) )
+
+            $cb = array($this, 'process_admin_options');
+
+            if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
-                add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( &$this, 'process_admin_options' ) );
+                add_action("woocommerce_update_options_payment_gateways_{$this->id}", $cb);
             }
             else
             {
-                add_action( 'woocommerce_update_options_payment_gateways', array( &$this, 'process_admin_options' ) );
+                add_action('woocommerce_update_options_payment_gateways', $cb);
             }
-            add_action('woocommerce_receipt_razorpay', array(&$this, 'receipt_page'));
+
+            add_action('woocommerce_receipt_razorpay', array($this, 'receipt_page'));
         }
+
         function init_form_fields()
         {
             $this->form_fields = array(
@@ -95,18 +107,23 @@ function woocommerce_razorpay_init()
             echo '<h3>'.__('Razorpay Payment Gateway', 'razorpay') . '</h3>';
             echo '<p>'.__('Razorpay is an online payment gateway for India with transparent pricing, seamless integration and great support') . '</p>';
             echo '<table class="form-table">';
+
             // Generate the HTML For the settings form.
             $this->generate_settings_html();
             echo '</table>';
         }
+
         /**
          *  There are no payment fields, but we want to show the description if set.
          **/
         function payment_fields()
         {
             if($this->description)
+            {
                 echo wpautop(wptexturize($this->description));
+            }
         }
+
         /**
          * Receipt Page
          **/
@@ -115,6 +132,7 @@ function woocommerce_razorpay_init()
             echo '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', 'razorpay').'</p>';
             echo $this->generate_razorpay_form($order);
         }
+
         /**
          * Generate razorpay button link
          **/
@@ -129,28 +147,28 @@ function woocommerce_razorpay_init()
                 $api = new Api($this->key_id, $this->key_secret);
                 // Calls the helper function to create order data
                 $data = $this->get_order_creation_data($order_id);
-                
+
                 $razorpay_order = $api->order->create($data);
-                
+
                 $woocommerce->session->set('razorpay_order_id', $razorpay_order['id']);
                 $razorpay_args = array(
-                  'key' => $this->key_id,
-                  'name' => get_bloginfo('name'),
-                  'amount' => $order->order_total*100,
-                  'currency' => get_woocommerce_currency(),
-                  'description' => $productinfo,
-                  'prefill' => array(
-                    'name' => $order->billing_first_name." ".$order->billing_last_name,
-                    'email' => $order->billing_email,
-                    'contact' => $order->billing_phone
+                  'key'             => $this->key_id,
+                  'name'            => get_bloginfo('name'),
+                  'amount'          => $order->order_total * 100,
+                  'currency'        => get_woocommerce_currency(),
+                  'description'     => $productinfo,
+                  'prefill'         => array(
+                    'name'              => $order->billing_first_name." ".$order->billing_last_name,
+                    'email'             => $order->billing_email,
+                    'contact'           => $order->billing_phone
                   ),
-                  'notes' => array(
+                  'notes'           => array(
                     'woocommerce_order_id' => $order_id
                   ),
-                  'order_id' => $razorpay_order['id']
+                  'order_id'        => $razorpay_order['id']
                 );
                 $json = json_encode($razorpay_args);
-                $html = $this->generate_order_form($redirect_url, $json, $order_id);
+                $html = $this->generate_order_form($redirect_url, $json);
                 return $html;
             }
             catch (Exception $e)
@@ -158,41 +176,46 @@ function woocommerce_razorpay_init()
                 echo "RAZORPAY ERROR: Api could not be reached";
             }
         }
+
         /**
          * Creates order data
-        **/
+         **/
         function get_order_creation_data($order_id)
         {
             $order = new WC_Order($order_id);
-            
+
+            if (!isset($this->payment_action))
+            {
+                $this->payment_action = 'capture';
+            }
+
+            $data = array(
+                'receipt' => $order_id,
+                'amount' => (int) ($order->order_total * 100),
+                'currency' => get_woocommerce_currency(),
+            );
+
             switch($this->payment_action)
             {
                 case 'authorize':
-                    $data = array(
-                      'receipt' => $order_id,
-                      'amount' => (int) ($order->order_total * 100),
-                      'currency' => get_woocommerce_currency(),
-                      'payment_capture' => 0
-                    );    
+                    $data['payment_capture'] = 0;
                     break;
+
+                case 'capture':
                 default:
-                    $data = array(
-                      'receipt' => $order_id,
-                      'amount' => (int) ($order->order_total * 100),
-                      'currency' => get_woocommerce_currency(),
-                      'payment_capture' => 1
-                    );
+                    $data['payment_capture'] = 1;
                     break;
             }
             return $data;
         }
+
         /**
          * Generates the order form
-        **/
-        function generate_order_form($redirect_url, $json, $order_id)
+         **/
+        function generate_order_form($redirect_url, $json)
         {
             $html = <<<EOT
-<script src="{$this->liveurl}"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     var data = $json;
 </script>
@@ -256,6 +279,7 @@ Please wait while we are processing your payment.
 EOT;
             return $html;
         }
+
         /**
          * Process the payment and return the result
          **/
@@ -264,7 +288,7 @@ EOT;
             global $woocommerce;
             $order = new WC_Order($order_id);
             $woocommerce->session->set(self::SESSION_KEY, $order_id);
-            if ( version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>=' ) )
+            if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
                 return array(
                     'result' => 'success',
@@ -281,6 +305,7 @@ EOT;
                 );
             }
         }
+
         /**
          * Check for valid razorpay server callback
          **/
@@ -288,6 +313,7 @@ EOT;
         {
             global $woocommerce;
             $order_id = $woocommerce->session->get(self::SESSION_KEY);
+
             if ($order_id  and !empty($_POST['razorpay_payment_id']))
             {
                 $razorpay_payment_id = $_POST['razorpay_payment_id'];
@@ -299,19 +325,19 @@ EOT;
                 $error = "";
                 $api = new Api($key_id, $key_secret);
                 $payment = $api->payment->fetch($razorpay_payment_id);
-                
+
                 try
                 {
                     if ($this->payment_action === 'authorize' && $payment['amount'] === $amount)
-                    {   
+                    {
                         $success = true;
                     }
-                    
+
                     else
                     {
                         $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
                         $razorpay_signature = $_POST['razorpay_signature'];
-                        
+
                         $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
                         if (hash_equals($signature , $razorpay_signature))
                         {
@@ -364,6 +390,7 @@ EOT;
             wp_redirect( $redirect_url );
             exit;
         }
+
         /**
          * Add a woocommerce notification message
          *
@@ -394,6 +421,7 @@ EOT;
             }
         }
     }
+
     /**
      * Add the Gateway to WooCommerce
      **/
@@ -402,5 +430,6 @@ EOT;
         $methods[] = 'WC_Razorpay';
         return $methods;
     }
+
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_razorpay_gateway' );
 }
