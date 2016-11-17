@@ -1,9 +1,9 @@
 === Razorpay for WooCommerce ===
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
-Requires at least: 3.0.1
-Tested up to: 4.5.3
-Stable tag: 1.2.11
+Requires at least: 3.9.2
+Tested up to: 4.7
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,7 +49,7 @@ wordpress/
 
 == Support ==
 
-Visit [razorpay.com](https://razorpay.com) for support requests or email us at <support@razorpay.com>.
+Visit [razorpay.com](https://razorpay.com) for support requests or email us at <integrations@razorpay.com>.
 
 == License ==
 
