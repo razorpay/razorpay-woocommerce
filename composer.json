@@ -1,0 +1,42 @@
+{
+	"name": "razorpay/omnipay",
+	"description": "Razorpay Omnipay 2.0 plugin for accepting payments",
+    "require": {
+        "omnipay/omnipay": "~2.0",
+        "razorpay/razorpay": "1.*",
+        "silex/silex": "~1.1",
+        "twig/twig": "~1.12"
+    },
+    "require-dev": {
+        "omnipay/tests": "~2.0"
+    },
+    "keywords": [
+      "razorpay", "magento", "payments", "india",
+      "payment gateway", "wallets", "netbanking"
+    ],
+    "authors": [
+        {
+            "name": "Mayank Amencherla",
+            "email": "mayank.amencherla@razorpay.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+      "email": "support@razorpay.com",
+      "issues": "https://github.com/razorpay/razorpay-magento/issues",
+      "docs": "https://docs.razorpay.com/v1/page/integrating-your-magento-store-with-razorpay"
+    },
+    "homepage": "https://razorpay.com",
+    "suggest": {
+        "magento/module-checkout-agreements": "100.0.*"
+    },
+    "type": "magento2-module",
+    "license": [
+        "MIT"
+    ],
+    "autoload": {
+        "files": [
+            "src/"
+        ]
+    }
+}
