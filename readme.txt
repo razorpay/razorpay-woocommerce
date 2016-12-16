@@ -17,7 +17,15 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 
 == Installation ==
 
-Install the plugin from the [Wordpress Plugin Directory](https://wordpress.org/plugins/woo-razorpay/).
+1. Install the plugin from the [Wordpress Plugin Directory](https://wordpress.org/plugins/woo-razorpay/).
+2. To use this plugin correctly, you need to be able to make network requests. Please make sure that you have the php-curl extension installed.
+
+== Dependencies == 
+
+1. Wordpress v3.9.2 and later
+2. Woocommerce v2.4 and later
+3. PHP v5.6.0 and later
+4. php-curl
 
 == Configuration ==
 
