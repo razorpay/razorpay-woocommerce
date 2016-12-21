@@ -23,6 +23,7 @@ function woocommerce_razorpay_init()
     {
         const BASE_URL = 'https://api.razorpay.com/';
         const API_VERSION = 'v1';
+        // This one stores the WooCommerce Order Id
         const SESSION_KEY = 'razorpay_wc_order_id';
 
         public function __construct()
@@ -133,53 +134,122 @@ function woocommerce_razorpay_init()
             echo $this->generate_razorpay_form($order);
         }
 
+        protected function getSessionKey($orderId)
+        {
+            return "razorpay_order_id.$orderId";
+        }
+
         /**
          * Generate razorpay button link
          **/
-        public function generate_razorpay_form($order_id)
+        public function generate_razorpay_form($orderId)
         {
             global $woocommerce;
-            $order = new WC_Order($order_id);
+            $order = new WC_Order($orderId);
+
             $redirect_url = get_site_url() . '/?wc-api=' . get_class($this);
-            $productinfo = "Order $order_id";
+            $productinfo = "Order $orderId";
+            $api = new Api($this->key_id, $this->key_secret);
+
+            $sessionKey = $this->getSessionKey($orderId);
+
+            $verify= true;
+
             try
             {
-                $api = new Api($this->key_id, $this->key_secret);
-                // Calls the helper function to create order data
-                $data = $this->get_order_creation_data($order_id);
-
-                $razorpay_order = $api->order->create($data);
-
-                $woocommerce->session->set('razorpay_order_id', $razorpay_order['id']);
-                $razorpay_args = array(
-                  'key'             => $this->key_id,
-                  'name'            => get_bloginfo('name'),
-                  'amount'          => $order->order_total * 100,
-                  'currency'        => get_woocommerce_currency(),
-                  'description'     => $productinfo,
-                  'prefill'         => array(
-                    'name'              => $order->billing_first_name." ".$order->billing_last_name,
-                    'email'             => $order->billing_email,
-                    'contact'           => $order->billing_phone
-                  ),
-                  'notes'           => array(
-                    'woocommerce_order_id' => $order_id
-                  ),
-                  'order_id'        => $razorpay_order['id']
-                );
-                $json = json_encode($razorpay_args);
-                $html = $this->generate_order_form($redirect_url, $json);
-                return $html;
+                if ($woocommerce->session->get($sessionKey))
+                {
+                    $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                    $verify = $this->verifyOrderAmount($razorpayOrderId, $orderId);
+                }
+                if ($verify === false)
+                {
+                    $razorpayOrderId = $this->createRazorpayOrderId(
+                        $orderId, $sessionKey);
+                }
+                else
+                {
+                    $razorpayOrderId = $this->createRazorpayOrderId(
+                        $orderId, $sessionKey);
+                }
             }
             catch (Exception $e)
             {
                 echo "RAZORPAY ERROR: Api could not be reached";
             }
+
+            $razorpay_args = array(
+              'key' => $this->key_id,
+              'name' => get_bloginfo('name'),
+              'amount' => $order->order_total*100,
+              'currency' => get_woocommerce_currency(),
+              'description' => $productinfo,
+              'prefill' => array(
+                'name' => $order->billing_first_name." ".$order->billing_last_name,
+                'email' => $order->billing_email,
+                'contact' => $order->billing_phone
+              ),
+              'notes' => array(
+                'woocommerce_order_id' => $orderId
+              ),
+              'order_id' => $razorpayOrderId
+            );
+
+            $json = json_encode($razorpay_args);
+
+            $html = $this->generate_order_form($redirect_url,$json,$orderId);
+
+            return $html;
         }
 
-        /**
-         * Creates order data
-         **/
+        protected function createRazorpayOrderId($orderId, $sessionKey)
+        {
+            // Calls the helper function to create order data
+            global $woocommerce;
+
+            $api = new Api($this->key_id, $this->key_secret);
+
+            $data = $this->get_order_creation_data($orderId);
+            $razorpay_order = $api->order->create($data);
+
+            $razorpayOrderId = $razorpay_order['id'];
+
+            $woocommerce->session->set($sessionKey, $razorpayOrderId);
+
+            return $razorpayOrderId;
+        }
+
+        protected function verifyOrderAmount($razorpayOrderId, $orderId)
+        {
+            $order= new WC_Order($orderId);
+
+            $api = new Api($this->key_id, $this->key_secret);
+
+            $razorpayOrder = $api->order->fetch($razorpayOrderId);
+
+            $razorpayOrderArgs = array(
+                'id' => $razorpayOrderId,
+                'amount'   => (int)$order->order_total*100,
+                'currency' => get_woocommerce_currency(),
+                'receipt'  => (string)$orderId,
+            );
+
+            $orderKeys = array_keys($razorpayOrderArgs);
+
+            $verify = true;
+
+            foreach ($orderKeys as $key)
+            {
+                if ($razorpayOrderArgs[$key] !== $razorpayOrder[$key])
+                {
+                    $verify = false;
+                    break;
+                }
+            }
+
+            return $verify;
+        }
+
         function get_order_creation_data($order_id)
         {
             $order = new WC_Order($order_id);
@@ -335,7 +405,8 @@ EOT;
 
                     else
                     {
-                        $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
+                        $sessionKey = $this->getSessionKey($order_id);
+                        $razorpay_order_id = $woocommerce->session->get($sessionKey);
                         $razorpay_signature = $_POST['razorpay_signature'];
 
                         $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
