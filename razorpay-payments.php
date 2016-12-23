@@ -153,21 +153,14 @@ function woocommerce_razorpay_init()
 
             $sessionKey = $this->getSessionKey($orderId);
 
-            $verify= true;
-
             try
             {
-                if ($woocommerce->session->get($sessionKey))
-                {
-                    $razorpayOrderId = $woocommerce->session->get($sessionKey);
-                    $verify = $this->verifyOrderAmount($razorpayOrderId, $orderId);
-                }
-                if ($verify === false)
-                {
-                    $razorpayOrderId = $this->createRazorpayOrderId(
-                        $orderId, $sessionKey);
-                }
-                else
+                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+
+                // If we don't have an Order
+                // or the if the order is present in session but doesn't match what we have saved
+                if (($razorpayOrderId === null) or
+                    (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId)) === false)))
                 {
                     $razorpayOrderId = $this->createRazorpayOrderId(
                         $orderId, $sessionKey);
@@ -179,20 +172,20 @@ function woocommerce_razorpay_init()
             }
 
             $razorpay_args = array(
-              'key' => $this->key_id,
-              'name' => get_bloginfo('name'),
-              'amount' => $order->order_total*100,
-              'currency' => get_woocommerce_currency(),
+              'key'         => $this->key_id,
+              'name'        => get_bloginfo('name'),
+              'amount'      => $order->order_total*100,
+              'currency'    => get_woocommerce_currency(),
               'description' => $productinfo,
-              'prefill' => array(
-                'name' => $order->billing_first_name." ".$order->billing_last_name,
-                'email' => $order->billing_email,
-                'contact' => $order->billing_phone
+              'prefill'     => array(
+                'name'      => $order->billing_first_name." ".$order->billing_last_name,
+                'email'     => $order->billing_email,
+                'contact'   => $order->billing_phone
               ),
-              'notes' => array(
+              'notes'       => array(
                 'woocommerce_order_id' => $orderId
               ),
-              'order_id' => $razorpayOrderId
+              'order_id'    => $razorpayOrderId
             );
 
             $json = json_encode($razorpay_args);
@@ -221,33 +214,30 @@ function woocommerce_razorpay_init()
 
         protected function verifyOrderAmount($razorpayOrderId, $orderId)
         {
-            $order= new WC_Order($orderId);
+            $order = new WC_Order($orderId);
 
             $api = new Api($this->key_id, $this->key_secret);
 
             $razorpayOrder = $api->order->fetch($razorpayOrderId);
 
             $razorpayOrderArgs = array(
-                'id' => $razorpayOrderId,
-                'amount'   => (int)$order->order_total*100,
-                'currency' => get_woocommerce_currency(),
-                'receipt'  => (string)$orderId,
+                'id'        => $razorpayOrderId,
+                'amount'    => (int) $order->order_total*100,
+                'currency'  => get_woocommerce_currency(),
+                'receipt'   => (string) $orderId,
             );
 
             $orderKeys = array_keys($razorpayOrderArgs);
-
-            $verify = true;
 
             foreach ($orderKeys as $key)
             {
                 if ($razorpayOrderArgs[$key] !== $razorpayOrder[$key])
                 {
-                    $verify = false;
-                    break;
+                    return false;
                 }
             }
 
-            return $verify;
+            return true;
         }
 
         function get_order_creation_data($order_id)
