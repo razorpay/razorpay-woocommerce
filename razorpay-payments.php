@@ -348,7 +348,14 @@ EOT;
             global $woocommerce;
             $order = new WC_Order($order_id);
             $woocommerce->session->set(self::SESSION_KEY, $order_id);
-            if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
+            if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
+            {
+                return array(
+                    'result' => 'success',
+                    'redirect' => add_query_arg('key', $order->order_key, $order->get_checkout_payment_url(true))
+                );
+            }
+            else if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
                 return array(
                     'result' => 'success',
