@@ -149,7 +149,6 @@ function woocommerce_razorpay_init()
 
             $redirect_url = get_site_url() . '/?wc-api=' . get_class($this);
             $productinfo = "Order $orderId";
-            $api = new Api($this->key_id, $this->key_secret);
 
             $sessionKey = $this->getSessionKey($orderId);
 
