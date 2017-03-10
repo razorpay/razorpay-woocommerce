@@ -2,10 +2,10 @@
 
 namespace Razorpay\Api;
 
-class Refund extends Entity
+class Invoice extends Entity
 {
     /**
-     * @param $id Refund id
+     * @param $id Invoice id
      */
     public function fetch($id)
     {
