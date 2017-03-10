@@ -9,6 +9,7 @@ Author URI: https://razorpay.com
 */
 
 use Razorpay\Api\Api;
+use Razorpay\Api\Errors;
 
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
@@ -249,22 +250,12 @@ function woocommerce_razorpay_init()
             }
 
             $data = array(
-                'receipt' => $order_id,
-                'amount' => (int) ($order->order_total * 100),
-                'currency' => get_woocommerce_currency(),
+                'receipt'         => $order_id,
+                'amount'          => (int) ($order->order_total * 100),
+                'currency'        => get_woocommerce_currency(),
+                'payment_capture' => ($this->payment_capture === 'authorize') ? 0 : 1
             );
 
-            switch($this->payment_action)
-            {
-                case 'authorize':
-                    $data['payment_capture'] = 0;
-                    break;
-
-                case 'capture':
-                default:
-                    $data['payment_capture'] = 1;
-                    break;
-            }
             return $data;
         }
 
@@ -382,46 +373,35 @@ EOT;
 
             if ($order_id  and !empty($_POST['razorpay_payment_id']))
             {
-                $razorpay_payment_id = $_POST['razorpay_payment_id'];
                 $order = new WC_Order($order_id);
                 $key_id = $this->key_id;
                 $key_secret = $this->key_secret;
                 $amount = $order->order_total*100;
+
                 $success = false;
-                $error = "";
+                $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ';
+
                 $api = new Api($key_id, $key_secret);
-                $payment = $api->payment->fetch($razorpay_payment_id);
+
+                $sessionKey = $this->getSessionKey($order_id);
+
+                $attributes = array(
+                    'razorpay_payment_id' => $_POST['razorpay_payment_id'],
+                    'razorpay_order_id'   => $woocommerce->session->get($sessionKey),
+                    'razorpay_signature'  => $_POST['razorpay_signature'],
+                );
 
                 try
                 {
-                    if ($this->payment_action === 'authorize' && $payment['amount'] === $amount)
-                    {
-                        $success = true;
-                    }
+                    $api->utility->verifyPaymentSignature($attributes);
 
-                    else
-                    {
-                        $sessionKey = $this->getSessionKey($order_id);
-                        $razorpay_order_id = $woocommerce->session->get($sessionKey);
-                        $razorpay_signature = $_POST['razorpay_signature'];
-
-                        $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
-                        if (hash_equals($signature , $razorpay_signature))
-                        {
-                            $success = true;
-                        }
-                        else
-                        {
-                            $success = false;
-                            $error = "PAYMENT_ERROR: Payment failed";
-                        }
-                    }
+                    $success = true;
                 }
-                catch (Exception $e)
+                catch (Errors\SignatureVerificationError $e)
                 {
-                    $success = false;
-                    $error = 'WOOCOMMERCE_ERROR: Request to Razorpay Failed';
+                    $error .= $e->getMessage();
                 }
+
                 if ($success === true)
                 {
                     $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $order_id";
