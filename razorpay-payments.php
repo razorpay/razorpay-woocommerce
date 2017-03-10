@@ -457,14 +457,13 @@ EOT;
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_razorpay_gateway' );
 }
 
-function convert_currency_rzp($from_Currency,$to_Currency,$amount) {
-  $amount = urlencode($amount);
-  $from_Currency = urlencode($from_Currency);
-  $to_Currency = urlencode($to_Currency);
-  $get_amount = file_get_contents("https://www.google.com/finance/converter?a=$amount&from=$from_Currency&to=$to_Currency");
-  $get_amount = explode("<span class=bld>",$get_amount);
-  $get_amount = explode("</span>",$get_amount[1]);
-  $converted_amount = preg_replace("/[^0-9\.]/", null, $get_amount[0]);
+function convert_currency_rzp($fromCurrency, $toCurrency, $amount)
+{
+    $url = "https://api.fixer.io/latest?symbols=$toCurrency&base=$fromCurrency";
 
-  return $converted_amount;
+    $exchange = json_decode(file_get_contents($url), true);
+
+    $displayAmount = $exchange['rates'][$toCurrency] * $amount;
+
+    return $displayAmount;
 }
