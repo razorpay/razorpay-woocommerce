@@ -174,7 +174,7 @@ function woocommerce_razorpay_init()
             $razorpay_args = array(
               'key'         => $this->key_id,
               'name'        => get_bloginfo('name'),
-              'amount'      => $order->order_total*100,
+              'amount'      => (int) round($order->order_total*100),
               'currency'    => get_woocommerce_currency(),
               'description' => $productinfo,
               'prefill'     => array(
@@ -222,7 +222,7 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderArgs = array(
                 'id'        => $razorpayOrderId,
-                'amount'    => (int) $order->order_total*100,
+                'amount'    => (int) round($order->order_total*100),
                 'currency'  => get_woocommerce_currency(),
                 'receipt'   => (string) $orderId,
             );
@@ -251,9 +251,9 @@ function woocommerce_razorpay_init()
 
             $data = array(
                 'receipt'         => $order_id,
-                'amount'          => (int) ($order->order_total * 100),
+                'amount'          => (int) round($order->order_total*100),
                 'currency'        => get_woocommerce_currency(),
-                'payment_capture' => ($this->payment_capture === 'authorize') ? 0 : 1
+                'payment_capture' => ($this->payment_action === 'authorize') ? 0 : 1
             );
 
             return $data;
@@ -376,7 +376,7 @@ EOT;
                 $order = new WC_Order($order_id);
                 $key_id = $this->key_id;
                 $key_secret = $this->key_secret;
-                $amount = $order->order_total*100;
+                $amount = (int) round($order->order_total*100);
 
                 $success = false;
                 $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ';
