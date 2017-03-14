@@ -171,8 +171,6 @@ function woocommerce_razorpay_init()
                 echo "RAZORPAY ERROR: Api could not be reached";
             }
 
-            die($order->order_total);
-
             $razorpay_args = array(
               'key'         => $this->key_id,
               'name'        => get_bloginfo('name'),
