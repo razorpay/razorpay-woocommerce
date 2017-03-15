@@ -171,11 +171,12 @@ function woocommerce_razorpay_init()
                 echo "RAZORPAY ERROR: Api could not be reached";
             }
 
+            $orderTotal = $order->order_total;
+
             $razorpay_args = array(
               'key'         => $this->key_id,
               'name'        => get_bloginfo('name'),
-              'amount'      => (int) round($order->order_total*100),
-              'currency'    => get_woocommerce_currency(),
+              'currency'    => 'INR',
               'description' => $productinfo,
               'prefill'     => array(
                 'name'      => $order->billing_first_name." ".$order->billing_last_name,
@@ -188,9 +189,24 @@ function woocommerce_razorpay_init()
               'order_id'    => $razorpayOrderId
             );
 
+            if (get_woocommerce_currency() !== 'INR')
+            {
+                $displayCurrency = get_woocommerce_currency();
+                $displayAmount = $orderTotal;
+
+                $to = 'INR';
+                // This is now definitely in INR
+                $orderTotal = $this->convert_currency_rzp($displayCurrency, $to, $displayAmount);
+
+                $razorpay_args['display_currency'] = $displayCurrency;
+                $razorpay_args['display_amount'] = $displayAmount;
+            }
+
+            $razorpay_args['amount'] = (int) round($orderTotal * 100);
+
             $json = json_encode($razorpay_args);
 
-            $html = $this->generate_order_form($redirect_url,$json,$orderId);
+            $html = $this->generate_order_form($redirect_url, $json, $orderId);
 
             return $html;
         }
@@ -220,12 +236,24 @@ function woocommerce_razorpay_init()
 
             $razorpayOrder = $api->order->fetch($razorpayOrderId);
 
+            $orderTotal = $order->order_total;
+
             $razorpayOrderArgs = array(
-                'id'        => $razorpayOrderId,
-                'amount'    => (int) round($order->order_total*100),
-                'currency'  => get_woocommerce_currency(),
-                'receipt'   => (string) $orderId,
+                'id'       => $razorpayOrderId,
+                'currency' => 'INR',
+                'receipt'  => (string) $orderId,
             );
+
+            if (get_woocommerce_currency() !== 'INR')
+            {
+                $from = get_woocommerce_currency();
+
+                $to = 'INR';
+                // This is now definitely in INR
+                $orderTotal = $this->convert_currency_rzp($from, $to, $orderTotal);
+            }
+
+            $razorpayOrderArgs['amount'] = (int) round($orderTotal * 100);
 
             $orderKeys = array_keys($razorpayOrderArgs);
 
@@ -244,19 +272,76 @@ function woocommerce_razorpay_init()
         {
             $order = new WC_Order($order_id);
 
+            $orderTotal = $order->order_total;
+
             if (!isset($this->payment_action))
             {
                 $this->payment_action = 'capture';
             }
 
+            if (get_woocommerce_currency() !== 'INR')
+            {
+                $from = get_woocommerce_currency();
+                $to = 'INR';
+                // This is now definitely in INR
+                $orderTotal = $this->convert_currency_rzp($from, $to, $orderTotal);
+            }
+
             $data = array(
                 'receipt'         => $order_id,
-                'amount'          => (int) round($order->order_total*100),
-                'currency'        => get_woocommerce_currency(),
+                'amount'          => (int) round($orderTotal * 100),
+                'currency'        => 'INR',
                 'payment_capture' => ($this->payment_action === 'authorize') ? 0 : 1
             );
 
             return $data;
+        }
+
+        protected function convert_currency_rzp($fromCurrency, $toCurrency, $amount)
+        {
+            global $woocommerce;
+
+            if ($this->verifyDisplayAmount($fromCurrency, $amount) === true)
+            {
+                return $woocommerce->session->get('displayAmount');
+            }
+
+            $amount = urlencode($amount);
+            $fromCurrency = urlencode($fromCurrency);
+            $toCurrency = urlencode($toCurrency);
+
+            $getAmount = file_get_contents("https://www.google.com/finance/converter?a=$amount&from=$fromCurrency&to=$toCurrency");
+            $getAmount = explode("<span class=bld>",$getAmount);
+            $getAmount = explode("</span>",$getAmount[1]);
+
+            $convertedAmount = preg_replace("/[^0-9\.]/", null, $getAmount[0]);
+
+            $this->saveDisplayAmountToSessions($fromCurrency, $amount, $convertedAmount);
+
+            return $convertedAmount;
+        }
+
+        protected function verifyDisplayAmount($fromCurrency, $amount)
+        {
+            global $woocommerce;
+
+            if (($woocommerce->session->get('displayAmount')) and
+                ($woocommerce->session->get('amount') === $amount) and
+                ($woocommerce->session->get('fromCurrency') === $fromCurrency))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        protected function saveDisplayAmountToSessions($fromCurrency, $amount, $displayAmount)
+        {
+            global $woocommerce;
+
+            $woocommerce->session->set('displayAmount', $displayAmount);
+            $woocommerce->session->set('amount', $amount);
+            $woocommerce->session->set('fromCurrency', $fromCurrency);
         }
 
         /**
@@ -376,7 +461,6 @@ EOT;
                 $order = new WC_Order($order_id);
                 $key_id = $this->key_id;
                 $key_secret = $this->key_secret;
-                $amount = (int) round($order->order_total*100);
 
                 $success = false;
                 $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ';
