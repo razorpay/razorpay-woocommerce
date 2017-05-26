@@ -23,7 +23,9 @@ function woocommerce_razorpay_init()
     class WC_Razorpay extends WC_Payment_Gateway
     {
         const BASE_URL = 'https://api.razorpay.com/';
+
         const API_VERSION = 'v1';
+
         // This one stores the WooCommerce Order Id
         const SESSION_KEY = 'razorpay_wc_order_id';
 
@@ -174,13 +176,13 @@ function woocommerce_razorpay_init()
             $razorpay_args = array(
               'key'         => $this->key_id,
               'name'        => get_bloginfo('name'),
-              'amount'      => (int) round($order->order_total*100),
+              'amount'      => (int) round($order->get_total() * 100),
               'currency'    => get_woocommerce_currency(),
               'description' => $productinfo,
               'prefill'     => array(
-                'name'      => $order->billing_first_name." ".$order->billing_last_name,
-                'email'     => $order->billing_email,
-                'contact'   => $order->billing_phone
+                'name'      => $order->get_billing_first_name() . " " . $order->get_billing_last_name(),
+                'email'     => $order->get_billing_email(),
+                'contact'   => $order->get_billing_phone()
               ),
               'notes'       => array(
                 'woocommerce_order_id' => $orderId
@@ -190,7 +192,7 @@ function woocommerce_razorpay_init()
 
             $json = json_encode($razorpay_args);
 
-            $html = $this->generate_order_form($redirect_url,$json,$orderId);
+            $html = $this->generate_order_form($redirect_url, $json, $orderId);
 
             return $html;
         }
@@ -222,7 +224,7 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderArgs = array(
                 'id'        => $razorpayOrderId,
-                'amount'    => (int) round($order->order_total*100),
+                'amount'    => (int) round($order->get_total() * 100),
                 'currency'  => get_woocommerce_currency(),
                 'receipt'   => (string) $orderId,
             );
@@ -251,7 +253,7 @@ function woocommerce_razorpay_init()
 
             $data = array(
                 'receipt'         => $order_id,
-                'amount'          => (int) round($order->order_total*100),
+                'amount'          => (int) round($order->get_total() * 100),
                 'currency'        => get_woocommerce_currency(),
                 'payment_capture' => ($this->payment_action === 'authorize') ? 0 : 1
             );
@@ -338,27 +340,39 @@ EOT;
             global $woocommerce;
             $order = new WC_Order($order_id);
             $woocommerce->session->set(self::SESSION_KEY, $order_id);
+
+            $orderKey = null;
+
+            if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
+            {
+                $orderKey = $order->get_order_key();
+            }
+            else
+            {
+                $orderKey = $order->order_key;
+            }
+
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
                 return array(
                     'result' => 'success',
-                    'redirect' => add_query_arg('key', $order->order_key, $order->get_checkout_payment_url(true))
+                    'redirect' => add_query_arg('key', $orderKey, $order->get_checkout_payment_url(true))
                 );
             }
             else if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
                 return array(
                     'result' => 'success',
-                    'redirect' => add_query_arg('order', $order->id,
-                        add_query_arg('key', $order->order_key, $order->get_checkout_payment_url(true)))
+                    'redirect' => add_query_arg('order', $order->get_id(),
+                        add_query_arg('key', $orderKey, $order->get_checkout_payment_url(true)))
                 );
             }
             else
             {
                 return array(
                     'result' => 'success',
-                    'redirect' => add_query_arg('order', $order->id,
-                        add_query_arg('key', $order->order_key, get_permalink(get_option('woocommerce_pay_page_id'))))
+                    'redirect' => add_query_arg('order', $order->get_id(),
+                        add_query_arg('key', $orderKey, get_permalink(get_option('woocommerce_pay_page_id'))))
                 );
             }
         }
@@ -376,7 +390,7 @@ EOT;
                 $order = new WC_Order($order_id);
                 $key_id = $this->key_id;
                 $key_secret = $this->key_secret;
-                $amount = (int) round($order->order_total*100);
+                $amount = (int) round($order->get_total() * 100);
 
                 $success = false;
                 $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ';
