@@ -383,6 +383,7 @@ EOT;
         function check_razorpay_response()
         {
             global $woocommerce;
+
             $order_id = $woocommerce->session->get(self::SESSION_KEY);
 
             if ($order_id  and !empty($_POST['razorpay_payment_id']))
@@ -421,7 +422,7 @@ EOT;
                     $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $order_id";
                     $this->msg['class'] = 'success';
                     $order->payment_complete();
-                    $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpay_payment_id");
+                    $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: " . $attributes['razorpay_payment_id']);
                     $order->add_order_note($this->msg['message']);
                     $woocommerce->cart->empty_cart();
                 }
@@ -430,7 +431,7 @@ EOT;
                     $this->msg['class'] = 'error';
                     $this->msg['message'] = 'Thank you for shopping with us. However, the payment failed.';
                     $order->add_order_note("Transaction Declined: $error<br/>");
-                    $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpay_payment_id");
+                    $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: " . $attributes['razorpay_payment_id']);
                     $order->update_status('failed');
                 }
             }
