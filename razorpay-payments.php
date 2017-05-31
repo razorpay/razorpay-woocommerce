@@ -143,18 +143,13 @@ function woocommerce_razorpay_init()
             return "razorpay_order_id.$orderId";
         }
 
-        /**
-         * Generate razorpay button link
-         **/
-        public function generate_razorpay_form($orderId)
+        protected function createOrGetRazorpayOrderId($orderId)
         {
             global $woocommerce;
-            $order = new WC_Order($orderId);
-
-            $redirect_url = get_site_url() . '/?wc-api=' . get_class($this);
-            $productinfo = "Order $orderId";
 
             $sessionKey = $this->getSessionKey($orderId);
+
+            $create = false;
 
             try
             {
@@ -165,20 +160,54 @@ function woocommerce_razorpay_init()
                 if (($razorpayOrderId === null) or
                     (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId)) === false)))
                 {
-                    $razorpayOrderId = $this->createRazorpayOrderId(
-                        $orderId, $sessionKey);
+                    $create = true;
+                }
+                else
+                {
+                    return $razorpayOrderId;
                 }
             }
             catch (Exception $e)
             {
-                echo "RAZORPAY ERROR: Api could not be reached";
+                $create = true;
             }
 
-            $checkoutArgs = $this->getCheckoutArguments($order);
+            if ($create)
+            {
+                try
+                {
+                    return $this->createRazorpayOrderId(
+                        $orderId, $sessionKey);
+                }
+                catch(Exception $e)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /**
+         * Generate razorpay button link
+         **/
+        public function generate_razorpay_form($orderId)
+        {
+            global $woocommerce;
+            $order = new WC_Order($orderId);
+
+            $redirectUrl = get_site_url() . '/?wc-api=' . get_class($this);
+
+            $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
+
+            if ($razorpayOrderId === false)
+            {
+                return 'RAZORPAY ERROR: Api could not be reached';
+            }
+
+            $checkoutArgs = $this->getCheckoutArguments($order, $razorpayOrderId);
 
             $json = json_encode($checkoutArgs);
 
-            $html = $this->generateOrderForm($redirect_url, $json, $orderId);
+            $html = $this->generateOrderForm($redirectUrl, $json, $orderId);
 
             return $html;
         }
@@ -186,8 +215,19 @@ function woocommerce_razorpay_init()
         /**
          * Returns array of checkout params
          */
-        protected function getCheckoutArguments($order)
+        protected function getCheckoutArguments($order, $razorpayOrderId)
         {
+            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
+            {
+                $orderId = $order->get_id();
+            }
+            else
+            {
+                $orderId = $order->id;
+            }
+
+            $productinfo = "Order $orderId";
+
             $args = array(
               'key'         => $this->key_id,
               'name'        => get_bloginfo('name'),
@@ -217,6 +257,8 @@ function woocommerce_razorpay_init()
                     'contact'   => $order->billing_phone,
                 );
             }
+
+            return $args;
         }
 
         /**
@@ -299,14 +341,14 @@ function woocommerce_razorpay_init()
         /**
          * Generates the order form
          **/
-        function generateOrderForm($redirect_url, $json)
+        function generateOrderForm($redirectUrl, $json)
         {
             $html = <<<EOT
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     var data = $json;
 </script>
-<form name='razorpayform' action="$redirect_url" method="POST">
+<form name='razorpayform' action="$redirectUrl" method="POST">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
     <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
 </form>
@@ -373,7 +415,7 @@ EOT;
 
             if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
             {
-                return $order->get_order_key();
+                return $order->get_id();
             }
 
             return $order->order_key;
@@ -387,6 +429,8 @@ EOT;
             global $woocommerce;
             $order = new WC_Order($order_id);
             $woocommerce->session->set(self::SESSION_KEY, $order_id);
+
+            $orderKey = $this->getOrderKey($order);
 
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
@@ -484,8 +528,8 @@ EOT;
                 $this->msg['message'] = "An error occured while processing this payment";
             }
             $this->add_notice($this->msg['message'], $this->msg['class']);
-            $redirect_url = $this->get_return_url($order);
-            wp_redirect( $redirect_url );
+            $redirectUrl = $this->get_return_url($order);
+            wp_redirect($redirectUrl);
             exit;
         }
 
