@@ -8,6 +8,10 @@ Author: Razorpay
 Author URI: https://razorpay.com
 */
 
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
@@ -43,6 +47,11 @@ function woocommerce_razorpay_init()
             $this->key_id = $this->settings['key_id'];
             $this->key_secret = $this->settings['key_secret'];
             $this->payment_action = $this->settings['payment_action'];
+
+            $this->supports = array(
+                'products',
+                'refunds',
+            );
 
             $this->msg['message'] = '';
             $this->msg['class'] = '';
@@ -306,7 +315,7 @@ function woocommerce_razorpay_init()
         {
             $order = new WC_Order($orderId);
 
-            $api = new Api($this->key_id, $this->key_secret);
+            $api = $this->getRazorpayApiInstance();
 
             $razorpayOrder = $api->order->fetch($razorpayOrderId);
 
@@ -436,6 +445,44 @@ EOT;
             return $order->order_key;
         }
 
+        public function process_refund($orderId, $amount = null, $reason = '')
+        {
+            $order = new WC_Order($orderId);
+
+            if (! $order or ! $order->get_transaction_id())
+            {
+                return new WP_Error('error', __('Refund failed: No transaction ID', 'woocommerce'));
+            }
+
+            $client = $this->getRazorpayApiInstance();
+
+            $paymentId = $order->get_transaction_id();
+
+            $data = array(
+                'amount'    =>  (int) round($amount * 100),
+                'notes'     =>  array(
+                    'reason'    =>  $reason,
+                    'order_id'  =>  $orderId
+                )
+            );
+
+            try
+            {
+                $refund = $client->payment
+                    ->fetch($paymentId)
+                    ->refund($data);
+
+                $order->add_order_note(__( 'Refund Id: ' . $refund->id, 'woocommerce' ));
+
+                return true;
+            }
+            catch(Exception $e)
+            {
+                return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
+            }
+
+        }
+
         /**
          * Process the payment and return the result
          **/
@@ -472,6 +519,11 @@ EOT;
             }
         }
 
+        protected function getRazorpayApiInstance()
+        {
+            return new Api($this->key_id, $this->key_secret);
+        }
+
         /**
          * Check for valid razorpay server callback
          **/
@@ -484,14 +536,13 @@ EOT;
             if ($order_id and !empty($_POST[self::RAZORPAY_PAYMENT_ID]))
             {
                 $order = new WC_Order($order_id);
-                $key_id = $this->key_id;
-                $key_secret = $this->key_secret;
+
                 $amount = $this->getOrderAmountAsInteger($order);
 
                 $success = false;
                 $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ';
 
-                $api = new Api($key_id, $key_secret);
+                $api = $this->getRazorpayApiInstance();
 
                 $sessionKey = $this->getSessionKey($order_id);
 
@@ -516,7 +567,7 @@ EOT;
                 {
                     $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $order_id";
                     $this->msg['class'] = 'success';
-                    $order->payment_complete();
+                    $order->payment_complete($attributes[self::RAZORPAY_PAYMENT_ID]);
                     $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: " . $attributes[self::RAZORPAY_PAYMENT_ID]);
                     $order->add_order_note($this->msg['message']);
                     $woocommerce->cart->empty_cart();
