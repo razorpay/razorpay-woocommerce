@@ -430,7 +430,7 @@ EOT;
 
             if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
             {
-                return $order->get_id();
+                return $order->get_order_key();
             }
 
             return $order->order_key;
