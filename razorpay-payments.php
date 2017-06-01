@@ -44,8 +44,8 @@ function woocommerce_razorpay_init()
             $this->key_secret = $this->settings['key_secret'];
             $this->payment_action = $this->settings['payment_action'];
 
-            $this->msg['message'] = "";
-            $this->msg['class'] = "";
+            $this->msg['message'] = '';
+            $this->msg['class'] = '';
 
             add_action('init', array(&$this, 'check_razorpay_response'));
             add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_razorpay_response'));
@@ -143,6 +143,14 @@ function woocommerce_razorpay_init()
             return "razorpay_order_id.$orderId";
         }
 
+        /**
+         * Given a order Id, find the associated
+         * Razorpay Order from the session and verify
+         * that is is still correct. If not found
+         * (or incorrect), create a new Razorpay Order
+         * @param  string $orderId Order Id
+         * @return mixed Razorpay Order Id or null
+         */
         protected function createOrGetRazorpayOrderId($orderId)
         {
             global $woocommerce;
@@ -167,6 +175,8 @@ function woocommerce_razorpay_init()
                     return $razorpayOrderId;
                 }
             }
+            // Order doesn't exist or verification failed
+            // So try creating one
             catch (Exception $e)
             {
                 $create = true;
@@ -181,7 +191,8 @@ function woocommerce_razorpay_init()
                 }
                 catch(Exception $e)
                 {
-                    return false;
+                    // Order creation failed
+                    return null;
                 }
             }
         }
@@ -198,7 +209,7 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
-            if ($razorpayOrderId === false)
+            if ($razorpayOrderId === null)
             {
                 return 'RAZORPAY ERROR: Api could not be reached';
             }
@@ -241,7 +252,7 @@ function woocommerce_razorpay_init()
 
             $args['amount']  = $this->getOrderAmountAsInteger($order);
 
-            if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
+            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
                 $args['prefill'] = array(
                     'name'      => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
@@ -409,6 +420,10 @@ EOT;
             return $html;
         }
 
+        /**
+         * Gets the Order Key from the Order
+         * for all WC versions that we suport
+         */
         protected function getOrderKey($order)
         {
             $orderKey = null;
