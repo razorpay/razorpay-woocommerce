@@ -164,6 +164,8 @@ function woocommerce_razorpay_init()
         {
             global $woocommerce;
 
+            $callbackUrl = $this->get_return_url($order);
+
             $sessionKey = $this->getSessionKey($orderId);
 
             $create = false;
@@ -256,7 +258,8 @@ function woocommerce_razorpay_init()
               'notes'       => array(
                 'woocommerce_order_id' => $orderId
               ),
-              'order_id'    => $razorpayOrderId
+              'order_id'    => $razorpayOrderId,
+              'callback_url' => $callbackUrl
             );
 
             $args['amount']  = $this->getOrderAmountAsInteger($order);
