@@ -164,8 +164,6 @@ function woocommerce_razorpay_init()
         {
             global $woocommerce;
 
-            $callbackUrl = $this->get_return_url($order);
-
             $sessionKey = $this->getSessionKey($orderId);
 
             $create = false;
@@ -239,6 +237,8 @@ function woocommerce_razorpay_init()
          */
         protected function getCheckoutArguments($order, $razorpayOrderId)
         {
+            $callbackUrl = $this->get_return_url($order);
+
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
                 $orderId = $order->get_id();
