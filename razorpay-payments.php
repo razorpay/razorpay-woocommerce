@@ -584,19 +584,18 @@ EOT;
                     $order->update_status('failed');
                 }
             }
-            // We don't have a proper order id
-            else if ($order_id !== null)
+            else
             {
                 $order = new WC_Order($order_id);
                 $order->update_status('failed');
                 $order->add_order_note('Customer cancelled the payment');
 
-                $this->msg['class'] = 'error';
-                $this->msg['message'] = "An error occured while processing this payment";
-            }
-            else
-            {
-                if (isset($_POST['error']) === true)
+                // We don't have a proper order id
+                if ($order_id !== null)
+                {
+                    $message = "An error occured while processing this payment";
+                }
+                else if (isset($_POST['error']) === true)
                 {
                     $error = $_POST['error'];
 
@@ -612,7 +611,7 @@ EOT;
                     $message = 'An error occured. Please contact administrator for assistance';
                 }
 
-                $this->msg['class'] = 'Callback URL error';
+                $this->msg['class'] = 'error';
                 $this->msg['message'] = $message;
             }
 
