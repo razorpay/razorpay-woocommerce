@@ -26,10 +26,6 @@ function woocommerce_razorpay_init()
 
     class WC_Razorpay extends WC_Payment_Gateway
     {
-        const BASE_URL = 'https://api.razorpay.com/';
-
-        const API_VERSION = 'v1';
-
         // This one stores the WooCommerce Order Id
         const SESSION_KEY = 'razorpay_wc_order_id';
         const RAZORPAY_PAYMENT_ID = 'razorpay_payment_id';
@@ -51,6 +47,7 @@ function woocommerce_razorpay_init()
             $this->supports = array(
                 'products',
                 'refunds',
+                'subscriptions',
             );
 
             $this->msg['message'] = '';
@@ -215,6 +212,29 @@ function woocommerce_razorpay_init()
             $order = new WC_Order($orderId);
 
             $redirectUrl = get_site_url() . '/?wc-api=' . get_class($this);
+
+            if (function_exists('wcs_order_contains_subscription'))
+            {
+                $types = array(
+                    'parent',
+                    'renewal',
+                    'resubscribe',
+                    'switch',
+                );
+
+                $containsSubscription = wcs_order_contains_subscription($order, $types);
+
+                $isSubscription = wcs_is_subscription($order);
+
+                if ($containsSubscription or $isSubscription)
+                {
+                    // Now we create a subscription
+                    // with our PLAN
+                    $planId = 'plan_7xi9PsYhXNXKG4';
+
+                    // Attach an addon perhaps?
+                }
+            }
 
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
@@ -489,7 +509,9 @@ EOT;
         function process_payment($order_id)
         {
             global $woocommerce;
+
             $order = new WC_Order($order_id);
+
             $woocommerce->session->set(self::SESSION_KEY, $order_id);
 
             $orderKey = $this->getOrderKey($order);
