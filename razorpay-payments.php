@@ -585,17 +585,37 @@ EOT;
                 }
             }
             // We don't have a proper order id
-            else
+            else if ($order_id !== null)
             {
-                if ($order_id !== null)
-                {
-                    $order = new WC_Order($order_id);
-                    $order->update_status('failed');
-                    $order->add_order_note('Customer cancelled the payment');
-                }
+                $order = new WC_Order($order_id);
+                $order->update_status('failed');
+                $order->add_order_note('Customer cancelled the payment');
+
                 $this->msg['class'] = 'error';
                 $this->msg['message'] = "An error occured while processing this payment";
             }
+            else
+            {
+                if (isset($_POST['error']) === true)
+                {
+                    $error = $_POST['error'];
+
+                    $message = 'An error occured. Description : ' . $error['description'] . '. Code : ' . $error['code'];
+
+                    if (isset($error['field']) === true)
+                    {
+                        $message .= 'Field : ' . $error['field'];
+                    }
+                }
+                else
+                {
+                    $message = 'An error occured. Please contact administrator for assistance';
+                }
+
+                $this->msg['class'] = 'Callback URL error';
+                $this->msg['message'] = $message;
+            }
+
             $this->add_notice($this->msg['message'], $this->msg['class']);
             $redirectUrl = $this->get_return_url($order);
             wp_redirect($redirectUrl);
