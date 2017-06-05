@@ -536,29 +536,16 @@ EOT;
 
             $order_id = $woocommerce->session->get(self::SESSION_KEY);
 
-            if ($order_id and !empty($_POST[self::RAZORPAY_PAYMENT_ID]))
+            $order = new WC_Order($order_id);
+
+            if ($order_id  and !empty($_POST['razorpay_payment_id']))
             {
-                $order = new WC_Order($order_id);
-
-                $amount = $this->getOrderAmountAsInteger($order);
-
                 $success = false;
                 $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ';
 
-                $api = $this->getRazorpayApiInstance();
-
-                $sessionKey = $this->getSessionKey($order_id);
-
-                $attributes = array(
-                    self::RAZORPAY_PAYMENT_ID => $_POST[self::RAZORPAY_PAYMENT_ID],
-                    'razorpay_order_id'   => $woocommerce->session->get($sessionKey),
-                    'razorpay_signature'  => $_POST['razorpay_signature'],
-                );
-
                 try
                 {
-                    $api->utility->verifyPaymentSignature($attributes);
-
+                    $this->verifySignature($order_id);
                     $success = true;
                 }
                 catch (Errors\SignatureVerificationError $e)
@@ -566,59 +553,100 @@ EOT;
                     $error .= $e->getMessage();
                 }
 
-                if ($success === true)
-                {
-                    $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $order_id";
-                    $this->msg['class'] = 'success';
-                    $order->payment_complete($attributes[self::RAZORPAY_PAYMENT_ID]);
-                    $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: " . $attributes[self::RAZORPAY_PAYMENT_ID]);
-                    $order->add_order_note($this->msg['message']);
-                    $woocommerce->cart->empty_cart();
-                }
-                else
-                {
-                    $this->msg['class'] = 'error';
-                    $this->msg['message'] = 'Thank you for shopping with us. However, the payment failed.';
-                    $order->add_order_note("Transaction Declined: $error<br/>");
-                    $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: " . $attributes[self::RAZORPAY_PAYMENT_ID]);
-                    $order->update_status('failed');
-                }
+                $this->handlePaymentStatus($success, $order);
             }
             else
             {
-                $order = new WC_Order($order_id);
-                $order->update_status('failed');
-                $order->add_order_note('Customer cancelled the payment');
-
-                // We don't have a proper order id
-                if ($order_id !== null)
-                {
-                    $message = "An error occured while processing this payment";
-                }
-                else if (isset($_POST['error']) === true)
-                {
-                    $error = $_POST['error'];
-
-                    $message = 'An error occured. Description : ' . $error['description'] . '. Code : ' . $error['code'];
-
-                    if (isset($error['field']) === true)
-                    {
-                        $message .= 'Field : ' . $error['field'];
-                    }
-                }
-                else
-                {
-                    $message = 'An error occured. Please contact administrator for assistance';
-                }
-
-                $this->msg['class'] = 'error';
-                $this->msg['message'] = $message;
+                $this->handleErrorCase($order_id, $order);
             }
 
             $this->add_notice($this->msg['message'], $this->msg['class']);
             $redirectUrl = $this->get_return_url($order);
             wp_redirect($redirectUrl);
             exit;
+        }
+
+        protected function verifySignature($order_id)
+        {
+            global $woocommerce;
+
+            $key_id = $this->key_id;
+            $key_secret = $this->key_secret;
+
+            $api = new Api($key_id, $key_secret);
+
+            $sessionKey = $this->getSessionKey($order_id);
+
+            $attributes = array(
+                'razorpay_payment_id' => $_POST['razorpay_payment_id'],
+                'razorpay_order_id'   => $woocommerce->session->get($sessionKey),
+                'razorpay_signature'  => $_POST['razorpay_signature'],
+            );
+
+            $api->utility->verifyPaymentSignature($attributes);
+        }
+
+        protected function getErrorMessage($order_id)
+        {
+            // We don't have a proper order id
+            if ($order_id !== null)
+            {
+                $message = "An error occured while processing this payment";
+            }
+            if (isset($_POST['error']) === true)
+            {
+                $error = $_POST['error'];
+
+                $message = 'An error occured. Description : ' . $error['description'] . '. Code : ' . $error['code'];
+
+                if (isset($error['field']) === true)
+                {
+                    $message .= 'Field : ' . $error['field'];
+                }
+            }
+            else
+            {
+                $message = 'An error occured. Please contact administrator for assistance';
+            }
+
+            return $message;
+        }
+
+        /**
+         * Modifies existing order and handles success case
+         *
+         * @param $success, & $order
+         */
+        protected function handlePaymentStatus($success, & $order)
+        {
+            global $woocommerce;
+
+            if ($success === true)
+            {
+                $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $order_id";
+                $this->msg['class'] = 'success';
+                $order->payment_complete();
+                $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpay_payment_id");
+                $order->add_order_note($this->msg['message']);
+                $woocommerce->cart->empty_cart();
+            }
+            else
+            {
+                $this->msg['class'] = 'error';
+                $this->msg['message'] = 'Thank you for shopping with us. However, the payment failed.';
+                $order->add_order_note("Transaction Declined: $error<br/>");
+                $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpay_payment_id");
+                $order->update_status('failed');
+            }
+        }
+
+        protected function handleErrorCase($order_id, & $order)
+        {
+            $order->update_status('failed');
+            $order->add_order_note('Customer cancelled the payment');
+
+            $this->msg['class'] = 'error';
+            $this->msg['message'] = $this->getErrorMessage($order_id);
         }
 
         /**
