@@ -34,6 +34,42 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 3. Enable the Payment Method, name it Credit Card / Debit Card / Internet Banking (this will show up on the payment page your customer sees), add in your Key id and Key Secret.
 4. The Payment Action should be set to "Authorize and Capture". If you want to capture payments manually from the Dashboard after manual verification, set it to "Authorize".
 
+== Changelog ==
+
+= 1.3.2 =
+* Fixes a Notice about WC_Shortcode_Checkout->output being deprecated
+* PR: https://github.com/razorpay/razorpay-woocommerce/pull/28
+
+= 1.3.1 =
+* Improves Session management
+* Diff: https://git.io/vHVBM
+
+= 1.3.0 =
+* Shifts to the official [Razorpay SDK](https://github.com/razorpay/razorpay-php)
+* Shifts to the Razorpay Orders API. Allows for auto-capturing and improves success rates
+* Wordpress Versions >=3.9.2 only are supported
+
+= 1.2.11 = 
+* Fixes issues with Safari and Internet Explorer
+
+= 1.2.10 =
+* Improves error handling in case customer clicks on cancel.
+* Orders are now marked as failed if customer clicks cancel
+* Note is added to the order mentioning that the customer cancelled the order.
+
+= 1.2.9 =
+* Fixed error handling and capture call
+
+= 1.2.8 =
+* Disables buttons while payment is in progress
+* Refactors error message display
+
+= 1.2.7 = 
+* Redirects customer to order details page, as per WooCommerce guidelines.
+
+= 1.2.6 =
+* Adds manual capture option
+
 == Support ==
 
 Visit [razorpay.com](https://razorpay.com) for support requests or email us at <integrations@razorpay.com>.
