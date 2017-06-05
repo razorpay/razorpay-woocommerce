@@ -553,7 +553,7 @@ EOT;
                     $error .= $e->getMessage();
                 }
 
-                $this->handlePaymentStatus($success, $order);
+                $this->handlePaymentStatus($success, $order_id, $order);
             }
             else
             {
@@ -617,16 +617,18 @@ EOT;
          *
          * @param $success, & $order
          */
-        protected function handlePaymentStatus($success, & $order)
+        protected function handlePaymentStatus($success, $orderId, & $order)
         {
             global $woocommerce;
 
+            $razorpayPaymentId = $_POST['razorpay_payment_id'];
+
             if ($success === true)
             {
-                $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $order_id";
+                $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $orderId";
                 $this->msg['class'] = 'success';
                 $order->payment_complete();
-                $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpay_payment_id");
+                $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
                 $order->add_order_note($this->msg['message']);
                 $woocommerce->cart->empty_cart();
             }
