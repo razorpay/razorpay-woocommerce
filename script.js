@@ -30,8 +30,6 @@
     document.razorpayform.submit();
   };
 
-  console.log(data);
-
   var razorpayCheckout = new Razorpay(data);
 
   // global method
