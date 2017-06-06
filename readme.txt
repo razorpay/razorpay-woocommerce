@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 4.7
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -11,9 +11,9 @@ Allows you to use Razorpay payment gateway with the WooCommerce plugin.
 
 == Description ==
 
-This is the official Razorpay payment gateway plugin for WooCommerce. Allows you to accept credit cards, debit cards, netbanking with the WooCommerce plugin. It uses a seamles integration, allowing the customer to pay on your website without being redirected away from your woocommerce website.
+This is the official Razorpay payment gateway plugin for WooCommerce. Allows you to accept credit cards, debit cards, netbanking, wallet, and UPI payments with the WooCommerce plugin. It uses a seamles integration, allowing the customer to pay on your website without being redirected away. This allows for refunds, works across all browsers, and is compatible with the latest WooCommerce.
 
-This is compatible with both 2.4 and 2.5 series of WooCommerce.
+This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 
 == Installation ==
 
@@ -36,7 +36,7 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 
 == Changelog ==
 
-= UNRELEASED = 
+= 1.4.0 = 
 * Added Support for WooCommerce 3.x (https://github.com/razorpay/razorpay-woocommerce/pull/35)
 * Fixes around discount coupon handling (Order Amount mismatch)
 * Updates Razorpay SDK
