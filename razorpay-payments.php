@@ -26,10 +26,6 @@ function woocommerce_razorpay_init()
 
     class WC_Razorpay extends WC_Payment_Gateway
     {
-        const BASE_URL = 'https://api.razorpay.com/';
-
-        const API_VERSION = 'v1';
-
         // This one stores the WooCommerce Order Id
         const SESSION_KEY = 'razorpay_wc_order_id';
         const RAZORPAY_PAYMENT_ID = 'razorpay_payment_id';
@@ -225,9 +221,7 @@ function woocommerce_razorpay_init()
 
             $checkoutArgs = $this->getCheckoutArguments($order, $razorpayOrderId);
 
-            $json = json_encode($checkoutArgs);
-
-            $html = $this->generateOrderForm($redirectUrl, $json, $orderId);
+            $html = $this->generateOrderForm($redirectUrl, $checkoutArgs);
 
             return $html;
         }
@@ -358,19 +352,36 @@ function woocommerce_razorpay_init()
             return $data;
         }
 
+        private function enqueueCheckoutScripts($data)
+        {
+            wp_register_script('razorpay_checkout',
+                'https://checkout.razorpay.com/v1/checkout.js',
+                null, null);
+
+            wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
+                array('razorpay_checkout'));
+
+            wp_localize_script('razorpay_wc_script',
+                'razorpay_wc_checkout_vars',
+                $data
+            );
+
+            wp_enqueue_script('razorpay_wc_script');
+        }
+
         /**
          * Generates the order form
          **/
-        function generateOrderForm($redirectUrl, $json)
+        function generateOrderForm($redirectUrl, $data)
         {
-            $html = <<<EOT
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script>
-    var data = $json;
-</script>
+            $this->enqueueCheckoutScripts($data);
+
+            return <<<EOT
 <form name='razorpayform' action="$redirectUrl" method="POST">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
     <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
+    <!-- This distinguishes all our various wordpress plugins -->
+    <input type="hidden" name="razorpay_wc_form_submit" value="1">
 </form>
 <p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
 Please wait while we are processing your payment.
@@ -379,54 +390,7 @@ Please wait while we are processing your payment.
     <button id="btn-razorpay">Pay Now</button>
     <button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>
 </p>
-<script>
-    (function(){
-    var setDisabled = function(id, state) {
-      if (typeof state === 'undefined') {
-        state = true;
-      }
-      var elem = document.getElementById(id);
-      if (state === false) {
-        elem.removeAttribute('disabled');
-      }
-      else {
-        elem.setAttribute('disabled', state);
-      }
-    };
-    // Payment was closed without handler getting called
-    data.modal = {
-      ondismiss: function() {
-        setDisabled('btn-razorpay', false);
-      }
-    };
-    data.handler = function(payment){
-      setDisabled('btn-razorpay-cancel');
-      var successMsg = document.getElementById('msg-razorpay-success');
-      successMsg.style.display = "block";
-      document.getElementById('razorpay_payment_id').value = payment.razorpay_payment_id;
-      document.getElementById('razorpay_signature').value = payment.razorpay_signature;
-      document.razorpayform.submit();
-    };
-    var razorpayCheckout = new Razorpay(data);
-    // global method
-    function openCheckout() {
-      // Disable the pay button
-      setDisabled('btn-razorpay');
-      razorpayCheckout.open();
-    }
-    function addEvent(element, evnt, funct){
-      if (element.attachEvent)
-       return element.attachEvent('on'+evnt, funct);
-      else
-       return element.addEventListener(evnt, funct, false);
-    }
-    // Attach event listener
-    addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
-    openCheckout();
-})();
-</script>
 EOT;
-            return $html;
         }
 
         /**
