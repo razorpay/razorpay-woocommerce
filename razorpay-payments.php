@@ -352,12 +352,13 @@ function woocommerce_razorpay_init()
             return $data;
         }
 
-        /**
-         * Generates the order form
-         **/
-        function generateOrderForm($redirectUrl, $data)
+        private function enqueueCheckoutScripts($data)
         {
-            wp_enqueue_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
+            wp_register_script('razorpay_checkout',
+                'https://checkout.razorpay.com/v1/checkout.js',
+                null, null);
+
+            wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                 array('razorpay_checkout'));
 
             wp_localize_script('razorpay_wc_script',
@@ -365,11 +366,15 @@ function woocommerce_razorpay_init()
                 $data
             );
 
-            wp_register_script('razorpay_checkout',
-                'https://checkout.razorpay.com/v1/checkout.js',
-                null, null);
-
             wp_enqueue_script('razorpay_wc_script');
+        }
+
+        /**
+         * Generates the order form
+         **/
+        function generateOrderForm($redirectUrl, $data)
+        {
+            $this->enqueueCheckoutScripts($data);
 
             return <<<EOT
 <form name='razorpayform' action="$redirectUrl" method="POST">
