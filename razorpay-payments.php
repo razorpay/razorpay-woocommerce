@@ -559,11 +559,13 @@ EOT;
                     $error .= $e->getMessage();
                 }
 
-                $this->updateOrder($order, $success, $razorpayPaymentId);
+                $this->updateOrder($order, $success, "", $razorpayPaymentId);
             }
             else
             {
-                $this->handleErrorCase($order_id, $order);
+                $this->updateOrder($order, false, 'Customer cancelled the payment', null);
+
+                $this->handleErrorCase($order);
             }
 
             $this->add_notice($this->msg['message'], $this->msg['class']);
@@ -623,7 +625,7 @@ EOT;
          *
          * @param $success, & $order
          */
-        protected function updateOrder(& $order, $success, $razorpayPaymentId)
+        protected function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId)
         {
             global $woocommerce;
 
@@ -633,6 +635,7 @@ EOT;
             {
                 $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $orderId";
                 $this->msg['class'] = 'success';
+
                 $order->payment_complete();
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
                 $order->add_order_note($this->msg['message']);
@@ -642,19 +645,23 @@ EOT;
             {
                 $this->msg['class'] = 'error';
                 $this->msg['message'] = 'Thank you for shopping with us. However, the payment failed.';
-                $order->add_order_note("Transaction Declined: $error<br/>");
-                $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpay_payment_id");
+
+                if ($razorpayPaymentId)
+                {
+                    $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpayPaymentId");
+                }
+
+                $order->add_order_note("Transaction Failed: $errorMessage<br/>");
                 $order->update_status('failed');
             }
         }
 
-        protected function handleErrorCase($order_id, & $order)
+        protected function handleErrorCase(& $order)
         {
-            $order->update_status('failed');
-            $order->add_order_note('Customer cancelled the payment');
+            $orderId = $this->getOrderId($order);
 
             $this->msg['class'] = 'error';
-            $this->msg['message'] = $this->getErrorMessage($order_id);
+            $this->msg['message'] = $this->getErrorMessage($orderId);
         }
 
         /**
