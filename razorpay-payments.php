@@ -239,14 +239,7 @@ function woocommerce_razorpay_init()
         {
             $callbackUrl = $this->get_return_url($order);
 
-            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
-            {
-                $orderId = $order->get_id();
-            }
-            else
-            {
-                $orderId = $order->id;
-            }
+            $orderId = $this->getOrderId($order);
 
             $productinfo = "Order $orderId";
 
@@ -448,6 +441,16 @@ EOT;
             return $order->order_key;
         }
 
+        protected function getOrderId($order)
+        {
+            if (version_compare(WOOCOMMERCE_VERSION, '2.6.0', '>='))
+            {
+                return $order->get_id();
+            }
+
+            return $order->id;
+        }
+
         public function process_refund($orderId, $amount = null, $reason = '')
         {
             $order = new WC_Order($orderId);
@@ -538,22 +541,25 @@ EOT;
 
             $order = new WC_Order($order_id);
 
-            if ($order_id  and !empty($_POST['razorpay_payment_id']))
+            if ($order_id  and !empty($_POST[self::RAZORPAY_PAYMENT_ID]))
             {
                 $success = false;
                 $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ';
+
+                $razorpayPaymentId = null;
 
                 try
                 {
                     $this->verifySignature($order_id);
                     $success = true;
+                    $razorpayPaymentId = sanitize_text_field($_POST[self::RAZORPAY_PAYMENT_ID]);
                 }
                 catch (Errors\SignatureVerificationError $e)
                 {
                     $error .= $e->getMessage();
                 }
 
-                $this->handlePaymentStatus($success, $order_id, $order);
+                $this->updateOrder($order, $success, $razorpayPaymentId);
             }
             else
             {
@@ -586,10 +592,10 @@ EOT;
             $api->utility->verifyPaymentSignature($attributes);
         }
 
-        protected function getErrorMessage($order_id)
+        protected function getErrorMessage($orderId)
         {
             // We don't have a proper order id
-            if ($order_id !== null)
+            if ($orderId !== null)
             {
                 $message = "An error occured while processing this payment";
             }
@@ -617,11 +623,11 @@ EOT;
          *
          * @param $success, & $order
          */
-        protected function handlePaymentStatus($success, $orderId, & $order)
+        protected function updateOrder(& $order, $success, $razorpayPaymentId)
         {
             global $woocommerce;
 
-            $razorpayPaymentId = $_POST['razorpay_payment_id'];
+            $orderId = $this->getOrderId($order);
 
             if ($success === true)
             {
