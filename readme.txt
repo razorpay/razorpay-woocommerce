@@ -41,7 +41,15 @@ This is compatible with both 2.4 and 2.5 series of WooCommerce.
 * Fixes around discount coupon handling (Order Amount mismatch)
 * Updates Razorpay SDK
 * Improves Javascript Caching (https://github.com/razorpay/razorpay-woocommerce/pull/39)
-* Adds support for mobile browsers (https://github.com/razorpay/razorpay-woocommerce/pull/37)
+* Adds support for mobile browsers (https://github.com/razorpay/razorpay-woocommerce/pull/37):
+    * Chrome on iOS
+    * Facebook Browser
+    * Internet Explorer Mobile
+    * AOSP Browser
+    * Opera Mini
+    * Google Search App
+    * Any other apps using webviews  
+* Adds support for refunding payments from within WooCommerce
 
 = 1.3.2 =
 * Fixes a Notice about WC_Shortcode_Checkout->output being deprecated
