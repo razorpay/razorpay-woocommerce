@@ -85,6 +85,20 @@ function woocommerce_razorpay_init()
             $this->msg['message'] = '';
             $this->msg['class'] = '';
 
+            // Supports woocommerce subscriptions
+            $this->supports = array(
+                'products',
+                'subscriptions',
+                'subscription_cancellation',
+                'subscription_suspension',
+                'subscription_reactivation',
+                'subscription_amount_changes',
+                'subscription_date_changes',
+                'subscription_payment_method_change'
+            );
+
+            add_action('woocommerce_scheduled_subscription_payment', array($this, 'process_subscription'));
+
             add_action('init', array(&$this, 'check_razorpay_response'));
             add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_razorpay_response'));
 
@@ -260,6 +274,45 @@ function woocommerce_razorpay_init()
             global $woocommerce;
             $order = new WC_Order($orderId);
 
+            // TODO: Create subscription plan when the product is created or updated
+
+            if (wcs_order_contains_subscription($order) === true)
+            {
+                $products = $order->get_items();
+
+                // For each product, creating a new plan if not created already
+                foreach ($products as $key => $product)
+                {
+                    $productId = $product['product_id'];
+
+                    // Check if product is a subscription product
+                    if (WC_Subscriptions_Product::is_subscription($productId) === true)
+                    {
+                        $metadata = get_post_meta($productId);
+
+                        // Creating a new plan only if plan isn't created already
+                        if (empty($metadata['plan_id']) === true)
+                        {
+                            $api = $this->getRazorpayApiInstance();
+
+                            $planArgs = $this->getPlanArguments($product);
+
+                            $plan = $api->plan->create($planArgs);
+
+                            // Storing the plan id as product metadata
+                            add_post_meta($productId, 'plan_id', $plan['id'], true);
+                        }
+                        else
+                        {
+                            // Retrieve the plan id if already created
+                            $planId = $metadata['plan_id'];
+                        }
+                    }
+
+                    // Once we have a planId, we need to create a subscription to the plan
+                }
+            }
+
             $redirectUrl = get_site_url() . '/?wc-api=' . get_class($this);
 
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
@@ -276,6 +329,39 @@ function woocommerce_razorpay_init()
             $html .= $this->generateOrderForm($redirectUrl, $checkoutArgs);
 
             return $html;
+        }
+
+        protected function getPlanArguments($product)
+        {
+            $productId = $product['product_id'];
+
+            $period = WC_Subscriptions_Product::get_period($productId);
+            $interval = WC_Subscriptions_Product::get_interval($productId);
+            $recurringFee = WC_Subscriptions_Product::get_price($productId);
+
+            $planArgs = array(
+                'item' => array(
+                    'name' => $product['name'],
+                    'amount' => (int) round($recurringFee * 100, 2),
+                    'currency' => get_woocommerce_currency(),
+                ),
+                'period' => $this->getProductPeriod($period),
+                'interval' => $interval
+            );
+
+            return $planArgs;
+        }
+
+        protected function getProductPeriod($period)
+        {
+            $periodMap = array(
+                'day' => 'daily',
+                'week' => 'weekly',
+                'month' => 'monthly',
+                'year' => 'yearly'
+            );
+
+            return $periodMap[$period];
         }
 
         /**
@@ -676,6 +762,12 @@ EOT;
 
             wp_redirect($redirectUrl);
             exit;
+        }
+
+        protected function process_subscription($subscription_id)
+        {
+            // This method is used to process the subscription's recurring payment
+            sd('1');
         }
 
         protected function verifySignature($orderId)
