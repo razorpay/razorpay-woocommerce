@@ -37,11 +37,11 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 == Changelog ==
 
 = 1.4.0 = 
-* Added Support for WooCommerce 3.x (https://github.com/razorpay/razorpay-woocommerce/pull/35)
+* Added Support for WooCommerce 3.x ([#35](https://github.com/razorpay/razorpay-woocommerce/pull/35]))
 * Fixes around discount coupon handling (Order Amount mismatch)
 * Updates Razorpay SDK
-* Improves Javascript Caching (https://github.com/razorpay/razorpay-woocommerce/pull/39)
-* Adds support for mobile browsers (https://github.com/razorpay/razorpay-woocommerce/pull/37):
+* Improves Javascript Caching ([#39](https://github.com/razorpay/razorpay-woocommerce/pull/39]))
+* Adds support for mobile browsers ([#37](https://github.com/razorpay/razorpay-woocommerce/pull/37]):)
     * Chrome on iOS
     * Facebook Browser
     * Internet Explorer Mobile
@@ -53,7 +53,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 
 = 1.3.2 =
 * Fixes a Notice about WC_Shortcode_Checkout->output being deprecated
-* PR: https://github.com/razorpay/razorpay-woocommerce/pull/28
+* PR: [#28](https://github.com/razorpay/razorpay-woocommerce/pull/28])
 
 = 1.3.1 =
 * Improves Session management
