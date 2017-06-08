@@ -21,6 +21,7 @@ use Razorpay\Api\Errors;
 use Razorpay\Woocommerce\Errors as WooErrors;
 
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+require_once __DIR__.'/includes/razorpay-subscriptions.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init');
@@ -99,7 +100,7 @@ function woocommerce_razorpay_init()
                 'subscription_payment_method_change'
             );
 
-            add_action('woocommerce_scheduled_subscription_payment', array($this, 'process_subscription'));
+            $this->subscriptions = new RZP_Subscriptions($this->key_id, $this->key_secret);
 
             add_action('init', array(&$this, 'check_razorpay_response'));
             add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_razorpay_response'));
@@ -285,7 +286,7 @@ function woocommerce_razorpay_init()
 
             if (wcs_order_contains_subscription($order) === true)
             {
-                $subscriptionId = $this->createSubscription($orderId);
+                $subscriptionId = $this->subscriptions->createSubscription($orderId);
             }
             else
             {
@@ -313,160 +314,6 @@ function woocommerce_razorpay_init()
             return $html;
         }
 
-        protected function createSubscription($orderId)
-        {
-            global $woocommerce;
-
-            $order = new WC_Order($orderId);
-
-            $product = $this->getProduct($order);
-
-            $planId = $this->getProductPlanId($product);
-
-            $customerId = $this->getCustomerId($order);
-
-            $subscriptionData = $this->getSubscriptionCreateData($customerId, $planId, $product);
-
-            $api = $this->getRazorpayApiInstance();
-
-            $subscription = $api->subscription->create($subscriptionData);
-
-            // Setting the subscription id as the session variable
-            $sessionKey = $this->getSubscriptionSessionKey($orderId);
-            $woocommerce->session->set($sessionKey, $subscription['id']);
-
-            return $subscription['id'];
-        }
-
-        protected function getProduct($order)
-        {
-            $products = $order->get_items();
-
-            // Technically, subscriptions work only if there's one array in the cart
-            if (sizeof($products) > 1)
-            {
-                throw new Exception('Currently Razorpay does not support more than
-                                    one product in the cart if one of products
-                                    is a subscription.');
-            }
-
-            return array_values($products)[0];
-        }
-
-        protected function getSubscriptionCreateData($customerId, $planId, $product)
-        {
-            $length = (int) WC_Subscriptions_Product::get_length($product['product_id']);
-
-            $subscriptionData = array(
-                'customer_id'     => $customerId,
-                'plan_id'         => $planId,
-                'quantity'        => (int) $product['qty'],
-                'total_count'     => $length,
-                'customer_notify' => 0
-            );
-
-            $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($product['product_id']);
-
-            if ($signUpFee)
-            {
-                $subscriptionData['addons'] = array(
-                    array (
-                        'item' => array(
-                            'amount'   => (int) round($signUpFee * 100, 2),
-                            'currency' => get_woocommerce_currency(),
-                            'name'     => $product['name']
-                        )
-                    )
-                );
-            }
-
-            return $subscriptionData;
-        }
-
-        protected function getProductPlanId($product)
-        {
-            $productId = $product['product_id'];
-
-            $metadata = get_post_meta($productId);
-
-            // Creating a new plan only if plan isn't created already
-            if (empty($metadata['razorpay_wc_plan_id']) === true)
-            {
-                $planId = $this->createPlan($product);
-                add_post_meta($productId, 'razorpay_wc_plan_id', $planId, true);
-            }
-            else
-            {
-                // Retrieve the plan id if already created
-                $planId = $metadata['razorpay_wc_plan_id'][0];
-            }
-
-            return $planId;
-        }
-
-        protected function createPlan($product)
-        {
-            $productId = $product['product_id'];
-
-            $api = $this->getRazorpayApiInstance();
-
-            $planArgs = $this->getPlanArguments($product);
-
-            $plan = $api->plan->create($planArgs);
-
-            // Storing the plan id as product metadata, unique set to true
-            return $plan['id'];
-        }
-
-        protected function getPlanArguments($product)
-        {
-            $productId = $product['product_id'];
-
-            $period       = WC_Subscriptions_Product::get_period($productId);
-            $interval     = WC_Subscriptions_Product::get_interval($productId);
-            $recurringFee = WC_Subscriptions_Product::get_price($productId);
-
-            $planArgs = array(
-                'item' => array(
-                    'name'     => $product['name'],
-                    'amount'   => (int) round($recurringFee * 100, 2),
-                    'currency' => get_woocommerce_currency(),
-                ),
-                'period'   => $this->getProductPeriod($period),
-                'interval' => $interval
-            );
-
-            return $planArgs;
-        }
-
-        protected function getProductPeriod($period)
-        {
-            $periodMap = array(
-                'day'   => 'daily',
-                'week'  => 'weekly',
-                'month' => 'monthly',
-                'year'  => 'yearly'
-            );
-
-            return $periodMap[$period];
-        }
-
-        protected function getCustomerId($order)
-        {
-            $api = $this->getRazorpayApiInstance();
-
-            $data = array(
-                'name'          => $order->billing_first_name." ".$order->billing_last_name,
-                'email'         => $order->billing_email,
-                'contact'       => $order->billing_phone,
-                'fail_existing' => '0'
-            );
-
-            $customer = $api->customer->create($data);
-
-            return $customer['id'];
-        }
-
         /**
          * Returns array of checkout params
          */
@@ -489,15 +336,36 @@ function woocommerce_razorpay_init()
                 'woocommerce_order_id' => $orderId
               ),
               'callback_url' => $callbackUrl,
+              'prefill' => $this->getPreFillArguments($order)
             );
 
 
 
             $args['amount'] = $this->getOrderAmountAsInteger($order);
 
+            // order_id and subscription_id both cannot be set at the same time
+            if (empty($razorpayOrderId) === false)
+            {
+                $args['order_id'] = $razorpayOrderId;
+            }
+            else if (empty($subscriptionId) === false)
+            {
+                $args['recurring'] = 1;
+                $args['subscription_id'] = $subscriptionId;
+            }
+            else
+            {
+                throw new Exception('Both orderId and subscriptionId are null!');
+            }
+
+            return $args;
+        }
+
+        protected function getPreFillArguments($order)
+        {
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
-                $args['prefill'] = array(
+                $args = array(
                     'name'    => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
                     'email'   => $order->get_billing_email(),
                     'contact' => $order->get_billing_phone(),
@@ -506,7 +374,7 @@ function woocommerce_razorpay_init()
             }
             else
             {
-                $args['prefill'] = array(
+                $args = array(
                     'name'    => $order->billing_first_name . ' ' . $order->billing_last_name,
                     'email'   => $order->billing_email,
                     'contact' => $order->billing_phone,
@@ -518,18 +386,6 @@ function woocommerce_razorpay_init()
             {
                 $args['display_currency'] = $currency;
                 $args['display_amount']   = $order->get_total();
-            }
-
-            // order_id and subscription_id both cannot be set at the same time
-            if ($razorpayOrderId)
-            {
-                $args['order_id'] = $razorpayOrderId;
-            }
-
-            if (empty($subscriptionId) === false)
-            {
-                $args['recurring'] = 1;
-                $args['subscription_id'] = $subscriptionId;
             }
 
             return $args;
@@ -878,27 +734,6 @@ EOT;
             exit;
         }
 
-        public function process_subscription($subscription_id)
-        {
-            // This method is used to process the subscription's recurring payment
-            $wcSubscription = wcs_get_subscription($subscription_id);
-
-            $orderId = $wcSubscription->order->id;
-
-            $subscriptionId = get_post_meta($orderId, self::RAZORPAY_SUBSCRIPTION_ID)[0];
-
-            $api = $this->getRazorpayApiInstance();
-
-            $subscription = $api->subscription->fetch($subscriptionId);
-
-            // If subscription has been paid for on razorpay's end, we need to mark the
-            // subscription payment to be successful on woocommerce's end
-            if ($wcSubscription->get_completed_payment_count() + 1 === $subscription->paid_count)
-            {
-                WC_Subscriptions_Manager::process_subscription_payments_on_order($orderId);
-            }
-        }
-
         protected function verifySignature($orderId)
         {
             global $woocommerce;
@@ -921,7 +756,7 @@ EOT;
                 $attributes[self::RAZORPAY_ORDER_ID] = $woocommerce->session->get($sessionKey);
             }
 
-            // $api->utility->verifyPaymentSignature($attributes);
+            $api->utility->verifyPaymentSignature($attributes);
 
             // Once the signature passes, save the subscription id as order metadata
             if (wcs_order_contains_subscription($orderId) === true)

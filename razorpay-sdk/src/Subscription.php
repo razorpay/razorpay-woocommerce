@@ -1,8 +1,8 @@
-<?php 
+<?php
 
 namespace Razorpay\Api;
 
-class Subscription extends Entity 
+class Subscription extends Entity
 {
     public function create($attributes = array())
     {

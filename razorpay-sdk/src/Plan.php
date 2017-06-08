@@ -1,8 +1,8 @@
-<?php 
+<?php
 
 namespace Razorpay\Api;
 
-class Plan extends Entity 
+class Plan extends Entity
 {
     public function create($attributes = array())
     {
