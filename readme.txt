@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 4.7
-Stable tag: 1.4.0
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,7 +36,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 
 == Changelog ==
 
-= 1.4.1 =
+= 1.4.2 =
 * Added missing classes in the WordPress release (Utility.php was missing)
 
 = 1.4.0 = 
