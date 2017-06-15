@@ -113,8 +113,23 @@ function woocommerce_razorpay_init()
                     'title' => __('Enable Webhook', 'razorpay'),
                     'type' => 'checkbox',
                     'description' => esc_url( admin_url('admin-post.php') ) . '?action=rzp_webhook',
-                    'label' => __('Enable Razorpay Webhook with the URL listed below.', 'razorpay'),
+                    'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
                     'default' => 'yes'
+                ),
+                'webhook_action' => array(
+                    'title' => __('Webhook Action', 'razorpay'),
+                    'type' => 'select',
+                    'description' =>  __('Would you like our webhooks to update your store, or inform you so that you can update it yourself?', 'razorpay'),
+                    'default' => 'update',
+                    'options' => array(
+                        'update' => 'Update Store',
+                        'inform'   => 'Inform store'
+                    )
+                ),
+                'webhook_secret' => array(
+                    'title' => __('Webhook Secret', 'razorpay'),
+                    'type' => 'text',
+                    'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', 'razorpay')
                 ),
             );
         }
