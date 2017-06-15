@@ -67,15 +67,21 @@ class Entity extends Resource implements ArrayableInterface
         }
         else
         {
-            return static::buildEntity($response);
+            return static::buildEntity(null, $response);
         }
     }
 
-    protected static function buildEntity($data)
+    protected static function buildEntity($key, $data)
     {
         $entities = static::getDefinedEntitiesArray();
 
-        if (isset($data['entity']))
+        $arrayableAttributes = static::getArrayableAttributes();
+
+        if (in_array($key, $arrayableAttributes))
+        {
+            $entity = $data;
+        }
+        else if (isset($data['entity']))
         {
             if (in_array($data['entity'], $entities))
             {
@@ -84,17 +90,26 @@ class Entity extends Resource implements ArrayableInterface
             }
             else
             {
-                $entity = new static;
+                $entity = new self;
             }
+
+            $entity->fill($data);
         }
         else
         {
-            $entity = new static;
+            $entity = new self;
+
+            $entity->fill($data);            
         }
 
-        $entity->fill($data);
-
         return $entity;
+    }
+
+    protected static function getArrayableAttributes()
+    {
+        return array(
+            'notes'
+        );
     }
 
     protected static function getDefinedEntitiesArray()
@@ -130,35 +145,47 @@ class Entity extends Resource implements ArrayableInterface
         {
             if (is_array($value))
             {
-                if  (static::isAssocArray($value) === false)
-                {
-                    $collection = array();
-
-                    foreach ($value as $v)
-                    {
-                        if (is_array($v))
-                        {
-                            $entity = static::buildEntity($v);
-                            array_push($collection, $entity);
-                        }
-                        else
-                        {
-                            array_push($collection, $v);
-                        }
-                    }
-
-                    $value = $collection;
-                }
-                else
-                {
-                    $value = static::buildEntity($value);
-                }
+                $value = self::getArrayValue($key, $value);
             }
 
             $attributes[$key] = $value;
         }
 
         $this->attributes = $attributes;
+    }
+
+    protected static function getArrayValue($key, $value)
+    {
+        if  (static::isAssocArray($value) === false)
+        {
+            $value = self::getAssocArrayValue($key, $value);
+        }
+        else
+        {
+            $value = static::buildEntity($key, $value);
+        }
+
+        return $value;
+    }
+
+    protected static function getAssocArrayValue($key, $value)
+    {
+        $collection = array();
+
+        foreach ($value as $v)
+        {
+            if (is_array($v))
+            {
+                $entity = static::buildEntity($key, $v);
+                array_push($collection, $entity);
+            }
+            else
+            {
+                array_push($collection, $v);
+            }
+        }
+
+        return $collection;
     }
 
     public static function isAssocArray($arr)
