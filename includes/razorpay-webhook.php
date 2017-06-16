@@ -35,6 +35,7 @@ class RZP_Webhook
                 $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
                 $order = new WC_Order($orderId);
 
+                // Move this to the base class as well
                 if ($order->needs_payment() === false)
                 {
                     return;
@@ -44,12 +45,23 @@ class RZP_Webhook
 
                 $payment = $this->api->payment->fetch($razorpayPaymentId);
 
+                $amount = $data['payload']['payment']['entity']['amount'];
+
                 $success = false;
                 $errorMessage = 'The payment has failed.';
 
                 if ($payment['status'] === 'captured')
                 {
                     $success = true;
+                }
+                else if (($payment['status'] === 'authorized') and
+                         ($this->razorpay->payment_action === 'capture'))
+                {
+                    //
+                    // If the payment is only authorized, we capture it
+                    // If the merchant has enabled auto capture
+                    //
+                    $payment->capture(array('amount' => $amount));
                 }
 
                 $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId);

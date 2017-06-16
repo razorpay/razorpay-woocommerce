@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) )
 }
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
-require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -541,7 +540,6 @@ EOT;
             global $woocommerce;
 
             $orderId = $woocommerce->session->get(self::SESSION_KEY);
-
             $order = new WC_Order($orderId);
 
             $razorpayPaymentId = null;
@@ -549,42 +547,7 @@ EOT;
             if ($orderId  and !empty($_POST[self::RAZORPAY_PAYMENT_ID]))
             {
                 $error = "";
-
-                $api = new Api($key_id, $key_secret);
-                $payment = $api->payment->fetch($razorpay_payment_id);
-
-                try
-                {
-                    if ($this->payment_action === 'authorize' && $payment['amount'] === $amount)
-                    {
-                        $success = true;
-                    }
-
-                    else
-                    {
-                        $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
-                        $razorpay_signature = $_POST['razorpay_signature'];
-
-                        $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
-
-                        if (hash_equals($signature , $razorpay_signature))
-                        {
-                            $success = true;
-                        }
-
-                        else
-                        {
-                            $success = false;
-
-                            $error = "PAYMENT_ERROR = Payment failed";
-                        }
-                    }
-                }
-
-                catch (Exception $e)
-                {
-                     $success = false;
-                }
+                $success = false;
 
                 try
                 {
@@ -601,7 +564,6 @@ EOT;
             {
                 $success = false;
                 $error = 'Customer cancelled the payment';
-
                 $this->handleErrorCase($order);
             }
 
@@ -609,6 +571,7 @@ EOT;
 
             $this->add_notice($this->msg['message'], $this->msg['class']);
             $redirectUrl = $this->get_return_url($order);
+
             wp_redirect($redirectUrl);
             exit;
         }
