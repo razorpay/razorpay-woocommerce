@@ -59,7 +59,14 @@ function woocommerce_razorpay_init()
                 $this->enable_webhook = 'yes';
             }
 
-            $this->webhook_secret = $this->settings['webhook_secret'];
+            if (isset($this->settings['webhook_secret']) === true)
+            {
+                $this->webhook_secret = $this->settings['webhook_secret'];
+            }
+            else
+            {
+                $this->webhook_secret = '';
+            }
 
             $this->supports = array(
                 'products',
@@ -534,6 +541,15 @@ EOT;
             $orderId = $woocommerce->session->get(self::SESSION_KEY);
             $order = new WC_Order($orderId);
 
+            //
+            // If the order has already been paid for
+            // redirect user to success page
+            //
+            if ($order->needs_payment() === false)
+            {
+                $this->redirectUser($order);
+            }
+
             $razorpayPaymentId = null;
 
             if ($orderId  and !empty($_POST[self::RAZORPAY_PAYMENT_ID]))
@@ -561,6 +577,11 @@ EOT;
 
             $this->updateOrder($order, $success, $error, $razorpayPaymentId);
 
+            $this->redirectUser($order);
+        }
+
+        protected function redirectUser($order)
+        {
             $this->add_notice($this->msg['message'], $this->msg['class']);
             $redirectUrl = $this->get_return_url($order);
 
@@ -707,5 +728,7 @@ EOT;
 
 function razorpay_webhook_init()
 {
-    new RZP_Webhook();
+    $rzpWebhook = new RZP_Webhook();
+
+    $rzpWebhook->process();
 }

@@ -15,11 +15,9 @@ class RZP_Webhook
         $this->razorpay = new WC_Razorpay();
 
         $this->api = $this->razorpay->getRazorpayApiInstance();
-
-        $this->auto_capture_webhook();
     }
 
-    function auto_capture_webhook()
+    public function process()
     {
         $post = file_get_contents('php://input');
 
@@ -34,7 +32,7 @@ class RZP_Webhook
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
-                if (isset($razorpayWebhookSecret) === false)
+                if (empty($razorpayWebhookSecret) === true)
                 {
                     return;
                 }
@@ -51,47 +49,58 @@ class RZP_Webhook
                 }
             }
 
-            // if payment.authorized webhook is enabled, we will update woocommerce about captured payments
-            // We have to complete the payment only if the order needs payment
-            if ($data['event'] === "payment.authorized")
+            switch ($data['event'])
             {
-                global $woocommerce;
-                $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
-                $order = new WC_Order($orderId);
+                case 'payment.authorized':
+                    return $this->paymentAuthorized($data);
 
-                // Move this to the base class as well
-                if ($order->needs_payment() === false)
-                {
+                default:
                     return;
-                }
-
-                $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
-
-                $payment = $this->api->payment->fetch($razorpayPaymentId);
-
-                $amount = $data['payload']['payment']['entity']['amount'];
-
-                $success = false;
-                $errorMessage = 'The payment has failed.';
-
-                if ($payment['status'] === 'captured')
-                {
-                    $success = true;
-                }
-                else if (($payment['status'] === 'authorized') and
-                         ($this->razorpay->payment_action === 'capture'))
-                {
-                    //
-                    // If the payment is only authorized, we capture it
-                    // If the merchant has enabled auto capture
-                    //
-                    $payment->capture(array('amount' => $amount));
-                }
-
-                $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId);
-
-                exit;
             }
         }
+    }
+
+    protected function paymentAuthorized($data)
+    {
+        global $woocommerce;
+
+        //
+        // Order entity should be sent as part of the webhook payload
+        //
+        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
+
+        $order = new WC_Order($orderId);
+
+        if ($order->needs_payment() === false)
+        {
+            return;
+        }
+
+        $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
+
+        $payment = $this->api->payment->fetch($razorpayPaymentId);
+
+        $amount = $data['payload']['payment']['entity']['amount'];
+
+        $success = false;
+        $errorMessage = 'The payment has failed.';
+
+        if ($payment['status'] === 'captured')
+        {
+            $success = true;
+        }
+        else if (($payment['status'] === 'authorized') and
+                 ($this->razorpay->payment_action === 'capture'))
+        {
+            //
+            // If the payment is only authorized, we capture it
+            // If the merchant has enabled auto capture
+            //
+            $payment->capture(array('amount' => $amount));
+        }
+
+        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId);
+
+        exit;
     }
 }
