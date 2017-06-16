@@ -122,7 +122,7 @@ function woocommerce_razorpay_init()
                 'enable_webhook' => array(
                     'title' => __('Enable Webhook', 'razorpay'),
                     'type' => 'checkbox',
-                    'description' => esc_url( admin_url('admin-post.php') ) . '?action=rzp_wc_webhook',
+                    'description' => esc_url( admin_url('admin-post.php') ) . "?action=rzp_wc_webhook <br><br>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
                     'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
                     'default' => 'yes'
                 ),
