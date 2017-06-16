@@ -43,9 +43,9 @@
     if (element.attachEvent) return element.attachEvent('on' + evnt, funct);
     else return element.addEventListener(evnt, funct, false);
   }
-  // Attach event listener
-  window.onload = function() {
+
+  addEvent(window, 'DOMContentLoaded', function() {
     addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
     openCheckout();
-  };
+  });
 })();
