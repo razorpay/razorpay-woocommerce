@@ -8,13 +8,13 @@ Author: Razorpay
 Author URI: https://razorpay.com
 */
 
-require_once __DIR__.'/includes/razorpay-webhook.php';
-require_once __DIR__.'/razorpay-sdk/Razorpay.php';
-
 if ( ! defined( 'ABSPATH' ) )
 {
     exit; // Exit if accessed directly
 }
+
+require_once __DIR__.'/includes/razorpay-webhook.php';
+require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -22,7 +22,7 @@ use Razorpay\Api\Errors;
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
-add_action('admin_post_nopriv_rzp_webhook', 'razorpay_webhook_init');
+add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init');
 
 function woocommerce_razorpay_init()
 {
@@ -51,9 +51,7 @@ function woocommerce_razorpay_init()
             $this->key_secret = $this->settings['key_secret'];
             $this->payment_action = $this->settings['payment_action'];
 
-            $this->enable_webhook = $this->settings['enable_webhook'];
-
-            $this->liveurl = 'https://checkout.razorpay.com/v1/checkout.js';
+            $this->enable_webhook = $this->settings['enable_webhook'] ?? 'yes';
 
             $this->supports = array(
                 'products',
@@ -124,14 +122,14 @@ function woocommerce_razorpay_init()
                 'enable_webhook' => array(
                     'title' => __('Enable Webhook', 'razorpay'),
                     'type' => 'checkbox',
-                    'description' => esc_url( admin_url('admin-post.php') ) . '?action=rzp_webhook',
+                    'description' => esc_url( admin_url('admin-post.php') ) . '?action=rzp_wc_webhook',
                     'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
                     'default' => 'yes'
                 ),
                 'webhook_action' => array(
                     'title' => __('Webhook Action', 'razorpay'),
                     'type' => 'select',
-                    'description' =>  __('Would you like our webhooks to update your store, or inform you so that you can update it yourself?', 'razorpay'),
+                    'description' =>  __("Here lie two options: <br><br>(1) Update allows us to update your store and inventory automatically using webhooks, <br><br>(2) Inform just informs you about the events and gives you the option to manually update your story and inventory using webhooks", 'razorpay'),
                     'default' => 'update',
                     'options' => array(
                         'update' => 'Update Store',
@@ -404,6 +402,22 @@ function woocommerce_razorpay_init()
         function generateOrderForm($redirectUrl, $data)
         {
             $this->enqueueCheckoutScripts($data);
+
+             return <<<EOT
+<form name='razorpayform' action="$redirectUrl" method="POST">
+    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+    <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
+    <!-- This distinguishes all our various wordpress plugins -->
+     <input type="hidden" name="razorpay_wc_form_submit" value="1">
+</form>
+<p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
+Please wait while we are processing your payment.
+</p>
+<p>
+    <button id="btn-razorpay">Pay Now</button>
+    <button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>
+</p>
+EOT;
         }
 
         /**
