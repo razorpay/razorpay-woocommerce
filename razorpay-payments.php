@@ -9,10 +9,10 @@ Author URI: https://razorpay.com
 */
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
-
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
-if ( ! defined( 'ABSPATH' ) ) {
+if ( ! defined( 'ABSPATH' ) )
+{
     exit; // Exit if accessed directly
 }
 
@@ -22,13 +22,14 @@ use Razorpay\Api\Errors;
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
-add_action('admin_post_nopriv_rzp_webhook', 'razorpay_webhook_init'); // second - admin_post_nopriv
-add_action('admin_post_rzp_webhook', 'razorpay_webhook_init'); // second - admin_post_nopriv
+add_action('admin_post_nopriv_rzp_webhook', 'razorpay_webhook_init');
 
 function woocommerce_razorpay_init()
 {
     if (!class_exists('WC_Payment_Gateway'))
+    {
         return;
+    }
 
     class WC_Razorpay extends WC_Payment_Gateway
     {
@@ -321,7 +322,7 @@ function woocommerce_razorpay_init()
             // Calls the helper function to create order data
             global $woocommerce;
 
-            $api = new Api($this->key_id, $this->key_secret);
+            $api = $this->getRazorpayApiInstance();
 
             $data = $this->getOrderCreationData($orderId);
             $razorpay_order = $api->order->create($data);
@@ -441,7 +442,7 @@ function woocommerce_razorpay_init()
             }
         }
 
-        protected function getRazorpayApiInstance()
+        public function getRazorpayApiInstance()
         {
             return new Api($this->key_id, $this->key_secret);
         }
@@ -465,19 +466,19 @@ function woocommerce_razorpay_init()
 
                 $api = new Api($key_id, $key_secret);
                 $payment = $api->payment->fetch($razorpay_payment_id);
-                
+
                 try
                 {
                     if ($this->payment_action === 'authorize' && $payment['amount'] === $amount)
-                    {   
+                    {
                         $success = true;
                     }
-                    
+
                     else
                     {
                         $razorpay_order_id = $woocommerce->session->get('razorpay_order_id');
                         $razorpay_signature = $_POST['razorpay_signature'];
-                        
+
                         $signature = hash_hmac('sha256', $razorpay_order_id . '|' . $razorpay_payment_id, $key_secret);
 
                         if (hash_equals($signature , $razorpay_signature))
@@ -577,7 +578,7 @@ function woocommerce_razorpay_init()
          *
          * @param $success, & $order
          */
-        protected function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId)
+        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId)
         {
             global $woocommerce;
 

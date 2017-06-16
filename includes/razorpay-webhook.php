@@ -5,23 +5,16 @@ require_once __DIR__.'/../razorpay-payments.php';
 require_once __DIR__.'/../razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 
-class RZP_Webhook 
+class RZP_Webhook
 {
-    protected $razorpay; 
-
-    protected $keyId;
-    protected $keySecret;
-
+    protected $razorpay;
     protected $api;
 
     function __construct()
     {
         $this->razorpay = new WC_Razorpay();
 
-        $this->keyId = $this->razorpay->key_id;
-        $this->keySecret = $this->razorpay->key_secret;
-
-        $this->api = new Api($this->keyId, $this->keySecret);
+        $this->api = $this->getRazorpayApiInstance();
 
         $this->auto_capture_webhook();
     }
@@ -33,7 +26,7 @@ class RZP_Webhook
         $data = json_decode($post, true);
 
         if ($this->razorpay->enable_webhook === 'yes' && empty($data['event']) === false)
-        {   
+        {
             // if payment.authorized webhook is enabled, we will update woocommerce about captured payments
             // We have to complete the payment only if the order needs payment
             if ($data['event'] === "payment.authorized")
@@ -51,23 +44,15 @@ class RZP_Webhook
 
                 $payment = $this->api->payment->fetch($razorpayPaymentId);
 
+                $success = false;
+                $errorMessage = 'The payment has failed.';
+
                 if ($payment['status'] === 'captured')
                 {
-                    $this->razorpay->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $orderId";
-                    $this->razorpay->msg['class'] = 'success';
-                    $order->payment_complete();
-                    $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
-                    $order->add_order_note($this->razorpay->msg['message']);
-                    // $woocommerce->cart->empty_cart();
+                    $success = true;
                 }
-                else 
-                {
-                    $this->razorpay->msg['class'] = 'error';
-                    $this->razorpay->msg['message'] = 'Thank you for shopping with us. However, the payment failed.';
-                    $order->add_order_note("Transaction Declined: $error<br/>");
-                    $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpayPaymentId");
-                    $order->update_status('failed');
-                }
+
+                $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId);
 
                 $redirect_url = $this->razorpay->get_return_url($order);
                 wp_redirect($redirect_url);
