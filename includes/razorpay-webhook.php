@@ -27,6 +27,30 @@ class RZP_Webhook
 
         if ($this->razorpay->enable_webhook === 'yes' && empty($data['event']) === false)
         {
+            if ((isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true))
+            {
+                $razorpayWebhookSecret = $this->razorpay->webhook_secret;
+
+                //
+                // If the webhook secret isn't set on wordpress, return
+                //
+                if (isset($razorpayWebhookSecret) === false)
+                {
+                    return;
+                }
+
+                try
+                {
+                    $this->api->utility->verifyWebhookSignature($post,
+                                                                $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'],
+                                                                $razorpayWebhookSecret);
+                }
+                catch (Exception $e)
+                {
+                    return;
+                }
+            }
+
             // if payment.authorized webhook is enabled, we will update woocommerce about captured payments
             // We have to complete the payment only if the order needs payment
             if ($data['event'] === "payment.authorized")

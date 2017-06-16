@@ -17,14 +17,21 @@ class Utility
         return self::verifySignature($payload, $expectedSignature);
     }
 
-    public function verifyWebhookSignature($payload, $expectedSignature)
+    public function verifyWebhookSignature($payload, $expectedSignature, $webhookSecret)
     {
-        return self::verifySignature($payload, $expectedSignature);
+        return self::verifySignature($payload, $expectedSignature, $webhookSecret);
     }
 
-    public function verifySignature($payload, $expectedSignature)
+    public function verifySignature($payload, $expectedSignature, $webhookSecret = '')
     {
-        $actualSignature = hash_hmac(self::SHA256, $payload, Api::getSecret());
+        if (isset($webhookSecret) === true)
+        {
+            $actualSignature = hash_hmac(self::SHA256, $payload, $webhookSecret);
+        }
+        else
+        {
+            $actualSignature = hash_hmac(self::SHA256, $payload, Api::getSecret());
+        }
 
         // Use lang's built-in hash_equals if exists to mitigate timing attacks
         if (function_exists('hash_equals'))

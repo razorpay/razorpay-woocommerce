@@ -59,6 +59,8 @@ function woocommerce_razorpay_init()
                 $this->enable_webhook = 'yes';
             }
 
+            $this->webhook_secret = $this->settings['webhook_secret'];
+
             $this->supports = array(
                 'products',
                 'refunds',
@@ -131,16 +133,6 @@ function woocommerce_razorpay_init()
                     'description' => esc_url( admin_url('admin-post.php') ) . "?action=rzp_wc_webhook <br><br>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
                     'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
                     'default' => 'yes'
-                ),
-                'webhook_action' => array(
-                    'title' => __('Webhook Action', 'razorpay'),
-                    'type' => 'select',
-                    'description' =>  __("Here lie two options: <br><br>(1) Update allows us to update your store and inventory automatically using webhooks, <br><br>(2) Inform just informs you about the events and gives you the option to manually update your story and inventory using webhooks", 'razorpay'),
-                    'default' => 'update',
-                    'options' => array(
-                        'update' => 'Update Store',
-                        'inform'   => 'Inform store'
-                    )
                 ),
                 'webhook_secret' => array(
                     'title' => __('Webhook Secret', 'razorpay'),
