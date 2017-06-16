@@ -14,7 +14,7 @@ class RZP_Webhook
     {
         $this->razorpay = new WC_Razorpay();
 
-        $this->api = $this->getRazorpayApiInstance();
+        $this->api = $this->razorpay->getRazorpayApiInstance();
 
         $this->auto_capture_webhook();
     }
@@ -54,8 +54,6 @@ class RZP_Webhook
 
                 $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId);
 
-                $redirect_url = $this->razorpay->get_return_url($order);
-                wp_redirect($redirect_url);
                 exit;
             }
         }

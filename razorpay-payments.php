@@ -51,7 +51,14 @@ function woocommerce_razorpay_init()
             $this->key_secret = $this->settings['key_secret'];
             $this->payment_action = $this->settings['payment_action'];
 
-            $this->enable_webhook = $this->settings['enable_webhook'] ?? 'yes';
+            if (isset($this->settings['enable_webhook']) === true)
+            {
+                $this->enable_webhook = $this->settings['enable_webhook'];
+            }
+            else
+            {
+                $this->enable_webhook = 'yes';
+            }
 
             $this->supports = array(
                 'products',
@@ -668,10 +675,14 @@ EOT;
                 $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $orderId";
                 $this->msg['class'] = 'success';
 
-                $order->payment_complete();
+                $order->payment_complete($razorpayPaymentId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
                 $order->add_order_note($this->msg['message']);
-                $woocommerce->cart->empty_cart();
+
+                if (isset($woocommerce->cart) === true)
+                {
+                    $woocommerce->cart->empty_cart();
+                }
             }
             else
             {
