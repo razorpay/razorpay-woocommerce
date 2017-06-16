@@ -403,12 +403,12 @@ function woocommerce_razorpay_init()
         {
             $this->enqueueCheckoutScripts($data);
 
-             return <<<EOT
+            return <<<EOT
 <form name='razorpayform' action="$redirectUrl" method="POST">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
     <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
     <!-- This distinguishes all our various wordpress plugins -->
-     <input type="hidden" name="razorpay_wc_form_submit" value="1">
+    <input type="hidden" name="razorpay_wc_form_submit" value="1">
 </form>
 <p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
 Please wait while we are processing your payment.
@@ -419,6 +419,71 @@ Please wait while we are processing your payment.
 </p>
 EOT;
         }
+
+        /**
+         * Gets the Order Key from the Order
+         * for all WC versions that we suport
+         */
+        protected function getOrderKey($order)
+        {
+            $orderKey = null;
+
+            if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
+            {
+                return $order->get_order_key();
+            }
+
+            return $order->order_key;
+        }
+
+        protected function getOrderId($order)
+        {
+            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
+            {
+                return $order->get_id();
+            }
+
+            return $order->id;
+        }
+
+        public function process_refund($orderId, $amount = null, $reason = '')
+        {
+            $order = new WC_Order($orderId);
+
+            if (! $order or ! $order->get_transaction_id())
+            {
+                return new WP_Error('error', __('Refund failed: No transaction ID', 'woocommerce'));
+            }
+
+            $client = $this->getRazorpayApiInstance();
+
+            $paymentId = $order->get_transaction_id();
+
+            $data = array(
+                'amount'    =>  (int) round($amount * 100),
+                'notes'     =>  array(
+                    'reason'    =>  $reason,
+                    'order_id'  =>  $orderId
+                )
+            );
+
+            try
+            {
+                $refund = $client->payment
+                                 ->fetch($paymentId)
+                                 ->refund($data);
+
+                $order->add_order_note(__( 'Refund Id: ' . $refund->id, 'woocommerce' ));
+
+                return true;
+            }
+            catch(Exception $e)
+            {
+                return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
+            }
+
+        }
+
 
         /**
          * Process the payment and return the result
