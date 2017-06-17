@@ -80,7 +80,7 @@ class RZP_Webhook
 
         $payment = $this->api->payment->fetch($razorpayPaymentId);
 
-        $amount = $data['payload']['payment']['entity']['amount'];
+        $amount = $this->razorpay->getOrderAmountAsInteger($order);
 
         $success = false;
         $errorMessage = 'The payment has failed.';

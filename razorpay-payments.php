@@ -310,7 +310,7 @@ function woocommerce_razorpay_init()
         /**
          * Returns the order amount, rounded as integer
          */
-        protected function getOrderAmountAsInteger($order)
+        public function getOrderAmountAsInteger($order)
         {
             if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
             {
@@ -547,6 +547,10 @@ EOT;
             //
             if ($order->needs_payment() === false)
             {
+                $razorpayPaymentId = $order->get_transaction_id();
+
+                $this->updateOrder($order, true, null, $razorpayPaymentId);
+
                 $this->redirectUser($order);
             }
 
