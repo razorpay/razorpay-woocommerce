@@ -144,7 +144,8 @@ function woocommerce_razorpay_init()
                 'webhook_secret' => array(
                     'title' => __('Webhook Secret', 'razorpay'),
                     'type' => 'text',
-                    'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', 'razorpay')
+                    'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', 'razorpay'),
+                    'default' => ''
                 ),
             );
         }
@@ -547,10 +548,6 @@ EOT;
             //
             if ($order->needs_payment() === false)
             {
-                $razorpayPaymentId = $order->get_transaction_id();
-
-                $this->updateOrder($order, true, null, $razorpayPaymentId);
-
                 $this->redirectUser($order);
             }
 
@@ -586,7 +583,6 @@ EOT;
 
         protected function redirectUser($order)
         {
-            $this->add_notice($this->msg['message'], $this->msg['class']);
             $redirectUrl = $this->get_return_url($order);
 
             wp_redirect($redirectUrl);
@@ -677,6 +673,8 @@ EOT;
                 $order->add_order_note("Transaction Failed: $errorMessage<br/>");
                 $order->update_status('failed');
             }
+
+            $this->add_notice($this->msg['message'], $this->msg['class']);
         }
 
         protected function handleErrorCase(& $order)

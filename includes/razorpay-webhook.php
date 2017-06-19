@@ -1,9 +1,10 @@
 <?php
 
 require_once __DIR__.'/../razorpay-payments.php';
-
 require_once __DIR__.'/../razorpay-sdk/Razorpay.php';
+
 use Razorpay\Api\Api;
+use Razorpay\Api\Errors;
 
 class RZP_Webhook
 {
@@ -22,6 +23,11 @@ class RZP_Webhook
         $post = file_get_contents('php://input');
 
         $data = json_decode($post, true);
+
+        if (json_last_error() !== 0)
+        {
+            return;
+        }
 
         if ($this->razorpay->enable_webhook === 'yes' && empty($data['event']) === false)
         {
@@ -43,8 +49,9 @@ class RZP_Webhook
                                                                 $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'],
                                                                 $razorpayWebhookSecret);
                 }
-                catch (Exception $e)
+                catch (Errors\SignatureVerificationError $e)
                 {
+                    write_log(['message' => $e->getMessage()]);
                     return;
                 }
             }
