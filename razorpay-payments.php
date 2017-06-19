@@ -8,9 +8,12 @@ Author: Razorpay
 Author URI: https://razorpay.com
 */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if ( ! defined( 'ABSPATH' ) )
+{
     exit; // Exit if accessed directly
 }
+
+require_once __DIR__.'/includes/razorpay-webhook.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -18,11 +21,14 @@ use Razorpay\Api\Errors;
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
+add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init');
 
 function woocommerce_razorpay_init()
 {
     if (!class_exists('WC_Payment_Gateway'))
+    {
         return;
+    }
 
     class WC_Razorpay extends WC_Payment_Gateway
     {
@@ -43,6 +49,24 @@ function woocommerce_razorpay_init()
             $this->key_id = $this->settings['key_id'];
             $this->key_secret = $this->settings['key_secret'];
             $this->payment_action = $this->settings['payment_action'];
+
+            if (isset($this->settings['enable_webhook']) === true)
+            {
+                $this->enable_webhook = $this->settings['enable_webhook'];
+            }
+            else
+            {
+                $this->enable_webhook = 'yes';
+            }
+
+            if (isset($this->settings['webhook_secret']) === true)
+            {
+                $this->webhook_secret = $this->settings['webhook_secret'];
+            }
+            else
+            {
+                $this->webhook_secret = '';
+            }
 
             $this->supports = array(
                 'products',
@@ -109,7 +133,20 @@ function woocommerce_razorpay_init()
                         'authorize' => 'Authorize',
                         'capture'   => 'Authorize and Capture'
                     )
-                )
+                ),
+                'enable_webhook' => array(
+                    'title' => __('Enable Webhook', 'razorpay'),
+                    'type' => 'checkbox',
+                    'description' => esc_url( admin_url('admin-post.php') ) . "?action=rzp_wc_webhook <br><br>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
+                    'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
+                    'default' => 'yes'
+                ),
+                'webhook_secret' => array(
+                    'title' => __('Webhook Secret', 'razorpay'),
+                    'type' => 'text',
+                    'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', 'razorpay'),
+                    'default' => ''
+                ),
             );
         }
         public function admin_options()
@@ -274,7 +311,7 @@ function woocommerce_razorpay_init()
         /**
          * Returns the order amount, rounded as integer
          */
-        protected function getOrderAmountAsInteger($order)
+        public function getOrderAmountAsInteger($order)
         {
             if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
             {
@@ -289,7 +326,7 @@ function woocommerce_razorpay_init()
             // Calls the helper function to create order data
             global $woocommerce;
 
-            $api = new Api($this->key_id, $this->key_secret);
+            $api = $this->getRazorpayApiInstance();
 
             $data = $this->getOrderCreationData($orderId);
             $razorpay_order = $api->order->create($data);
@@ -439,8 +476,8 @@ EOT;
             try
             {
                 $refund = $client->payment
-                    ->fetch($paymentId)
-                    ->refund($data);
+                                 ->fetch($paymentId)
+                                 ->refund($data);
 
                 $order->add_order_note(__( 'Refund Id: ' . $refund->id, 'woocommerce' ));
 
@@ -452,6 +489,7 @@ EOT;
             }
 
         }
+
 
         /**
          * Process the payment and return the result
@@ -489,7 +527,7 @@ EOT;
             }
         }
 
-        protected function getRazorpayApiInstance()
+        public function getRazorpayApiInstance()
         {
             return new Api($this->key_id, $this->key_secret);
         }
@@ -502,8 +540,16 @@ EOT;
             global $woocommerce;
 
             $orderId = $woocommerce->session->get(self::SESSION_KEY);
-
             $order = new WC_Order($orderId);
+
+            //
+            // If the order has already been paid for
+            // redirect user to success page
+            //
+            if ($order->needs_payment() === false)
+            {
+                $this->redirectUser($order);
+            }
 
             $razorpayPaymentId = null;
 
@@ -527,14 +573,18 @@ EOT;
             {
                 $success = false;
                 $error = 'Customer cancelled the payment';
-
                 $this->handleErrorCase($order);
             }
 
             $this->updateOrder($order, $success, $error, $razorpayPaymentId);
 
-            $this->add_notice($this->msg['message'], $this->msg['class']);
+            $this->redirectUser($order);
+        }
+
+        protected function redirectUser($order)
+        {
             $redirectUrl = $this->get_return_url($order);
+
             wp_redirect($redirectUrl);
             exit;
         }
@@ -590,7 +640,7 @@ EOT;
          *
          * @param $success, & $order
          */
-        protected function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId)
+        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId)
         {
             global $woocommerce;
 
@@ -601,10 +651,14 @@ EOT;
                 $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $orderId";
                 $this->msg['class'] = 'success';
 
-                $order->payment_complete();
+                $order->payment_complete($razorpayPaymentId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
                 $order->add_order_note($this->msg['message']);
-                $woocommerce->cart->empty_cart();
+
+                if (isset($woocommerce->cart) === true)
+                {
+                    $woocommerce->cart->empty_cart();
+                }
             }
             else
             {
@@ -619,6 +673,8 @@ EOT;
                 $order->add_order_note("Transaction Failed: $errorMessage<br/>");
                 $order->update_status('failed');
             }
+
+            $this->add_notice($this->msg['message'], $this->msg['class']);
         }
 
         protected function handleErrorCase(& $order)
@@ -670,4 +726,11 @@ EOT;
     }
 
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_razorpay_gateway' );
+}
+
+function razorpay_webhook_init()
+{
+    $rzpWebhook = new RZP_Webhook();
+
+    $rzpWebhook->process();
 }
