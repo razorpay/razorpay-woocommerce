@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 4.7
-Stable tag: 1.4.2
+Stable tag: 1.4.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,9 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 4. The Payment Action should be set to "Authorize and Capture". If you want to capture payments manually from the Dashboard after manual verification, set it to "Authorize".
 
 == Changelog ==
+
+= 1.4.4 =
+* Added webhooks to the plugin (includes/razorpay-webhook.php)
 
 = 1.4.2 =
 * Added missing classes in the WordPress release (Utility.php was missing)
