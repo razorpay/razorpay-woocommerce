@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce Razorpay Payments
 Plugin URI: https://razorpay.com
 Description: Razorpay Payment Gateway Integration for WooCommerce
-Version: 1.4.4
+Version: 1.4.6
 Author: Razorpay
 Author URI: https://razorpay.com
 */
