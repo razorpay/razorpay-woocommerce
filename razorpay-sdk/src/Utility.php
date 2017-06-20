@@ -24,7 +24,7 @@ class Utility
 
     public function verifySignature($payload, $expectedSignature, $webhookSecret = '')
     {
-        if (isset($webhookSecret) === true)
+        if (empty($webhookSecret) === false)
         {
             $actualSignature = hash_hmac(self::SHA256, $payload, $webhookSecret);
         }
