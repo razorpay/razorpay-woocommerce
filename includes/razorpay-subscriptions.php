@@ -6,9 +6,6 @@ use Razorpay\Api\Api;
 
 class RZP_Subscriptions
 {
-    protected $keyId;
-    protected $keySecret;
-
     public function __construct($keyId, $keySecret)
     {
         $this->api = new Api($keyId, $keySecret);

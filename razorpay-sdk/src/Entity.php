@@ -99,7 +99,7 @@ class Entity extends Resource implements ArrayableInterface
         {
             $entity = new self;
 
-            $entity->fill($data);            
+            $entity->fill($data);
         }
 
         return $entity;

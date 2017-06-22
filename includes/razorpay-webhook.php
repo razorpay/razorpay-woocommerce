@@ -60,22 +60,22 @@ class RZP_Webhook
                     write_log($log);
                     return;
                 }
-            }
 
-            switch ($data['event'])
-            {
-                case 'payment.authorized':
-                    return $this->paymentAuthorized($data);
+                switch ($data['event'])
+                {
+                    case 'payment.authorized':
+                        return $this->paymentAuthorized($data);
 
-                case 'payment.failed':
-                    return $this->paymentFailed($data);
+                    case 'payment.failed':
+                        return $this->paymentFailed($data);
 
-                // if it is subscription.charged
-                case 'subscription.charged':
-                    return $this->subscriptionCharged($data);
+                    // if it is subscription.charged
+                    case 'subscription.charged':
+                        return $this->subscriptionCharged($data);
 
-                default:
-                    return;
+                    default:
+                        return;
+                }
             }
         }
     }
@@ -94,7 +94,7 @@ class RZP_Webhook
 
         $paymentId = $data['payload']['payment']['entity']['id'];
 
-        if (isset($data['payload']['payment']['subscription_id']) === true)
+        if (isset($data['payload']['payment']['entity']['subscription_id']) === true)
         {
             return $this->processSubscription($orderId, $paymentId);
         }
@@ -169,12 +169,16 @@ class RZP_Webhook
         $orderId = $data['payload']['subscription']['entity']['notes']['woocommerce_order_id'];
 
         $this->processSubscription($orderId);
+
+        exit;
     }
 
     /**
      * Helper method used to handle all subscription processing
      *
-     * @param $orderId, $success
+     * @param $orderId
+     * @param $paymentId
+     * @param $success
      */
     protected function processSubscription($orderId, $paymentId, $success = true)
     {
@@ -203,7 +207,8 @@ class RZP_Webhook
     /**
      * In the case of successful payment, we mark the subscription successful
      *
-     * @param $wcSubscription, $subscription
+     * @param $wcSubscription
+     * @param $subscription
      */
     protected function processSubscriptionSuccess($wcSubscription, $subscription, $paymentId)
     {
