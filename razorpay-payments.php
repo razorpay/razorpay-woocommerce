@@ -33,8 +33,9 @@ function woocommerce_razorpay_init()
     class WC_Razorpay extends WC_Payment_Gateway
     {
         // This one stores the WooCommerce Order Id
-        const SESSION_KEY = 'razorpay_wc_order_id';
-        const RAZORPAY_PAYMENT_ID = 'razorpay_payment_id';
+        const SESSION_KEY                    = 'razorpay_wc_order_id';
+        const RAZORPAY_PAYMENT_ID            = 'razorpay_payment_id';
+
 
         public function __construct()
         {
@@ -42,6 +43,7 @@ function woocommerce_razorpay_init()
             $this->method_title = 'Razorpay';
             $this->icon =  plugins_url('images/logo.png' , __FILE__);
             $this->has_fields = false;
+
             $this->init_form_fields();
             $this->init_settings();
             $this->title = $this->settings['title'];
@@ -191,7 +193,7 @@ function woocommerce_razorpay_init()
          * that is is still correct. If not found
          * (or incorrect), create a new Razorpay Order
          * @param  string $orderId Order Id
-         * @return mixed Razorpay Order Id or null
+         * @return mixed Razorpay Order Id or Exception
          */
         protected function createOrGetRazorpayOrderId($orderId)
         {
@@ -233,8 +235,7 @@ function woocommerce_razorpay_init()
                 }
                 catch(Exception $e)
                 {
-                    // Order creation failed
-                    return null;
+                    return $e;
                 }
             }
         }
@@ -251,9 +252,10 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
-            if ($razorpayOrderId === null)
+            if(is_a($razorpayOrderId, 'Exception'))
             {
-                return 'RAZORPAY ERROR: Api could not be reached';
+                $message = $razorpayOrderId->getMessage();
+                return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
             }
 
             $checkoutArgs = $this->getCheckoutArguments($order, $razorpayOrderId);
@@ -277,13 +279,17 @@ function woocommerce_razorpay_init()
             $args = array(
               'key'          => $this->key_id,
               'name'         => get_bloginfo('name'),
-              'currency'     => get_woocommerce_currency(),
+              // Harcoding currency to INR, since if not INR, an exception gets thrown
+              'currency'     => 'INR',
+              // 'currency'     => get_woocommerce_currency(),
               'description'  => $productinfo,
               'notes'        => array(
                 'woocommerce_order_id' => $orderId
               ),
               'order_id'     => $razorpayOrderId,
               'callback_url' => $callbackUrl,
+              'display_currency'=> $order->get_currency(),
+              'display_amount' => $order->get_total(),
             );
 
             $args['amount'] = $this->getOrderAmountAsInteger($order);
@@ -329,6 +335,30 @@ function woocommerce_razorpay_init()
             $api = $this->getRazorpayApiInstance();
 
             $data = $this->getOrderCreationData($orderId);
+
+            // Validate the order
+            try
+            {
+                $this->validateOrderCreateData($data);
+            }
+            catch(Errors\InvalidCurrencyError $e)
+            {
+                // If currency is not INR, check if Woocommerce Currency Switcher plugin exists
+                if (class_exists('WOOCS'))
+                {
+                    $data = $this->convertCurrencyWoocs($data);
+                }
+                // If the plugin does not exist throw an exception
+                else
+                {
+                    throw new Errors\BadRequestError(
+                        Errors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
+                        Errors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
+                        400
+                    );
+                }
+            }
+
             $razorpay_order = $api->order->create($data);
 
             $razorpayOrderId = $razorpay_order['id'];
@@ -336,6 +366,63 @@ function woocommerce_razorpay_init()
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
 
             return $razorpayOrderId;
+
+        }
+
+        /**
+         * Validate the order creation data before calling the order create API
+         *
+         * @param  Array $data The data passed to create order API
+         *
+         * @return void
+         */
+        protected function validateOrderCreateData($data): Array
+        {
+            if ( $data['currency'] !== 'INR')
+            {
+                throw new Errors\InvalidCurrencyError(
+                    Errors\ErrorCode::INVALID_CURRENCY_ERROR_MESSAGE,
+                    Errors\ErrorCode::INVALID_CURRENCY_ERROR_CODE,
+                    400
+                );
+            }
+        }
+
+        /**
+         * Convert the currency to INR using rates fetched from Woocommerce Currency Switcher plugin
+         *
+         * @param Array $data
+         *
+         * @return Array
+         *
+         **/
+        protected function convertCurrencyWoocs($data)
+        {
+            global $WOOCS;
+
+            $currencies = $WOOCS->get_currencies();
+
+            $value = $data['amount'] * $currencies[$WOOCS->current_currency]['rate'];
+
+            if (array_key_exists('INR', $currencies) and array_key_exists($data['currency'], $currencies))
+            {
+                // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
+                $data['amount'] = round(
+                    (($data['amount'] * $currencies['INR']['rate']) / $currencies[$data['currency']]['rate']),
+                    0
+                );
+                $data['currency'] = 'INR';
+                return $data;
+            }
+            else
+            {
+                throw new Errors\InvalidCurrencyError(
+                    Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_MESSAGE,
+                    Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_CODE,
+                    400
+                );
+
+            }
         }
 
         protected function verifyOrderAmount($razorpayOrderId, $orderId)
