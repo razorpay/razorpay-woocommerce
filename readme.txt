@@ -36,11 +36,14 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 
 == Changelog ==
 
+= UNRELEASED = 
+* Javascript fixes for additional compatibility
+
 = 1.4.6 =
-* Webhooks signature verification fix
+* Webhooks signature verification fix ([#47](https://github.com/razorpay/razorpay-woocommerce/pull/47))
 
 = 1.4.4 =
-* Added webhooks to the plugin (includes/razorpay-webhook.php)
+* Added webhooks to the plugin (includes/razorpay-webhook.php) ([#18](https://github.com/razorpay/razorpay-woocommerce/pull/18))
 
 = 1.4.2 =
 * Added missing classes in the WordPress release (Utility.php was missing)
