@@ -14,9 +14,12 @@ if ( ! defined( 'ABSPATH' ) )
 }
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
+require_once __DIR__.'/includes/Errors/ErrorCode.php';
+require_once __DIR__.'/includes/Errors/InvalidCurrencyError.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use RazorpayWoo\Errors as WooErrors;
 
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
@@ -277,19 +280,19 @@ function woocommerce_razorpay_init()
             $productinfo = "Order $orderId";
 
             $args = array(
-              'key'          => $this->key_id,
-              'name'         => get_bloginfo('name'),
+              'key'              => $this->key_id,
+              'name'             => get_bloginfo('name'),
               // Harcoding currency to INR, since if not INR, an exception gets thrown
-              'currency'     => 'INR',
+              'currency'         => 'INR',
               // 'currency'     => get_woocommerce_currency(),
-              'description'  => $productinfo,
-              'notes'        => array(
-                'woocommerce_order_id' => $orderId
-              ),
-              'order_id'     => $razorpayOrderId,
-              'callback_url' => $callbackUrl,
-              'display_currency'=> $order->get_currency(),
-              'display_amount' => $order->get_total(),
+              'description'      => $productinfo,
+              'notes'            => array(
+                                        'woocommerce_order_id' => $orderId
+                                    ),
+              'order_id'         => $razorpayOrderId,
+              'callback_url'     => $callbackUrl,
+              'display_currency' => $order->get_currency(),
+              'display_amount'   => $order->get_total(),
             );
 
             $args['amount'] = $this->getOrderAmountAsInteger($order);
@@ -336,24 +339,17 @@ function woocommerce_razorpay_init()
 
             $data = $this->getOrderCreationData($orderId);
 
-            // Validate the order
-            try
+            if ($data['currency'] !== 'INR')
             {
-                $this->validateOrderCreateData($data);
-            }
-            catch(Errors\InvalidCurrencyError $e)
-            {
-                // If currency is not INR, check if Woocommerce Currency Switcher plugin exists
                 if (class_exists('WOOCS'))
                 {
                     $data = $this->convertCurrencyWoocs($data);
                 }
-                // If the plugin does not exist throw an exception
                 else
                 {
                     throw new Errors\BadRequestError(
-                        Errors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
-                        Errors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
+                        RazorpayWoo\Errors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
+                        RazorpayWoo\Errors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
                         400
                     );
                 }
@@ -367,25 +363,6 @@ function woocommerce_razorpay_init()
 
             return $razorpayOrderId;
 
-        }
-
-        /**
-         * Validate the order creation data before calling the order create API
-         *
-         * @param  Array $data The data passed to create order API
-         *
-         * @return void
-         */
-        protected function validateOrderCreateData($data): Array
-        {
-            if ( $data['currency'] !== 'INR')
-            {
-                throw new Errors\InvalidCurrencyError(
-                    Errors\ErrorCode::INVALID_CURRENCY_ERROR_MESSAGE,
-                    Errors\ErrorCode::INVALID_CURRENCY_ERROR_CODE,
-                    400
-                );
-            }
         }
 
         /**
@@ -417,8 +394,8 @@ function woocommerce_razorpay_init()
             else
             {
                 throw new Errors\InvalidCurrencyError(
-                    Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_MESSAGE,
-                    Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_CODE,
+                    RazorpayWoo\Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_MESSAGE,
+                    RazorpayWoo\Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_CODE,
                     400
                 );
 

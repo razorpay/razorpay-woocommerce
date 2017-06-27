@@ -1,8 +1,12 @@
 <?php
 
-namespace Razorpay\Api\Errors;
+namespace RazorpayWoo\Errors;
 
-class InvalidCurrencyError extends Error
+require_once __DIR__.'/../../razorpay-sdk/Razorpay.php';
+
+use Razorpay\Api\Errors;
+
+class InvalidCurrencyError extends Errors\Error
 {
     protected $field = null;
 
