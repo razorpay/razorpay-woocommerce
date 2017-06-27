@@ -15,7 +15,6 @@ if ( ! defined( 'ABSPATH' ) )
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/includes/Errors/ErrorCode.php';
-require_once __DIR__.'/includes/Errors/InvalidCurrencyError.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -290,10 +289,14 @@ function woocommerce_razorpay_init()
                                         'woocommerce_order_id' => $orderId
                                     ),
               'order_id'         => $razorpayOrderId,
-              'callback_url'     => $callbackUrl,
-              'display_currency' => $order->get_currency(),
-              'display_amount'   => $order->get_total(),
+              'callback_url'     => $callbackUrl
             );
+
+            if ($order->get_currency() !== 'INR')
+            {
+                $args['display_currency'] = $order->get_currency();
+                $args['display_amount']   = $order->get_total();
+            }
 
             $args['amount'] = $this->getOrderAmountAsInteger($order);
 
@@ -348,8 +351,8 @@ function woocommerce_razorpay_init()
                 else
                 {
                     throw new Errors\BadRequestError(
-                        RazorpayWoo\Errors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
-                        RazorpayWoo\Errors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
+                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
+                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
                         400
                     );
                 }
@@ -393,9 +396,9 @@ function woocommerce_razorpay_init()
             }
             else
             {
-                throw new Errors\InvalidCurrencyError(
-                    RazorpayWoo\Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_MESSAGE,
-                    RazorpayWoo\Errors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_CODE,
+                throw new Errors\BadRequestError(
+                    WooErrors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_MESSAGE,
+                    WooErrors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_CODE,
                     400
                 );
 

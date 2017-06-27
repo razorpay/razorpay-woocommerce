@@ -4,9 +4,9 @@ namespace RazorpayWoo\Errors;
 
 require_once __DIR__.'/../../razorpay-sdk/Razorpay.php';
 
-use Razorpay\Api\Errors;
+use Razorpay\Api\Errors as ApiErrors;
 
-class ErrorCode extends Errors\ErrorCode
+class ErrorCode extends ApiErrors\ErrorCode
 {
 
     const INVALID_CURRENCY_ERROR_CODE          = 'INVALID_CURRENCY_ERROR';
