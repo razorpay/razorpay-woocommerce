@@ -388,7 +388,7 @@ function woocommerce_razorpay_init()
             {
                 // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
                 $data['amount'] = round(
-                    (($data['amount'] * $currencies['INR']['rate']) / $currencies[$data['currency']]['rate']),
+                    (($data['amount'] * $currencies['INR']['rate']) / ($currencies[$data['currency']]['rate'] == 0 ? 1 : $currencies[$data['currency']]['rate'])),
                     0
                 );
                 $data['currency'] = 'INR';
