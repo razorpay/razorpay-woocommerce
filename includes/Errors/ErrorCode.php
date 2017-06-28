@@ -8,7 +8,6 @@ use Razorpay\Api\Errors as ApiErrors;
 
 class ErrorCode extends ApiErrors\ErrorCode
 {
-
     const INVALID_CURRENCY_ERROR_CODE          = 'INVALID_CURRENCY_ERROR';
     const INVALID_CURRENCY_ERROR_MESSAGE       = 'The selected currency is invalid.';
 
