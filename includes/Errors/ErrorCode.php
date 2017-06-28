@@ -1,6 +1,6 @@
 <?php
 
-namespace RazorpayWoo\Errors;
+namespace Razorpay\Woocommerce\Errors;
 
 require_once __DIR__.'/../../razorpay-sdk/Razorpay.php';
 

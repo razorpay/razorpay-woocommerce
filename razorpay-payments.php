@@ -18,7 +18,7 @@ require_once __DIR__.'/includes/Errors/ErrorCode.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
-use RazorpayWoo\Errors as WooErrors;
+use Razorpay\Woocommerce\Errors as WooErrors;
 
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
