@@ -386,9 +386,14 @@ function woocommerce_razorpay_init()
 
             if (array_key_exists('INR', $currencies) and array_key_exists($data['currency'], $currencies))
             {
+                // If the currenct currency is the same as the default currency set in WooCommerce,
+                // Currency Switcher plugin sets the rate of currenct currency as 0, because of which
+                // we need to set this to 1 here if it's value is 0
+                $current_currency_rate = ($currencies[$data['currency']]['rate'] == 0 ? 1 : $currencies[$data['currency']]['rate']);
+
                 // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
                 $data['amount'] = round(
-                    (($data['amount'] * $currencies['INR']['rate']) / ($currencies[$data['currency']]['rate'] == 0 ? 1 : $currencies[$data['currency']]['rate'])),
+                    (($data['amount'] * $currencies['INR']['rate']) / $current_currency_rate),
                     0
                 );
                 $data['currency'] = 'INR';
