@@ -180,7 +180,6 @@ function woocommerce_razorpay_init()
          **/
         function receipt_page($order)
         {
-            echo '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', 'razorpay').'</p>';
             echo $this->generate_razorpay_form($order);
         }
 
@@ -232,12 +231,18 @@ function woocommerce_razorpay_init()
             {
                 try
                 {
-                    return $this->createRazorpayOrderId(
-                        $orderId, $sessionKey);
+                    return $this->createRazorpayOrderId($orderId, $sessionKey);
                 }
-                catch(Exception $e)
+                // For the bad request errors, it's safe to show the message to the customer.
+                catch (Errors\BadRequestError $e)
                 {
                     return $e;
+                }
+                // For any other exceptions, we make sure that the error message
+                // does not propagate to the front-end.
+                catch (Exception $e)
+                {
+                    return new Exception("Payment failed");
                 }
             }
         }
@@ -262,7 +267,8 @@ function woocommerce_razorpay_init()
 
             $checkoutArgs = $this->getCheckoutArguments($order, $razorpayOrderId);
 
-            $html = $this->generateOrderForm($redirectUrl, $checkoutArgs);
+            $html = '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', 'razorpay').'</p>';
+            $html .= $this->generateOrderForm($redirectUrl, $checkoutArgs);
 
             return $html;
         }
