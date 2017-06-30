@@ -101,6 +101,7 @@ function woocommerce_razorpay_init()
             );
 
             $this->subscriptions = new RZP_Subscriptions($this->key_id, $this->key_secret);
+            add_action('woocommerce_subscription_status_cancelled', array(&$this, 'subscription_cancelled'));
 
             add_action('init', array(&$this, 'check_razorpay_response'));
             add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_razorpay_response'));
@@ -532,9 +533,11 @@ function woocommerce_razorpay_init()
 
         private function enqueueCheckoutScripts($data)
         {
+            wp_register_script('razorpay_config', plugin_dir_url(__FILE__) . 'config.js', null, null);
+
             wp_register_script('razorpay_checkout',
                 'https://checkout.razorpay.com/v1/checkout.js',
-                null, null);
+                array('razorpay_config'), null);
 
             wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                 array('razorpay_checkout'));
@@ -843,6 +846,17 @@ EOT;
 
             $this->msg['class'] = 'error';
             $this->msg['message'] = $this->getErrorMessage($orderId);
+        }
+
+        public function subscription_cancelled($subscription)
+        {
+            $orderIds = array_keys($subscription->get_related_orders());
+
+            $parentOrderId = $orderIds[0];
+
+            $subscriptionId = get_post_meta($parentOrderId, 'razorpay_subscription_id')[0];
+
+            $this->subscriptions->cancelSubscription($subscriptionId);
         }
 
         /**

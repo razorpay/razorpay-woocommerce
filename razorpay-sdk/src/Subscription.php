@@ -18,4 +18,11 @@ class Subscription extends Entity
     {
         return parent::all($options);
     }
+
+    public function cancel($subscriptionId)
+    {
+        $relativeUrl = $this->getEntityUrl() . $subscriptionId . '/cancel';
+
+        return $this->request('POST', $relativeUrl);
+    }
 }

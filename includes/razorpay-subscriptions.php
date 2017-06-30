@@ -26,6 +26,11 @@ class RZP_Subscriptions
         return $subscription['id'];
     }
 
+    public function cancelSubscription($subscriptionId)
+    {
+        $subscription = $this->api->subscription->cancel($subscriptionId);
+    }
+
     protected function getProduct($order)
     {
         $products = $order->get_items();
