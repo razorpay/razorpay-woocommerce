@@ -285,17 +285,16 @@ function woocommerce_razorpay_init()
             $productinfo = "Order $orderId";
 
             $args = array(
-              'key'              => $this->key_id,
-              'name'             => get_bloginfo('name'),
-              // Harcoding currency to INR, since if not INR, an exception gets thrown
-              'currency'         => 'INR',
-              // 'currency'     => get_woocommerce_currency(),
-              'description'      => $productinfo,
-              'notes'            => array(
-                                        'woocommerce_order_id' => $orderId
-                                    ),
-              'order_id'         => $razorpayOrderId,
-              'callback_url'     => $callbackUrl
+                'key'           => $this->key_id,
+                'name'          => get_bloginfo('name'),
+                // Harcoding currency to INR, since if not INR, an exception gets thrown
+                'currency'      => 'INR',
+                'description'   => $productinfo,
+                'notes'         => array (
+                    'woocommerce_order_id' => $orderId
+                ),
+                'order_id'      => $razorpayOrderId,
+                'callback_url'  => $callbackUrl
             );
 
             if ($order->get_currency() !== 'INR')
@@ -395,11 +394,11 @@ function woocommerce_razorpay_init()
                 // If the currenct currency is the same as the default currency set in WooCommerce,
                 // Currency Switcher plugin sets the rate of currenct currency as 0, because of which
                 // we need to set this to 1 here if it's value is 0
-                $current_currency_rate = ($currencies[$data['currency']]['rate'] == 0 ? 1 : $currencies[$data['currency']]['rate']);
+                $currencyConversionRate = ($currencies[$data['currency']]['rate'] == 0 ? 1 : $currencies[$data['currency']]['rate']);
 
                 // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
                 $data['amount'] = round(
-                    (($data['amount'] * $currencies['INR']['rate']) / $current_currency_rate),
+                    (($data['amount'] * $currencies['INR']['rate']) / $currencyConversionRate),
                     0
                 );
                 $data['currency'] = 'INR';
