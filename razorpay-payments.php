@@ -703,11 +703,15 @@ EOT;
             {
                 $error = $_POST['error'];
 
-                $message = 'An error occured. Description : ' . $error['description'] . '. Code : ' . $error['code'];
+                $description = htmlentities($error['description']);
+                $code = htmlentities($error['code']);
+
+                $message = 'An error occured. Description : ' . $description . '. Code : ' . $code;
 
                 if (isset($error['field']) === true)
                 {
-                    $message .= 'Field : ' . $error['field'];
+                    $fieldError = htmlentities($error['field']);
+                    $message .= 'Field : ' . $fieldError;
                 }
             }
             else
