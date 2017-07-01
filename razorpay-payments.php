@@ -38,6 +38,11 @@ function woocommerce_razorpay_init()
         const SESSION_KEY                    = 'razorpay_wc_order_id';
         const RAZORPAY_PAYMENT_ID            = 'razorpay_payment_id';
 
+        const INR                            = 'INR';
+        const CAPTURE                        = 'capture';
+        const AUTHORIZE                      = 'authorize';
+        const WC_ORDER_ID                    = 'woocommerce_order_id';
+
 
         public function __construct()
         {
@@ -132,10 +137,10 @@ function woocommerce_razorpay_init()
                     'title' => __('Payment Action', 'razorpay'),
                     'type' => 'select',
                     'description' =>  __('Payment action on order compelete', 'razorpay'),
-                    'default' => 'capture',
+                    'default' => self::CAPTURE,
                     'options' => array(
-                        'authorize' => 'Authorize',
-                        'capture'   => 'Authorize and Capture'
+                        self::AUTHORIZE => 'Authorize',
+                        self::CAPTURE   => 'Authorize and Capture'
                     )
                 ),
                 'enable_webhook' => array(
@@ -287,17 +292,16 @@ function woocommerce_razorpay_init()
             $args = array(
                 'key'           => $this->key_id,
                 'name'          => get_bloginfo('name'),
-                // Harcoding currency to INR, since if not INR, an exception gets thrown
-                'currency'      => 'INR',
+                'currency'      => self::INR,
                 'description'   => $productinfo,
                 'notes'         => array (
-                    'woocommerce_order_id' => $orderId
+                    self::WC_ORDER_ID => $orderId
                 ),
                 'order_id'      => $razorpayOrderId,
                 'callback_url'  => $callbackUrl
             );
 
-            if ($order->get_currency() !== 'INR')
+            if ($order->get_currency() !== self::INR)
             {
                 $args['display_currency'] = $order->get_currency();
                 $args['display_amount']   = $order->get_total();
@@ -347,30 +351,13 @@ function woocommerce_razorpay_init()
 
             $data = $this->getOrderCreationData($orderId);
 
-            if ($data['currency'] !== 'INR')
-            {
-                if (class_exists('WOOCS'))
-                {
-                    $data = $this->convertCurrencyWoocs($data);
-                }
-                else
-                {
-                    throw new Errors\BadRequestError(
-                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
-                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
-                        400
-                    );
-                }
-            }
+            $razorpayOrder = $api->order->create($data);
 
-            $razorpay_order = $api->order->create($data);
-
-            $razorpayOrderId = $razorpay_order['id'];
+            $razorpayOrderId = $razorpayOrder['id'];
 
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
 
             return $razorpayOrderId;
-
         }
 
         /**
@@ -381,28 +368,26 @@ function woocommerce_razorpay_init()
          * @return Array
          *
          **/
-        protected function convertCurrencyWoocs($data)
+        protected function convertCurrency(& $data)
         {
             global $WOOCS;
 
             $currencies = $WOOCS->get_currencies();
 
-            $value = $data['amount'] * $currencies[$WOOCS->current_currency]['rate'];
+            $currency = $data['currency'];
 
-            if (array_key_exists('INR', $currencies) and array_key_exists($data['currency'], $currencies))
+            if (array_key_exists(self::INR, $currencies) and array_key_exists($currency, $currencies))
             {
                 // If the currenct currency is the same as the default currency set in WooCommerce,
                 // Currency Switcher plugin sets the rate of currenct currency as 0, because of which
                 // we need to set this to 1 here if it's value is 0
-                $currencyConversionRate = ($currencies[$data['currency']]['rate'] == 0 ? 1 : $currencies[$data['currency']]['rate']);
+                $currencyConversionRate = ($currencies[$currency]['rate'] == 0 ? 1 : $currencies[$currency]['rate']);
 
                 // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
-                $data['amount'] = round(
-                    (($data['amount'] * $currencies['INR']['rate']) / $currencyConversionRate),
-                    0
-                );
-                $data['currency'] = 'INR';
-                return $data;
+                $value = $data['amount'] * $currencies[self::INR]['rate'];
+
+                $data['amount'] = intval(round($value / $currencyConversionRate));
+                $data['currency'] = self::INR;
             }
             else
             {
@@ -423,10 +408,12 @@ function woocommerce_razorpay_init()
 
             $razorpayOrder = $api->order->fetch($razorpayOrderId);
 
+            $orderCreationData = $this->getOrderCreationData($orderId);
+
             $razorpayOrderArgs = array(
                 'id'        => $razorpayOrderId,
-                'amount'    => $this->getOrderAmountAsInteger($order),
-                'currency'  => get_woocommerce_currency(),
+                'amount'    => $orderCreationData['amount'],
+                'currency'  => $orderCreationData['currency'],
                 'receipt'   => (string) $orderId,
             );
 
@@ -449,15 +436,34 @@ function woocommerce_razorpay_init()
 
             if (!isset($this->payment_action))
             {
-                $this->payment_action = 'capture';
+                $this->payment_action = self::CAPTURE;
             }
 
             $data = array(
                 'receipt'         => $orderId,
                 'amount'          => (int) round($order->get_total() * 100),
                 'currency'        => get_woocommerce_currency(),
-                'payment_capture' => ($this->payment_action === 'authorize') ? 0 : 1
+                'payment_capture' => ($this->payment_action === self::AUTHORIZE) ? 0 : 1,
+                'notes'           => array(
+                    self::WC_ORDER_ID  => (string) $orderId,
+                ),
             );
+
+            if ($data['currency'] !== self::INR)
+            {
+                if (class_exists('WOOCS'))
+                {
+                    $this->convertCurrency($data);
+                }
+                else
+                {
+                    throw new Errors\BadRequestError(
+                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
+                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
+                        400
+                    );
+                }
+            }
 
             return $data;
         }
@@ -678,9 +684,9 @@ EOT;
             $sessionKey = $this->getSessionKey($orderId);
 
             $attributes = array(
-                'razorpay_payment_id' => $_POST['razorpay_payment_id'],
-                'razorpay_order_id'   => $woocommerce->session->get($sessionKey),
-                'razorpay_signature'  => $_POST['razorpay_signature'],
+                self::RAZORPAY_PAYMENT_ID => $_POST['razorpay_payment_id'],
+                'razorpay_order_id'       => $woocommerce->session->get($sessionKey),
+                'razorpay_signature'      => $_POST['razorpay_signature'],
             );
 
             $api->utility->verifyPaymentSignature($attributes);
