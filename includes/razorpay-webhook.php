@@ -51,7 +51,13 @@ class RZP_Webhook
                 }
                 catch (Errors\SignatureVerificationError $e)
                 {
-                    write_log(['message' => $e->getMessage()]);
+                    $log = array(
+                        'message'   => $e->getMessage(),
+                        'data'      => $data,
+                        'event'     => 'razorpay.wc.signature..verify_failed'
+                    );
+
+                    write_log($log);
                     return;
                 }
             }
