@@ -6,9 +6,16 @@ use Razorpay\Api\Api;
 
 class RZP_Subscriptions
 {
+    protected $razorpay;
+
+    const RAZORPAY_PLAN_ID               = 'razorpay_wc_plan_id';
+    const INR                            = 'INR';
+
     public function __construct($keyId, $keySecret)
     {
         $this->api = new Api($keyId, $keySecret);
+
+        $this->razorpay = new WC_Razorpay();
     }
 
     public function createSubscription($orderId)
@@ -17,7 +24,14 @@ class RZP_Subscriptions
 
         $subscriptionData = $this->getSubscriptionCreateData($orderId);
 
-        $subscription = $this->api->subscription->create($subscriptionData);
+        try
+        {
+            $subscription = $this->api->subscription->create($subscriptionData);
+        }
+        catch (Exception $e)
+        {
+            echo "Razorpay Error: " . $e->getMessage();
+        }
 
         // Setting the subscription id as the session variable
         $sessionKey = $this->getSubscriptionSessionKey($orderId);
@@ -28,10 +42,17 @@ class RZP_Subscriptions
 
     public function cancelSubscription($subscriptionId)
     {
-        $subscription = $this->api->subscription->cancel($subscriptionId);
+        try
+        {
+            $subscription = $this->api->subscription->cancel($subscriptionId);
+        }
+        catch (Exception $e)
+        {
+            echo "Razorpay Error: " . $e->getMessage();
+        }
     }
 
-    protected function getProduct($order)
+    public function getProduct($order)
     {
         $products = $order->get_items();
 
@@ -39,7 +60,7 @@ class RZP_Subscriptions
         if (sizeof($products) > 1)
         {
             throw new Exception('Currently Razorpay does not support more than
-                                one product in the cart if one of products
+                                one product in the cart if one of the products
                                 is a subscription.');
         }
 
@@ -65,7 +86,8 @@ class RZP_Subscriptions
             'total_count'     => $length,
             'customer_notify' => 0,
             'notes'           => array(
-                'woocommerce_order_id' => $orderId
+                'woocommerce_order_id'   => $orderId,
+                'woocommerce_product_id' => $product['product_id']
             ),
         );
 
@@ -73,15 +95,18 @@ class RZP_Subscriptions
 
         if ($signUpFee)
         {
-            $subscriptionData['addons'] = array(
-                array (
-                    'item' => array(
-                        'amount'   => (int) round($signUpFee * 100, 2),
-                        'currency' => get_woocommerce_currency(),
-                        'name'     => $product['name']
-                    )
-                )
+            $item = array(
+                'amount'   => (int) round($signUpFee * 100),
+                'currency' => get_woocommerce_currency(),
+                'name'     => $product['name']
             );
+
+            if ($item['currency'] !== self::INR)
+            {
+                $this->razorpay->handleCurrencyConversion($item);
+            }
+
+            $subscriptionData['addons']['item'] = $item;
         }
 
         return $subscriptionData;
@@ -94,18 +119,113 @@ class RZP_Subscriptions
         $metadata = get_post_meta($productId);
 
         // Creating a new plan only if plan isn't created already
-        if (empty($metadata['razorpay_wc_plan_id']) === true)
+        // Or if the plan has changed
+        if ($this->shouldCreatePlan($metadata, $productId) === true)
         {
             $planId = $this->createPlan($product);
-            add_post_meta($productId, 'razorpay_wc_plan_id', $planId, true);
+
+            add_post_meta($productId, self::RAZORPAY_PLAN_ID, $planId, true);
         }
         else
         {
             // Retrieve the plan id if already created
-            $planId = $metadata['razorpay_wc_plan_id'][0];
+            $planId = $metadata[self::RAZORPAY_PLAN_ID][0];
         }
 
         return $planId;
+    }
+
+    /**
+     * We shouldn't create plan only if the following conditions are met
+     * 1. There exists a plan id as product metadata
+     * 2. The corresponding plan has amount a1
+     * 3. The sale price is amount a2
+     * 4. a1 is not equal to a2, therefore the plan has changed
+     *
+     * @param $metadata
+     * @param $productId
+     */
+    protected function shouldCreatePlan($metadata, $productId)
+    {
+        if (empty($metadata[self::RAZORPAY_PLAN_ID]) === false)
+        {
+            $planId = $metadata[self::RAZORPAY_PLAN_ID][0];
+
+            try
+            {
+                $plan = $this->api->plan->fetch($planId);
+            }
+            catch (Exception $e)
+            {
+                echo "Razorpay Error: " . $e->getMessage();
+            }
+
+            //
+            // If the product sale price is different from the plan amount
+            // Or if the product price is different from the plan amount
+            // We delete the old plan id from post metadata.
+            // Then, we create a new plan and save id as metadata
+            //
+            if (($this->ifProductOnSale($plan, $productId) === true) or
+                ($this->ifProductPriceChanged($plan, $productId) === true))
+            {
+                return false;
+            }
+
+            //
+            // If we are going to create a new plan id,
+            // we're going to have to delete the old one
+            //
+            delete_post_meta($productId, self::RAZORPAY_PLAN_ID);
+        }
+
+        return true;
+    }
+
+    protected function ifProductOnSale($plan, $productId)
+    {
+        $data = array(
+            'amount'   => WC_Subscriptions_product::get_meta_data($productId, 'sale_price', 0) * 100,
+            'currency' => woocommerce_get_currency()
+        );
+
+        if ($currency !== self::INR)
+        {
+            $this->razorpay->handleCurrencyConversion($data);
+        }
+
+        $salePrice = $data['amount'];
+
+        if ((empty($salePrice) === false) and
+            ($salePrice === $plan['item']['amount']))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected function ifProductPriceChanged($plan, $product)
+    {
+        //
+        // If the sale price has not changed, we need to ensure
+        // that the original price itself is unchanged
+        // Else, we need to re-create the plan
+        //
+        $data['amount'] = WC_Subscriptions_Product::get_price($productId) * 100;
+
+        if ($currency !== self::INR)
+        {
+            $this->razorpay->handleCurrencyConversion($data);
+        }
+
+        if ((empty($data['amount']) === false) and
+            ($data['amount'] === $plan['item']['amount']))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     protected function createPlan($product)
@@ -114,7 +234,14 @@ class RZP_Subscriptions
 
         $planArgs = $this->getPlanArguments($product);
 
-        $plan = $this->api->plan->create($planArgs);
+        try
+        {
+            $plan = $this->api->plan->create($planArgs);
+        }
+        catch (Exception $e)
+        {
+            echo "Razorpay Error: " . $e->getMessage();
+        }
 
         // Storing the plan id as product metadata, unique set to true
         return $plan['id'];
@@ -128,15 +255,33 @@ class RZP_Subscriptions
         $interval     = WC_Subscriptions_Product::get_interval($productId);
         $recurringFee = WC_Subscriptions_Product::get_price($productId);
 
+        $salePrice = WC_Subscriptions_product::get_meta_data($productId, 'sale_price', 0);
+
+        //
+        // If the item is on sale, sell it for the sale price
+        //
+        if (empty($salePrice) === false)
+        {
+            $recurringFee = $salePrice;
+        }
+
         $planArgs = array(
-            'item' => array(
-                'name'     => $product['name'],
-                'amount'   => (int) round($recurringFee * 100, 2),
-                'currency' => get_woocommerce_currency(),
-            ),
             'period'   => $this->getProductPeriod($period),
             'interval' => $interval
         );
+
+        $item = array(
+            'name'     => $product['name'],
+            'amount'   => (int) round($recurringFee * 100),
+            'currency' => get_woocommerce_currency(),
+        );
+
+        if ($item['currency'] !== self::INR)
+        {
+            $this->razorpay->handleCurrencyConversion($item);
+        }
+
+        $planArgs['item'] = $item;
 
         return $planArgs;
     }
@@ -158,7 +303,14 @@ class RZP_Subscriptions
         $data = $this->getCustomerInfo($order);
         $data['fail_existing'] = '0';
 
-        $customer = $this->api->customer->create($data);
+        try
+        {
+            $customer = $this->api->customer->create($data);
+        }
+        catch (Exception $e)
+        {
+            echo "Razorpay Error: " . $e->getMessage();
+        }
 
         return $customer['id'];
     }
@@ -187,7 +339,7 @@ class RZP_Subscriptions
 
     protected function getSubscriptionSessionKey($orderId)
     {
-        return "razorpay_subscription_id".$orderId;
+        return "razorpay_subscription_id" . $orderId;
     }
 
     protected function getRazorpayApiInstance()

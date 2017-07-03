@@ -46,7 +46,6 @@ function woocommerce_razorpay_init()
         const AUTHORIZE                      = 'authorize';
         const WC_ORDER_ID                    = 'woocommerce_order_id';
 
-
         public function __construct()
         {
             $this->id = 'razorpay';
@@ -83,22 +82,12 @@ function woocommerce_razorpay_init()
             $this->supports = array(
                 'products',
                 'refunds',
+                'subscriptions',
+                'subscription_cancellation',
             );
 
             $this->msg['message'] = '';
             $this->msg['class'] = '';
-
-            // Supports woocommerce subscriptions
-            $this->supports = array(
-                'products',
-                'subscriptions',
-                'subscription_cancellation',
-                'subscription_suspension',
-                'subscription_reactivation',
-                'subscription_amount_changes',
-                'subscription_date_changes',
-                'subscription_payment_method_change'
-            );
 
             $this->subscriptions = new RZP_Subscriptions($this->key_id, $this->key_secret);
             add_action('woocommerce_subscription_status_cancelled', array(&$this, 'subscription_cancelled'));
@@ -340,14 +329,12 @@ function woocommerce_razorpay_init()
               'prefill' => $this->getPreFillArguments($order)
             );
 
-
-
-            $args['amount'] = $this->getOrderAmountAsInteger($order);
-
             // order_id and subscription_id both cannot be set at the same time
             if (empty($razorpayOrderId) === false)
             {
                 $args['order_id'] = $razorpayOrderId;
+
+                $args['amount'] = $this->getOrderAmountAsInteger($order);
             }
             else if (empty($subscriptionId) === false)
             {
@@ -414,7 +401,14 @@ function woocommerce_razorpay_init()
 
             $data = $this->getOrderCreationData($orderId);
 
-            $razorpayOrder = $api->order->create($data);
+            try
+            {
+                $razorpayOrder = $api->order->create($data);
+            }
+            catch (Exception $e)
+            {
+                echo "Razorpay Error: " . $e->getMessage();
+            }
 
             $razorpayOrderId = $razorpayOrder['id'];
 
@@ -469,7 +463,14 @@ function woocommerce_razorpay_init()
 
             $api = $this->getRazorpayApiInstance();
 
-            $razorpayOrder = $api->order->fetch($razorpayOrderId);
+            try
+            {
+                $razorpayOrder = $api->order->fetch($razorpayOrderId);
+            }
+            catch (Exception $e)
+            {
+                echo "Razorpay Error: " . $e->getMessage();
+            }
 
             $orderCreationData = $this->getOrderCreationData($orderId);
 
@@ -514,30 +515,32 @@ function woocommerce_razorpay_init()
 
             if ($data['currency'] !== self::INR)
             {
-                if (class_exists('WOOCS'))
-                {
-                    $this->convertCurrency($data);
-                }
-                else
-                {
-                    throw new Errors\BadRequestError(
-                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
-                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
-                        400
-                    );
-                }
+                $this->handleCurrencyConversion($data);
             }
 
             return $data;
         }
 
+        public function handleCurrencyConversion(& $data)
+        {
+            if (class_exists('WOOCS'))
+            {
+                $this->convertCurrency($data);
+            }
+            else
+            {
+                throw new Errors\BadRequestError(
+                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
+                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
+                    400
+                );
+            }
+        }
+
         private function enqueueCheckoutScripts($data)
         {
-            wp_register_script('razorpay_config', plugin_dir_url(__FILE__) . 'config.js', null, null);
-
             wp_register_script('razorpay_checkout',
-                'https://checkout.razorpay.com/v1/checkout.js',
-                array('razorpay_config'), null);
+                'https://checkout.razorpay.com/v1/checkout.js', null, null);
 
             wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                 array('razorpay_checkout'));
@@ -854,7 +857,7 @@ EOT;
 
             $parentOrderId = $orderIds[0];
 
-            $subscriptionId = get_post_meta($parentOrderId, 'razorpay_subscription_id')[0];
+            $subscriptionId = get_post_meta($parentOrderId, self::RAZORPAY_SUBSCRIPTION_ID)[0];
 
             $this->subscriptions->cancelSubscription($subscriptionId);
         }

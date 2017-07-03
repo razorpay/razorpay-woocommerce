@@ -8,6 +8,8 @@ use Razorpay\Api\Errors;
 
 class RZP_Webhook
 {
+    const RAZORPAY_SUBSCRIPTION_ID = 'razorpay_subscription_id';
+
     protected $razorpay;
     protected $api;
 
@@ -108,7 +110,14 @@ class RZP_Webhook
 
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
-        $payment = $this->api->payment->fetch($razorpayPaymentId);
+        try
+        {
+            $payment = $this->api->payment->fetch($razorpayPaymentId);
+        }
+        catch (Exception $e)
+        {
+            echo "Razorpay Error: " . $e->getMessage();
+        }
 
         $amount = $this->razorpay->getOrderAmountAsInteger($order);
 
@@ -193,11 +202,18 @@ class RZP_Webhook
         // This method is used to process the subscription's recurring payment
         $wcSubscription = wcs_get_subscriptions_for_order($orderId);
 
-        $subscriptionId = get_post_meta($orderId, 'razorpay_subscription_id')[0];
+        $subscriptionId = get_post_meta($orderId, self::RAZORPAY_SUBSCRIPTION_ID)[0];
 
         $api = $this->razorpay->getRazorpayApiInstance();
 
-        $subscription = $api->subscription->fetch($subscriptionId);
+        try
+        {
+            $subscription = $api->subscription->fetch($subscriptionId);
+        }
+        catch (Exception $e)
+        {
+            echo "Razorpay Error: " . $e->getMessage();
+        }
 
         $this->processSubscriptionSuccess($wcSubscription, $subscription, $paymentId);
 
@@ -217,8 +233,10 @@ class RZP_Webhook
         // We will only process one subscription per order
         $wcSubscription = array_values($wcSubscription)[0];
 
+        $paymentCount = $wcSubscription->get_completed_payment_count();
+
         // The subscription is completely paid for
-        if ($wcSubscription->get_completed_payment_count() === $subscription->total_count)
+        if ($paymentCount === $subscription->total_count)
         {
             return;
         }
