@@ -36,11 +36,12 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 
 == Changelog ==
 
-= UNRELEASED = 
-* Javascript fixes for additional compatibility
+= 1.5.0 = 
+* Javascript fixes for additional compatibility with other plugins ([#47](https://github.com/razorpay/razorpay-woocommerce/pull/47))
+* Adds multi-currency support using [WooCommerce Currency Switcher](https://wordpress.org/plugins/woocommerce-currency-switcher/) plugin. ([#46](https://github.com/razorpay/razorpay-woocommerce/pull/46))
 
 = 1.4.6 =
-* Webhooks signature verification fix ([#47](https://github.com/razorpay/razorpay-woocommerce/pull/47))
+* Webhooks signature verification fix
 
 = 1.4.4 =
 * Added webhooks to the plugin (includes/razorpay-webhook.php) ([#18](https://github.com/razorpay/razorpay-woocommerce/pull/18))
