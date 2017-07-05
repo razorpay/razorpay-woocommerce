@@ -289,6 +289,8 @@ function woocommerce_razorpay_init()
 
             $productinfo = "Order $orderId";
 
+            $currency = null;
+
             $args = array(
                 'key'           => $this->key_id,
                 'name'          => get_bloginfo('name'),
@@ -301,11 +303,7 @@ function woocommerce_razorpay_init()
                 'callback_url'  => $callbackUrl
             );
 
-            if ($order->get_currency() !== self::INR)
-            {
-                $args['display_currency'] = $order->get_currency();
-                $args['display_amount']   = $order->get_total();
-            }
+
 
             $args['amount'] = $this->getOrderAmountAsInteger($order);
 
@@ -316,6 +314,7 @@ function woocommerce_razorpay_init()
                     'email'   => $order->get_billing_email(),
                     'contact' => $order->get_billing_phone(),
                 );
+                $currency = $order->get_currency();
             }
             else
             {
@@ -324,6 +323,13 @@ function woocommerce_razorpay_init()
                     'email'   => $order->billing_email,
                     'contact' => $order->billing_phone,
                 );
+                $currency = $order->get_order_currency();
+            }
+
+            if ($currency !== self::INR)
+            {
+                $args['display_currency'] = $currency;
+                $args['display_amount']   = $order->get_total();
             }
 
             return $args;
