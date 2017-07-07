@@ -40,12 +40,22 @@
   }
 
   function addEvent(element, evnt, funct) {
-    if (element.attachEvent) return element.attachEvent('on' + evnt, funct);
+    if (element.attachEvent){
+      return element.attachEvent('on' + evnt, funct);
+    }
     else return element.addEventListener(evnt, funct, false);
   }
 
-  addEvent(window, 'DOMContentLoaded', function() {
+  if( document.readyState === 'complete' ) {
     addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
     openCheckout();
-  });
+  }
+  else
+  {
+    document.addEventListener('DOMContentLoaded', function() {
+      addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
+      openCheckout();
+    });
+  }
+
 })();
