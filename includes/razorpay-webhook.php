@@ -116,7 +116,15 @@ class RZP_Webhook
         }
         catch (Exception $e)
         {
-            echo "Razorpay Error: " . $e->getMessage();
+            $log = array(
+                'message'   => $e->getMessage(),
+                'data'      => $razorpayPaymentId,
+                'event'     => $data['event']
+            );
+
+            write_log($log);
+
+            exit;
         }
 
         $amount = $this->razorpay->getOrderAmountAsInteger($order);
@@ -199,9 +207,6 @@ class RZP_Webhook
             return $this->processSubscriptionFailed($orderId);
         }
 
-        // This method is used to process the subscription's recurring payment
-        $wcSubscription = wcs_get_subscriptions_for_order($orderId);
-
         $subscriptionId = get_post_meta($orderId, self::RAZORPAY_SUBSCRIPTION_ID)[0];
 
         $api = $this->razorpay->getRazorpayApiInstance();
@@ -212,10 +217,11 @@ class RZP_Webhook
         }
         catch (Exception $e)
         {
-            echo "Razorpay Error: " . $e->getMessage();
+            $message = $e->getMessage();
+            return 'RAZORPAY ERROR: Subscription fetch failed with the message \'' . $message . '\'';
         }
 
-        $this->processSubscriptionSuccess($wcSubscription, $subscription, $paymentId);
+        $this->processSubscriptionSuccess($orderId, $subscription, $paymentId);
 
         exit;
     }
@@ -226,21 +232,41 @@ class RZP_Webhook
      * @param $wcSubscription
      * @param $subscription
      */
-    protected function processSubscriptionSuccess($wcSubscription, $subscription, $paymentId)
+    protected function processSubscriptionSuccess($orderId, $subscription, $paymentId)
     {
+        //
+        // This method is used to process the subscription's recurring payment
+        //
+        $wcSubscription = wcs_get_subscriptions_for_order($orderId);
+
         $wcSubscriptionId = array_keys($wcSubscription)[0];
 
+        //
         // We will only process one subscription per order
+        //
         $wcSubscription = array_values($wcSubscription)[0];
+
+        if (count($wcSubscription) > 1)
+        {
+            $log = array(
+                'Error' => 'There are more than one subscription products in this order'
+            );
+
+            write_log($log);
+
+            exit;
+        }
 
         $paymentCount = $wcSubscription->get_completed_payment_count();
 
+        //
         // The subscription is completely paid for
+        //
         if ($paymentCount === $subscription->total_count)
         {
             return;
         }
-        else if ($wcSubscription->get_completed_payment_count() + 1 === $subscription->paid_count)
+        else if ($paymentCount + 1 === $subscription->paid_count)
         {
             //
             // If subscription has been paid for on razorpay's end, we need to mark the

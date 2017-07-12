@@ -3,6 +3,8 @@
 require_once __DIR__.'/../razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
+use Razorpay\Api\Errors;
+use Razorpay\Woocommerce\Errors as WooErrors;
 
 class RZP_Subscriptions
 {
@@ -30,7 +32,13 @@ class RZP_Subscriptions
         }
         catch (Exception $e)
         {
-            echo "Razorpay Error: " . $e->getMessage();
+            $message = $e->getMessage();
+
+            throw new Errors\Error(
+                $message,
+                WooErrors\ErrorCode::API_SUBSCRIPTION_CREATION_FAILED,
+                400
+            );
         }
 
         // Setting the subscription id as the session variable
@@ -48,7 +56,13 @@ class RZP_Subscriptions
         }
         catch (Exception $e)
         {
-            echo "Razorpay Error: " . $e->getMessage();
+            $message = $e->getMessage();
+
+            throw new Errors\Error(
+                $message,
+                WooErrors\ErrorCode::API_SUBSCRIPTION_CANCELLATION_FAILED,
+                400
+            );
         }
     }
 
@@ -91,7 +105,7 @@ class RZP_Subscriptions
                 $this->razorpay->handleCurrencyConversion($item);
             }
 
-            $subscriptionData['addons']['item'] = $item;
+            $subscriptionData['addons'] = array(array('item' => $item));
         }
 
         return $subscriptionData;
@@ -138,11 +152,24 @@ class RZP_Subscriptions
         {
             $planId = $metadata[self::RAZORPAY_PLAN_ID][0];
 
-            $plan = $this->api->plan->fetch($planId);
+            try
+            {
+                $plan = $this->api->plan->fetch($planId);
+            }
+            catch (Exception $e)
+            {
+                $message = $e->getMessage();
+
+                throw new Errors\Error(
+                    $message,
+                    WooErrors\ErrorCode::API_PLAN_FETCH_FAILED,
+                    400
+                );
+            }
 
             if ($plan['item']['amount'] === $planArgs['item']['amount'])
             {
-                return list($plan['id'], false);
+                return array($plan['id'], false);
             }
 
             //
@@ -158,7 +185,7 @@ class RZP_Subscriptions
         //
         $planId = $this->createPlan($planArgs);
 
-        return list($planId, true);
+        return array($planId, true);
     }
 
     protected function createPlan($planArgs)
@@ -169,7 +196,13 @@ class RZP_Subscriptions
         }
         catch (Exception $e)
         {
-            echo "Razorpay Error: " . $e->getMessage();
+            $message = $e->getMessage();
+
+            throw new Errors\Error(
+                $message,
+                WooErrors\ErrorCode::API_PLAN_CREATION_FAILED,
+                400
+            );
         }
 
         // Storing the plan id as product metadata, unique set to true
@@ -238,7 +271,13 @@ class RZP_Subscriptions
         }
         catch (Exception $e)
         {
-            echo "Razorpay Error: " . $e->getMessage();
+            $message = $e->getMessage();
+
+            throw new Errors\Error(
+                $message,
+                WooErrors\ErrorCode::API_CUSTOMER_CREATION_FAILED,
+                400
+            );
         }
 
         return $customer['id'];
@@ -270,12 +309,14 @@ class RZP_Subscriptions
     {
         $products = $order->get_items();
 
+        //
         // Technically, subscriptions work only if there's one array in the cart
+        //
         if (sizeof($products) > 1)
         {
-            throw new Exception('Currently Razorpay does not support more than
-                                one product in the cart if one of the products
-                                is a subscription.');
+            throw new Exception('Currently Razorpay does not support more than'
+                                . ' one product in the cart if one of the products'
+                                . ' is a subscription.');
         }
 
         return array_values($products)[0];
@@ -283,7 +324,7 @@ class RZP_Subscriptions
 
     protected function getSubscriptionSessionKey($orderId)
     {
-        return "razorpay_subscription_id" . $orderId;
+        return 'razorpay_subscription_id' . $orderId;
     }
 
     protected function getRazorpayApiInstance()

@@ -17,11 +17,16 @@ class Utility
 
             $payload = $orderId . '|' . $paymentId;
         }
-        else
+        else if (isset($attributes['razorpay_subscription_id']) === true)
         {
             $subscriptionId = $attributes['razorpay_subscription_id'];
 
             $payload = $paymentId . '|' . $subscriptionId ;
+        }
+        else
+        {
+            throw new Error('Invalid parameters passed to verifyPaymentSignature:'
+                . 'At least razorpay_order_id or razorpay_subscription_id should be set.');
         }
 
         return self::verifySignature($payload, $expectedSignature);

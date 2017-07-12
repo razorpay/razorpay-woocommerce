@@ -17,4 +17,9 @@ class ErrorCode extends ApiErrors\ErrorCode
     const WOOCS_CURRENCY_MISSING_ERROR_CODE    = 'WOOCS_CURRENCY_MISSING_ERROR';
     const WOOCS_CURRENCY_MISSING_ERROR_MESSAGE = 'The current currency and INR needs to be configured in Woocommerce Currency Switcher plugin';
 
+    const API_SUBSCRIPTION_CREATION_FAILED     = 'Razorpay api subscription creation failed';
+    const API_SUBSCRIPTION_CANCELLATION_FAILED = 'Razorpay api subscription cancellation failed';
+    const API_PLAN_FETCH_FAILED                = 'Razorpay api plan fetch failed';
+    const API_PLAN_CREATION_FAILED             = 'Razorpay api plan creation failed';
+    const API_CUSTOMER_CREATION_FAILED         = 'Razorpay api customer creation failed';
 }

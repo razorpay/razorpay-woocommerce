@@ -83,13 +83,14 @@ function woocommerce_razorpay_init()
                 'products',
                 'refunds',
                 'subscriptions',
+                'subscription_reactivation',
+                'subscription_suspension',
                 'subscription_cancellation',
             );
 
             $this->msg['message'] = '';
             $this->msg['class'] = '';
 
-            $this->subscriptions = new RZP_Subscriptions($this->key_id, $this->key_secret);
             add_action('woocommerce_subscription_status_cancelled', array(&$this, 'subscription_cancelled'));
 
             add_action('init', array(&$this, 'check_razorpay_response'));
@@ -276,7 +277,17 @@ function woocommerce_razorpay_init()
 
             if (wcs_order_contains_subscription($order) === true)
             {
-                $subscriptionId = $this->subscriptions->createSubscription($orderId);
+                $this->subscriptions = new RZP_Subscriptions($this->key_id, $this->key_secret);
+
+                try
+                {
+                    $subscriptionId = $this->subscriptions->createSubscription($orderId);
+                }
+                catch (Exception $e)
+                {
+                    $message = $e->getMessage();
+                    return 'RAZORPAY ERROR: Subscription creation failed with the following message \'' . $message . '\'';
+                }
             }
             else
             {
@@ -290,7 +301,7 @@ function woocommerce_razorpay_init()
             {
                 return 'RAZORPAY ERROR: Api could not be reached';
             }
-            else if(is_a($razorpayOrderId, 'Exception'))
+            else if($razorpayOrderId instanceof Exception)
             {
                 $message = $razorpayOrderId->getMessage();
                 return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
@@ -333,8 +344,6 @@ function woocommerce_razorpay_init()
             if (empty($razorpayOrderId) === false)
             {
                 $args['order_id'] = $razorpayOrderId;
-
-                $args['amount'] = $this->getOrderAmountAsInteger($order);
             }
             else if (empty($subscriptionId) === false)
             {
@@ -379,19 +388,6 @@ function woocommerce_razorpay_init()
             return $args;
         }
 
-        /**
-         * Returns the order amount, rounded as integer
-         */
-        public function getOrderAmountAsInteger($order)
-        {
-            if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
-            {
-                return (int) round($order->get_total() * 100);
-            }
-
-            return (int) round($order->order_total * 100);
-        }
-
         protected function createRazorpayOrderId($orderId, $sessionKey)
         {
             // Calls the helper function to create order data
@@ -407,7 +403,8 @@ function woocommerce_razorpay_init()
             }
             catch (Exception $e)
             {
-                echo "Razorpay Error: " . $e->getMessage();
+                $message = $e->getMessage();
+                return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
@@ -469,7 +466,8 @@ function woocommerce_razorpay_init()
             }
             catch (Exception $e)
             {
-                echo "Razorpay Error: " . $e->getMessage();
+                $message = $e->getMessage();
+                return 'RAZORPAY ERROR: Order fetch failed with the message \'' . $message . '\'';
             }
 
             $orderCreationData = $this->getOrderCreationData($orderId);
@@ -523,11 +521,7 @@ function woocommerce_razorpay_init()
 
         public function handleCurrencyConversion(& $data)
         {
-            if (class_exists('WOOCS'))
-            {
-                $this->convertCurrency($data);
-            }
-            else
+            if (class_exists('WOOCS') === false)
             {
                 throw new Errors\BadRequestError(
                     WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
@@ -535,12 +529,15 @@ function woocommerce_razorpay_init()
                     400
                 );
             }
+
+            $this->convertCurrency($data);
         }
 
         private function enqueueCheckoutScripts($data)
         {
             wp_register_script('razorpay_checkout',
-                'https://checkout.razorpay.com/v1/checkout.js', null, null);
+                'https://checkout.razorpay.com/v1/checkout.js',
+                null, null);
 
             wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                 array('razorpay_checkout'));
