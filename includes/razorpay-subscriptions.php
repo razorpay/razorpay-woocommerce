@@ -52,21 +52,6 @@ class RZP_Subscriptions
         }
     }
 
-    public function getProduct($order)
-    {
-        $products = $order->get_items();
-
-        // Technically, subscriptions work only if there's one array in the cart
-        if (sizeof($products) > 1)
-        {
-            throw new Exception('Currently Razorpay does not support more than
-                                one product in the cart if one of the products
-                                is a subscription.');
-        }
-
-        return array_values($products)[0];
-    }
-
     protected function getSubscriptionCreateData($orderId)
     {
         $order = new WC_Order($orderId);
@@ -118,122 +103,66 @@ class RZP_Subscriptions
 
         $metadata = get_post_meta($productId);
 
-        // Creating a new plan only if plan isn't created already
-        // Or if the plan has changed
-        if ($this->shouldCreatePlan($metadata, $productId) === true)
-        {
-            $planId = $this->createPlan($product);
+        list($planId, $created) = $this->createOrGetPlanId($metadata, $product);
 
-            add_post_meta($productId, self::RAZORPAY_PLAN_ID, $planId, true);
-        }
-        else
+        //
+        // If we created a new planId, we have to store it as post metadata
+        //
+        if ($created === true)
         {
-            // Retrieve the plan id if already created
-            $planId = $metadata[self::RAZORPAY_PLAN_ID][0];
+            add_post_meta($productId, self::RAZORPAY_PLAN_ID, $planId, true);
         }
 
         return $planId;
     }
 
     /**
-     * We shouldn't create plan only if the following conditions are met
-     * 1. There exists a plan id as product metadata
-     * 2. The corresponding plan has amount a1
-     * 3. The sale price is amount a2
-     * 4. a1 is not equal to a2, therefore the plan has changed
+     * Takes in product metadata and product
+     * Creates or gets created plan
      *
-     * @param $metadata
-     * @param $productId
+     * @param $metadata,
+     * @param $product
+     *
+     * @return string $planId
+     * @return bool $created
      */
-    protected function shouldCreatePlan($metadata, $productId)
+    protected function createOrGetPlanId($metadata, $product)
     {
-        if (empty($metadata[self::RAZORPAY_PLAN_ID]) === false)
+        $planArgs = $this->getPlanArguments($product);
+
+        //
+        // If razorpay_plan_id is set in the metadata,
+        // we check if the amounts match and return the plan id
+        //
+        if (isset($metadata[self::RAZORPAY_PLAN_ID]) === true)
         {
             $planId = $metadata[self::RAZORPAY_PLAN_ID][0];
 
-            try
+            $plan = $this->api->plan->fetch($planId);
+
+            if ($plan['item']['amount'] === $planArgs['item']['amount'])
             {
-                $plan = $this->api->plan->fetch($planId);
-            }
-            catch (Exception $e)
-            {
-                echo "Razorpay Error: " . $e->getMessage();
+                return list($plan['id'], false);
             }
 
             //
-            // If the product sale price is different from the plan amount
-            // Or if the product price is different from the plan amount
-            // We delete the old plan id from post metadata.
-            // Then, we create a new plan and save id as metadata
-            //
-            if (($this->ifProductOnSale($plan, $productId) === true) or
-                ($this->ifProductPriceChanged($plan, $productId) === true))
-            {
-                return false;
-            }
-
-            //
-            // If we are going to create a new plan id,
-            // we're going to have to delete the old one
+            // If the amounts don't match we have to create a
+            // new plan. Therefore, we have to delete the old plan id
             //
             delete_post_meta($productId, self::RAZORPAY_PLAN_ID);
         }
 
-        return true;
-    }
-
-    protected function ifProductOnSale($plan, $productId)
-    {
-        $data = array(
-            'amount'   => WC_Subscriptions_product::get_meta_data($productId, 'sale_price', 0) * 100,
-            'currency' => woocommerce_get_currency()
-        );
-
-        if ($currency !== self::INR)
-        {
-            $this->razorpay->handleCurrencyConversion($data);
-        }
-
-        $salePrice = $data['amount'];
-
-        if ((empty($salePrice) === false) and
-            ($salePrice === $plan['item']['amount']))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected function ifProductPriceChanged($plan, $product)
-    {
         //
-        // If the sale price has not changed, we need to ensure
-        // that the original price itself is unchanged
-        // Else, we need to re-create the plan
+        // By default we create a new plan
+        // if metadata doesn't have plan id set
         //
-        $data['amount'] = WC_Subscriptions_Product::get_price($productId) * 100;
+        $planId = $this->createPlan($planArgs);
 
-        if ($currency !== self::INR)
-        {
-            $this->razorpay->handleCurrencyConversion($data);
-        }
-
-        if ((empty($data['amount']) === false) and
-            ($data['amount'] === $plan['item']['amount']))
-        {
-            return true;
-        }
-
-        return false;
+        return list($planId, true);
     }
 
-    protected function createPlan($product)
+    protected function createPlan($planArgs)
     {
-        $productId = $product['product_id'];
-
-        $planArgs = $this->getPlanArguments($product);
-
         try
         {
             $plan = $this->api->plan->create($planArgs);
@@ -255,7 +184,7 @@ class RZP_Subscriptions
         $interval     = WC_Subscriptions_Product::get_interval($productId);
         $recurringFee = WC_Subscriptions_Product::get_price($productId);
 
-        $salePrice = WC_Subscriptions_product::get_meta_data($productId, 'sale_price', 0);
+        $salePrice    = WC_Subscriptions_product::get_meta_data($productId, 'sale_price', 0);
 
         //
         // If the item is on sale, sell it for the sale price
@@ -335,6 +264,21 @@ class RZP_Subscriptions
         }
 
         return $args;
+    }
+
+    public function getProduct($order)
+    {
+        $products = $order->get_items();
+
+        // Technically, subscriptions work only if there's one array in the cart
+        if (sizeof($products) > 1)
+        {
+            throw new Exception('Currently Razorpay does not support more than
+                                one product in the cart if one of the products
+                                is a subscription.');
+        }
+
+        return array_values($products)[0];
     }
 
     protected function getSubscriptionSessionKey($orderId)
