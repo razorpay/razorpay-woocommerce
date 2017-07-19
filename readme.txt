@@ -37,15 +37,13 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release.
 == Changelog ==
 
 = 1.5.3 =
-* Changed webhook enabled to no as default
+* Webhooks are now disabled by default ([#52](https://github.com/razorpay/razorpay-woocommerce/pull/52))
 
 = 1.5.2 = 
-* In some websites document.readyState is already set to complete before DOMContentLoaded
-* This release fixes this issue
+* Fixed an issue with some websites "Pay now" button click not working. ([#50](https://github.com/razorpay/razorpay-woocommerce/pull/50))
 
 = 1.5.1 = 
-* get_currency() usage fixed
-* using order_get_curreny() for older versions of woocommerce
+* Fixes backward compatibilty with older WooCommerce releases. ([#49](https://github.com/razorpay/razorpay-woocommerce/pull/49))
 
 = 1.5.0 = 
 * Javascript fixes for additional compatibility with other plugins ([#47](https://github.com/razorpay/razorpay-woocommerce/pull/47))
