@@ -331,7 +331,7 @@ function woocommerce_razorpay_init()
             $args = array(
               'key'          => $this->key_id,
               'name'         => get_bloginfo('name'),
-              'currency'     => get_woocommerce_currency(),
+              'currency'     => 'INR',
               'description'  => $productinfo,
               'notes'        => array(
                 'woocommerce_order_id' => $orderId
@@ -339,6 +339,21 @@ function woocommerce_razorpay_init()
               'callback_url' => $callbackUrl,
               'prefill' => $this->getPreFillArguments($order)
             );
+
+            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
+            {
+                $currency = $order->get_currency();
+            }
+            else
+            {
+                $currency = $order->get_order_currency();
+            }
+
+            if ($currency !== self::INR)
+            {
+                $args['display_currency'] = $currency;
+                $args['display_amount']   = (int) round($order->get_total());
+            }
 
             // order_id and subscription_id both cannot be set at the same time
             if (empty($razorpayOrderId) === false)
@@ -349,6 +364,11 @@ function woocommerce_razorpay_init()
             {
                 $args['recurring'] = 1;
                 $args['subscription_id'] = $subscriptionId;
+
+                if ($currency !== self::INR)
+                {
+                    $args['display_amount'] = $this->subscriptions->getDisplayAmount($orderId);
+                }
             }
             else
             {
@@ -367,7 +387,6 @@ function woocommerce_razorpay_init()
                     'email'   => $order->get_billing_email(),
                     'contact' => $order->get_billing_phone(),
                 );
-                $currency = $order->get_currency();
             }
             else
             {
@@ -376,13 +395,6 @@ function woocommerce_razorpay_init()
                     'email'   => $order->billing_email,
                     'contact' => $order->billing_phone,
                 );
-                $currency = $order->get_order_currency();
-            }
-
-            if ($currency !== self::INR)
-            {
-                $args['display_currency'] = $currency;
-                $args['display_amount']   = $order->get_total();
             }
 
             return $args;

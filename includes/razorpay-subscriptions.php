@@ -113,6 +113,10 @@ class RZP_Subscriptions
 
     protected function getProductPlanId($product)
     {
+        $currency = get_woocommerce_currency();
+
+        $key = self::RAZORPAY_PLAN_ID . '_'. strtolower($currency);
+
         $productId = $product['product_id'];
 
         $metadata = get_post_meta($productId);
@@ -124,7 +128,7 @@ class RZP_Subscriptions
         //
         if ($created === true)
         {
-            add_post_meta($productId, self::RAZORPAY_PLAN_ID, $planId, true);
+            add_post_meta($productId, $key, $planId, true);
         }
 
         return $planId;
@@ -144,13 +148,17 @@ class RZP_Subscriptions
     {
         $planArgs = $this->getPlanArguments($product);
 
+        $currency = get_woocommerce_currency();
+
+        $key = self::RAZORPAY_PLAN_ID . '_'. strtolower($currency);
+
         //
         // If razorpay_plan_id is set in the metadata,
         // we check if the amounts match and return the plan id
         //
-        if (isset($metadata[self::RAZORPAY_PLAN_ID]) === true)
+        if (isset($metadata[$key]) === true)
         {
-            $planId = $metadata[self::RAZORPAY_PLAN_ID][0];
+            $planId = $metadata[$key][0];
 
             try
             {
@@ -176,7 +184,7 @@ class RZP_Subscriptions
             // If the amounts don't match we have to create a
             // new plan. Therefore, we have to delete the old plan id
             //
-            delete_post_meta($productId, self::RAZORPAY_PLAN_ID);
+            delete_post_meta($product['product_id'], $key);
         }
 
         //
@@ -217,7 +225,7 @@ class RZP_Subscriptions
         $interval     = WC_Subscriptions_Product::get_interval($productId);
         $recurringFee = WC_Subscriptions_Product::get_price($productId);
 
-        $salePrice    = WC_Subscriptions_product::get_meta_data($productId, 'sale_price', 0);
+        $salePrice = get_post_meta($productId)['_sale_price'][0];
 
         //
         // If the item is on sale, sell it for the sale price
@@ -256,6 +264,31 @@ class RZP_Subscriptions
         $planArgs['item'] = $item;
 
         return $planArgs;
+    }
+
+    public function getDisplayAmount($orderId)
+    {
+        $order = new WC_Order($orderId);
+
+        $product = $this->getProduct($order);
+
+        $productId = $product['product_id'];
+
+        $recurringFee = WC_Subscriptions_Product::get_price($productId);
+
+        $salePrice = get_post_meta($productId)['_sale_price'][0];
+
+        //
+        // If the item is on sale, sell it for the sale price
+        //
+        if (empty($salePrice) === false)
+        {
+            $recurringFee = $salePrice;
+        }
+
+        $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($productId);
+
+        return $recurringFee + $signUpFee;
     }
 
     protected function getProductPeriod($period)
