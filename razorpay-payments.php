@@ -15,13 +15,12 @@ if ( ! defined( 'ABSPATH' ) )
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/includes/Errors/ErrorCode.php';
+require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+require_once __DIR__.'/includes/razorpay-subscriptions.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 use Razorpay\Woocommerce\Errors as WooErrors;
-
-require_once __DIR__.'/razorpay-sdk/Razorpay.php';
-require_once __DIR__.'/includes/razorpay-subscriptions.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init');
@@ -112,6 +111,8 @@ function woocommerce_razorpay_init()
 
         function init_form_fields()
         {
+            $webhookUrl = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
+
             $this->form_fields = array(
                 'enabled' => array(
                     'title' => __('Enable/Disable', 'razorpay'),
@@ -154,7 +155,7 @@ function woocommerce_razorpay_init()
                 'enable_webhook' => array(
                     'title' => __('Enable Webhook', 'razorpay'),
                     'type' => 'checkbox',
-                    'description' => esc_url( admin_url('admin-post.php') ) . "?action=rzp_wc_webhook <br><br>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
+                    'description' =>  "<span>$webhookUrl</span><br/><br/>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
                     'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
                     'default' => 'no'
                 ),
@@ -337,7 +338,7 @@ function woocommerce_razorpay_init()
                 'woocommerce_order_id' => $orderId
               ),
               'callback_url' => $callbackUrl,
-              'prefill' => $this->getPreFillArguments($order)
+              'prefill' => $this->getCustomerInfo($order)
             );
 
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
@@ -378,7 +379,7 @@ function woocommerce_razorpay_init()
             return $args;
         }
 
-        protected function getPreFillArguments($order)
+        public function getCustomerInfo($order)
         {
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
@@ -815,7 +816,7 @@ EOT;
          *
          * @param $success, & $order
          */
-        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId)
+        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId, $webhook = false)
         {
             global $woocommerce;
 
@@ -849,7 +850,10 @@ EOT;
                 $order->update_status('failed');
             }
 
-            $this->add_notice($this->msg['message'], $this->msg['class']);
+            if ($webhook === false)
+            {
+                $this->add_notice($this->msg['message'], $this->msg['class']);
+            }
         }
 
         protected function handleErrorCase(& $order)

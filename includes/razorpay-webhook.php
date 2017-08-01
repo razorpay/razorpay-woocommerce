@@ -127,7 +127,7 @@ class RZP_Webhook
             exit;
         }
 
-        $amount = $this->razorpay->getOrderAmountAsInteger($order);
+        $amount = $this->getOrderAmountAsInteger($order);
 
         $success = false;
         $errorMessage = 'The payment has failed.';
@@ -144,9 +144,11 @@ class RZP_Webhook
             // If the merchant has enabled auto capture
             //
             $payment->capture(array('amount' => $amount));
+
+            $success = true;
         }
 
-        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId);
+        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, true);
 
         exit;
     }
@@ -286,5 +288,18 @@ class RZP_Webhook
     protected function processSubscriptionFailed($orderId)
     {
         WC_Subscriptions_Manager::process_subscription_payment_failure_on_order($orderId);
+    }
+
+    /**
+     * Returns the order amount, rounded as integer
+     */
+    public function getOrderAmountAsInteger($order)
+    {
+        if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
+        {
+            return (int) round($order->get_total() * 100);
+        }
+
+        return (int) round($order->order_total * 100);
     }
 }

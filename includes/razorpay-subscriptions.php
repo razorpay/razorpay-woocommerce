@@ -70,7 +70,7 @@ class RZP_Subscriptions
     {
         $order = new WC_Order($orderId);
 
-        $product = $this->getProduct($order);
+        $product = $this->getProductFromOrder($order);
 
         $planId = $this->getProductPlanId($product);
 
@@ -121,13 +121,16 @@ class RZP_Subscriptions
 
         $metadata = get_post_meta($productId);
 
-        list($planId, $created) = $this->createOrGetPlanId($metadata, $product);
+        list($planId, $created) = $this->createOrGetPlanId($metadata, $product, $key);
 
         //
+        // If new plan was created, we delete the old plan id
         // If we created a new planId, we have to store it as post metadata
         //
         if ($created === true)
         {
+            delete_post_meta($productId, $key);
+
             add_post_meta($productId, $key, $planId, true);
         }
 
@@ -144,13 +147,9 @@ class RZP_Subscriptions
      * @return string $planId
      * @return bool $created
      */
-    protected function createOrGetPlanId($metadata, $product)
+    protected function createOrGetPlanId($metadata, $product, $key)
     {
         $planArgs = $this->getPlanArguments($product);
-
-        $currency = get_woocommerce_currency();
-
-        $key = self::RAZORPAY_PLAN_ID . '_'. strtolower($currency);
 
         //
         // If razorpay_plan_id is set in the metadata,
@@ -158,6 +157,8 @@ class RZP_Subscriptions
         //
         if (isset($metadata[$key]) === true)
         {
+            $create = false;
+
             $planId = $metadata[$key][0];
 
             try
@@ -166,25 +167,17 @@ class RZP_Subscriptions
             }
             catch (Exception $e)
             {
-                $message = $e->getMessage();
-
-                throw new Errors\Error(
-                    $message,
-                    WooErrors\ErrorCode::API_PLAN_FETCH_FAILED,
-                    400
-                );
+                //
+                // If plan id fetch causes an error, we re-create the plan
+                //
+                $create = true;
             }
 
-            if ($plan['item']['amount'] === $planArgs['item']['amount'])
+            if (($create === false) and
+                ($plan['item']['amount'] === $planArgs['item']['amount']))
             {
                 return array($plan['id'], false);
             }
-
-            //
-            // If the amounts don't match we have to create a
-            // new plan. Therefore, we have to delete the old plan id
-            //
-            delete_post_meta($product['product_id'], $key);
         }
 
         //
@@ -225,16 +218,6 @@ class RZP_Subscriptions
         $interval     = WC_Subscriptions_Product::get_interval($productId);
         $recurringFee = WC_Subscriptions_Product::get_price($productId);
 
-        $salePrice = get_post_meta($productId)['_sale_price'][0];
-
-        //
-        // If the item is on sale, sell it for the sale price
-        //
-        if (empty($salePrice) === false)
-        {
-            $recurringFee = $salePrice;
-        }
-
         //
         // Ad-Hoc code
         //
@@ -270,21 +253,11 @@ class RZP_Subscriptions
     {
         $order = new WC_Order($orderId);
 
-        $product = $this->getProduct($order);
+        $product = $this->getProductFromOrder($order);
 
         $productId = $product['product_id'];
 
         $recurringFee = WC_Subscriptions_Product::get_price($productId);
-
-        $salePrice = get_post_meta($productId)['_sale_price'][0];
-
-        //
-        // If the item is on sale, sell it for the sale price
-        //
-        if (empty($salePrice) === false)
-        {
-            $recurringFee = $salePrice;
-        }
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($productId);
 
@@ -305,7 +278,13 @@ class RZP_Subscriptions
 
     protected function getCustomerId($order)
     {
-        $data = $this->getCustomerInfo($order);
+        $data = $this->razorpay->getCustomerInfo($order);
+
+        //
+        // This line of code tells api that if a customer is already created,
+        // return the created customer instead of throwing an exception
+        // https://docs.razorpay.com/v1/page/customers-api
+        //
         $data['fail_existing'] = '0';
 
         try
@@ -326,29 +305,7 @@ class RZP_Subscriptions
         return $customer['id'];
     }
 
-    protected function getCustomerInfo($order)
-    {
-        if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
-        {
-            $args = array(
-                'name'    => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-                'email'   => $order->get_billing_email(),
-                'contact' => $order->get_billing_phone(),
-            );
-        }
-        else
-        {
-            $args = array(
-                'name'    => $order->billing_first_name . ' ' . $order->billing_last_name,
-                'email'   => $order->billing_email,
-                'contact' => $order->billing_phone,
-            );
-        }
-
-        return $args;
-    }
-
-    public function getProduct($order)
+    public function getProductFromOrder($order)
     {
         $products = $order->get_items();
 
