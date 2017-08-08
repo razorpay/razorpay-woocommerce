@@ -15,12 +15,12 @@ if ( ! defined( 'ABSPATH' ) )
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/includes/Errors/ErrorCode.php';
+require_once __DIR__.'/razorpay-sdk/Razorpay.php';
+require_once __DIR__.'/includes/razorpay-subscriptions.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 use Razorpay\Woocommerce\Errors as WooErrors;
-
-require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init');
@@ -37,12 +37,13 @@ function woocommerce_razorpay_init()
         // This one stores the WooCommerce Order Id
         const SESSION_KEY                    = 'razorpay_wc_order_id';
         const RAZORPAY_PAYMENT_ID            = 'razorpay_payment_id';
+        const RAZORPAY_ORDER_ID              = 'razorpay_order_id';
+        const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
 
         const INR                            = 'INR';
         const CAPTURE                        = 'capture';
         const AUTHORIZE                      = 'authorize';
         const WC_ORDER_ID                    = 'woocommerce_order_id';
-
 
         public function __construct()
         {
@@ -80,10 +81,16 @@ function woocommerce_razorpay_init()
             $this->supports = array(
                 'products',
                 'refunds',
+                'subscriptions',
+                'subscription_reactivation',
+                'subscription_suspension',
+                'subscription_cancellation',
             );
 
             $this->msg['message'] = '';
             $this->msg['class'] = '';
+
+            add_action('woocommerce_subscription_status_cancelled', array(&$this, 'subscription_cancelled'));
 
             add_action('init', array(&$this, 'check_razorpay_response'));
             add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_razorpay_response'));
@@ -104,6 +111,8 @@ function woocommerce_razorpay_init()
 
         function init_form_fields()
         {
+            $webhookUrl = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
+
             $this->form_fields = array(
                 'enabled' => array(
                     'title' => __('Enable/Disable', 'razorpay'),
@@ -146,7 +155,7 @@ function woocommerce_razorpay_init()
                 'enable_webhook' => array(
                     'title' => __('Enable Webhook', 'razorpay'),
                     'type' => 'checkbox',
-                    'description' => esc_url( admin_url('admin-post.php') ) . "?action=rzp_wc_webhook <br><br>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
+                    'description' =>  "<span>$webhookUrl</span><br/><br/>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
                     'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
                     'default' => 'no'
                 ),
@@ -188,9 +197,14 @@ function woocommerce_razorpay_init()
             echo $this->generate_razorpay_form($order);
         }
 
-        protected function getSessionKey($orderId)
+        protected function getOrderSessionKey($orderId)
         {
-            return "razorpay_order_id.$orderId";
+            return self::RAZORPAY_ORDER_ID . $orderId;
+        }
+
+        protected function getSubscriptionSessionKey($orderId)
+        {
+            return self::RAZORPAY_SUBSCRIPTION_ID . $orderId;
         }
 
         /**
@@ -205,7 +219,7 @@ function woocommerce_razorpay_init()
         {
             global $woocommerce;
 
-            $sessionKey = $this->getSessionKey($orderId);
+            $sessionKey = $this->getOrderSessionKey($orderId);
 
             $create = false;
 
@@ -257,20 +271,44 @@ function woocommerce_razorpay_init()
          **/
         public function generate_razorpay_form($orderId)
         {
-            global $woocommerce;
             $order = new WC_Order($orderId);
+
+            $subscriptionId = null;
+            $razorpayOrderId = null;
+
+            if (wcs_order_contains_subscription($order) === true)
+            {
+                $this->subscriptions = new RZP_Subscriptions($this->key_id, $this->key_secret);
+
+                try
+                {
+                    $subscriptionId = $this->subscriptions->createSubscription($orderId);
+                }
+                catch (Exception $e)
+                {
+                    $message = $e->getMessage();
+                    return 'RAZORPAY ERROR: Subscription creation failed with the following message \'' . $message . '\'';
+                }
+            }
+            else
+            {
+                $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
+            }
 
             $redirectUrl = get_site_url() . '/?wc-api=' . get_class($this);
 
-            $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
-
-            if(is_a($razorpayOrderId, 'Exception'))
+            if (($razorpayOrderId === null) and
+                (wcs_order_contains_subscription($orderId) === false))
+            {
+                return 'RAZORPAY ERROR: Api could not be reached';
+            }
+            else if($razorpayOrderId instanceof Exception)
             {
                 $message = $razorpayOrderId->getMessage();
                 return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
             }
 
-            $checkoutArgs = $this->getCheckoutArguments($order, $razorpayOrderId);
+            $checkoutArgs = $this->getCheckoutArguments($order, $razorpayOrderId, $subscriptionId);
 
             $html = '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', 'razorpay').'</p>';
             $html .= $this->generateOrderForm($redirectUrl, $checkoutArgs);
@@ -281,7 +319,7 @@ function woocommerce_razorpay_init()
         /**
          * Returns array of checkout params
          */
-        protected function getCheckoutArguments($order, $razorpayOrderId)
+        protected function getCheckoutArguments($order, $razorpayOrderId, $subscriptionId)
         {
             $callbackUrl = get_site_url() . '/?wc-api=' . get_class($this);
 
@@ -292,60 +330,75 @@ function woocommerce_razorpay_init()
             $currency = null;
 
             $args = array(
-                'key'           => $this->key_id,
-                'name'          => get_bloginfo('name'),
-                'currency'      => self::INR,
-                'description'   => $productinfo,
-                'notes'         => array (
-                    self::WC_ORDER_ID => $orderId
-                ),
-                'order_id'      => $razorpayOrderId,
-                'callback_url'  => $callbackUrl
+              'key'          => $this->key_id,
+              'name'         => get_bloginfo('name'),
+              'currency'     => 'INR',
+              'description'  => $productinfo,
+              'notes'        => array(
+                'woocommerce_order_id' => $orderId
+              ),
+              'callback_url' => $callbackUrl,
+              'prefill' => $this->getCustomerInfo($order)
             );
-
-
-
-            $args['amount'] = $this->getOrderAmountAsInteger($order);
 
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
-                $args['prefill'] = array(
-                    'name'    => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-                    'email'   => $order->get_billing_email(),
-                    'contact' => $order->get_billing_phone(),
-                );
                 $currency = $order->get_currency();
             }
             else
             {
-                $args['prefill'] = array(
-                    'name'    => $order->billing_first_name . ' ' . $order->billing_last_name,
-                    'email'   => $order->billing_email,
-                    'contact' => $order->billing_phone,
-                );
                 $currency = $order->get_order_currency();
             }
 
             if ($currency !== self::INR)
             {
                 $args['display_currency'] = $currency;
-                $args['display_amount']   = $order->get_total();
+                $args['display_amount']   = (int) round($order->get_total());
+            }
+
+            // order_id and subscription_id both cannot be set at the same time
+            if (empty($razorpayOrderId) === false)
+            {
+                $args['order_id'] = $razorpayOrderId;
+            }
+            else if (empty($subscriptionId) === false)
+            {
+                $args['recurring'] = 1;
+                $args['subscription_id'] = $subscriptionId;
+
+                if ($currency !== self::INR)
+                {
+                    $args['display_amount'] = $this->subscriptions->getDisplayAmount($orderId);
+                }
+            }
+            else
+            {
+                throw new Exception('Both orderId and subscriptionId are null!');
             }
 
             return $args;
         }
 
-        /**
-         * Returns the order amount, rounded as integer
-         */
-        public function getOrderAmountAsInteger($order)
+        public function getCustomerInfo($order)
         {
-            if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
+            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
-                return (int) round($order->get_total() * 100);
+                $args = array(
+                    'name'    => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+                    'email'   => $order->get_billing_email(),
+                    'contact' => $order->get_billing_phone(),
+                );
+            }
+            else
+            {
+                $args = array(
+                    'name'    => $order->billing_first_name . ' ' . $order->billing_last_name,
+                    'email'   => $order->billing_email,
+                    'contact' => $order->billing_phone,
+                );
             }
 
-            return (int) round($order->order_total * 100);
+            return $args;
         }
 
         protected function createRazorpayOrderId($orderId, $sessionKey)
@@ -357,7 +410,15 @@ function woocommerce_razorpay_init()
 
             $data = $this->getOrderCreationData($orderId);
 
-            $razorpayOrder = $api->order->create($data);
+            try
+            {
+                $razorpayOrder = $api->order->create($data);
+            }
+            catch (Exception $e)
+            {
+                $message = $e->getMessage();
+                return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
+            }
 
             $razorpayOrderId = $razorpayOrder['id'];
 
@@ -412,7 +473,15 @@ function woocommerce_razorpay_init()
 
             $api = $this->getRazorpayApiInstance();
 
-            $razorpayOrder = $api->order->fetch($razorpayOrderId);
+            try
+            {
+                $razorpayOrder = $api->order->fetch($razorpayOrderId);
+            }
+            catch (Exception $e)
+            {
+                $message = $e->getMessage();
+                return 'RAZORPAY ERROR: Order fetch failed with the message \'' . $message . '\'';
+            }
 
             $orderCreationData = $this->getOrderCreationData($orderId);
 
@@ -457,21 +526,24 @@ function woocommerce_razorpay_init()
 
             if ($data['currency'] !== self::INR)
             {
-                if (class_exists('WOOCS'))
-                {
-                    $this->convertCurrency($data);
-                }
-                else
-                {
-                    throw new Errors\BadRequestError(
-                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
-                        WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
-                        400
-                    );
-                }
+                $this->handleCurrencyConversion($data);
             }
 
             return $data;
+        }
+
+        public function handleCurrencyConversion(& $data)
+        {
+            if (class_exists('WOOCS') === false)
+            {
+                throw new Errors\BadRequestError(
+                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
+                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
+                    400
+                );
+            }
+
+            $this->convertCurrency($data);
         }
 
         private function enqueueCheckoutScripts($data)
@@ -682,20 +754,31 @@ EOT;
         {
             global $woocommerce;
 
-            $key_id = $this->key_id;
-            $key_secret = $this->key_secret;
-
-            $api = new Api($key_id, $key_secret);
-
-            $sessionKey = $this->getSessionKey($orderId);
+            $api = $this->getRazorpayApiInstance();
 
             $attributes = array(
                 self::RAZORPAY_PAYMENT_ID => $_POST['razorpay_payment_id'],
-                'razorpay_order_id'       => $woocommerce->session->get($sessionKey),
                 'razorpay_signature'      => $_POST['razorpay_signature'],
             );
 
+            if (wcs_order_contains_subscription($orderId) === true)
+            {
+                $sessionKey = $this->getSubscriptionSessionKey($orderId);
+                $attributes[self::RAZORPAY_SUBSCRIPTION_ID] = $woocommerce->session->get($sessionKey);
+            }
+            else
+            {
+                $sessionKey = $this->getOrderSessionKey($orderId);
+                $attributes[self::RAZORPAY_ORDER_ID] = $woocommerce->session->get($sessionKey);
+            }
+
             $api->utility->verifyPaymentSignature($attributes);
+
+            // Once the signature passes, save the subscription id as order metadata
+            if (wcs_order_contains_subscription($orderId) === true)
+            {
+                add_post_meta($orderId, self::RAZORPAY_SUBSCRIPTION_ID, $attributes[self::RAZORPAY_SUBSCRIPTION_ID]);
+            }
         }
 
         protected function getErrorMessage($orderId)
@@ -733,7 +816,7 @@ EOT;
          *
          * @param $success, & $order
          */
-        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId)
+        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId, $webhook = false)
         {
             global $woocommerce;
 
@@ -756,7 +839,7 @@ EOT;
             else
             {
                 $this->msg['class'] = 'error';
-                $this->msg['message'] = 'Thank you for shopping with us. However, the payment failed.';
+                $this->msg['message'] = $errorMessage;
 
                 if ($razorpayPaymentId)
                 {
@@ -767,7 +850,10 @@ EOT;
                 $order->update_status('failed');
             }
 
-            $this->add_notice($this->msg['message'], $this->msg['class']);
+            if ($webhook === false)
+            {
+                $this->add_notice($this->msg['message'], $this->msg['class']);
+            }
         }
 
         protected function handleErrorCase(& $order)
@@ -776,6 +862,17 @@ EOT;
 
             $this->msg['class'] = 'error';
             $this->msg['message'] = $this->getErrorMessage($orderId);
+        }
+
+        public function subscription_cancelled($subscription)
+        {
+            $orderIds = array_keys($subscription->get_related_orders());
+
+            $parentOrderId = $orderIds[0];
+
+            $subscriptionId = get_post_meta($parentOrderId, self::RAZORPAY_SUBSCRIPTION_ID)[0];
+
+            $this->subscriptions->cancelSubscription($subscriptionId);
         }
 
         /**
