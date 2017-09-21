@@ -38,6 +38,7 @@ function woocommerce_razorpay_init()
         const SESSION_KEY                    = 'razorpay_wc_order_id';
         const RAZORPAY_PAYMENT_ID            = 'razorpay_payment_id';
         const RAZORPAY_ORDER_ID              = 'razorpay_order_id';
+        const RAZORPAY_SIGNATURE             = 'razorpay_signature';
 
         const INR                            = 'INR';
         const CAPTURE                        = 'capture';
@@ -254,6 +255,31 @@ function woocommerce_razorpay_init()
             }
         }
 
+        private function getRedirectUrl()
+        {
+            return get_site_url() . '/?wc-api=' . get_class($this);
+        }
+
+        protected function getRazorpayPaymentParams($orderId)
+        {
+            $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
+
+            if ($razorpayOrderId === null)
+            {
+                throw new Exception('RAZORPAY ERROR: Razorpay API could not be reached');
+            }
+            else if($razorpayOrderId instanceof Exception)
+            {
+                $message = $razorpayOrderId->getMessage();
+
+                throw new Exception("RAZORPAY ERROR: Order creation failed with the message: '$message'.");
+            }
+
+            return [
+                'order_id'  =>  $razorpayOrderId
+            ];
+        }
+
         /**
          * Generate razorpay button link
          **/
@@ -261,33 +287,25 @@ function woocommerce_razorpay_init()
         {
             $order = new WC_Order($orderId);
 
-            $razorpayOrderId = null;
-            $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
-
-            $redirectUrl = get_site_url() . '/?wc-api=' . get_class($this);
-
-            if ($razorpayOrderId === null)
+            try
             {
-                return 'RAZORPAY ERROR: Api could not be reached';
+                $params = $this->getRazorpayPaymentParams($orderId);
             }
-            else if($razorpayOrderId instanceof Exception)
+            catch(Exception $e)
             {
-                $message = $razorpayOrderId->getMessage();
-                return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
+                return $e->getMessage();
             }
 
-            $checkoutArgs = $this->getCheckoutArguments($order, $razorpayOrderId);
+            $checkoutArgs = $this->getCheckoutArguments($order, $params);
 
             $html = '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', 'razorpay').'</p>';
-            $html .= $this->generateOrderForm($redirectUrl, $checkoutArgs);
+
+            $html .= $this->generateOrderForm($checkoutArgs);
 
             return $html;
         }
 
-        /**
-         * Returns array of checkout params
-         */
-        protected function getCheckoutArguments($order, $razorpayOrderId)
+        private function getDefaultCheckoutArguments($order)
         {
             $callbackUrl = get_site_url() . '/?wc-api=' . get_class($this);
 
@@ -295,9 +313,7 @@ function woocommerce_razorpay_init()
 
             $productinfo = "Order $orderId";
 
-            $currency = null;
-
-            $args = array(
+            return array(
               'key'          => $this->key_id,
               'name'         => get_bloginfo('name'),
               'currency'     => 'INR',
@@ -308,23 +324,39 @@ function woocommerce_razorpay_init()
               'callback_url' => $callbackUrl,
               'prefill' => $this->getCustomerInfo($order)
             );
+        }
 
+        private function getOrderCurrency($order)
+        {
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
-                $currency = $order->get_currency();
+                return $order->get_currency();
             }
-            else
-            {
-                $currency = $order->get_order_currency();
-            }
+
+            return $order->get_order_currency();
+        }
+
+        protected function getDisplayAmount($order)
+        {
+            return (int) round($order->get_total());
+        }
+
+        /**
+         * Returns array of checkout params
+         */
+        private function getCheckoutArguments($order, $params)
+        {
+            $args = $this->getDefaultCheckoutArguments($order);
+
+            $currency = $this->getOrderCurrency($order);
 
             if ($currency !== self::INR)
             {
                 $args['display_currency'] = $currency;
-                $args['display_amount']   = (int) round($order->get_total());
+                $args['display_amount']   = $this->getDisplayAmount($order);
             }
 
-            $args['order_id'] = $razorpayOrderId;
+            $args = array_merge($args, $params);
 
             return $args;
         }
@@ -455,7 +487,7 @@ function woocommerce_razorpay_init()
             return true;
         }
 
-        function getOrderCreationData($orderId)
+        private function getOrderCreationData($orderId)
         {
             $order = new WC_Order($orderId);
 
@@ -516,8 +548,9 @@ function woocommerce_razorpay_init()
         /**
          * Generates the order form
          **/
-        function generateOrderForm($redirectUrl, $data)
+        function generateOrderForm($data)
         {
+            $redirectUrl = $this->getRedirectUrl();
             $this->enqueueCheckoutScripts($data);
 
             return <<<EOT
@@ -708,7 +741,7 @@ EOT;
 
             $attributes = array(
                 self::RAZORPAY_PAYMENT_ID => $_POST['razorpay_payment_id'],
-                'razorpay_signature'      => $_POST['razorpay_signature'],
+                self::RAZORPAY_SIGNATURE  => $_POST['razorpay_signature'],
             );
 
 
