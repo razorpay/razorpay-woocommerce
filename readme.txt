@@ -36,6 +36,9 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= Unreleased =
+* Split Subscriptions into a separate plugin.
+
 = 1.6.0-beta = 
 * Added support for subscriptions, please contact us at support@razorpay.com to enable it
 
