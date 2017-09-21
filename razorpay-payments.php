@@ -89,6 +89,8 @@ function woocommerce_razorpay_init()
             $this->init_form_fields();
             $this->init_settings();
 
+            // TODO: This is hacky, find a better way to do this
+            // See mergeSettingsWithParentPlugin() in subscriptions for more details.
             if ($hooks)
             {
                 $this->initHooks();
@@ -101,7 +103,7 @@ function woocommerce_razorpay_init()
 
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
-            add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_'. $this->id . '_response'));
+            add_action('woocommerce_api_' . $this->id, array($this, 'check_razorpay_response'));
 
             $cb = array($this, 'process_admin_options');
 
@@ -276,7 +278,7 @@ function woocommerce_razorpay_init()
 
         private function getRedirectUrl()
         {
-            return get_site_url() . '/?wc-api=' . get_class($this);
+            return get_site_url() . '/wc-api/' . $this->id;
         }
 
         protected function getRazorpayPaymentParams($orderId)
@@ -326,22 +328,22 @@ function woocommerce_razorpay_init()
 
         private function getDefaultCheckoutArguments($order)
         {
-            $callbackUrl = get_site_url() . '/?wc-api=' . get_class($this);
+            $callbackUrl = $this->getRedirectUrl();
 
             $orderId = $this->getOrderId($order);
 
             $productinfo = "Order $orderId";
 
             return array(
-              'key'          => $this->getSetting('key_id'),
-              'name'         => get_bloginfo('name'),
-              'currency'     => 'INR',
-              'description'  => $productinfo,
-              'notes'        => array(
-                'woocommerce_order_id' => $orderId
-              ),
-              'callback_url' => $callbackUrl,
-              'prefill' => $this->getCustomerInfo($order)
+                'key'          => $this->getSetting('key_id'),
+                'name'         => get_bloginfo('name'),
+                'currency'     => 'INR',
+                'description'  => $productinfo,
+                'notes'        => array(
+                    'woocommerce_order_id' => $orderId
+                ),
+                'callback_url' => $callbackUrl,
+                'prefill' => $this->getCustomerInfo($order),
             );
         }
 
@@ -418,6 +420,7 @@ function woocommerce_razorpay_init()
             catch (Exception $e)
             {
                 $message = $e->getMessage();
+
                 return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
             }
 
@@ -645,9 +648,7 @@ EOT;
             {
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
-
         }
-
 
         /**
          * Process the payment and return the result
