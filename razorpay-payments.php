@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: WooCommerce Razorpay Payments
+Plugin Name: Razorpay for WooCommerce
 Plugin URI: https://razorpay.com
 Description: Razorpay Payment Gateway Integration for WooCommerce
 Version: 1.6.0-beta
@@ -45,49 +45,63 @@ function woocommerce_razorpay_init()
         const AUTHORIZE                      = 'authorize';
         const WC_ORDER_ID                    = 'woocommerce_order_id';
 
-        public function __construct()
+        const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
+        const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
+
+        protected $visibleSettings = array(
+            'enabled',
+            'title',
+            'description',
+            'key_id',
+            'key_secret',
+            'payment_action',
+            'enable_webhook',
+            'webhook_secret',
+        );
+        public $form_fields = array();
+
+        public $supports = array(
+            'products',
+            'refunds'
+        );
+
+        public $has_fields = false;
+        public $id = 'razorpay';
+        public $method_title = 'Razorpay';
+
+        /**
+         * TODO: Remove usage of $this->msg
+         */
+        protected $msg = array(
+            'message'   =>  '',
+            'class'     =>  '',
+        );
+
+        protected function getSetting($key)
         {
-            $this->id = 'razorpay';
-            $this->method_title = 'Razorpay';
+            return $this->settings[$key];
+        }
+
+        public function __construct($hooks = true)
+        {
             $this->icon =  plugins_url('images/logo.png' , __FILE__);
-            $this->has_fields = false;
 
             $this->init_form_fields();
             $this->init_settings();
-            $this->title = $this->settings['title'];
-            $this->description = $this->settings['description'];
-            $this->key_id = $this->settings['key_id'];
-            $this->key_secret = $this->settings['key_secret'];
-            $this->payment_action = $this->settings['payment_action'];
 
-            if (isset($this->settings['enable_webhook']) === true)
+            if ($hooks)
             {
-                $this->enable_webhook = $this->settings['enable_webhook'];
+                $this->initHooks();
             }
-            else
-            {
-                $this->enable_webhook = 'yes';
-            }
+        }
 
-            if (isset($this->settings['webhook_secret']) === true)
-            {
-                $this->webhook_secret = $this->settings['webhook_secret'];
-            }
-            else
-            {
-                $this->webhook_secret = '';
-            }
+        protected function initHooks()
+        {
+            add_action('init', array(&$this, 'check_'. $this->id. '_response'));
 
-            $this->supports = array(
-                'products',
-                'refunds',
-            );
+            add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
-            $this->msg['message'] = '';
-            $this->msg['class'] = '';
-
-            add_action('init', array(&$this, 'check_razorpay_response'));
-            add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_razorpay_response'));
+            add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'check_'. $this->id . '_response'));
 
             $cb = array($this, 'process_admin_options');
 
@@ -100,46 +114,45 @@ function woocommerce_razorpay_init()
                 add_action('woocommerce_update_options_payment_gateways', $cb);
             }
 
-            add_action('woocommerce_receipt_razorpay', array($this, 'receipt_page'));
         }
 
-        function init_form_fields()
+        public function init_form_fields()
         {
             $webhookUrl = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
-            $this->form_fields = array(
+            $defaultFormFields = array(
                 'enabled' => array(
-                    'title' => __('Enable/Disable', 'razorpay'),
+                    'title' => __('Enable/Disable', $this->id),
                     'type' => 'checkbox',
-                    'label' => __('Enable Razorpay Payment Module.', 'razorpay'),
+                    'label' => __('Enable this module?', $this->id),
                     'default' => 'yes'
                 ),
                 'title' => array(
-                    'title' => __('Title', 'razorpay'),
+                    'title' => __('Title', $this->id),
                     'type'=> 'text',
-                    'description' => __('This controls the title which the user sees during checkout.', 'razorpay'),
-                    'default' => __('Credit Card/Debit Card/NetBanking', 'razorpay')
+                    'description' => __('This controls the title which the user sees during checkout.', $this->id),
+                    'default' => __(static::DEFAULT_LABEL, $this->id)
                 ),
                 'description' => array(
-                    'title' => __('Description', 'razorpay'),
+                    'title' => __('Description', $this->id),
                     'type' => 'textarea',
-                    'description' => __('This controls the description which the user sees during checkout.', 'razorpay'),
-                    'default' => __('Pay securely by Credit or Debit card or internet banking through Razorpay.', 'razorpay')
+                    'description' => __('This controls the description which the user sees during checkout.', $this->id),
+                    'default' => __(static::DEFAULT_DESCRIPTION, $this->id)
                 ),
                 'key_id' => array(
-                    'title' => __('Key ID', 'razorpay'),
+                    'title' => __('Key ID', $this->id),
                     'type' => 'text',
-                    'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.', 'razorpay')
+                    'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.', $this->id)
                 ),
                 'key_secret' => array(
-                    'title' => __('Key Secret', 'razorpay'),
+                    'title' => __('Key Secret', $this->id),
                     'type' => 'text',
-                    'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.', 'razorpay')
+                    'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.', $this->id)
                 ),
                 'payment_action' => array(
-                    'title' => __('Payment Action', 'razorpay'),
+                    'title' => __('Payment Action', $this->id),
                     'type' => 'select',
-                    'description' =>  __('Payment action on order compelete', 'razorpay'),
+                    'description' =>  __('Payment action on order compelete', $this->id),
                     'default' => self::CAPTURE,
                     'options' => array(
                         self::AUTHORIZE => 'Authorize',
@@ -147,24 +160,33 @@ function woocommerce_razorpay_init()
                     )
                 ),
                 'enable_webhook' => array(
-                    'title' => __('Enable Webhook', 'razorpay'),
+                    'title' => __('Enable Webhook', $this->id),
                     'type' => 'checkbox',
                     'description' =>  "<span>$webhookUrl</span><br/><br/>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
-                    'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', 'razorpay'),
+                    'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', $this->id),
                     'default' => 'no'
                 ),
                 'webhook_secret' => array(
-                    'title' => __('Webhook Secret', 'razorpay'),
+                    'title' => __('Webhook Secret', $this->id),
                     'type' => 'text',
-                    'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', 'razorpay'),
+                    'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', $this->id),
                     'default' => ''
                 ),
             );
+
+            foreach ($defaultFormFields as $key => $value)
+            {
+                if (in_array($key, $this->visibleSettings, true))
+                {
+                    $this->form_fields[$key] = $value;
+                }
+            }
         }
+
         public function admin_options()
         {
-            echo '<h3>'.__('Razorpay Payment Gateway', 'razorpay') . '</h3>';
-            echo '<p>'.__('Razorpay is an online payment gateway for India with transparent pricing, seamless integration and great support') . '</p>';
+            echo '<h3>'.__('Razorpay Payment Gateway', $this->id) . '</h3>';
+            echo '<p>'.__('Allows payments by Credit/Debit Cards, NetBanking, UPI, and multiple Wallets') . '</p>';
             echo '<table class="form-table">';
 
             // Generate the HTML For the settings form.
@@ -177,10 +199,7 @@ function woocommerce_razorpay_init()
          **/
         function payment_fields()
         {
-            if($this->description)
-            {
-                echo wpautop(wptexturize($this->description));
-            }
+            echo wpautop(wptexturize($this->getSetting('description')));
         }
 
         /**
@@ -298,7 +317,7 @@ function woocommerce_razorpay_init()
 
             $checkoutArgs = $this->getCheckoutArguments($order, $params);
 
-            $html = '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', 'razorpay').'</p>';
+            $html = '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', $this->id).'</p>';
 
             $html .= $this->generateOrderForm($checkoutArgs);
 
@@ -314,7 +333,7 @@ function woocommerce_razorpay_init()
             $productinfo = "Order $orderId";
 
             return array(
-              'key'          => $this->key_id,
+              'key'          => $this->getSetting('key_id'),
               'name'         => get_bloginfo('name'),
               'currency'     => 'INR',
               'description'  => $productinfo,
@@ -491,16 +510,11 @@ function woocommerce_razorpay_init()
         {
             $order = new WC_Order($orderId);
 
-            if (!isset($this->payment_action))
-            {
-                $this->payment_action = self::CAPTURE;
-            }
-
             $data = array(
                 'receipt'         => $orderId,
                 'amount'          => (int) round($order->get_total() * 100),
                 'currency'        => get_woocommerce_currency(),
-                'payment_capture' => ($this->payment_action === self::AUTHORIZE) ? 0 : 1,
+                'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'notes'           => array(
                     self::WC_ORDER_ID  => (string) $orderId,
                 ),
@@ -673,7 +687,7 @@ EOT;
 
         public function getRazorpayApiInstance()
         {
-            return new Api($this->key_id, $this->key_secret);
+            return new Api($this->getSetting('key_id'), $this->getSetting('key_secret'));
         }
 
         /**
