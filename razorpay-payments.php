@@ -99,7 +99,7 @@ function woocommerce_razorpay_init()
 
         protected function initHooks()
         {
-            add_action('init', array(&$this, 'check_'. $this->id. '_response'));
+            add_action('init', array(&$this, 'check_razorpay_response'));
 
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
