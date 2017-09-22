@@ -23,7 +23,7 @@ use Razorpay\Api\Errors;
 use Razorpay\Woocommerce\Errors as WooErrors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
-add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init');
+add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
 
 function woocommerce_razorpay_init()
 {
@@ -77,7 +77,7 @@ function woocommerce_razorpay_init()
             'class'     =>  '',
         );
 
-        protected function getSetting($key)
+        public function getSetting($key)
         {
             return $this->settings[$key];
         }
@@ -115,7 +115,6 @@ function woocommerce_razorpay_init()
             {
                 add_action('woocommerce_update_options_payment_gateways', $cb);
             }
-
         }
 
         public function init_form_fields()
@@ -892,6 +891,7 @@ EOT;
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_razorpay_gateway' );
 }
 
+// This is set to a priority of 10
 function razorpay_webhook_init()
 {
     $rzpWebhook = new RZP_Webhook();

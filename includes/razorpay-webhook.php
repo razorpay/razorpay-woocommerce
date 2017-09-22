@@ -11,13 +11,28 @@ class RZP_Webhook
     protected $razorpay;
     protected $api;
 
+    const PAYMENT_AUTHORIZED = 'payment.authorized';
+    const PAYMENT_FAILED     = 'payment.failed';
+
     function __construct()
     {
-        $this->razorpay = new WC_Razorpay();
+        $this->razorpay = new WC_Razorpay(false);
 
         $this->api = $this->razorpay->getRazorpayApiInstance();
     }
 
+    /**
+     * Process a Razorpay Webhook. We exit in the following cases:
+     * - Successful processed
+     * - Exception while fetching the payment
+     *
+     * It passes on the webhook in the following cases:
+     * - subscription_id set in payment.authorized
+     * - Invalid JSON
+     * - Signature mismatch
+     * - Secret isn't setup
+     * - Event not recognized
+     */
     public function process()
     {
         $post = file_get_contents('php://input');
@@ -54,7 +69,7 @@ class RZP_Webhook
                     $log = array(
                         'message'   => $e->getMessage(),
                         'data'      => $data,
-                        'event'     => 'razorpay.wc.signature..verify_failed'
+                        'event'     => 'razorpay.wc.signature.verify_failed'
                     );
 
                     write_log($log);
@@ -63,10 +78,10 @@ class RZP_Webhook
 
                 switch ($data['event'])
                 {
-                    case 'payment.authorized':
+                    case self::PAYMENT_AUTHORIZED:
                         return $this->paymentAuthorized($data);
 
-                    case 'payment.failed':
+                    case self::PAYMENT_FAILED:
                         return $this->paymentFailed($data);
 
                     default:
@@ -77,11 +92,19 @@ class RZP_Webhook
     }
 
     /**
+     * Does nothing for the main payments flow currently
+     */
+    protected function paymentFailed(array $data)
+    {
+        return;
+    }
+
+    /**
      * Handling the payment authorized webhook
      *
-     * @param $data
+     * @param array $data
      */
-    protected function paymentAuthorized($data)
+    protected function paymentAuthorized(array $data)
     {
         //
         // Order entity should be sent as part of the webhook payload
@@ -90,8 +113,15 @@ class RZP_Webhook
 
         $paymentId = $data['payload']['payment']['entity']['id'];
 
+        // We don't process subscription payments here
+        if (isset($data['payload']['payment']['entity']['subscription_id']))
+        {
+            return;
+        }
+
         $order = new WC_Order($orderId);
 
+        // If it is already marked as paid, ignore the event
         if ($order->needs_payment() === false)
         {
             return;
@@ -126,7 +156,7 @@ class RZP_Webhook
             $success = true;
         }
         else if (($payment['status'] === 'authorized') and
-                 ($this->razorpay->payment_action === 'capture'))
+                 ($this->razorpay->getSetting('payment_action') === 'capture'))
         {
             //
             // If the payment is only authorized, we capture it
@@ -139,11 +169,13 @@ class RZP_Webhook
 
         $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, true);
 
+        // Graceful exit since payment is now processed.
         exit;
     }
 
     /**
      * Returns the order amount, rounded as integer
+     * @return int Order Amount
      */
     public function getOrderAmountAsInteger($order)
     {
