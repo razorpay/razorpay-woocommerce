@@ -44,7 +44,9 @@ class RZP_Webhook
             return;
         }
 
-        if ($this->razorpay->getSetting('enable_webhook') === 'yes' && empty($data['event']) === false)
+        $enabled = $this->razorpay->getSetting('enable_webhook');
+
+        if ($enabled and empty($data['event']) === false)
         {
             if ((isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true))
             {
