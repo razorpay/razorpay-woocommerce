@@ -342,7 +342,7 @@ function woocommerce_razorpay_init()
                     'woocommerce_order_id' => $orderId
                 ),
                 'callback_url' => $callbackUrl,
-                'prefill' => $this->getCustomerInfo($order),
+                'prefill'      => $this->getCustomerInfo($order),
             );
         }
 
@@ -757,7 +757,6 @@ EOT;
                 self::RAZORPAY_PAYMENT_ID => $_POST['razorpay_payment_id'],
                 self::RAZORPAY_SIGNATURE  => $_POST['razorpay_signature'],
             );
-
 
             $sessionKey = $this->getOrderSessionKey($orderId);
             $attributes[self::RAZORPAY_ORDER_ID] = $woocommerce->session->get($sessionKey);

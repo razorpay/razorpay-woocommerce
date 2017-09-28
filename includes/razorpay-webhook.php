@@ -108,18 +108,18 @@ class RZP_Webhook
      */
     protected function paymentAuthorized(array $data)
     {
+        // We don't process subscription payments here
+        if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
+        {
+            return;
+        }
+
         //
         // Order entity should be sent as part of the webhook payload
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
         $paymentId = $data['payload']['payment']['entity']['id'];
-
-        // We don't process subscription payments here
-        if (isset($data['payload']['payment']['entity']['subscription_id']))
-        {
-            return;
-        }
 
         $order = new WC_Order($orderId);
 
