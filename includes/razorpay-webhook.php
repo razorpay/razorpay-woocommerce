@@ -74,7 +74,7 @@ class RZP_Webhook
                         'event'     => 'razorpay.wc.signature.verify_failed'
                     );
 
-                    write_log($log);
+                    error_log(json_encode($log));
                     return;
                 }
 
@@ -143,7 +143,7 @@ class RZP_Webhook
                 'event'     => $data['event']
             );
 
-            write_log($log);
+            error_log(json_encode($log));
 
             exit;
         }
