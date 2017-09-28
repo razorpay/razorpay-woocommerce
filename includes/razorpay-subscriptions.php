@@ -17,7 +17,7 @@ class RZP_Subscriptions
     {
         $this->api = new Api($keyId, $keySecret);
 
-        $this->razorpay = new WC_Razorpay();
+        $this->razorpay = new WC_Razorpay(false);
     }
 
     public function createSubscription($orderId)
@@ -93,6 +93,7 @@ class RZP_Subscriptions
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($product['product_id']);
 
+        // We add the signup fee as an addon
         if ($signUpFee)
         {
             $item = array(
@@ -310,10 +311,12 @@ class RZP_Subscriptions
     {
         $products = $order->get_items();
 
+        $count = $order->get_item_count();
+
         //
         // Technically, subscriptions work only if there's one array in the cart
         //
-        if (sizeof($products) > 1)
+        if ($count > 1)
         {
             throw new Exception('Currently Razorpay does not support more than'
                                 . ' one product in the cart if one of the products'

@@ -113,7 +113,7 @@ class RZP_Subscription_Webhook extends RZP_Webhook
             return "RAZORPAY ERROR: Subscription fetch failed with the message $message";
         }
 
-        $orderId = $subscription->notes->woocommerce_order_id;
+        $orderId = $subscription->notes[WC_Razorpay::WC_ORDER_ID];
 
         //
         // If success is false, automatically process subscription failure
@@ -159,7 +159,7 @@ class RZP_Subscription_Webhook extends RZP_Webhook
 
             write_log($log);
 
-            exit;
+            return;
         }
 
         $paymentCount = $wcSubscription->get_completed_payment_count();
@@ -180,6 +180,8 @@ class RZP_Subscription_Webhook extends RZP_Webhook
             WC_Subscriptions_Manager::prepare_renewal($wcSubscriptionId);
 
             $wcSubscription->payment_complete($paymentId);
+
+            echo "Subscription Charged successfully";
         }
     }
 
