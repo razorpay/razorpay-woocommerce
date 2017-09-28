@@ -82,7 +82,7 @@ class RZP_Subscription_Webhook extends RZP_Webhook
                 'event'     => $data['event']
             );
 
-            write_log($log);
+            error_log(json_encode($log));
 
             exit;
         }
@@ -157,7 +157,7 @@ class RZP_Subscription_Webhook extends RZP_Webhook
                 'Error' => 'There are more than one subscription products in this order'
             );
 
-            write_log($log);
+            error_log(json_encode($log));
 
             return;
         }
