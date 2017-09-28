@@ -28,7 +28,7 @@
     document.getElementById('razorpay_signature').value =
       payment.razorpay_signature;
     document.razorpayform.submit();
-  };
+  ;
 
   var razorpayCheckout = new Razorpay(data);
 
@@ -40,22 +40,18 @@
   }
 
   function addEvent(element, evnt, funct) {
-    if (element.attachEvent){
+    if (element.attachEvent) {
       return element.attachEvent('on' + evnt, funct);
-    }
-    else return element.addEventListener(evnt, funct, false);
+    } else return element.addEventListener(evnt, funct, false);
   }
 
-  if( document.readyState === 'complete' ) {
+  if (document.readyState === 'complete') {
     addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
     openCheckout();
-  }
-  else
-  {
+  } else {
     document.addEventListener('DOMContentLoaded', function() {
       addEvent(document.getElementById('btn-razorpay'), 'click', openCheckout);
       openCheckout();
     });
   }
-
 })();
