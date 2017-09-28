@@ -440,34 +440,24 @@ function woocommerce_razorpay_init()
          **/
         protected function convertCurrency(& $data)
         {
-            global $WOOCS;
-
-            $currencies = $WOOCS->get_currencies();
-
             $currency = $data['currency'];
+            $amount = $data['amount'] / 100;
 
-            if (array_key_exists(self::INR, $currencies) and array_key_exists($currency, $currencies))
-            {
-                // If the currenct currency is the same as the default currency set in WooCommerce,
-                // Currency Switcher plugin sets the rate of currenct currency as 0, because of which
-                // we need to set this to 1 here if it's value is 0
-                $currencyConversionRate = ($currencies[$currency]['rate'] == 0 ? 1 : $currencies[$currency]['rate']);
+            // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
+            $data['amount'] = intval($this->convertCurrencyFixer($amount, $currency, self::INR) * 100);
 
-                // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
-                $value = $data['amount'] * $currencies[self::INR]['rate'];
+            $data['currency'] = self::INR;
+        }
 
-                $data['amount'] = intval(round($value / $currencyConversionRate));
-                $data['currency'] = self::INR;
-            }
-            else
-            {
-                throw new Errors\BadRequestError(
-                    WooErrors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_MESSAGE,
-                    WooErrors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_CODE,
-                    400
-                );
+        public function convertCurrencyFixer($amount, $source, $destination)
+        {
+            $url  = "https://api.fixer.io/latest?symbols=$destination&base=$source";
 
-            }
+            $data = json_decode(file_get_contents($url), true);
+
+            $rate = $data['rates'][$destination];
+
+            return $rate * $amount;
         }
 
         protected function verifyOrderAmount($razorpayOrderId, $orderId)
@@ -532,15 +522,6 @@ function woocommerce_razorpay_init()
 
         public function handleCurrencyConversion(& $data)
         {
-            if (class_exists('WOOCS') === false)
-            {
-                throw new Errors\BadRequestError(
-                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
-                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
-                    400
-                );
-            }
-
             $this->convertCurrency($data);
         }
 
