@@ -13,9 +13,6 @@ class RZP_Webhook
 
     const PAYMENT_AUTHORIZED = 'payment.authorized';
     const PAYMENT_FAILED     = 'payment.failed';
-    const SUBSCRIPTION_CHARGED = 'subscription.charged';
-
-    const RAZORPAY_SUBSCRIPTION_ID = 'razorpay_subscription_id';
 
     function __construct()
     {
@@ -87,143 +84,11 @@ class RZP_Webhook
                     case self::PAYMENT_FAILED:
                         return $this->paymentFailed($data);
 
-                    case self::SUBSCRIPTION_CHARGED:
-                        return $this->subscriptionCharged($data);
-
                     default:
                         return;
                 }
             }
         }
-    }
-
-    /**
-     * Handling the subscription charged webhook
-     *
-     * @param $data
-     */
-    protected function subscriptionCharged($data)
-    {
-        //
-        // Order entity should be sent as part of the webhook payload
-        //
-        $orderId = $data['payload']['subscription']['entity']['notes']['woocommerce_order_id'];
-
-        $paymentId = "";
-
-        // TODO: Need to add payment_id to the subscription.charged webhook
-        if (isset($data['payload']['payment']['entity']['payment_id']) === true)
-        {
-            $paymentId = $data['payload']['payment']['entity']['payment_id'];
-        }
-
-        // We get the subscription id from the webhook payload
-        $subscriptionId = $data['payload']['subscription']['entity']['id'];
-
-        // By default subscription charged is triggered when success = true
-        $this->processSubscription($orderId, $paymentId, $subscriptionId, true);
-
-        exit;
-    }
-
-    /**
-     * Helper method used to handle all subscription processing
-     *
-     * @param $orderId
-     * @param string $paymentId
-     * @param $subscriptionId
-     * @param bool $success
-     * @return string|void
-     */
-    protected function processSubscription($orderId, $paymentId = "", $subscriptionId, $success = true)
-    {
-        //
-        // If success is false, automatically process subscription failure
-        //
-
-        if ($success === false)
-        {
-            return $this->processSubscriptionFailed($orderId);
-        }
-
-        $api = $this->razorpay->getRazorpayApiInstance();
-
-        try
-        {
-            $subscription = $api->subscription->fetch($subscriptionId);
-        }
-        catch (Exception $e)
-        {
-            $message = $e->getMessage();
-            return 'RAZORPAY ERROR: Subscription fetch failed with the message \'' . $message . '\'';
-        }
-
-        $this->processSubscriptionSuccess($orderId, $subscription, $paymentId);
-
-        exit;
-    }
-
-    /**
-     * In the case of successful payment, we mark the subscription successful
-     *
-     * @param $orderId
-     * @param $subscription
-     * @param $paymentId
-     */
-    protected function processSubscriptionSuccess($orderId, $subscription, $paymentId)
-    {
-        //
-        // This method is used to process the subscription's recurring payment
-        //
-        $wcSubscription = wcs_get_subscriptions_for_order($orderId);
-
-        $wcSubscriptionId = array_keys($wcSubscription)[0];
-
-        //
-        // We will only process one subscription per order
-        //
-        $wcSubscription = array_values($wcSubscription)[0];
-
-        if (count($wcSubscription) > 1)
-        {
-            $log = array(
-                'Error' => 'There are more than one subscription products in this order'
-            );
-
-            write_log($log);
-
-            exit;
-        }
-
-        $paymentCount = $wcSubscription->get_completed_payment_count();
-
-        //
-        // The subscription is completely paid for
-        //
-        if ($paymentCount === $subscription->total_count)
-        {
-            return;
-        }
-        else if ($paymentCount === $subscription->paid_count + 1)
-        {
-            //
-            // If subscription has been paid for on razorpay's end, we need to mark the
-            // subscription payment to be successful on woocommerce's end
-            //
-            WC_Subscriptions_Manager::prepare_renewal($wcSubscriptionId);
-
-            $wcSubscription->payment_complete($paymentId);
-        }
-    }
-
-    /**
-     * In the case of payment failure, we mark the subscription as failed
-     *
-     * @param $orderId
-     */
-    protected function processSubscriptionFailed($orderId)
-    {
-        WC_Subscriptions_Manager::process_subscription_payment_failure_on_order($orderId);
     }
 
     /**
@@ -241,18 +106,25 @@ class RZP_Webhook
      */
     protected function paymentAuthorized(array $data)
     {
+        // We don't process subscription payments here
+        if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
+        {
+            $invoiceId = $data['payload']['payment']['entity']['invoice_id'];
+
+            $invoice = $this->api->invoice->fetch($invoiceId);
+
+            if (empty($invoice->subscription_id) === false)
+            {
+                return;
+            }
+        }
+
         //
         // Order entity should be sent as part of the webhook payload
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
         $paymentId = $data['payload']['payment']['entity']['id'];
-
-        // We don't process subscription payments here
-        if (isset($data['payload']['payment']['entity']['subscription_id']))
-        {
-            return;
-        }
 
         $order = new WC_Order($orderId);
 
