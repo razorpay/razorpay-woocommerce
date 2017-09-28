@@ -63,6 +63,7 @@ function woocommerce_razorpay_subscriptions_init()
         public function __construct()
         {
             parent::__construct();
+            $this->icon =  plugins_url('images/logo.png' , __FILE__);
             $this->mergeSettingsWithParentPlugin();
             $this->setupExtraHooks();
         }
