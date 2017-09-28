@@ -18,8 +18,8 @@ define('RAZORPAY_WOOCOMMERCE_PLUGIN', 'woo-razorpay');
 $pluginRoot = WP_PLUGIN_DIR . '/' . RAZORPAY_WOOCOMMERCE_PLUGIN;
 
 require_once $pluginRoot . '/razorpay-payments.php';
-require_once $pluginRoot . '/includes/razorpay-webhook.php';
 require_once $pluginRoot . '/razorpay-sdk/Razorpay.php';
+require_once __DIR__ . '/includes/razorpay-subscription-webhook.php';
 require_once __DIR__ . '/includes/Errors/SubscriptionErrorCode.php';
 require_once __DIR__ . '/includes/razorpay-subscriptions.php';
 
@@ -126,7 +126,6 @@ function woocommerce_razorpay_subscriptions_init()
             return self::RAZORPAY_SUBSCRIPTION_ID . $orderId;
         }
 
-
         protected function getRazorpayPaymentParams($orderId)
         {
             $this->subscriptions = new RZP_Subscriptions($this->getSetting('key_id'), $this->getSetting('key_secret'));
@@ -134,6 +133,8 @@ function woocommerce_razorpay_subscriptions_init()
             try
             {
                 $subscriptionId = $this->subscriptions->createSubscription($orderId);
+
+                add_post_meta($orderId, self::RAZORPAY_SUBSCRIPTION_ID, $subscriptionId);
             }
             catch (Exception $e)
             {
@@ -160,7 +161,7 @@ function woocommerce_razorpay_subscriptions_init()
 
         protected function getDisplayAmount($order)
         {
-            return $this->subscriptions->getDisplayAmount($orderId);
+            return $this->subscriptions->getDisplayAmount($order);
         }
 
         protected function verifySignature($orderId)
@@ -192,7 +193,6 @@ function woocommerce_razorpay_subscriptions_init()
 
             $this->subscriptions->cancelSubscription($subscriptionId);
         }
-
     }
 
     /**
@@ -210,7 +210,7 @@ function woocommerce_razorpay_subscriptions_init()
 
 function razorpay_webhook_subscription_init()
 {
-    $rzpWebhook = new RZP_Webhook();
+    $rzpWebhook = new RZP_Subscription_Webhook();
 
     $rzpWebhook->process();
 }

@@ -7,7 +7,9 @@ use Razorpay\Woocommerce\Errors as WooErrors;
 class RZP_Subscriptions
 {
     protected $razorpay;
+    protected $api;
 
+    const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
     const RAZORPAY_PLAN_ID               = 'razorpay_wc_plan_id';
     const INR                            = 'INR';
 
@@ -41,6 +43,7 @@ class RZP_Subscriptions
 
         // Setting the subscription id as the session variable
         $sessionKey = $this->getSubscriptionSessionKey($orderId);
+
         $woocommerce->session->set($sessionKey, $subscription['id']);
 
         return $subscription['id'];
@@ -213,7 +216,9 @@ class RZP_Subscriptions
         $productId = $product['product_id'];
 
         $period       = WC_Subscriptions_Product::get_period($productId);
+
         $interval     = WC_Subscriptions_Product::get_interval($productId);
+
         $recurringFee = WC_Subscriptions_Product::get_price($productId);
 
         //
@@ -320,7 +325,7 @@ class RZP_Subscriptions
 
     protected function getSubscriptionSessionKey($orderId)
     {
-        return 'razorpay_subscription_id' . $orderId;
+        return self::RAZORPAY_SUBSCRIPTION_ID . $orderId;
     }
 
     protected function getRazorpayApiInstance()
