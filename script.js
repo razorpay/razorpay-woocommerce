@@ -28,7 +28,7 @@
     document.getElementById('razorpay_signature').value =
       payment.razorpay_signature;
     document.razorpayform.submit();
-  ;
+  };
 
   var razorpayCheckout = new Razorpay(data);
 
