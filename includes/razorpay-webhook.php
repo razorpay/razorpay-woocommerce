@@ -109,14 +109,7 @@ class RZP_Webhook
         // We don't process subscription payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
-            $invoiceId = $data['payload']['payment']['entity']['invoice_id'];
-
-            $invoice = $this->api->invoice->fetch($invoiceId);
-
-            if (empty($invoice->subscription_id) === false)
-            {
-                return;
-            }
+            return;
         }
 
         //
