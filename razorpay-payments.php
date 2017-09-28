@@ -483,7 +483,7 @@ function woocommerce_razorpay_init()
             catch (Exception $e)
             {
                 $message = $e->getMessage();
-                return 'RAZORPAY ERROR: Order fetch failed with the message \'' . $message . '\'';
+                return "RAZORPAY ERROR: Order fetch failed with the message '$message'";
             }
 
             $orderCreationData = $this->getOrderCreationData($orderId);
@@ -769,7 +769,7 @@ EOT;
             // We don't have a proper order id
             if ($orderId !== null)
             {
-                $message = "An error occured while processing this payment";
+                $message = 'An error occured while processing this payment';
             }
             if (isset($_POST['error']) === true)
             {

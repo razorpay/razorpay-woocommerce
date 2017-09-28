@@ -27,7 +27,7 @@ class RZP_Webhook
      * - Exception while fetching the payment
      *
      * It passes on the webhook in the following cases:
-     * - subscription_id set in payment.authorized
+     * - invoice_id set in payment.authorized
      * - Invalid JSON
      * - Signature mismatch
      * - Secret isn't setup
@@ -108,7 +108,7 @@ class RZP_Webhook
      */
     protected function paymentAuthorized(array $data)
     {
-        // We don't process subscription payments here
+        // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
             return;
