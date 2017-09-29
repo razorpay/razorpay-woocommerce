@@ -431,11 +431,9 @@ function woocommerce_razorpay_init()
         /**
          * Convert the currency to INR using rates fetched from Woocommerce Currency Switcher plugin
          *
-         * @param Array $data
-         *
-         * @return Array
-         *
-         **/
+         * @param $data
+         * @throws Errors\BadRequestError
+         */
         protected function convertCurrency(& $data)
         {
             global $WOOCS;
@@ -608,7 +606,7 @@ EOT;
         {
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
-                return $order->get_id();
+                return $order->get_order_number();
             }
 
             return $order->id;
@@ -675,7 +673,7 @@ EOT;
             {
                 return array(
                     'result' => 'success',
-                    'redirect' => add_query_arg('order', $order->get_id(),
+                    'redirect' => add_query_arg('order', $order->get_order_number(),
                         add_query_arg('key', $orderKey, $order->get_checkout_payment_url(true)))
                 );
             }
@@ -683,7 +681,7 @@ EOT;
             {
                 return array(
                     'result' => 'success',
-                    'redirect' => add_query_arg('order', $order->get_id(),
+                    'redirect' => add_query_arg('order', $order->get_order_number(),
                         add_query_arg('key', $orderKey, get_permalink(get_option('woocommerce_pay_page_id'))))
                 );
             }
