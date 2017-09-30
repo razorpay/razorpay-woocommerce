@@ -67,19 +67,30 @@ class RZP_Subscriptions
         }
     }
 
+    private function getWooCommerceSubscriptionFromOrderId($orderId)
+    {
+        $subscriptions = wcs_get_subscriptions_for_order($orderId);
+
+        return end($subscriptions);
+    }
+
     protected function getSubscriptionCreateData($orderId)
     {
         $order = new WC_Order($orderId);
 
+        $sub = $this->getWooCommerceSubscriptionFromOrderId($orderId);
+
         $product = $this->getProductFromOrder($order);
 
-        $planId = $this->getProductPlanId($product);
+        $planId = $this->getProductPlanId($product, $order);
 
         $customerId = $this->getCustomerId($order);
 
         $length = (int) WC_Subscriptions_Product::get_length($product['product_id']);
 
         $subscriptionData = array(
+            // TODO: Doesn't work with trial periods currently
+            // 'start_at'        => $sub->get_time('date_created'),
             'customer_id'     => $customerId,
             'plan_id'         => $planId,
             'quantity'        => (int) $product['qty'],
@@ -113,17 +124,15 @@ class RZP_Subscriptions
         return $subscriptionData;
     }
 
-    protected function getProductPlanId($product)
+    protected function getProductPlanId($product, $order)
     {
         $currency = get_woocommerce_currency();
-
-        $key = self::RAZORPAY_PLAN_ID . '_'. strtolower($currency);
 
         $productId = $product['product_id'];
 
         $metadata = get_post_meta($productId);
 
-        list($planId, $created) = $this->createOrGetPlanId($metadata, $product, $key);
+        list($planId, $created, $key) = $this->createOrGetPlanId($metadata, $product, $order);
 
         //
         // If new plan was created, we delete the old plan id
@@ -149,9 +158,9 @@ class RZP_Subscriptions
      * @return string $planId
      * @return bool $created
      */
-    protected function createOrGetPlanId($metadata, $product, $key)
+    protected function createOrGetPlanId($metadata, $product, $order)
     {
-        $planArgs = $this->getPlanArguments($product);
+        list($key, $planArgs) = $this->getPlanArguments($product, $order);
 
         //
         // If razorpay_plan_id is set in the metadata,
@@ -178,7 +187,7 @@ class RZP_Subscriptions
             if (($create === false) and
                 ($plan['item']['amount'] === $planArgs['item']['amount']))
             {
-                return array($plan['id'], false);
+                return array($plan['id'], false, $key);
             }
         }
 
@@ -188,7 +197,7 @@ class RZP_Subscriptions
         //
         $planId = $this->createPlan($planArgs);
 
-        return array($planId, true);
+        return array($planId, true, $key);
     }
 
     protected function createPlan($planArgs)
@@ -212,15 +221,17 @@ class RZP_Subscriptions
         return $plan['id'];
     }
 
-    protected function getPlanArguments($product)
+    protected function getPlanArguments($product, $order)
     {
-        $productId = $product['product_id'];
+        $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
-        $period       = WC_Subscriptions_Product::get_period($productId);
+        $productId    = $product['product_id'];
 
-        $interval     = WC_Subscriptions_Product::get_interval($productId);
+        $period       = $sub->get_billing_period();
 
-        $recurringFee = WC_Subscriptions_Product::get_price($productId);
+        $interval     = $sub->get_billing_interval();
+
+        $recurringFee = $sub->get_total();
 
         //
         // Ad-Hoc code
@@ -243,30 +254,41 @@ class RZP_Subscriptions
             'currency' => get_woocommerce_currency(),
         );
 
-        if ($item['currency'] !== self::INR)
-        {
-            $this->razorpay->handleCurrencyConversion($item);
-        }
-
         $planArgs['item'] = $item;
 
-        return $planArgs;
+        return array($this->getKeyFromPlanArgs($planArgs), $planArgs);
     }
 
+    private function getKeyFromPlanArgs(array $planArgs)
+    {
+        $item = $planArgs['item'];
+
+        $hashInput = implode('|', [
+            $item['amount'],
+            $planArgs['period'],
+            $planArgs['interval']
+        ]);
+
+        return self::RAZORPAY_PLAN_ID . sha1($hashInput);
+    }
+
+    // TODO: Take care of trial period here
     public function getDisplayAmount($order)
     {
         $product = $this->getProductFromOrder($order);
 
         $productId = $product['product_id'];
 
-        $recurringFee = WC_Subscriptions_Product::get_price($productId);
+        $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
+
+        $recurringFee = $sub->get_amount();
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($productId);
 
         return $recurringFee + $signUpFee;
     }
 
-    protected function getProductPeriod($period)
+    private function getProductPeriod($period)
     {
         $periodMap = array(
             'day'   => 'daily',
