@@ -159,14 +159,18 @@ class RZP_Subscriptions
             //
             $startDay = $metadata['razorpay_wc_start_date'][0];
 
-            $oneMonthAhead = date('Y-m-d', strtotime('+1 month'));
+            $interval = WC_Subscriptions_Product::get_interval($product['product_id']);
 
-            $oneMonthAheadArray = explode('-', $oneMonthAhead);
+            $period = WC_Subscriptions_Product::get_period($product['product_id']);
 
-            $oneMonthAheadArray[2] = $startDay;
+            $oneIntervalAhead = date('Y-m-d', strtotime("+$interval $period"));
+
+            $oneIntervalAheadArray = explode('-', $oneIntervalAhead);
+
+            $oneIntervalAheadArray[2] = $startDay;
 
             // 5:30 AM on the date configured as metadata
-            $startDate = strtotime(implode('-', $oneMonthAheadArray));
+            $startDate = strtotime(implode('-', $oneIntervalAheadArray));
 
             $recurringFee = WC_Subscriptions_Product::get_price($product['product_id']);
 
