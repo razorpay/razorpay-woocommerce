@@ -123,6 +123,9 @@ class RZP_Subscriptions
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($product['product_id']);
 
+        // TODO: Refactor if needed
+        $this->setStartAtIfNeeded($subscriptionData, $signUpFee, $product);
+
         // We add the signup fee as an addon
         if ($signUpFee)
         {
@@ -141,6 +144,38 @@ class RZP_Subscriptions
         }
 
         return $subscriptionData;
+    }
+
+    protected function setStartAtIfNeeded(& $subscriptionData, & $signUpFee, $product)
+    {
+        $metadata = get_post_meta($product['product_id']);
+
+        if (empty($metadata['razorpay_wc_start_date']) === false)
+        {
+            //
+            // When custom start date is set, we consider the initial payment
+            // as a sign up payment, and the first recurring payment will be
+            // made on the configured start date on the next month
+            //
+            $startDay = $metadata['razorpay_wc_start_date'][0];
+
+            $oneMonthAhead = date('Y-m-d', strtotime('+1 month'));
+
+            $oneMonthAheadArray = explode('-', $oneMonthAhead);
+
+            $oneMonthAheadArray[2] = $startDay;
+
+            // 5:30 AM on the date configured as metadata
+            $startDate = strtotime(implode('-', $oneMonthAheadArray));
+
+            $recurringFee = WC_Subscriptions_Product::get_price($product['product_id']);
+
+            $signUpFee += $recurringFee;
+
+            $subscriptionData['start_at'] = $startDate;
+
+            // TODO: Since start date is actually second recurring, end date needs to be 1 period before time
+        }
     }
 
     protected function getProductPlanId($product, $order)
