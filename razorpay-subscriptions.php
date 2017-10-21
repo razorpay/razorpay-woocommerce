@@ -1,4 +1,5 @@
 <?php
+
 /*
 Plugin Name: Razorpay Subscriptions for WooCommerce
 Plugin URI: https://razorpay.com
@@ -15,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) )
 }
 
 define('RAZORPAY_WOOCOMMERCE_PLUGIN', 'woo-razorpay');
+
 $pluginRoot = WP_PLUGIN_DIR . '/' . RAZORPAY_WOOCOMMERCE_PLUGIN;
 
 require_once $pluginRoot . '/razorpay-payments.php';
@@ -25,7 +27,6 @@ require_once __DIR__ . '/includes/razorpay-subscriptions.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
-use Razorpay\Woocommerce\Errors as WooErrors;
 
 // Load this after the woo-razorpay plugin
 add_action('plugins_loaded', 'woocommerce_razorpay_subscriptions_init', 20);
@@ -40,19 +41,36 @@ function woocommerce_razorpay_subscriptions_init()
 
     class WC_Razorpay_Subscription extends WC_Razorpay
     {
+        /**
+         * Unique ID for the gateway
+         * @var string
+         */
         public $id = 'razorpay_subscriptions';
+
+        /**
+         * Title of the payment method shown on the admin page.
+         * @var string
+         */
         public $method_title = 'Razorpay Subscriptions';
 
         const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
         const DEFAULT_LABEL                  = 'MasterCard/Visa Credit Card';
         const DEFAULT_DESCRIPTION            = 'Setup automatic recurring billing on a MasterCard or Visa Credit Card';
 
+        /**
+         * Settings visible to the user
+         * @var array
+         */
         protected $visibleSettings = array(
             'enabled',
             'title',
             'description',
         );
 
+        /**
+         * Contains all supported methods of woocommerce subscriptions
+         * @var array
+         */
         public $supports = array(
             'subscriptions',
             'subscription_reactivation',
@@ -60,11 +78,18 @@ function woocommerce_razorpay_subscriptions_init()
             'subscription_cancellation',
         );
 
+        /**
+         * Instance of helper class located in __DIR__ . 'includes/razorpay-subscriptions'
+         * @var RZP_Subscriptions
+         */
+        protected $subscriptions;
+
         public function __construct()
         {
             parent::__construct();
-            $this->icon =  plugins_url('images/logo.png' , __FILE__);
+
             $this->mergeSettingsWithParentPlugin();
+
             $this->setupExtraHooks();
         }
 
@@ -72,7 +97,7 @@ function woocommerce_razorpay_subscriptions_init()
         {
             // Easiest way to read config of a different plugin
             // is to initialize it
-            $gw = new WC_Razorpay(false);
+            $wcRazorpay = new WC_Razorpay(false);
 
             $parentSettings = array(
                 'key_id',
@@ -82,7 +107,7 @@ function woocommerce_razorpay_subscriptions_init()
 
             foreach ($parentSettings as $key)
             {
-                $this->settings[$key] = $gw->settings[$key];
+                $this->settings[$key] = $wcRazorpay->settings[$key];
             }
         }
 
@@ -96,8 +121,6 @@ function woocommerce_razorpay_subscriptions_init()
 
         public function disable_non_subscription($availableGateways)
         {
-            global $woocommerce;
-
             $enable = WC_Subscriptions_Cart::cart_contains_subscription();
 
             if ($enable === false)
@@ -145,19 +168,20 @@ function woocommerce_razorpay_subscriptions_init()
             }
 
             return [
-                'recurring'         => 1,
-                'subscription_id'   => $subscriptionId,
+                'recurring'       => 1,
+                'subscription_id' => $subscriptionId,
             ];
         }
 
         public function init_form_fields()
         {
             parent::init_form_fields();
-            $this->fields = $this->form_fields;
 
-            unset($this->fields['payment_action']);
+            $fields = $this->form_fields;
 
-            $this->form_fields = $this->fields;
+            unset($fields['payment_action']);
+
+            $this->form_fields = $fields;
         }
 
         protected function getDisplayAmount($order)

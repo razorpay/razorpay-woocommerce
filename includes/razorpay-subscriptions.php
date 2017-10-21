@@ -6,8 +6,29 @@ use Razorpay\Woocommerce\Errors as WooErrors;
 
 class RZP_Subscriptions
 {
-    protected $razorpay;
+    /**
+     * Razorpay API Key Secret
+     *
+     * @var string
+     */
+    protected $keyId;
+
+    /**
+     * Razorpay API Key ID
+     *
+     * @var string
+     */
+    protected $keySecret;
+
+    /**
+     * @var Api
+     */
     protected $api;
+
+    /**
+     * @var WC_Razorpay
+     */
+    protected $razorpay;
 
     const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
     const RAZORPAY_PLAN_ID               = 'razorpay_wc_plan_id';
@@ -53,7 +74,7 @@ class RZP_Subscriptions
     {
         try
         {
-            $subscription = $this->api->subscription->cancel($subscriptionId);
+            $this->api->subscription->cancel($subscriptionId);
         }
         catch (Exception $e)
         {
@@ -77,8 +98,6 @@ class RZP_Subscriptions
     protected function getSubscriptionCreateData($orderId)
     {
         $order = new WC_Order($orderId);
-
-        $sub = $this->getWooCommerceSubscriptionFromOrderId($orderId);
 
         $product = $this->getProductFromOrder($order);
 
@@ -126,8 +145,6 @@ class RZP_Subscriptions
 
     protected function getProductPlanId($product, $order)
     {
-        $currency = get_woocommerce_currency();
-
         $productId = $product['product_id'];
 
         $metadata = get_post_meta($productId);
@@ -152,11 +169,10 @@ class RZP_Subscriptions
      * Takes in product metadata and product
      * Creates or gets created plan
      *
-     * @param $metadata,
+     * @param $metadata
      * @param $product
-     *
-     * @return string $planId
-     * @return bool $created
+     * @param $order
+     * @return array
      */
     protected function createOrGetPlanId($metadata, $product, $order)
     {
@@ -223,9 +239,7 @@ class RZP_Subscriptions
 
     protected function getPlanArguments($product, $order)
     {
-        $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
-
-        $productId    = $product['product_id'];
+        $sub          = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
         $period       = $sub->get_billing_period();
 
