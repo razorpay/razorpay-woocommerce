@@ -178,7 +178,11 @@ class RZP_Subscriptions
 
             $subscriptionData['start_at'] = $startDate;
 
-            // TODO: Since start date is actually second recurring, end date needs to be 1 period before time
+            //
+            // In the case where we take the first recurring payment as a up front amount, and the
+            // second recurring payment as the first recurring payment, we reduce the total count by 1
+            //
+            $subscriptionData['total_count'] = $subscriptionData['total_count'] - 1;
         }
     }
 

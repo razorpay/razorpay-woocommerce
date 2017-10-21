@@ -83,7 +83,7 @@ function woocommerce_razorpay_subscriptions_init()
          * @var RZP_Subscriptions
          */
         protected $subscriptions;
-
+        
         public function __construct()
         {
             parent::__construct();
