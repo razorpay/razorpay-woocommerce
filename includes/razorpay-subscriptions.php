@@ -7,20 +7,6 @@ use Razorpay\Woocommerce\Errors as WooErrors;
 class RZP_Subscriptions
 {
     /**
-     * Razorpay API Key Secret
-     *
-     * @var string
-     */
-    protected $keyId;
-
-    /**
-     * Razorpay API Key ID
-     *
-     * @var string
-     */
-    protected $keySecret;
-
-    /**
      * @var Api
      */
     protected $api;
@@ -36,9 +22,9 @@ class RZP_Subscriptions
 
     public function __construct($keyId, $keySecret)
     {
-        $this->api = new Api($keyId, $keySecret);
+        $this->setRazorpayApiInstance($keyId, $keySecret);
 
-        $this->razorpay = new WC_Razorpay(false);
+        $this->setRazorpayInstance();
     }
 
     public function createSubscription($orderId)
@@ -410,8 +396,13 @@ class RZP_Subscriptions
         return self::RAZORPAY_SUBSCRIPTION_ID . $orderId;
     }
 
-    protected function getRazorpayApiInstance()
+    protected function setRazorpayApiInstance($keyId, $keySecret)
     {
-        return new Api($this->keyId, $this->keySecret);
+        $this->api = new Api($keyId, $keySecret);
+    }
+
+    protected function setRazorpayInstance()
+    {
+        $this->razorpay = new WC_Razorpay(false);
     }
 }
