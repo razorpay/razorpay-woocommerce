@@ -22,9 +22,10 @@ class RZP_Subscriptions
 
     public function __construct($keyId, $keySecret)
     {
-        $this->setRazorpayApiInstance($keyId, $keySecret);
+        $this->api = new Api($keyId, $keySecret);
 
-        $this->setRazorpayInstance();
+        $this->razorpay = new WC_Razorpay(false);
+
     }
 
     public function createSubscription($orderId)
@@ -110,7 +111,7 @@ class RZP_Subscriptions
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($product['product_id']);
 
         // We pass $subscriptionData and $signUpFee by reference
-        $this->setStartAtIfNeeded($subscriptionData, $signUpFee, $order);
+        $this->setStartAtAndSignUpFeeIfNeeded($subscriptionData, $signUpFee, $order);
 
         // We add the signup fee as an addon
         if ($signUpFee)
@@ -138,11 +139,9 @@ class RZP_Subscriptions
      * @param $order
      * @throws Errors\Error
      */
-    protected function setStartAtIfNeeded(& $subscriptionData, & $signUpFee, $order)
+    protected function setStartAtAndSignUpFeeIfNeeded(& $subscriptionData, & $signUpFee, $order)
     {
         $product = $this->getProductFromOrder($order);
-
-        $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
         $metadata = get_post_meta($product['product_id']);
 
@@ -155,8 +154,6 @@ class RZP_Subscriptions
             //
             $startDay = $metadata['razorpay_wc_start_date'][0];
 
-            $startDay = 40;
-
             //
             // $startDay must be in between 1 and 28
             //
@@ -168,6 +165,8 @@ class RZP_Subscriptions
                     400
                 );
             }
+
+            $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
             $startDate = $this->getStartDate($startDay, $sub);
 
@@ -437,15 +436,5 @@ class RZP_Subscriptions
     protected function getSubscriptionSessionKey($orderId)
     {
         return self::RAZORPAY_SUBSCRIPTION_ID . $orderId;
-    }
-
-    protected function setRazorpayApiInstance($keyId, $keySecret)
-    {
-        $this->api = new Api($keyId, $keySecret);
-    }
-
-    protected function setRazorpayInstance()
-    {
-        $this->razorpay = new WC_Razorpay(false);
     }
 }

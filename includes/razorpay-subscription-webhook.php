@@ -55,7 +55,7 @@ class RZP_Subscription_Webhook extends RZP_Webhook
      * Currently we handle only subscription failures using this webhook
      *
      * @param array $data
-     * @return string|void
+     * @return string|null
      */
     protected function paymentFailed(array $data)
     {
