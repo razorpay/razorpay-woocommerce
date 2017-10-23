@@ -25,9 +25,6 @@ require_once __DIR__ . '/includes/razorpay-subscription-webhook.php';
 require_once __DIR__ . '/includes/Errors/SubscriptionErrorCode.php';
 require_once __DIR__ . '/includes/razorpay-subscriptions.php';
 
-use Razorpay\Api\Api;
-use Razorpay\Api\Errors;
-
 // Load this after the woo-razorpay plugin
 add_action('plugins_loaded', 'woocommerce_razorpay_subscriptions_init', 20);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_subscription_init', 20);
@@ -53,12 +50,8 @@ function woocommerce_razorpay_subscriptions_init()
          */
         public $method_title = 'Razorpay Subscriptions';
 
-        const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
-        const DEFAULT_LABEL                  = 'MasterCard/Visa Credit Card';
-        const DEFAULT_DESCRIPTION            = 'Setup automatic recurring billing on a MasterCard or Visa Credit Card';
-
         /**
-         * Settings visible to the user
+         * This array controls what settings are visible to the user
          * @var array
          */
         protected $visibleSettings = array(
@@ -79,11 +72,16 @@ function woocommerce_razorpay_subscriptions_init()
         );
 
         /**
-         * Instance of helper class located in __DIR__ . 'includes/razorpay-subscriptions'
+         * Instance of the class RZP_subscriptions found in __DIR__ . 'includes/razorpay-subscriptions'
+         * It is used to make all subscriptions related API calls to the Razorpay's API
          * @var RZP_Subscriptions
          */
         protected $subscriptions;
-        
+
+        const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
+        const DEFAULT_LABEL                  = 'MasterCard/Visa Credit Card';
+        const DEFAULT_DESCRIPTION            = 'Setup automatic recurring billing on a MasterCard or Visa Credit Card';
+
         public function __construct()
         {
             parent::__construct();
@@ -198,8 +196,8 @@ function woocommerce_razorpay_subscriptions_init()
             $sessionKey = $this->getSubscriptionSessionKey($orderId);
 
             $attributes = array(
-                self::RAZORPAY_PAYMENT_ID       => $_POST['razorpay_payment_id'],
-                self::RAZORPAY_SIGNATURE        => $_POST['razorpay_signature'],
+                self::RAZORPAY_PAYMENT_ID       => $_POST[self::RAZORPAY_PAYMENT_ID],
+                self::RAZORPAY_SIGNATURE        => $_POST[self::RAZORPAY_SIGNATURE],
                 self::RAZORPAY_SUBSCRIPTION_ID  => $woocommerce->session->get($sessionKey),
             );
 
