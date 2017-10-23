@@ -108,6 +108,7 @@ class RZP_Webhook
 
     /**
      * Does nothing for the main payments flow currently
+     * @param array $data Webook Data
      */
     protected function paymentFailed(array $data)
     {
@@ -117,7 +118,7 @@ class RZP_Webhook
     /**
      * Handling the payment authorized webhook
      *
-     * @param array $data
+     * @param array $data Webook Data
      */
     protected function paymentAuthorized(array $data)
     {

@@ -99,11 +99,21 @@ function woocommerce_razorpay_init()
             'class'     =>  '',
         );
 
+        /**
+         * Return Wordpress plugin settings
+         * @param  string $key setting key
+         * @return mixed setting value
+         */
         public function getSetting($key)
         {
             return $this->settings[$key];
         }
 
+        /**
+         * @param boolean $hooks Whether or not to
+         *                       setup the hooks on
+         *                       calling the constructor
+         */
         public function __construct($hooks = true)
         {
             $this->icon =  plugins_url('images/logo.png' , __FILE__);
@@ -227,12 +237,18 @@ function woocommerce_razorpay_init()
 
         /**
          * Receipt Page
+         * @param string $orderId WC Order Id
          **/
-        function receipt_page($order)
+        function receipt_page($orderId)
         {
-            echo $this->generate_razorpay_form($order);
+            echo $this->generate_razorpay_form($orderId);
         }
 
+        /**
+         * Returns key to use in session for storing Razorpay order Id
+         * @param  string $orderId Razorpay Order Id
+         * @return string Session Key
+         */
         protected function getOrderSessionKey($orderId)
         {
             return self::RAZORPAY_ORDER_ID . $orderId;
@@ -243,6 +259,7 @@ function woocommerce_razorpay_init()
          * Razorpay Order from the session and verify
          * that is is still correct. If not found
          * (or incorrect), create a new Razorpay Order
+         *
          * @param  string $orderId Order Id
          * @return mixed Razorpay Order Id or Exception
          */
@@ -297,11 +314,21 @@ function woocommerce_razorpay_init()
             }
         }
 
+        /**
+         * Returns redirect URL post payment processing
+         * @return string redirect URL
+         */
         private function getRedirectUrl()
         {
             return get_site_url() . '/wc-api/' . $this->id;
         }
 
+        /**
+         * Specific payment parameters to be passed to checkout
+         * for payment processing
+         * @param  string $orderId WC Order Id
+         * @return array payment params
+         */
         protected function getRazorpayPaymentParams($orderId)
         {
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
@@ -324,6 +351,7 @@ function woocommerce_razorpay_init()
 
         /**
          * Generate razorpay button link
+         * @param string $orderId WC Order Id
          **/
         public function generate_razorpay_form($orderId)
         {
@@ -347,6 +375,11 @@ function woocommerce_razorpay_init()
             return $html;
         }
 
+        /**
+         * default parameters passed to checkout
+         * @param  WC_Order $order WC Order
+         * @return array checkout params
+         */
         private function getDefaultCheckoutArguments($order)
         {
             $callbackUrl = $this->getRedirectUrl();
@@ -358,7 +391,7 @@ function woocommerce_razorpay_init()
             return array(
                 'key'          => $this->getSetting('key_id'),
                 'name'         => get_bloginfo('name'),
-                'currency'     => 'INR',
+                'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
                     'woocommerce_order_id' => $orderId
@@ -368,6 +401,10 @@ function woocommerce_razorpay_init()
             );
         }
 
+        /**
+         * @param  WC_Order $order
+         * @return string currency
+         */
         private function getOrderCurrency($order)
         {
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
@@ -378,6 +415,11 @@ function woocommerce_razorpay_init()
             return $order->get_order_currency();
         }
 
+        /**
+         * Returns display amount to use for non-INR payments
+         * @param  WC_Order $order WC Order
+         * @return int order total to be displayed
+         */
         protected function getDisplayAmount($order)
         {
             return (int) round($order->get_total());
@@ -455,9 +497,10 @@ function woocommerce_razorpay_init()
         /**
          * Convert the currency to INR using rates fetched from Woocommerce Currency Switcher plugin
          *
-         * @param Array $data
-         *
-         * @return Array
+         * @param array $data Input array to convert currency
+         * @param string $data['currency'] Currency
+         * @param amount $data['amount'] Input Amount
+         * @return array, modified $data with $data['currency'] = 'INR'
          *
          **/
         protected function convertCurrency(& $data)
@@ -776,8 +819,8 @@ EOT;
             $api = $this->getRazorpayApiInstance();
 
             $attributes = array(
-                self::RAZORPAY_PAYMENT_ID => $_POST['razorpay_payment_id'],
-                self::RAZORPAY_SIGNATURE  => $_POST['razorpay_signature'],
+                self::RAZORPAY_PAYMENT_ID => $_POST[self::RAZORPAY_PAYMENT_ID],
+                self::RAZORPAY_SIGNATURE  => $_POST[self::RAZORPAY_SIGNATURE],
             );
 
             $sessionKey = $this->getOrderSessionKey($orderId);
