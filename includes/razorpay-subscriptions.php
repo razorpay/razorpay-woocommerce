@@ -109,7 +109,7 @@ class RZP_Subscriptions
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($product['product_id']);
 
-        // TODO: Refactor if needed
+        // We pass $subscriptionData and $signUpFee by reference
         $this->setStartAtIfNeeded($subscriptionData, $signUpFee, $order);
 
         // We add the signup fee as an addon
@@ -132,6 +132,12 @@ class RZP_Subscriptions
         return $subscriptionData;
     }
 
+    /**
+     * @param $subscriptionData
+     * @param $signUpFee
+     * @param $order
+     * @throws Errors\Error
+     */
     protected function setStartAtIfNeeded(& $subscriptionData, & $signUpFee, $order)
     {
         $product = $this->getProductFromOrder($order);
@@ -149,22 +155,24 @@ class RZP_Subscriptions
             //
             $startDay = $metadata['razorpay_wc_start_date'][0];
 
-            $period       = $sub->get_billing_period();
+            $startDay = 40;
 
-            $interval     = $sub->get_billing_interval();
+            //
+            // $startDay must be in between 1 and 28
+            //
+            if (($startDay <= 1) or ($startDay >= 28))
+            {
+                throw new Errors\Error(
+                    'Invalid start day saved as subscription product metadata',
+                    WooErrors\SubscriptionErrorCode::SUBSCRIPTION_START_DATE_INVALID,
+                    400
+                );
+            }
 
-            $oneIntervalAhead = date('Y-m-d', strtotime("+$interval $period"));
+            $startDate = $this->getStartDate($startDay, $sub);
 
-            $oneIntervalAheadArray = explode('-', $oneIntervalAhead);
-
-            $oneIntervalAheadArray[2] = $startDay;
-
-            // 5:30 AM on the date configured as metadata
-            $startDate = strtotime(implode('-', $oneIntervalAheadArray));
-
-            $recurringFee = $sub->get_total();
-
-            $signUpFee += $recurringFee;
+            // We modify the sign up fee which was passed by reference
+            $signUpFee += $sub->get_total();
 
             $subscriptionData['start_at'] = $startDate;
 
@@ -174,6 +182,32 @@ class RZP_Subscriptions
             //
             $subscriptionData['total_count'] = $subscriptionData['total_count'] - 1;
         }
+    }
+
+    protected function getStartDate($startDay, $sub)
+    {
+        $period = $sub->get_billing_period();
+
+        $interval = $sub->get_billing_interval();
+
+        $date = new DateTime('now', new DateTimeZone('Asia/Kolkata'));
+
+        //
+        // We get the date one interval ahead from the current date. The interval depends
+        // on the settings for the subscriptions product. For eg. If the interval is yearly,
+        // and the current date is 21/10/2017, then $oneIntervalAhead would be 21/10/2018.
+        //
+        $oneIntervalAhead = $date->modify("+$interval $period");
+
+        //
+        // We get the start date from the datetime object above and start day saved in the product metadata
+        //
+        $startYear = $oneIntervalAhead->format('Y');
+
+        $startMonth = $oneIntervalAhead->format('m');
+
+        return $oneIntervalAhead->setDate($startYear, $startMonth, $startDay)
+                                ->getTimestamp();
     }
 
     protected function getProductPlanId($product, $order)
@@ -301,6 +335,11 @@ class RZP_Subscriptions
             'currency' => get_woocommerce_currency(),
         );
 
+        if ($item['currency'] !== self::INR)
+        {
+            $this->razorpay->handleCurrencyConversion($item);
+        }
+
         $planArgs['item'] = $item;
 
         return array($this->getKeyFromPlanArgs($planArgs), $planArgs);
@@ -328,7 +367,7 @@ class RZP_Subscriptions
 
         $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
-        $recurringFee = $sub->get_amount();
+        $recurringFee = $sub->get_total();
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($productId);
 
