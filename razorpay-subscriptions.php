@@ -72,6 +72,12 @@ function woocommerce_razorpay_subscriptions_init()
         );
 
         /**
+         * Icon URL, set in constructor
+         * @var string
+         */
+        public $icon;
+
+        /**
          * Instance of the class RZP_subscriptions found in __DIR__ . 'includes/razorpay-subscriptions'
          * It is used to make all subscriptions related API calls to the Razorpay's API
          * @var RZP_Subscriptions
@@ -85,6 +91,8 @@ function woocommerce_razorpay_subscriptions_init()
         public function __construct()
         {
             parent::__construct();
+
+            $this->icon = plugins_url('images/logo.png', __FILE__);
 
             $this->mergeSettingsWithParentPlugin();
 

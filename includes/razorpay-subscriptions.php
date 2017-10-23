@@ -189,7 +189,7 @@ class RZP_Subscriptions
 
         $interval = $sub->get_billing_interval();
 
-        $date = new DateTime('now', new DateTimeZone('Asia/Kolkata'));
+        $date = new DateTime('now');
 
         //
         // We get the date one interval ahead from the current date. The interval depends
