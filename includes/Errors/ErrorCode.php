@@ -15,10 +15,4 @@ class ErrorCode extends ApiErrors\ErrorCode
     const WOOCS_MISSING_ERROR_MESSAGE          = 'The WooCommerce Currency Switcher plugin is missing.';
     const INVALID_CURRENCY_ERROR_MESSAGE       = 'The selected currency is invalid.';
     const WOOCS_CURRENCY_MISSING_ERROR_MESSAGE = 'Woocommerce Currency Switcher plugin is not configured with INR correctly';
-
-    // Subscription related errors
-    const API_SUBSCRIPTION_CREATION_FAILED     = 'Razorpay API subscription creation failed';
-    const API_SUBSCRIPTION_CANCELLATION_FAILED = 'Razorpay API subscription cancellation failed';
-    const API_PLAN_CREATION_FAILED             = 'Razorpay API plan creation failed';
-    const API_CUSTOMER_CREATION_FAILED         = 'Razorpay API customer creation failed';
 }
