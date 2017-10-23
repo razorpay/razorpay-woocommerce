@@ -110,7 +110,7 @@ class RZP_Subscriptions
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($product['product_id']);
 
         // TODO: Refactor if needed
-        $this->setStartAtIfNeeded($subscriptionData, $signUpFee, $product);
+        $this->setStartAtIfNeeded($subscriptionData, $signUpFee, $order);
 
         // We add the signup fee as an addon
         if ($signUpFee)
@@ -132,8 +132,12 @@ class RZP_Subscriptions
         return $subscriptionData;
     }
 
-    protected function setStartAtIfNeeded(& $subscriptionData, & $signUpFee, $product)
+    protected function setStartAtIfNeeded(& $subscriptionData, & $signUpFee, $order)
     {
+        $product = $this->getProductFromOrder($order);
+
+        $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
+
         $metadata = get_post_meta($product['product_id']);
 
         if (empty($metadata['razorpay_wc_start_date']) === false)
@@ -145,9 +149,9 @@ class RZP_Subscriptions
             //
             $startDay = $metadata['razorpay_wc_start_date'][0];
 
-            $interval = WC_Subscriptions_Product::get_interval($product['product_id']);
+            $period       = $sub->get_billing_period();
 
-            $period = WC_Subscriptions_Product::get_period($product['product_id']);
+            $interval     = $sub->get_billing_interval();
 
             $oneIntervalAhead = date('Y-m-d', strtotime("+$interval $period"));
 
@@ -158,7 +162,7 @@ class RZP_Subscriptions
             // 5:30 AM on the date configured as metadata
             $startDate = strtotime(implode('-', $oneIntervalAheadArray));
 
-            $recurringFee = WC_Subscriptions_Product::get_price($product['product_id']);
+            $recurringFee = $sub->get_total();
 
             $signUpFee += $recurringFee;
 
