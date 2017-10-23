@@ -8,9 +8,21 @@ use Razorpay\Api\Errors;
 
 class RZP_Webhook
 {
+    /**
+     * Instance of the razorpay payments class
+     * @var WC_Razorpay
+     */
     protected $razorpay;
+
+    /**
+     * API client instance to communicate with Razorpay API
+     * @var Razorpay\Api\Api
+     */
     protected $api;
 
+    /**
+     * Event constants
+     */
     const PAYMENT_AUTHORIZED = 'payment.authorized';
     const PAYMENT_FAILED     = 'payment.failed';
 
@@ -46,9 +58,10 @@ class RZP_Webhook
 
         $enabled = $this->razorpay->getSetting('enable_webhook');
 
-        if ($enabled and empty($data['event']) === false)
+        if (($enabled === 'yes') and
+            (empty($data['event']) === false))
         {
-            if ((isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true))
+            if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true)
             {
                 $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
 
@@ -119,8 +132,6 @@ class RZP_Webhook
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
-        $paymentId = $data['payload']['payment']['entity']['id'];
-
         $order = new WC_Order($orderId);
 
         // If it is already marked as paid, ignore the event
@@ -138,9 +149,9 @@ class RZP_Webhook
         catch (Exception $e)
         {
             $log = array(
-                'message'   => $e->getMessage(),
-                'data'      => $razorpayPaymentId,
-                'event'     => $data['event']
+                'message'         => $e->getMessage(),
+                'payment_id'      => $razorpayPaymentId,
+                'event'           => $data['event']
             );
 
             error_log(json_encode($log));
@@ -158,7 +169,7 @@ class RZP_Webhook
             $success = true;
         }
         else if (($payment['status'] === 'authorized') and
-                 ($this->razorpay->getSetting('payment_action') === 'capture'))
+                 ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE))
         {
             //
             // If the payment is only authorized, we capture it
@@ -177,6 +188,7 @@ class RZP_Webhook
 
     /**
      * Returns the order amount, rounded as integer
+     * @param WC_Order $order WooCommerce Order instance
      * @return int Order Amount
      */
     public function getOrderAmountAsInteger($order)

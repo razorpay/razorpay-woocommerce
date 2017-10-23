@@ -58,6 +58,7 @@ function woocommerce_razorpay_init()
             'enable_webhook',
             'webhook_secret',
         );
+
         public $form_fields = array();
 
         public $supports = array(
@@ -65,9 +66,30 @@ function woocommerce_razorpay_init()
             'refunds'
         );
 
+        /**
+         * Can be set to true if you want payment fields
+         * to show on the checkout (if doing a direct integration).
+         * @var boolean
+         */
         public $has_fields = false;
+
+        /**
+         * Unique ID for the gateway
+         * @var string
+         */
         public $id = 'razorpay';
+
+        /**
+         * Title of the payment method shown on the admin page.
+         * @var string
+         */
         public $method_title = 'Razorpay';
+
+        /**
+         * Icon URL, set in constructor
+         * @var string
+         */
+        public $icon;
 
         /**
          * TODO: Remove usage of $this->msg
@@ -288,7 +310,7 @@ function woocommerce_razorpay_init()
             {
                 throw new Exception('RAZORPAY ERROR: Razorpay API could not be reached');
             }
-            else if($razorpayOrderId instanceof Exception)
+            else if ($razorpayOrderId instanceof Exception)
             {
                 $message = $razorpayOrderId->getMessage();
 
@@ -311,7 +333,7 @@ function woocommerce_razorpay_init()
             {
                 $params = $this->getRazorpayPaymentParams($orderId);
             }
-            catch(Exception $e)
+            catch (Exception $e)
             {
                 return $e->getMessage();
             }
