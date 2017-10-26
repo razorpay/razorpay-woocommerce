@@ -8,7 +8,8 @@ class Utility
 
     public function verifyPaymentSignature($attributes)
     {
-        $expectedSignature = $attributes['razorpay_signature'];
+        $actualSignature = $attributes['razorpay_signature'];
+
         $paymentId = $attributes['razorpay_payment_id'];
 
         if (isset($attributes['razorpay_order_id']) === true)
@@ -21,41 +22,36 @@ class Utility
         {
             $subscriptionId = $attributes['razorpay_subscription_id'];
 
-            $payload = $paymentId . '|' . $subscriptionId ;
+            $payload = $paymentId . '|' . $subscriptionId;
         }
         else
         {
-            throw new Error('Invalid parameters passed to verifyPaymentSignature:'
-                . 'At least razorpay_order_id or razorpay_subscription_id should be set.');
+            throw new Errors\SignatureVerificationError(
+                'Either razorpay_order_id or razorpay_subscription_id must be present.');
         }
 
-        return self::verifySignature($payload, $expectedSignature);
+        $secret = Api::getSecret();
+
+        self::verifySignature($payload, $actualSignature, $secret);
     }
 
-    public function verifyWebhookSignature($payload, $expectedSignature, $webhookSecret)
+    public function verifyWebhookSignature($payload, $actualSignature, $secret)
     {
-        return self::verifySignature($payload, $expectedSignature, $webhookSecret);
+        self::verifySignature($payload, $actualSignature, $secret);
     }
 
-    public function verifySignature($payload, $expectedSignature, $webhookSecret = '')
+    public function verifySignature($payload, $actualSignature, $secret)
     {
-        if (empty($webhookSecret) === false)
-        {
-            $actualSignature = hash_hmac(self::SHA256, $payload, $webhookSecret);
-        }
-        else
-        {
-            $actualSignature = hash_hmac(self::SHA256, $payload, Api::getSecret());
-        }
+        $expectedSignature = hash_hmac(self::SHA256, $payload, $secret);
 
         // Use lang's built-in hash_equals if exists to mitigate timing attacks
         if (function_exists('hash_equals'))
         {
-            $verified = hash_equals($actualSignature, $expectedSignature);
+            $verified = hash_equals($expectedSignature, $actualSignature);
         }
         else
         {
-            $verified = $this->hashEquals($actualSignature, $expectedSignature);
+            $verified = $this->hashEquals($expectedSignature, $actualSignature);
         }
 
         if ($verified === false)
@@ -65,7 +61,7 @@ class Utility
         }
     }
 
-    private function hashEquals($actualSignature, $expectedSignature)
+    private function hashEquals($expectedSignature, $actualSignature)
     {
         if (strlen($expectedSignature) === strlen($actualSignature))
         {
