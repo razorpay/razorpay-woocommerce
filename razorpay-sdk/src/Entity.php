@@ -48,10 +48,30 @@ class Entity extends Resource implements ArrayableInterface
         $fullClassName = get_class($this);
         $pos = strrpos($fullClassName, '\\');
         $className = substr($fullClassName, $pos + 1);
-        $className = lcfirst($className);
+        $className = $this->snakeCase($className);
         return $className.'s/';
     }
 
+    protected function snakeCase($input)
+    {
+        $delimiter = '_';
+        $output = preg_replace('/\s+/u', '', ucwords($input));
+        $output = preg_replace('/(.)(?=[A-Z])/u', '$1'.$delimiter, $output);
+        $output = strtolower($output);
+        return $output;
+    }
+
+    /**
+     * Makes a HTTP request using Request class and assuming the API returns
+     * formatted entity or collection result, wraps the returned JSON as entity
+     * and returns.
+     *
+     * @param string $method
+     * @param string $relativeUrl
+     * @param array  $data
+     *
+     * @return Entity
+     */
     protected function request($method, $relativeUrl, $data = null)
     {
         $request = new Request();
@@ -67,21 +87,23 @@ class Entity extends Resource implements ArrayableInterface
         }
         else
         {
-            return static::buildEntity(null, $response);
+            return static::buildEntity($response);
         }
     }
 
-    protected static function buildEntity($key, $data)
+    /**
+     * Given the JSON response of an API call, wraps it to corresponding entity
+     * class or a collection and returns the same.
+     *
+     * @param array $data
+     *
+     * @return Entity
+     */
+    protected static function buildEntity($data)
     {
         $entities = static::getDefinedEntitiesArray();
 
-        $arrayableAttributes = static::getArrayableAttributes();
-
-        if (in_array($key, $arrayableAttributes))
-        {
-            $entity = $data;
-        }
-        else if (isset($data['entity']))
+        if (isset($data['entity']))
         {
             if (in_array($data['entity'], $entities))
             {
@@ -90,26 +112,17 @@ class Entity extends Resource implements ArrayableInterface
             }
             else
             {
-                $entity = new self;
+                $entity = new static;
             }
-
-            $entity->fill($data);
         }
         else
         {
-            $entity = new self;
-
-            $entity->fill($data);
+            $entity = new static;
         }
 
-        return $entity;
-    }
+        $entity->fill($data);
 
-    protected static function getArrayableAttributes()
-    {
-        return array(
-            'notes'
-        );
+        return $entity;
     }
 
     protected static function getDefinedEntitiesArray()
@@ -145,47 +158,35 @@ class Entity extends Resource implements ArrayableInterface
         {
             if (is_array($value))
             {
-                $value = self::getArrayValue($key, $value);
+                if  (static::isAssocArray($value) === false)
+                {
+                    $collection = array();
+
+                    foreach ($value as $v)
+                    {
+                        if (is_array($v))
+                        {
+                            $entity = static::buildEntity($v);
+                            array_push($collection, $entity);
+                        }
+                        else
+                        {
+                            array_push($collection, $v);
+                        }
+                    }
+
+                    $value = $collection;
+                }
+                else
+                {
+                    $value = static::buildEntity($value);
+                }
             }
 
             $attributes[$key] = $value;
         }
 
         $this->attributes = $attributes;
-    }
-
-    protected static function getArrayValue($key, $value)
-    {
-        if  (static::isAssocArray($value) === false)
-        {
-            $value = self::getAssocArrayValue($key, $value);
-        }
-        else
-        {
-            $value = static::buildEntity($key, $value);
-        }
-
-        return $value;
-    }
-
-    protected static function getAssocArrayValue($key, $value)
-    {
-        $collection = array();
-
-        foreach ($value as $v)
-        {
-            if (is_array($v))
-            {
-                $entity = static::buildEntity($key, $v);
-                array_push($collection, $entity);
-            }
-            else
-            {
-                array_push($collection, $v);
-            }
-        }
-
-        return $collection;
     }
 
     public static function isAssocArray($arr)
