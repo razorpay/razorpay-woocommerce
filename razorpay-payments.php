@@ -397,7 +397,6 @@ function woocommerce_razorpay_init()
                     'woocommerce_order_id' => $orderId
                 ),
                 'callback_url' => $callbackUrl,
-                'redirect'     => 'true',
                 'prefill'      => $this->getCustomerInfo($order),
             );
         }
