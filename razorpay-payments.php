@@ -127,6 +127,8 @@ function woocommerce_razorpay_init()
             {
                 $this->initHooks();
             }
+
+            $this->title = $this->getSetting('title');
         }
 
         protected function initHooks()
@@ -227,12 +229,9 @@ function woocommerce_razorpay_init()
             echo '</table>';
         }
 
-        /**
-         *  There are no payment fields, but we want to show the description if set.
-         **/
-        function payment_fields()
+        public function get_description()
         {
-            echo wpautop(wptexturize($this->getSetting('description')));
+            return $this->getSetting('description');
         }
 
         /**
@@ -397,6 +396,7 @@ function woocommerce_razorpay_init()
                     'woocommerce_order_id' => $orderId
                 ),
                 'callback_url' => $callbackUrl,
+                'redirect'     => 'true',
                 'prefill'      => $this->getCustomerInfo($order),
             );
         }
