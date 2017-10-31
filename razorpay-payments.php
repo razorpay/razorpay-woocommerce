@@ -1,12 +1,13 @@
 <?php
 /*
-Plugin Name: Razorpay for WooCommerce
-Plugin URI: https://razorpay.com
-Description: Razorpay Payment Gateway Integration for WooCommerce
-Version: 1.6.0
-Stable tag: 1.6.0
-Author: Razorpay
-Author URI: https://razorpay.com
+ * Plugin Name: Razorpay for WooCommerce
+ * Plugin URI: https://razorpay.com
+ * Description: Razorpay Payment Gateway Integration for WooCommerce
+ * Version: 1.6.0
+ * Stable tag: 1.6.0
+ * Author: Team Razorpay
+ * WC tested up to: 3.2.1
+ * Author URI: https://razorpay.com
 */
 
 if ( ! defined( 'ABSPATH' ) )
@@ -127,6 +128,8 @@ function woocommerce_razorpay_init()
             {
                 $this->initHooks();
             }
+
+            $this->title = $this->getSetting('title');
         }
 
         protected function initHooks()
@@ -227,12 +230,9 @@ function woocommerce_razorpay_init()
             echo '</table>';
         }
 
-        /**
-         *  There are no payment fields, but we want to show the description if set.
-         **/
-        function payment_fields()
+        public function get_description()
         {
-            echo wpautop(wptexturize($this->getSetting('description')));
+            return $this->getSetting('description');
         }
 
         /**

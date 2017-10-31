@@ -36,6 +36,10 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= 1.6.1 =
+* Fixes payment title/description in WC Checkout page.
+* Adds WooCommerce version tested in the plugin metadata
+
 = 1.6.0 = 
 * Adds Razorpay Subscriptions plugin support.
 * Code cleanup.
