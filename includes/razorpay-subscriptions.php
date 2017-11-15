@@ -6,8 +6,25 @@ use Razorpay\Woocommerce\Errors as WooErrors;
 
 class RZP_Subscriptions
 {
+    /**
+     * @var WC_Razorpay
+     */
     protected $razorpay;
+
+    /**
+     * @var Api
+     */
     protected $api;
+
+    /**
+     * @var string
+     */
+    protected $keyId;
+
+    /**
+     * @var string
+     */
+    protected $keySecret;
 
     const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
     const RAZORPAY_PLAN_ID               = 'razorpay_wc_plan_id';
@@ -53,7 +70,7 @@ class RZP_Subscriptions
     {
         try
         {
-            $subscription = $this->api->subscription->cancel($subscriptionId);
+            $this->api->subscription->cancel($subscriptionId);
         }
         catch (Exception $e)
         {
@@ -78,7 +95,7 @@ class RZP_Subscriptions
     {
         $order = new WC_Order($orderId);
 
-        $sub = $this->getWooCommerceSubscriptionFromOrderId($orderId);
+        // $sub = $this->getWooCommerceSubscriptionFromOrderId($orderId);
 
         $product = $this->getProductFromOrder($order);
 
@@ -126,8 +143,6 @@ class RZP_Subscriptions
 
     protected function getProductPlanId($product, $order)
     {
-        $currency = get_woocommerce_currency();
-
         $productId = $product['product_id'];
 
         $metadata = get_post_meta($productId);
@@ -225,8 +240,6 @@ class RZP_Subscriptions
     {
         $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
-        $productId    = $product['product_id'];
-
         $period       = $sub->get_billing_period();
 
         $interval     = $sub->get_billing_interval();
@@ -248,6 +261,7 @@ class RZP_Subscriptions
             'interval' => $interval
         );
 
+        // TODO: Should convert to INR if currency is USD
         $item = array(
             'name'     => $product['name'],
             'amount'   => (int) round($recurringFee * 100),
