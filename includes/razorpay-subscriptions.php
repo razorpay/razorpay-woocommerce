@@ -7,10 +7,25 @@ use Razorpay\Woocommerce\Errors as WooErrors;
 class RZP_Subscriptions
 {
     /**
+     * @var WC_Razorpay
+     */
+    protected $razorpay;
+
+    /**
      * @var Api
      */
     protected $api;
 
+    /**
+     * @var string
+     */
+    protected $keyId;
+
+    /**
+     * @var string
+     */
+    protected $keySecret;
+  
     /**
      * @var WC_Razorpay
      */
@@ -61,7 +76,7 @@ class RZP_Subscriptions
     {
         try
         {
-            $this->api->subscription->fetch($subscriptionId)->cancel();
+            $this->api->subscription->cancel($subscriptionId);
         }
         catch (Exception $e)
         {
@@ -85,6 +100,8 @@ class RZP_Subscriptions
     protected function getSubscriptionCreateData($orderId)
     {
         $order = new WC_Order($orderId);
+
+        // $sub = $this->getWooCommerceSubscriptionFromOrderId($orderId);
 
         $product = $this->getProductFromOrder($order);
 
@@ -328,6 +345,7 @@ class RZP_Subscriptions
             'interval' => $interval
         );
 
+        // TODO: Should convert to INR if currency is USD
         $item = array(
             'name'     => $product['name'],
             'amount'   => (int) round($recurringFee * 100),

@@ -4,7 +4,7 @@ Tags: razorpay, payments, india, woocommerce, ecommerce, recurring, subscription
 Requires at least: 3.9.2
 Requires PHP: 5.6.0
 Tested up to: 4.8.2
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,7 +22,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 2. To use this plugin correctly, you need to be able to make network requests. Please make sure that you have the php-curl extension installed.
 3. Make sure you have the following plugins installed: `WooCommerce Razorpay`, `WooCommerce Subscriptions`, `WooCommerce`.
 
-== Dependencies == 
+== Dependencies ==
 
 1. Wordpress v3.9.2 and later
 2. WooCommerce v2.4 and later
@@ -46,7 +46,9 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
-= 1.0.0 = 
+= 1.0.1 =
+* Bug fix: disallowing plugin usage if base plugin directory doesn't exist
+
 * Initial Release
 
 == Support ==

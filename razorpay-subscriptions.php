@@ -4,10 +4,10 @@
 Plugin Name: Razorpay Subscriptions for WooCommerce
 Plugin URI: https://razorpay.com
 Description: Razorpay Subscriptions for WooCommerce
-Version: 1.0.0
-Stable tag: 1.0.0
-Author: Team Razorpay
-Author URI: https://github.com/razorpay/razorpay-woocommerce-subscriptions
+Version: 1.0.1
+Stable tag: 1.0.1
+Author: Razorpay
+Author URI: https://razorpay.com
 */
 
 if ( ! defined( 'ABSPATH' ) )
@@ -19,11 +19,19 @@ define('RAZORPAY_WOOCOMMERCE_PLUGIN', 'woo-razorpay');
 
 $pluginRoot = WP_PLUGIN_DIR . '/' . RAZORPAY_WOOCOMMERCE_PLUGIN;
 
+if ( ! is_dir( $pluginRoot ) )
+{
+    return;
+}
+
 require_once $pluginRoot . '/razorpay-payments.php';
 require_once $pluginRoot . '/razorpay-sdk/Razorpay.php';
 require_once __DIR__ . '/includes/razorpay-subscription-webhook.php';
 require_once __DIR__ . '/includes/Errors/SubscriptionErrorCode.php';
 require_once __DIR__ . '/includes/razorpay-subscriptions.php';
+
+use Razorpay\Api\Api;
+use Razorpay\Api\Errors;
 
 // Load this after the woo-razorpay plugin
 add_action('plugins_loaded', 'woocommerce_razorpay_subscriptions_init', 20);
