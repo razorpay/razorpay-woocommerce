@@ -61,7 +61,7 @@ class RZP_Subscriptions
     {
         try
         {
-            $this->api->subscription->cancel($subscriptionId);
+            $this->api->subscription->fetch($subscriptionId)->cancel();
         }
         catch (Exception $e)
         {

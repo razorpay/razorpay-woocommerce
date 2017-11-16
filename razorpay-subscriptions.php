@@ -6,8 +6,8 @@ Plugin URI: https://razorpay.com
 Description: Razorpay Subscriptions for WooCommerce
 Version: 1.0.0
 Stable tag: 1.0.0
-Author: Razorpay
-Author URI: https://razorpay.com
+Author: Team Razorpay
+Author URI: https://github.com/razorpay/razorpay-woocommerce-subscriptions
 */
 
 if ( ! defined( 'ABSPATH' ) )
@@ -210,6 +210,8 @@ function woocommerce_razorpay_subscriptions_init()
 
         public function subscription_cancelled($subscription)
         {
+            $this->subscriptions = new RZP_Subscriptions($this->getSetting('key_id'), $this->getSetting('key_secret'));
+
             $orderIds = array_keys($subscription->get_related_orders());
 
             $parentOrderId = $orderIds[0];
