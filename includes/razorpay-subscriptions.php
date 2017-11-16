@@ -322,7 +322,7 @@ class RZP_Subscriptions
 
     protected function getPlanArguments($product, $order)
     {
-        // $sub          = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
+        $sub          = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
         $period       = $sub->get_billing_period();
 
