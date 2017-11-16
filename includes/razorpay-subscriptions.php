@@ -25,6 +25,11 @@ class RZP_Subscriptions
      * @var string
      */
     protected $keySecret;
+  
+    /**
+     * @var WC_Razorpay
+     */
+    protected $razorpay;
 
     const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
     const RAZORPAY_PLAN_ID               = 'razorpay_wc_plan_id';
@@ -35,6 +40,7 @@ class RZP_Subscriptions
         $this->api = new Api($keyId, $keySecret);
 
         $this->razorpay = new WC_Razorpay(false);
+
     }
 
     public function createSubscription($orderId)
@@ -121,6 +127,9 @@ class RZP_Subscriptions
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($product['product_id']);
 
+        // We pass $subscriptionData and $signUpFee by reference
+        $this->setStartAtAndSignUpFeeIfNeeded($subscriptionData, $signUpFee, $order);
+
         // We add the signup fee as an addon
         if ($signUpFee)
         {
@@ -139,6 +148,82 @@ class RZP_Subscriptions
         }
 
         return $subscriptionData;
+    }
+
+    /**
+     * @param $subscriptionData
+     * @param $signUpFee
+     * @param $order
+     * @throws Errors\Error
+     */
+    protected function setStartAtAndSignUpFeeIfNeeded(& $subscriptionData, & $signUpFee, $order)
+    {
+        $product = $this->getProductFromOrder($order);
+
+        $metadata = get_post_meta($product['product_id']);
+
+        if (empty($metadata['razorpay_wc_start_date']) === false)
+        {
+            //
+            // When custom start date is set, we consider the initial payment
+            // as a sign up payment, and the first recurring payment will be
+            // made on the configured start date on the next month
+            //
+            $startDay = $metadata['razorpay_wc_start_date'][0];
+
+            //
+            // $startDay must be in between 1 and 28
+            //
+            if (($startDay <= 1) or ($startDay >= 28))
+            {
+                throw new Errors\Error(
+                    'Invalid start day saved as subscription product metadata',
+                    WooErrors\SubscriptionErrorCode::SUBSCRIPTION_START_DATE_INVALID,
+                    400
+                );
+            }
+
+            $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
+
+            $startDate = $this->getStartDate($startDay, $sub);
+
+            // We modify the sign up fee which was passed by reference
+            $signUpFee += $sub->get_total();
+
+            $subscriptionData['start_at'] = $startDate;
+
+            //
+            // In the case where we take the first recurring payment as a up front amount, and the
+            // second recurring payment as the first recurring payment, we reduce the total count by 1
+            //
+            $subscriptionData['total_count'] = $subscriptionData['total_count'] - 1;
+        }
+    }
+
+    protected function getStartDate($startDay, $sub)
+    {
+        $period = $sub->get_billing_period();
+
+        $interval = $sub->get_billing_interval();
+
+        $date = new DateTime('now');
+
+        //
+        // We get the date one interval ahead from the current date. The interval depends
+        // on the settings for the subscriptions product. For eg. If the interval is yearly,
+        // and the current date is 21/10/2017, then $oneIntervalAhead would be 21/10/2018.
+        //
+        $oneIntervalAhead = $date->modify("+$interval $period");
+
+        //
+        // We get the start date from the datetime object above and start day saved in the product metadata
+        //
+        $startYear = $oneIntervalAhead->format('Y');
+
+        $startMonth = $oneIntervalAhead->format('m');
+
+        return $oneIntervalAhead->setDate($startYear, $startMonth, $startDay)
+                                ->getTimestamp();
     }
 
     protected function getProductPlanId($product, $order)
@@ -167,11 +252,10 @@ class RZP_Subscriptions
      * Takes in product metadata and product
      * Creates or gets created plan
      *
-     * @param $metadata,
+     * @param $metadata
      * @param $product
-     *
-     * @return string $planId
-     * @return bool $created
+     * @param $order
+     * @return array
      */
     protected function createOrGetPlanId($metadata, $product, $order)
     {
@@ -238,7 +322,7 @@ class RZP_Subscriptions
 
     protected function getPlanArguments($product, $order)
     {
-        $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
+        // $sub          = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
         $period       = $sub->get_billing_period();
 
@@ -268,6 +352,11 @@ class RZP_Subscriptions
             'currency' => get_woocommerce_currency(),
         );
 
+        if ($item['currency'] !== self::INR)
+        {
+            $this->razorpay->handleCurrencyConversion($item);
+        }
+
         $planArgs['item'] = $item;
 
         return array($this->getKeyFromPlanArgs($planArgs), $planArgs);
@@ -295,7 +384,7 @@ class RZP_Subscriptions
 
         $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
 
-        $recurringFee = $sub->get_amount();
+        $recurringFee = $sub->get_total();
 
         $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($productId);
 
@@ -365,10 +454,5 @@ class RZP_Subscriptions
     protected function getSubscriptionSessionKey($orderId)
     {
         return self::RAZORPAY_SUBSCRIPTION_ID . $orderId;
-    }
-
-    protected function getRazorpayApiInstance()
-    {
-        return new Api($this->keyId, $this->keySecret);
     }
 }

@@ -19,9 +19,15 @@ class RZP_Subscription_Webhook extends RZP_Webhook
      */
 
     /**
+     * @var WC_Razorpay
+     */
+    protected $razorpay;
+
+    /**
      * Processes a payment authorized webhook
      *
      * @param array $data
+     * @return string|void
      */
     protected function paymentAuthorized(array $data)
     {
@@ -35,7 +41,7 @@ class RZP_Subscription_Webhook extends RZP_Webhook
         {
             $invoiceId = $data['payload']['payment']['entity']['invoice_id'];
 
-            $subscriptionId = $this->getSubscriptionId($invoiceId);
+            $subscriptionId = $this->getSubscriptionId($invoiceId, $data['event']);
 
             // Process subscription this way
             if (empty($subscriptionId) === false)
@@ -48,7 +54,8 @@ class RZP_Subscription_Webhook extends RZP_Webhook
     /**
      * Currently we handle only subscription failures using this webhook
      *
-     * @param $data
+     * @param array $data
+     * @return string|null
      */
     protected function paymentFailed(array $data)
     {
@@ -58,7 +65,7 @@ class RZP_Subscription_Webhook extends RZP_Webhook
         {
             $invoiceId = $data['payload']['payment']['entity']['invoice_id'];
 
-            $subscriptionId = $this->getSubscriptionId($invoiceId);
+            $subscriptionId = $this->getSubscriptionId($invoiceId, $data['event']);
 
             // Process subscription this way
             if (empty($subscriptionId) === false)
@@ -68,18 +75,20 @@ class RZP_Subscription_Webhook extends RZP_Webhook
         }
     }
 
-    protected function getSubscriptionId($invoiceId)
+    protected function getSubscriptionId($invoiceId, $event)
     {
+        $api = $this->razorpay->getRazorpayApiInstance();
+
         try
         {
-            $invoice = $this->api->invoice->fetch($invoiceId);
+            $invoice = $api->invoice->fetch($invoiceId);
         }
         catch (Exception $e)
         {
             $log = array(
-                'message'   => $e->getMessage(),
-                'data'      => $invoiceId,
-                'event'     => $data['event']
+                'message' => $e->getMessage(),
+                'data'    => $invoiceId,
+                'event'   => $event
             );
 
             error_log(json_encode($log));
