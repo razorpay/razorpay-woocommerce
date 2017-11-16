@@ -25,11 +25,6 @@ class RZP_Subscriptions
      * @var string
      */
     protected $keySecret;
-  
-    /**
-     * @var WC_Razorpay
-     */
-    protected $razorpay;
 
     const RAZORPAY_SUBSCRIPTION_ID       = 'razorpay_subscription_id';
     const RAZORPAY_PLAN_ID               = 'razorpay_wc_plan_id';
