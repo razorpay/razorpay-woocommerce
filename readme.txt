@@ -1,7 +1,8 @@
 === Razorpay Subscriptions for WooCommerce ===
 Contributors: razorpay
-Tags: razorpay, payments, india, woocommerce, ecommerce
+Tags: razorpay, payments, india, woocommerce, ecommerce, recurring, subscriptions, inr
 Requires at least: 3.9.2
+Requires PHP: 5.6.0
 Tested up to: 4.8.2
 Stable tag: 1.0.0
 License: GPLv2 or later
@@ -26,15 +27,22 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 1. Wordpress v3.9.2 and later
 2. WooCommerce v2.4 and later
 3. WooCommerce Subscriptions v2.2 and later
-3. PHP v5.6.0 and later
-4. php-curl
+4. [Razorpay WooCommerce Plugin](https://wordpress.org/plugins/woo-razorpay/) 1.6.0 and later
+5. PHP v5.6.0 and later
+6. php-curl
 
 == Configuration ==
 
 1. Visit the WooCommerce settings page, and click on the Checkout/Payment Gateways tab.
 2. Click on Razorpay to edit the settings. If you do not see Razorpay in the list at the top of the screen make sure you have activated the plugin in the WordPress Plugin Manager.
 3. Enable the Payment Method, name it Credit Card / Debit Card / Internet Banking (this will show up on the payment page your customer sees), add in your Key id and Key Secret.
-4. The Payment Action should be set to "Authorize and Capture". If you want to capture payments manually from the Dashboard after manual verification, set it to "Authorize".
+5. Setup Webhooks as per [this guide](https://github.com/razorpay/razorpay-woocommerce/wiki/Webhooks).
+
+== Frequently Asked Questions ==
+
+1. We currently do not support lifetime subscriptions as of now. The maximum time that a subscription is allowed to run without requiring an authentication again from the customer is 10 years.
+2. Please make sure that you have Webhooks setup on the [Razorpay Plugin](https://wordpress.org/plugins/woo-razorpay/) to ensure that recurring payments are marked as paid on WooCommerce.
+3. For international acceptance, please see our [Multi-Currency Guide](https://github.com/razorpay/razorpay-woocommerce/wiki/Multi-Currency) for the Razorpay WooCommerce plugin.
 
 == Changelog ==
 
