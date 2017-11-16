@@ -40,6 +40,7 @@ tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 require $_tests_dir . '/includes/bootstrap.php';
 
 $wc_tests_framework_base_dir = dirname( dirname( __FILE__ ) ) . '../../woocommerce/tests/framework/';
+require_once( $wc_tests_framework_base_dir . 'helpers/class-wc-helper-customer.php'  );
 require_once( $wc_tests_framework_base_dir . 'helpers/class-wc-helper-product.php'  );
 require_once( $wc_tests_framework_base_dir . 'helpers/class-wc-helper-shipping.php'  );
 require_once( $wc_tests_framework_base_dir . 'helpers/class-wc-helper-order.php'  );
