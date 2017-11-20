@@ -151,7 +151,7 @@ install_db() {
 install_woocommerce() {
 	current_path=$PWD
 	wp_plugin_path="$(dirname $current_path)"
-	if ! [ -d "$wp_plugin_path" ]; then 
+	if ! [ -d "$wp_plugin_path/woocommerce" ]; then 
 		git clone https://github.com/woocommerce/woocommerce.git /tmp/woocommerce
 		mv /tmp/woocommerce  $wp_plugin_path
 	fi
