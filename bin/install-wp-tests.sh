@@ -147,6 +147,17 @@ install_db() {
 	mysqladmin create $DB_NAME --user="$DB_USER" --password="$DB_PASS"$EXTRA
 }
 
+
+install_woocommerce() {
+	current_path=$PWD
+	wp_plugin_path="$(dirname $current_path)"
+	if ! [ -d "$wp_plugin_path" ]; then 
+		git clone https://github.com/woocommerce/woocommerce.git /tmp/woocommerce
+		mv /tmp/woocommerce  $wp_plugin_path
+	fi
+}
+
 install_wp
 install_test_suite
 install_db
+install_woocommerce
