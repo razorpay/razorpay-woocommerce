@@ -143,22 +143,7 @@ class RZP_Webhook
 
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
-        try
-        {
-            $payment = $this->api->payment->fetch($razorpayPaymentId);
-        }
-        catch (Exception $e)
-        {
-            $log = array(
-                'message'         => $e->getMessage(),
-                'payment_id'      => $razorpayPaymentId,
-                'event'           => $data['event']
-            );
-
-            error_log(json_encode($log));
-
-            exit;
-        }
+        $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
         $amount = $this->getOrderAmountAsInteger($order);
 
@@ -176,15 +161,63 @@ class RZP_Webhook
             // If the payment is only authorized, we capture it
             // If the merchant has enabled auto capture
             //
-            $payment->capture(array('amount' => $amount));
+            try
+            {
+                $payment->capture(array('amount' => $amount));
 
-            $success = true;
+                $success = true;
+            }
+            catch (Exception $e)
+            {
+                //
+                // Capture will fail if the payment is already captured
+                //
+                $log = array(
+                    'message'         => $e->getMessage(),
+                    'payment_id'      => $razorpayPaymentId,
+                    'event'           => $data['event']
+                );
+
+                error_log(json_encode($log));
+
+                //
+                // We re-fetch the payment entity and check if the payment is captured now
+                //
+                $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+                if ($payment['status'] === 'captured')
+                {
+                    $success = true;
+                }
+            }
         }
 
         $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, true);
 
         // Graceful exit since payment is now processed.
         exit;
+    }
+
+    protected function getPaymentEntity($razorpayPaymentId, $data)
+    {
+        try
+        {
+            $payment = $this->api->payment->fetch($razorpayPaymentId);
+        }
+        catch (Exception $e)
+        {
+            $log = array(
+                'message'         => $e->getMessage(),
+                'payment_id'      => $razorpayPaymentId,
+                'event'           => $data['event']
+            );
+
+            error_log(json_encode($log));
+
+            exit;
+        }
+
+        return $payment;
     }
 
     /**
