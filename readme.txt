@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 4.8
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,9 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 4. The Payment Action should be set to "Authorize and Capture". If you want to capture payments manually from the Dashboard after manual verification, set it to "Authorize".
 
 == Changelog ==
+
+= 1.6.2 =
+* Fixes webhook capture flow by re-fetching payment and checking for status
 
 = 1.6.1 =
 * Fixes payment title/description in WC Checkout page.
