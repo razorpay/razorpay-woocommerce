@@ -97,6 +97,12 @@ class Test_WC_Razorpay extends WP_UnitTestCase
         $this->assertEquals($this->razorpay->get_description(), 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.');
     }
 
+
+    function test_generate_razorpay_form()
+    {
+        $this->assertEquals($this->razorpay->generate_razorpay_form(wc_get_order(4)), "RAZORPAY ERROR: Order creation failed with the message: 'The WooCommerce Currency Switcher plugin is missing.'.");
+    }
+
     function test_getCustomerInfo()
     {
         $order          = WC_Helper_Order::create_order();
