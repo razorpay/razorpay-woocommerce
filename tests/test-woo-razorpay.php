@@ -12,6 +12,12 @@ class Test_WC_Razorpay extends WP_UnitTestCase
         $this->razorpay = new WC_Razorpay(false);
     }
 
+
+    function test_getSetting()
+        {
+             $this->assertEquals($this->razorpay->getSetting('title'), 'Credit Card/Debit Card/NetBanking');
+        }
+
     function test_formFieldEenableModuleCheckbox()
     {
         $this->assertEquals($this->razorpay->form_fields['enabled']['title'], 'Enable/Disable');
