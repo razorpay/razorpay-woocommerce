@@ -61,7 +61,7 @@ before_script:
 script:
   - |
     if [[ ! -z "$WP_VERSION" ]] ; then
-      phpunit
+      phpunit --coverage-clover ./tests/logs/clover.xml
       WP_MULTISITE=1 phpunit
     fi
   - |
@@ -69,7 +69,6 @@ script:
       phpcs
     fi
   - |
-    ./vendor/bin/phpunit --coverage-clover ./tests/logs/clover.xml
 
 
 after_script:
