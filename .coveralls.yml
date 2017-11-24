@@ -1,3 +1,4 @@
-coverage_clover: build/logs/clover.xml
-json_path: build/logs/coveralls-upload.json
+coverage_clover: ./build/logs/clover.xml
+json_path: ./build/logs/coveralls-upload.json
+src_dir: ./
 service_name: travis-ci
