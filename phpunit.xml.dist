@@ -17,4 +17,7 @@
             <file>./woo-razorpay.php</file>
         </whitelist>
     </filter>
+    <logging>
+    	<log type="coverage-clover" target="./build/clover.xml"/>
+    </logging>
 </phpunit>
