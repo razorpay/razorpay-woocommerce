@@ -92,7 +92,6 @@ class Test_WC_Razorpay extends WP_UnitTestCase
         $this->assertContains('<h3>Razorpay Payment Gateway</h3>', $out);
         $this->assertContains('<p>Allows payments by Credit/Debit Cards, NetBanking, UPI, and multiple Wallets</p>', $out);
         $this->assertContains('<table class="form-table"', $out);
-        $this->assertContains(html_entity_decode($this->razorpay->generate_settings_html()), $out);
     }
 
     function test__description()
