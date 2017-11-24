@@ -55,6 +55,8 @@ before_script:
       composer global require wp-coding-standards/wpcs
       phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
     fi
+  - |
+    composer require php-coveralls/php-coveralls
 
 script:
   - |
@@ -66,3 +68,9 @@ script:
     if [[ "$WP_TRAVISCI" == "phpcs" ]] ; then
       phpcs
     fi
+  - |
+    ./vendor/bin/phpunit --coverage-clover ./tests/logs/clover.xml
+
+
+after_script:
+  - php vendor/bin/coveralls -v
