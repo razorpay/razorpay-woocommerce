@@ -10,6 +10,8 @@ class Test_WC_Razorpay extends WP_UnitTestCase
     function setup()
     {
         $this->razorpay = new WC_Razorpay(false);
+
+        $this->order  = WC_Helper_Order::create_order();
     }
 
 
@@ -106,29 +108,39 @@ class Test_WC_Razorpay extends WP_UnitTestCase
 
     function test_getCustomerInfo()
     {
-        $order          = WC_Helper_Order::create_order();
-        $result         = $this->razorpay->getCustomerInfo($order);
+
+        $this->order->set_billing_first_name('abc');
+        $this->order->set_billing_last_name('xyz');
+        $this->order->set_billing_email('x@ytest.org');
+        $this->order->set_billing_phone('95123456789');
+        $this->order->save();
+
+        $result         = $this->razorpay->getCustomerInfo($this->order);
+
         $expectedResult = Array(
-            'name' => 'Jeroen Sormani',
-            'email' => 'admin@example.org',
-            'contact' => '555-32123'
+            'name' => 'abc xyz',
+            'email' => 'x@ytest.org',
+            'contact' => '95123456789'
         );
+
         $this->assertEquals($result, $expectedResult);
 
     }
 
     function test_updateOrderSuccess()
     {
-        $order = WC_Helper_Order::create_order();
-        $result = $this->razorpay->updateOrder($order, true, "", 2);
-        $this->assertEquals(2, $order->get_transaction_id());
+        $result = $this->razorpay->updateOrder($this->order, true, "", 2);
+
+        $this->assertEquals(2, $this->order->get_transaction_id());
 
     }
 
-    function _updateOrderFailure(){
-        $order = WC_Helper_Order::create_order();
-        $result = $this->razorpay->updateOrder($order, false, "", 2);
-        $this->assertEquals($order->get_status(), '');
+    function test_updateOrderFailure(){
+        $this->order->save();
+
+        $result = $this->razorpay->updateOrder($this->order, false, "", 2);
+
+        $this->assertEquals($this->order->get_status(), 'failed');
     }
 
     function test_getRazorpayApiInstance(){
