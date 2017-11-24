@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/razorpay/razorpay-woocommerce.svg?branch=master)](https://travis-ci.org/razorpay/razorpay-woocommerce)
+[![Coverage Status](https://coveralls.io/razorpay-woocommerces/razorpay/razorpay-woocommerce/badge.svg?branch=master&service=github)](https://coveralls.io/github/razorpay/razorpay-woocommerce?branch=master)
+
 === Razorpay for WooCommerce ===
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
