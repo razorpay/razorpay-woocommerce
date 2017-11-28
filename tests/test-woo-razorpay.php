@@ -1,4 +1,11 @@
 <?php
+
+require_once __DIR__. '/woocs.php' ;
+require_once __DIR__.'/../includes/Errors/ErrorCode.php';
+
+use Razorpay\Api\Errors;
+use Razorpay\Woocommerce\Errors as WooErrors;
+
 /**
  * Class TestWC_Razorpay
  *
@@ -12,6 +19,10 @@ class Test_WC_Razorpay extends WP_UnitTestCase
         $this->razorpay = new WC_Razorpay(false);
 
         $this->order  = WC_Helper_Order::create_order();
+
+        global $WOOCS;
+
+        $WOOCS = new WOOCS();
     }
 
 
@@ -100,9 +111,61 @@ class Test_WC_Razorpay extends WP_UnitTestCase
     }
 
 
-    function test_generate_razorpay_form()
+    function test_generateRazorpay()
     {
-        $this->assertEquals($this->razorpay->generate_razorpay_form(wc_get_order(4)), "RAZORPAY ERROR: Order creation failed with the message: 'The WooCommerce Currency Switcher plugin is missing.'.");
+        $form = $this->razorpayForm();
+        $this->assertEquals($this->razorpay->generate_razorpay_form($this->order->get_order_key()), $form);
+    }
+
+
+    function razorpayForm()
+        {
+            return <<<EOT
+<p>Thank you for your order, please click the button below to pay with Razorpay.</p><form name='razorpayform' action="http://example.org/wc-api/razorpay" method="POST">
+    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+    <input type="hidden" name="razorpay_signature"  id="razorpay_signature" >
+    <!-- This distinguishes all our various wordpress plugins -->
+    <input type="hidden" name="razorpay_wc_form_submit" value="1">
+</form>
+<p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
+Please wait while we are processing your payment.
+</p>
+<p>
+    <button id="btn-razorpay">Pay Now</button>
+    <button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>
+</p>
+EOT;
+    }
+
+
+    function test_handleCurrencyConversionSuccess()
+    {
+        $data = array(
+                'receipt'         => 1,
+                'amount'          => 100,
+                'currency'        => 'GBP',
+                'payment_capture' => 1,
+        );
+
+        $this->razorpay->handleCurrencyConversion($data);
+        $this->assertEquals($data['currency'], 'INR');
+        $this->assertEquals($data['amount'], '119');
+    }
+
+    /**
+     * @expectedException Razorpay\Api\Errors\BadRequestError
+     */
+    function test_wooCurrencyMisisng()
+    {
+
+        $data = array(
+                'receipt'         => 1,
+                'amount'          => 100,
+                'currency'        => 'USD',
+                'payment_capture' => 1,
+        );
+        $this->razorpay->handleCurrencyConversion($data);
+
     }
 
     function test_getCustomerInfo()
