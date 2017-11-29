@@ -12,7 +12,7 @@ use Razorpay\Woocommerce\Errors as WooErrors;
  * @package Woo_Razorpay
  */
 
-class Test_WC_Razorpay extends WP_UnitTestCase
+class WC_RazorpayTest extends WP_UnitTestCase
 {
     function setup()
     {

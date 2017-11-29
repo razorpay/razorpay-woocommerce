@@ -5,7 +5,7 @@
  * @package Woo_Razorpay
  */
 
-class TestRZP_Webhook extends WP_UnitTestCase
+class RZP_WebhookTest extends WP_UnitTestCase
 {
 
     function setup()
