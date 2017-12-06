@@ -43,6 +43,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 1. We currently do not support lifetime subscriptions as of now. The maximum time that a subscription is allowed to run without requiring an authentication again from the customer is 10 years.
 2. Please make sure that you have Webhooks setup on the [Razorpay Plugin](https://wordpress.org/plugins/woo-razorpay/) to ensure that recurring payments are marked as paid on WooCommerce.
 3. For international acceptance, please see our [Multi-Currency Guide](https://github.com/razorpay/razorpay-woocommerce/wiki/Multi-Currency) for the Razorpay WooCommerce plugin.
+4. We do not support subscription items with a trial period as of now. We plan to implement this soon.
 
 == Changelog ==
 
