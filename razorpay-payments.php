@@ -48,8 +48,8 @@ function woocommerce_razorpay_init()
 
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
-        const DEFAULT_SUCCESS_MESSAGE         = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be
-                                                processing your order soon.';
+        const DEFAULT_SUCCESS_MESSAGE  = 'Thank you for shopping with us. Your account has been charged and your
+                                                transaction is successful. We will be processing your order soon.';
 
         protected $visibleSettings = array(
             'enabled',
@@ -199,10 +199,10 @@ function woocommerce_razorpay_init()
                     )
                 ),
                 'order_success_message' => array(
-                    'title' => _('Order Completion Message', $this->id),
+                    'title' => __('Order Completion Message', $this->id),
                     'type'  => 'textarea',
-                    'description' => _('Message to be displayed after a successful order', $this->id),
-                    'default' => _(STATIC::DEFAULT_SUCCESS_MESSAGE, $this->id),
+                    'description' =>  __('Message to be displayed after a successful order', $this->id),
+                    'default' =>  __(STATIC::DEFAULT_SUCCESS_MESSAGE, $this->id),
                 ),
                 'enable_webhook' => array(
                     'title' => __('Enable Webhook', $this->id),
