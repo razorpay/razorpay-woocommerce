@@ -48,6 +48,7 @@ function woocommerce_razorpay_init()
 
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
+        const DEFAULT_SUCCESS_MESSAGE  = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
 
         protected $visibleSettings = array(
             'enabled',
@@ -56,6 +57,7 @@ function woocommerce_razorpay_init()
             'key_id',
             'key_secret',
             'payment_action',
+            'order_success_message',
             'enable_webhook',
             'webhook_secret',
         );
@@ -108,6 +110,16 @@ function woocommerce_razorpay_init()
         public function getSetting($key)
         {
             return $this->settings[$key];
+        }
+
+        protected function getCustomOrdercreationMessage()
+        {
+            $message =  $this->getSetting('order_success_message');
+            if (isset($message) === false)
+            {
+                $message = STATIC::DEFAULT_SUCCESS_MESSAGE;
+            }
+            return $message;
         }
 
         /**
@@ -194,6 +206,12 @@ function woocommerce_razorpay_init()
                         self::AUTHORIZE => 'Authorize',
                         self::CAPTURE   => 'Authorize and Capture'
                     )
+                ),
+                'order_success_message' => array(
+                    'title' => __('Order Completion Message', $this->id),
+                    'type'  => 'textarea',
+                    'description' =>  __('Message to be displayed after a successful order', $this->id),
+                    'default' =>  __(STATIC::DEFAULT_SUCCESS_MESSAGE, $this->id),
                 ),
                 'enable_webhook' => array(
                     'title' => __('Enable Webhook', $this->id),
@@ -870,9 +888,9 @@ EOT;
 
             $orderId = $this->getOrderId($order);
 
-            if ($success === true)
+            if (($success === true) and ($order->needs_payment() === true))
             {
-                $this->msg['message'] = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon. Order Id: $orderId";
+                $this->msg['message'] = $this->getCustomOrdercreationMessage() . "&nbsp; Order Id: $orderId";
                 $this->msg['class'] = 'success';
 
                 $order->payment_complete($razorpayPaymentId);
