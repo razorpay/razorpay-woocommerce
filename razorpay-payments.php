@@ -402,7 +402,7 @@ function woocommerce_razorpay_init()
         {
             $callbackUrl = $this->getRedirectUrl();
 
-            $orderId = $this->getOrderId($order);
+            $orderId = $order->get_order_number();
 
             $productinfo = "Order $orderId";
 
@@ -684,17 +684,7 @@ EOT;
 
             return $order->order_key;
         }
-
-        protected function getOrderId($order)
-        {
-            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
-            {
-                return $order->get_id();
-            }
-
-            return $order->id;
-        }
-
+        
         public function process_refund($orderId, $amount = null, $reason = '')
         {
             $order = new WC_Order($orderId);
@@ -886,7 +876,7 @@ EOT;
         {
             global $woocommerce;
 
-            $orderId = $this->getOrderId($order);
+            $orderId = $order->get_order_number();
 
             if (($success === true) and ($order->needs_payment() === true))
             {
@@ -924,7 +914,7 @@ EOT;
 
         protected function handleErrorCase(& $order)
         {
-            $orderId = $this->getOrderId($order);
+            $orderId = $order->get_order_number();
 
             $this->msg['class'] = 'error';
             $this->msg['message'] = $this->getErrorMessage($orderId);
