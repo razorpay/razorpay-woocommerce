@@ -200,7 +200,7 @@ function woocommerce_razorpay_init()
                 'payment_action' => array(
                     'title' => __('Payment Action', $this->id),
                     'type' => 'select',
-                    'description' =>  __('Payment action on order compelete', $this->id),
+                    'description' =>  __('Payment action on order complete', $this->id),
                     'default' => self::CAPTURE,
                     'options' => array(
                         self::AUTHORIZE => 'Authorize',
