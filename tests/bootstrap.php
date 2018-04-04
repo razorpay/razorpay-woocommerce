@@ -23,6 +23,11 @@ require_once $_tests_dir . '/includes/functions.php';
  */
 function _manually_load_plugin() {
 	require dirname( dirname( __FILE__ ) ) . '/woo-razorpay.php';
+    require dirname( __FILE__ ) . '/factory/order-factory.php';
+    require dirname( __FILE__ ) . '/factory/coupon-factory.php';
+    require dirname( __FILE__ ) . '/factory/product-factory.php';
+    require dirname( __FILE__ ) . '/mock/razorpay-sdk/Razorpay.php';
+
     require dirname( dirname( __FILE__ ) ) . '/wp-content/plugins/woocommerce/woocommerce.php';
 
 }
