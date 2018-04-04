@@ -50,7 +50,7 @@ class ProductFactory
         return new WC_Product_External( $product );
     }
 
-    public function createVirtualProduct()
+    public function createDownloadableProduct()
     {
         $product = wp_insert_post(
             array(
@@ -64,7 +64,7 @@ class ProductFactory
 
         update_post_meta( $product, '_regular_price', '10' );
 
-        update_post_meta( $product, '_downloadable', 'no' );
+        update_post_meta( $product, '_downloadable', 'yes' );
 
         update_post_meta( $product, '_virtual', 'yes' );
 
