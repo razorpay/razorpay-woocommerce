@@ -598,7 +598,7 @@ function woocommerce_razorpay_init()
             $data = array(
                 'receipt'         => $orderId,
                 'amount'          => (int) round($order->get_total() * 100),
-                'currency'        => get_woocommerce_currency(),
+                'currency'        => $this->getOrderCurrency($order),
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'notes'           => array(
                     self::WC_ORDER_ID  => (string) $orderId,
