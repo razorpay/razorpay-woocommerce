@@ -14,6 +14,8 @@ class ProductFactory
 
         update_post_meta( $product, '_price', '10' );
 
+        update_post_meta( $product, '_currency', 'INR' );
+
         update_post_meta( $product, '_regular_price', '10' );
 
         update_post_meta( $product, '_downloadable', 'no' );

@@ -47,6 +47,8 @@ class OrderFactory
         $order->set_payment_method( $payment_gateways['razorpay'] );
 
         $order->set_shipping_total( 0 );
+        $order->set_currency( 'INR');
+
         $order->set_discount_total( 0 );
         $order->set_total( 10 );
         $order->set_discount_tax( 0 );
