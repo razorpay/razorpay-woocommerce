@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 1.6.2
- * Stable tag: 1.6.2
+ * Version: 1.6.3
+ * Stable tag: 1.6.3
  * Author: Team Razorpay
  * WC tested up to: 3.2.1
  * Author URI: https://razorpay.com
@@ -454,8 +454,15 @@ function woocommerce_razorpay_init()
 
             if ($currency !== self::INR)
             {
-                $args['display_currency'] = $currency;
-                $args['display_amount']   = $this->getDisplayAmount($order);
+                // A null is passed if displayAmount is to remain unset
+                $displayAmount = $this->getDisplayAmount($order);
+
+                if ($displayAmount)
+                {
+                    $args['display_currency'] = $currency;
+                    $args['display_amount']   = $displayAmount;
+                }
+
             }
 
             $args = array_merge($args, $params);
