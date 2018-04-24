@@ -143,7 +143,7 @@ class RZP_Subscriptions
             'amount'       => $amount,
             'currency'     => get_woocommerce_currency(),
             'name'         => $product['name'],
-            'description'  => 'discount',
+            'description'  => 'wocoommerce_order_id: ' . $order->get_id(),
         );
 
         if ($item['currency'] !== self::INR)
@@ -306,17 +306,7 @@ class RZP_Subscriptions
     // TODO: Take care of trial period here
     public function getDisplayAmount($order)
     {
-        $product = $this->getProductFromOrder($order);
-
-        $productId = $product['product_id'];
-
-        $sub = $this->getWooCommerceSubscriptionFromOrderId($order->get_id());
-
-        $recurringFee = $sub->get_total();
-
-        $signUpFee = WC_Subscriptions_Product::get_sign_up_fee($productId);
-
-        return $recurringFee + $signUpFee;
+        return $order->get_total();
     }
 
     private function getProductPeriod($period)
