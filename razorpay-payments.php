@@ -454,8 +454,15 @@ function woocommerce_razorpay_init()
 
             if ($currency !== self::INR)
             {
-                $args['display_currency'] = $currency;
-                $args['display_amount']   = $this->getDisplayAmount($order);
+                // A null is passed if displayAmount is to remain unset
+                $displayAmount = $this->getDisplayAmount($order);
+
+                if ($displayAmount)
+                {
+                    $args['display_currency'] = $currency;
+                    $args['display_amount']   = $displayAmount;
+                }
+
             }
 
             $args = array_merge($args, $params);
