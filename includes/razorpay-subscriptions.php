@@ -106,6 +106,10 @@ class RZP_Subscriptions
 
         $renewalDate = WC_Subscriptions_Product::get_first_renewal_payment_time($product['product_id']);
 
+        //The first payment is always set as an upfront amount to support woocommerce discounts like fixed
+        // cart discounts which is only for the first payment. The start_date of subscription would be next
+        //renewal date
+
         $subscriptionData = array(
             // TODO: Doesn't work with trial periods currently
             'customer_id'     => $customerId,
