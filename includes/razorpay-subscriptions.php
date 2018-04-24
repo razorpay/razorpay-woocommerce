@@ -124,7 +124,13 @@ class RZP_Subscriptions
             ),
         );
 
-        $subscriptionData['addons'] = array(array('item' => $this->getUpfrontAmount($order, $product)));
+        // if the first payment after applying discount is zero, create subscription without initial addon
+        //so that token amount would be auto refunded.
+
+        if ((int) $order->get_total() !== 0)
+        {
+            $subscriptionData['addons'] = array(array('item' => $this->getUpfrontAmount($order, $product)));
+        }
 
         return $subscriptionData;
     }
