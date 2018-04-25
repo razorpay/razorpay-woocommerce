@@ -20,18 +20,25 @@ matrix:
   include:
     - php: 7.1
       env: WP_VERSION=latest
+      env: WOO_VERSION=3.3.5
     - php: 7.0
       env: WP_VERSION=latest
+      env: WOO_VERSION=3.3.5
     - php: 5.6
       env: WP_VERSION=3.9.2
+      env: WOO_VERSION=2
     - php: 5.6
       env: WP_VERSION=latest
+      env: WOO_VERSION=3.3.5
     - php: 5.6
       env: WP_VERSION=trunk
+      env: WOO_VERSION=3.3.5
     - php: 5.6
       env: WP_TRAVISCI=phpcs
+      env: WOO_VERSION=3.3.5
     - php: 5.3
       env: WP_VERSION=latest
+      env: WOO_VERSION=3.3.5
 
 before_script:
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
@@ -46,11 +53,8 @@ before_script:
       bash bin/install-wp-tests.sh wordpress_test root '' localhost $WP_VERSION
       if [[ ${TRAVIS_PHP_VERSION:0:2} == "5." ]]; then
         composer global require "phpunit/phpunit=4.8.*"
-        composer global require 'woocommerce/woocommerce:2'
-
       else
         composer global require "phpunit/phpunit=5.7.*"
-        composer global require 'woocommerce:3.3'
 
       fi
     fi
