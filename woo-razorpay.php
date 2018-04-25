@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 1.6.2
- * Stable tag: 1.6.2
+ * Version: 1.6.3
+ * Stable tag: 1.6.3
  * Author: Team Razorpay
  * WC tested up to: 3.2.1
  * Author URI: https://razorpay.com
@@ -402,7 +402,7 @@ function woocommerce_razorpay_init()
         {
             $callbackUrl = $this->getRedirectUrl();
 
-            $orderId = $this->getOrderId($order);
+            $orderId = $order->get_order_number();
 
             $productinfo = "Order $orderId";
 
@@ -454,8 +454,15 @@ function woocommerce_razorpay_init()
 
             if ($currency !== self::INR)
             {
-                $args['display_currency'] = $currency;
-                $args['display_amount']   = $this->getDisplayAmount($order);
+                // A null is passed if displayAmount is to remain unset
+                $displayAmount = $this->getDisplayAmount($order);
+
+                if ($displayAmount)
+                {
+                    $args['display_currency'] = $currency;
+                    $args['display_amount']   = $displayAmount;
+                }
+
             }
 
             $args = array_merge($args, $params);
@@ -684,17 +691,7 @@ EOT;
 
             return $order->order_key;
         }
-
-        protected function getOrderId($order)
-        {
-            if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
-            {
-                return $order->get_id();
-            }
-
-            return $order->id;
-        }
-
+        
         public function process_refund($orderId, $amount = null, $reason = '')
         {
             $order = new WC_Order($orderId);
@@ -886,7 +883,7 @@ EOT;
         {
             global $woocommerce;
 
-            $orderId = $this->getOrderId($order);
+            $orderId = $order->get_order_number();
 
             if (($success === true) and ($order->needs_payment() === true))
             {
@@ -924,7 +921,7 @@ EOT;
 
         protected function handleErrorCase(& $order)
         {
-            $orderId = $this->getOrderId($order);
+            $orderId = $order->get_order_number();
 
             $this->msg['class'] = 'error';
             $this->msg['message'] = $this->getErrorMessage($orderId);
