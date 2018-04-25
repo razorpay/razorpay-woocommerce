@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "3fc7dc2de410deaf745d538f6fa8138a",
+    "content-hash": "1680da5f7350169b979de13dac24a55d",
     "packages": [
         {
             "name": "composer/installers",
@@ -125,21 +125,19 @@
                 "zikula"
             ],
             "time": "2017-12-29T09:13:20+00:00"
-        }
-    ],
-    "packages-dev": [
+        },
         {
             "name": "woocommerce/woocommerce",
-            "version": "3.3.4",
+            "version": "3.3.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/woocommerce/woocommerce.git",
-                "reference": "c01b7287989eaa0de7e80d2da9ca3cedf37971e4"
+                "reference": "4a99d00615ff48c90cf7d4116ed4a9cd84b5c5ba"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/woocommerce/woocommerce/zipball/c01b7287989eaa0de7e80d2da9ca3cedf37971e4",
-                "reference": "c01b7287989eaa0de7e80d2da9ca3cedf37971e4",
+                "url": "https://api.github.com/repos/woocommerce/woocommerce/zipball/4a99d00615ff48c90cf7d4116ed4a9cd84b5c5ba",
+                "reference": "4a99d00615ff48c90cf7d4116ed4a9cd84b5c5ba",
                 "shasum": ""
             },
             "require": {
@@ -170,9 +168,10 @@
             ],
             "description": "An eCommerce toolkit that helps you sell anything. Beautifully.",
             "homepage": "https://woocommerce.com/",
-            "time": "2018-03-20T13:12:21+00:00"
+            "time": "2018-04-10T17:08:58+00:00"
         }
     ],
+    "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],

@@ -19,26 +19,33 @@ cache:
 matrix:
   include:
     - php: 7.1
-      env: WP_VERSION=latest
-      env: WOO_VERSION=3.3.5
+      env: 
+        -  WP_VERSION=latest
+        -  WOO_VERSION=3.3.5
     - php: 7.0
-      env: WP_VERSION=latest
-      env: WOO_VERSION=3.3.5
+      env: 
+        - WP_VERSION=latest
+        - WOO_VERSION=3.3.5
     - php: 5.6
-      env: WP_VERSION=3.9.2
-      env: WOO_VERSION=2
+      env: 
+        - WP_VERSION=3.9.2
+        - WOO_VERSION=2.*
     - php: 5.6
-      env: WP_VERSION=latest
-      env: WOO_VERSION=3.3.5
+      env:
+        - WP_VERSION=latest
+        - WOO_VERSION=3.3.5
     - php: 5.6
-      env: WP_VERSION=trunk
-      env: WOO_VERSION=3.3.5
+      env:
+        - WP_VERSION=trunk
+        - WOO_VERSION=3.3.5
     - php: 5.6
-      env: WP_TRAVISCI=phpcs
-      env: WOO_VERSION=3.3.5
+      env:
+        - WP_TRAVISCI=phpcs
+        - WOO_VERSION=3.3.5
     - php: 5.3
-      env: WP_VERSION=latest
-      env: WOO_VERSION=3.3.5
+      env:
+        - WP_VERSION=latest
+        - WOO_VERSION=3.3.5
 
 before_script:
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
@@ -63,7 +70,7 @@ before_script:
       phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
     fi
   - composer global require wp-coding-standards/wpcs
-  - composer install
+  - composer require woocommerce/woocommerce:$WOO_VERSION
   
 script:
   - |
