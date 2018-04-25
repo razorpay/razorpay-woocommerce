@@ -1,18 +1,5 @@
 {
-  "config": {
-    "vendor-dir": "wp-content"
-  },
-  "require": {
-    "composer/installers": "~1.2"
-  },
-
-  "require-dev":
-  {
-    "woocommerce/woocommerce" : "*"
-  },
-
-  "autoload": {
-      "psr-4": {"WC_Payment_Gateway\\": "WC_Payment_Gateway"}
+    "require": {
+        "woocommerce/woocommerce": "3.3"
     }
-
 }
