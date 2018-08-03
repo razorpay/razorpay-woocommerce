@@ -459,7 +459,7 @@ function woocommerce_razorpay_init()
 
                 $args['display_currency'] = $currency;
 
-                $args['display_amount']   = $displayAmount;
+                $args['display_amount'] = ($displayAmount === null) ? 0 : $displayAmount;
 
             }
 
@@ -532,8 +532,8 @@ function woocommerce_razorpay_init()
             $amount = $data['amount'] / 100;
 
             // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
-            $data['amount'] = intval($this->convertCurrencyFixer($amount, $currency, self::INR) * 100);
-
+            //$data['amount'] = intval($this->convertCurrencyFixer($amount, $currency, self::INR) * 100);
+            $data['amount'] = intval($this->freeCurrencyConverterApi($amount, $currency, self::INR) * 100);
             $data['currency'] = self::INR;
         }
 
@@ -545,6 +545,14 @@ function woocommerce_razorpay_init()
 
             $rate = $data['rates'][$destination];
 
+            return $rate * $amount;
+        }
+
+        public function freeCurrencyConverterApi($amount, $source, $destination)
+        {
+            $url  = 'https://free.currencyconverterapi.com/api/v5/convert?q='.$source.'_'.$destination.'&compact=y';
+            $data = json_decode(file_get_contents($url), true);
+            $rate = $data[$source.'_'.$destination]['val'];
             return $rate * $amount;
         }
 
