@@ -440,7 +440,7 @@ function woocommerce_razorpay_init()
          */
         protected function getDisplayAmount($order)
         {
-            return (int) round($order->get_total());
+            return round($order->get_total(), 2);
         }
 
         /**
