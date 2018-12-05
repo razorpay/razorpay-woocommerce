@@ -622,16 +622,23 @@ function woocommerce_razorpay_init()
 
         public function handleCurrencyConversion(& $data)
         {
-            if (class_exists('WOOCS') === false)
-            {
+			if (class_exists('WOOCS'))
+			{
+				$this->convertCurrency($data);
+			}
+			elseif (class_exists('WC_Product_Price_Based_Country') && WCPBC()->current_zone )
+			{
+				$data['amount']   = intval(round(WCPBC()->current_zone->get_base_currency_amount($data['amount'])));
+				$data['currency'] = self::INR;
+			}
+			else
+			{
                 throw new Errors\BadRequestError(
                     WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
                     WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
                     400
                 );
             }
-
-            $this->convertCurrency($data);
         }
 
         private function enqueueCheckoutScripts($data)
