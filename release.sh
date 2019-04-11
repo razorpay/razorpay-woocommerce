@@ -7,9 +7,8 @@ set -euo pipefail
 # A modification of Dean Clatworthy's deploy script as found here: https://github.com/deanc/wordpress-plugin-git-svn
 # The difference is that this script lives in the plugin's git repo & doesn't require an existing SVN repo.
 # Slightly adapted
-# 
-# This needs to be passed one parameter: SVNUSER
 
+SVNUSER=razorpay
 PLUGINSLUG='woo-razorpay'
 
 # main config
@@ -20,7 +19,8 @@ GITPATH="$CURRENTDIR" # this file should be in the base of your git repository
 
 # svn config
 SVNPATH="/tmp/$PLUGINSLUG" # path to a temp SVN repo. No trailing slash required and don't add trunk.
-SVNURL="http://plugins.svn.wordpress.org/$PLUGINSLUG/" # Remote SVN repo on wordpress.org, with no trailing slash
+# Remote SVN repo on wordpress.org, with no trailing slash
+SVNURL="https://plugins.svn.wordpress.org/$PLUGINSLUG" 
 
 # Let's begin...
 echo ".........................................."
@@ -65,7 +65,7 @@ svn propset svn:ignore "release.sh
 echo "Changing directory to SVN"
 cd "$SVNPATH/trunk/"
 # Add all new files that are not set to be ignored
-svn status | grep -v "^.[ \t]*\..*" | grep "^?" | awk '{print $2}' | xargs svn add
+svn status | grep -v "^.[ \t]*\..*" | grep "^?" | awk '{print $2}' | xargs svn add || true
 echo "committing to trunk"
 svn commit --username="$SVNUSER" -m "$COMMITMSG"
 
@@ -75,7 +75,7 @@ svn commit --username="$SVNUSER" -m "$COMMITMSG"
 
 echo "Creating new SVN tag & committing it"
 cd "$SVNPATH"
-svn copy trunk/ "tags/$RELEASE_VERSION/"
+svn copy trunk/ "tags/$RELEASE_VERSION"
 cd "$SVNPATH/tags/$RELEASE_VERSION"
 svn commit --username="$SVNUSER" -m "Tagging version $RELEASE_VERSION"
 
