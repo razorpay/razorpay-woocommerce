@@ -16,12 +16,10 @@ if ( ! defined( 'ABSPATH' ) )
 }
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
-require_once __DIR__.'/includes/Errors/ErrorCode.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
-use Razorpay\Woocommerce\Errors as WooErrors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
@@ -452,18 +450,7 @@ function woocommerce_razorpay_init()
 
             $currency = $this->getOrderCurrency($order);
 
-            if ($currency !== self::INR)
-            {
-                // A null is passed if displayAmount is to remain unset
-                $displayAmount = $this->getDisplayAmount($order);
-
-                if ($displayAmount)
-                {
-                    $args['display_currency'] = $currency;
-                    $args['display_amount']   = $displayAmount;
-                }
-
-            }
+            // The list of valid currencies is at https://razorpay.freshdesk.com/support/solutions/articles/11000065530-what-currencies-does-razorpay-support-
 
             $args = array_merge($args, $params);
 
@@ -519,47 +506,6 @@ function woocommerce_razorpay_init()
             return $razorpayOrderId;
         }
 
-        /**
-         * Convert the currency to INR using rates fetched from Woocommerce Currency Switcher plugin
-         *
-         * @param array $data Input array to convert currency
-         * @param string $data['currency'] Currency
-         * @param amount $data['amount'] Input Amount
-         * @return array, modified $data with $data['currency'] = 'INR'
-         *
-         **/
-        protected function convertCurrency(& $data)
-        {
-            global $WOOCS;
-
-            $currencies = $WOOCS->get_currencies();
-
-            $currency = $data['currency'];
-
-            if (array_key_exists(self::INR, $currencies) and array_key_exists($currency, $currencies))
-            {
-                // If the currenct currency is the same as the default currency set in WooCommerce,
-                // Currency Switcher plugin sets the rate of currenct currency as 0, because of which
-                // we need to set this to 1 here if it's value is 0
-                $currencyConversionRate = ($currencies[$currency]['rate'] == 0 ? 1 : $currencies[$currency]['rate']);
-
-                // Convert the currency to INR using the rates fetched from the Currency Switcher plugin
-                $value = $data['amount'] * $currencies[self::INR]['rate'];
-
-                $data['amount'] = intval(round($value / $currencyConversionRate));
-                $data['currency'] = self::INR;
-            }
-            else
-            {
-                throw new Errors\BadRequestError(
-                    WooErrors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_MESSAGE,
-                    WooErrors\ErrorCode::WOOCS_CURRENCY_MISSING_ERROR_CODE,
-                    400
-                );
-
-            }
-        }
-
         protected function verifyOrderAmount($razorpayOrderId, $orderId)
         {
             $order = new WC_Order($orderId);
@@ -612,27 +558,9 @@ function woocommerce_razorpay_init()
                 ),
             );
 
-            if ($data['currency'] !== self::INR)
-            {
-                $this->handleCurrencyConversion($data);
-            }
-
             return $data;
         }
 
-        public function handleCurrencyConversion(& $data)
-        {
-            if (class_exists('WOOCS') === false)
-            {
-                throw new Errors\BadRequestError(
-                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_MESSAGE,
-                    WooErrors\ErrorCode::WOOCS_MISSING_ERROR_CODE,
-                    400
-                );
-            }
-
-            $this->convertCurrency($data);
-        }
 
         private function enqueueCheckoutScripts($data)
         {
@@ -691,7 +619,7 @@ EOT;
 
             return $order->order_key;
         }
-        
+
         public function process_refund($orderId, $amount = null, $reason = '')
         {
             $order = new WC_Order($orderId);
