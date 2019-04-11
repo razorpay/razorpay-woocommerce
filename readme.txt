@@ -37,6 +37,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 == Changelog ==
 
 = 1.6.3 =
+* Allows for null values in displayAmount
 * Better support for international currency conversion
 * Support for custom order success message
 
