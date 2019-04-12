@@ -85,6 +85,7 @@ function woocommerce_razorpay_init()
          * @var string
          */
         public $method_title = 'Razorpay';
+        public $method_description = 'Allow customers to conveniently & securely pay by Credit or Debit card or Internet Banking through Razorpay.';
 
         /**
          * Icon URL, set in constructor
