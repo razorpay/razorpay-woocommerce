@@ -6,7 +6,7 @@
  * Version: 1.6.3
  * Stable tag: 1.6.3
  * Author: Team Razorpay
- * WC tested up to: 3.2.1
+ * WC tested up to: 3.6.0
  * Author URI: https://razorpay.com
 */
 
