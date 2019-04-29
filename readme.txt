@@ -147,7 +147,7 @@ version higher than 2.0.0, which comes with native multi-currency support.
 
 == Support ==
 
-Visit [razorpay.com](https://razorpay.com) for support requests or email us at <integrations@razorpay.com>.
+Visit [razorpay.com](https://razorpay.com/support/#request/merchant/technical-assistance) for support requests.
 
 == License ==
 
