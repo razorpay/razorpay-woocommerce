@@ -810,7 +810,6 @@ EOT;
 
                 $order->payment_complete($razorpayPaymentId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
-                $order->add_order_note($this->msg['message']);
 
                 if (isset($woocommerce->cart) === true)
                 {
