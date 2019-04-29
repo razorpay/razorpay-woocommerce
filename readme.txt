@@ -44,6 +44,8 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 = 2.0.0 =
 * Removes support for WooCommerce Currency Convertor
 * Switches to Razorpay's Native Multi-Currency support
+* Adds support for [Price Based on Country Plugin](https://www.pricebasedcountry.com/)
+* Tested upto WordPress 5.2-RC1 and WooCommerce 3.6.2
 
 = 1.6.3 =
 * Allows for null values in displayAmount

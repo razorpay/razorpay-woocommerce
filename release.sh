@@ -33,9 +33,6 @@ echo
 # Check version in readme.txt
 RELEASE_VERSION=$(grep "^Stable tag" "$GITPATH/readme.txt" | awk -F' ' '{print $3}')
 COMMITMSG="Update: $RELEASE_VERSION"
-echo "$COMMITMSG"
-
-git commit -am "$COMMITMSG"
 
 echo "Tagging new version in git"
 git tag -a "v$RELEASE_VERSION" -m "$COMMITMSG"
