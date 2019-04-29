@@ -46,7 +46,7 @@ function woocommerce_razorpay_init()
 
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
-        const DEFAULT_SUCCESS_MESSAGE  = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
+        const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
 
         protected $visibleSettings = array(
             'enabled',
@@ -85,6 +85,13 @@ function woocommerce_razorpay_init()
          * @var string
          */
         public $method_title = 'Razorpay';
+
+
+        /**
+         * Description of the payment method shown on the admin page.
+         * @var  string
+         */
+        public $method_description = 'Allow customers to securely pay via Razorpay (Credit/Debit Cards, NetBanking, UPI, Wallets)'
 
         /**
          * Icon URL, set in constructor
