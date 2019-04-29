@@ -91,7 +91,7 @@ function woocommerce_razorpay_init()
          * Description of the payment method shown on the admin page.
          * @var  string
          */
-        public $method_description = 'Allow customers to securely pay via Razorpay (Credit/Debit Cards, NetBanking, UPI, Wallets)'
+        public $method_description = 'Allow customers to securely pay via Razorpay (Credit/Debit Cards, NetBanking, UPI, Wallets)';
 
         /**
          * Icon URL, set in constructor
