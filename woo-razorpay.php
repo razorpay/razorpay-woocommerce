@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) )
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
-require_once(ABSPATH.'wp-admin/includes/plugin.php');
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -411,6 +411,7 @@ function woocommerce_razorpay_init()
             $orderId = $order->get_order_number();
 
             $productinfo = "Order $orderId";
+            $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
 
             return array(
                 'key'          => $this->getSetting('key_id'),
@@ -422,6 +423,11 @@ function woocommerce_razorpay_init()
                 ),
                 'callback_url' => $callbackUrl,
                 'prefill'      => $this->getCustomerInfo($order),
+                '_'            => array(
+                    'integration'                   => 'woocommerce',
+                    'integration_version'           => $mod_version,
+                    'integration_parent_version'    => WOOCOMMERCE_VERSION,
+                ),
             );
         }
 
@@ -568,14 +574,6 @@ function woocommerce_razorpay_init()
 
             wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                 array('razorpay_checkout'));
-
-            $mod_version = get_plugin_data(plugin_dir_path(__FILE__).'woo-razorpay.php')['Version'];
-
-            $data['_'] = array(
-                    'integration'           => 'woocommerce',
-                    'integration_version'   => $mod_version,
-                    'integration_parent_version' => WOOCOMMERCE_VERSION,
-            );
 
             wp_localize_script('razorpay_wc_script',
                 'razorpay_wc_checkout_vars',
