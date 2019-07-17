@@ -498,9 +498,7 @@ function woocommerce_razorpay_init()
             }
             catch (Exception $e)
             {
-                $message = $e->getMessage();
-
-                return 'RAZORPAY ERROR: Order creation failed with the message \'' . $message . '\'';
+                return $e;
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
