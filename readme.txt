@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
-Tested up to: 5.2-RC1-45273
-Stable tag: 2.0.0
+Tested up to: 5.2.2
+Stable tag: 2.1.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -41,11 +41,17 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= 2.1.0 =
+* Fixed bug for rzorpay orderID validation.
+* Adds support for razorpay Analytics
+* Tested upto WordPress 5.2.2 and WooCommerce 3.6.5
+
 = 2.0.0 =
 * Removes support for WooCommerce Currency Convertor
 * Switches to Razorpay's Native Multi-Currency support
 * Adds support for [Price Based on Country Plugin](https://www.pricebasedcountry.com/)
 * Tested upto WordPress 5.2-RC1 and WooCommerce 3.6.2
+* Release uploaded as 2.0.1 on the Wordpress Plugin Directory.
 
 = 1.6.3 =
 * Allows for null values in displayAmount
