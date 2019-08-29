@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.2.2
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -41,8 +41,12 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= 2.2.0 =
+* Adds webhook for handling subscription cancellation.
+* Tested upto WordPress 5.2.2 and WooCommerce 3.7.0
+
 = 2.1.0 =
-* Fixed bug for rzorpay orderID validation.
+* Fixed bug for razorpay orderID validation.
 * Adds support for razorpay Analytics
 * Tested upto WordPress 5.2.2 and WooCommerce 3.6.5
 
