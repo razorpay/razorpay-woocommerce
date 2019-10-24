@@ -581,13 +581,41 @@ function woocommerce_razorpay_init()
             wp_enqueue_script('razorpay_wc_script');
         }
 
+        private function hostCheckoutScripts($data)
+        {
+            return '
+<form method="POST" action="https://api.razorpay.com/v1/checkout/embedded" id="checkoutForm">
+<input type="hidden" name="key_id" value="'.$data['key'].'">
+<input type="hidden" name="order_id" value="'.$data['order_id'].'">
+<input type="hidden" name="name" value="Acme Corp">
+<input type="hidden" name="description" value="'.$data['description'].'">
+<input type="hidden" name="prefill[name]" value="'.$data['prefill']['name'].'">
+<input type="hidden" name="prefill[contact]" value="'.$data['prefill']['contact'].'">
+<input type="hidden" name="prefill[email]" value="'.$data['prefill']['email'].'">
+<input type="hidden" name="callback_url" value="'.$data['callback_url'].'">
+<input type="hidden" name="cancel_url" value="'.$data['callback_url'].'">
+</form>
+<script type="text/javascript">
+document.getElementById("checkoutForm").submit();
+</script>';
+        }
+
+
         /**
          * Generates the order form
          **/
         function generateOrderForm($data)
         {
             $redirectUrl = $this->getRedirectUrl();
-            $this->enqueueCheckoutScripts($data);
+            $api = new Api($this->getSetting('key_id'), "");
+            $merchantPreferences = $api->request->request("GET", "preferences");
+
+            if(isset($merchantPreferences['options']['redirect']) && $merchantPreferences['options']['redirect'] === true)
+            {
+                Print $this->hostCheckoutScripts($data);   
+            } else {
+                $this->enqueueCheckoutScripts($data);
+            }
 
             return <<<EOT
 <form name='razorpayform' action="$redirectUrl" method="POST">
