@@ -1,5 +1,8 @@
 (function() {
   var data = razorpay_wc_checkout_vars;
+  if(data === 'checkoutForm') {
+    document.getElementById("checkoutForm").submit();
+  }
   var setDisabled = function(id, state) {
     if (typeof state === 'undefined') {
       state = true;
