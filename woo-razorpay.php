@@ -566,12 +566,20 @@ function woocommerce_razorpay_init()
 
         private function enqueueCheckoutScripts($data)
         {
-            wp_register_script('razorpay_checkout',
-                'https://checkout.razorpay.com/v1/checkout.js',
+            if($data === 'checkoutForm')
+            {
+                wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                 null, null);
-
-            wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
+            }
+            else
+            {
+                wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                 array('razorpay_checkout'));
+
+                wp_register_script('razorpay_checkout',
+                    'https://checkout.razorpay.com/v1/checkout.js',
+                    null, null);
+            }
 
             wp_localize_script('razorpay_wc_script',
                 'razorpay_wc_checkout_vars',
@@ -584,18 +592,26 @@ function woocommerce_razorpay_init()
         private function hostCheckoutScripts($data)
         {
             $url = Api::getFullUrl("checkout/embedded");
-            
+
+            $formFields = "";
+            foreach ($data as $fieldKey => $val) {
+                if(in_array($fieldKey, array('notes', 'prefill', '_')))
+                {
+                    foreach ($data[$fieldKey] as $field => $fieldVal) {
+                        $formFields .= "<input type='hidden' name='$fieldKey" ."[$field]"."' value='$fieldVal'> \n";
+                    }
+                }
+            }
+
             return '<form method="POST" action="'.$url.'" id="checkoutForm">
                     <input type="hidden" name="key_id" value="'.$data['key'].'">
                     <input type="hidden" name="order_id" value="'.$data['order_id'].'">
                     <input type="hidden" name="name" value="'.$data['name'].'">
                     <input type="hidden" name="description" value="'.$data['description'].'">
                     <input type="hidden" name="image" value="'.$data['preference']['image'].'">
-                    <input type="hidden" name="prefill[name]" value="'.$data['prefill']['name'].'">
-                    <input type="hidden" name="prefill[contact]" value="'.$data['prefill']['contact'].'">
-                    <input type="hidden" name="prefill[email]" value="'.$data['prefill']['email'].'">
                     <input type="hidden" name="callback_url" value="'.$data['callback_url'].'">
                     <input type="hidden" name="cancel_url" value="'.$data['callback_url'].'">
+                    '. $formFields .'
                 </form>';
 
         }
@@ -607,7 +623,9 @@ function woocommerce_razorpay_init()
         function generateOrderForm($data)
         {
             $redirectUrl = $this->getRedirectUrl();
+
             $api = new Api($this->getSetting('key_id'),"");
+
             $merchantPreferences = $api->request->request("GET", "preferences");
 
             if(isset($merchantPreferences['options']['redirect']) && $merchantPreferences['options']['redirect'] === true)
@@ -615,7 +633,7 @@ function woocommerce_razorpay_init()
                 $this->enqueueCheckoutScripts('checkoutForm');
 
                 $data['preference']['image'] = $merchantPreferences['options']['image'];
-                
+
                 return $this->hostCheckoutScripts($data); 
                 
             } else {
