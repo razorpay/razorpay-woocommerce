@@ -623,6 +623,7 @@ function woocommerce_razorpay_init()
         function generateOrderForm($data)
         {
             $redirectUrl = $this->getRedirectUrl();
+            $data['cancel_url'] = wc_get_checkout_url();
 
             $api = new Api($this->getSetting('key_id'),"");
 
@@ -768,6 +769,16 @@ EOT;
             if ($order->needs_payment() === false)
             {
                 $this->redirectUser($order);
+            }
+
+            if(empty($_POST[self::RAZORPAY_PAYMENT_ID]))
+            {   
+                $this->msg['class'] = 'error';
+                $this->msg['message'] = "Payment Failed. Please try again.";
+                $this->add_notice($this->msg['message'], $this->msg['class']);
+
+                wp_redirect(wc_get_checkout_url());
+                exit;
             }
 
             $razorpayPaymentId = null;
