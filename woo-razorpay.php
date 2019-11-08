@@ -39,6 +39,7 @@ function woocommerce_razorpay_init()
         const RAZORPAY_PAYMENT_ID            = 'razorpay_payment_id';
         const RAZORPAY_ORDER_ID              = 'razorpay_order_id';
         const RAZORPAY_SIGNATURE             = 'razorpay_signature';
+        const RAZORPAY_WC_FORM_SUBMIT        = 'razorpay_wc_form_submit';
 
         const INR                            = 'INR';
         const CAPTURE                        = 'capture';
@@ -771,16 +772,6 @@ EOT;
                 $this->redirectUser($order);
             }
 
-            if(empty($_POST[self::RAZORPAY_PAYMENT_ID]))
-            {   
-                $this->msg['class'] = 'error';
-                $this->msg['message'] = "Payment Failed. Please try again.";
-                $this->add_notice($this->msg['message'], $this->msg['class']);
-
-                wp_redirect(wc_get_checkout_url());
-                exit;
-            }
-
             $razorpayPaymentId = null;
 
             if ($orderId  and !empty($_POST[self::RAZORPAY_PAYMENT_ID]))
@@ -801,9 +792,21 @@ EOT;
             }
             else
             {
-                $success = false;
-                $error = 'Customer cancelled the payment';
-                $this->handleErrorCase($order);
+                if($_POST[self::RAZORPAY_WC_FORM_SUBMIT] ==1)
+                {
+                    $success = false;
+                    $error = 'Customer cancelled the payment';
+                    $this->handleErrorCase($order);
+                }
+                else
+                {
+                    $this->msg['class'] = 'error';
+                    $this->msg['message'] = "Payment Failed. Please try again.";
+                    $this->add_notice($this->msg['message'], $this->msg['class']);
+
+                    wp_redirect(wc_get_checkout_url());
+                    exit;
+                }
             }
 
             $this->updateOrder($order, $success, $error, $razorpayPaymentId);
