@@ -804,6 +804,10 @@ EOT;
                     $this->msg['message'] = "Payment Failed. Please try again.";
                     $this->add_notice($this->msg['message'], $this->msg['class']);
 
+                    $order->add_order_note("Payment Failed<br/>");
+                    $order->update_status('failed');
+                    $this->handleErrorCase($order);
+
                     wp_redirect(wc_get_checkout_url());
                     exit;
                 }
