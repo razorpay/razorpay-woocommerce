@@ -797,16 +797,14 @@ EOT;
                     $success = false;
                     $error = 'Customer cancelled the payment';
                     $this->handleErrorCase($order);
+
                 }
                 else
                 {
-                    $this->msg['class'] = 'error';
-                    $this->msg['message'] = "Payment Failed. Please try again.";
-                    $this->add_notice($this->msg['message'], $this->msg['class']);
+                    $success = false;
+                    $error = "Payment Failed.";
 
-                    $order->add_order_note("Payment Failed<br/>");
-                    $order->update_status('failed');
-                    $this->handleErrorCase($order);
+                    $this->updateOrder($order, $success, $error, $razorpayPaymentId);
 
                     wp_redirect(wc_get_checkout_url());
                     exit;
