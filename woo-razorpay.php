@@ -611,7 +611,7 @@ function woocommerce_razorpay_init()
                     <input type="hidden" name="description" value="'.$data['description'].'">
                     <input type="hidden" name="image" value="'.$data['preference']['image'].'">
                     <input type="hidden" name="callback_url" value="'.$data['callback_url'].'">
-                    <input type="hidden" name="cancel_url" value="'.$data['callback_url'].'">
+                    <input type="hidden" name="cancel_url" value="'.$data['cancel_url'].'">
                     '. $formFields .'
                 </form>';
 
