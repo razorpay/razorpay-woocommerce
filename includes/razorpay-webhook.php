@@ -336,7 +336,7 @@ class RZP_Webhook
             error_log(json_encode($log));
 
         }
-        
+
         // Graceful exit since payment is now refunded.
         exit();
     }
