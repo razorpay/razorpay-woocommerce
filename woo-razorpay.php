@@ -506,6 +506,11 @@ function woocommerce_razorpay_init()
 
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
 
+            //update it in order comments
+            $order = new WC_Order($orderId);
+
+            $order->add_order_note("Razorpay OrderId: $razorpayOrderId");
+
             return $razorpayOrderId;
         }
 
