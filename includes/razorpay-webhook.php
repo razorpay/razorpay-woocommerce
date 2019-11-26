@@ -28,7 +28,7 @@ class RZP_Webhook
     const SUBSCRIPTION_CANCELLED    = 'subscription.cancelled';
     const REFUNDED_CREATED          = 'refund.created';
 
-    function __construct()
+    public function __construct()
     {
         $this->razorpay = new WC_Razorpay(false);
 
@@ -67,7 +67,6 @@ class RZP_Webhook
         if (($enabled === 'yes') and
             (empty($data['event']) === false))
         {
-
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true)
             {
                 $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
@@ -264,8 +263,8 @@ class RZP_Webhook
      * @return void|WP_Error
      * @throws Exception
      */
-    function refundedCreated(array $data) {
-
+    public function refundedCreated(array $data)
+    {
         // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
@@ -290,7 +289,8 @@ class RZP_Webhook
         }
 
         // If it's something else such as a WC_Order_Refund, we don't want that.
-        if( ! is_a( $order, 'WC_Order') ) {
+        if( ! is_a( $order, 'WC_Order') )
+        {
             $log = array(
                 'Error' =>  'Provided ID is not a WC Order',
             );
@@ -298,8 +298,8 @@ class RZP_Webhook
             error_log(json_encode($log));
         }
 
-        if( 'refunded' == $order->get_status() ) {
-
+        if( 'refunded' == $order->get_status() )
+        {
             $log = array(
                 'Error' =>  'Order has been already refunded for Order Id -'. $orderId,
             );
@@ -320,8 +320,10 @@ class RZP_Webhook
                 'line_items'     => array(),
                 'refund_payment' => false
             ));
+
         }
-        catch (Exception $e) {
+        catch (Exception $e)
+        {
             //
             // Capture will fail if the payment is already captured
             //
@@ -332,8 +334,9 @@ class RZP_Webhook
             );
 
             error_log(json_encode($log));
-        }
 
+        }
+        
         // Graceful exit since payment is now refunded.
         exit();
     }
