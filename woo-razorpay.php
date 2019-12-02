@@ -801,19 +801,18 @@ EOT;
                 {
                     $success = false;
                     $error = 'Customer cancelled the payment';
-                    $this->handleErrorCase($order);
-
                 }
                 else
                 {
                     $success = false;
                     $error = "Payment Failed.";
-
-                    $this->updateOrder($order, $success, $error, $razorpayPaymentId);
-
-                    wp_redirect(wc_get_checkout_url());
-                    exit;
                 }
+
+                $this->handleErrorCase($order);
+                $this->updateOrder($order, $success, $error, $razorpayPaymentId);
+
+                wp_redirect(wc_get_checkout_url());
+                exit;
             }
 
             $this->updateOrder($order, $success, $error, $razorpayPaymentId);
