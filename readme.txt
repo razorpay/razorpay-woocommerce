@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
-Tested up to: 5.2.4
-Stable tag: 2.4.0
+Tested up to: 5.4
+Stable tag: 2.4.1
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -21,7 +21,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 1. Install the plugin from the [Wordpress Plugin Directory](https://wordpress.org/plugins/woo-razorpay/).
 2. To use this plugin correctly, you need to be able to make network requests. Please make sure that you have the php-curl extension installed.
 
-== Dependencies == 
+== Dependencies ==
 
 1. Wordpress v3.9.2 and later
 2. Woocommerce v2.4 and later
@@ -37,9 +37,12 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Upgrade Notice ==
 = 2.0.0 =
-* Switches from WooCommerce side currency conversion to Razorpay's native multi currency support. 
+* Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 2.4.1 =
+* Updated WordPress support version info
 
 = 2.4.0 =
 * Added webhook for handling refund create and change order status
@@ -88,20 +91,20 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Fixes payment title/description in WC Checkout page.
 * Adds WooCommerce version tested in the plugin metadata
 
-= 1.6.0 = 
+= 1.6.0 =
 * Adds Razorpay Subscriptions plugin support.
 * Code cleanup.
 
 = 1.5.3 =
 * Webhooks are now disabled by default ([#52](https://github.com/razorpay/razorpay-woocommerce/pull/52))
 
-= 1.5.2 = 
+= 1.5.2 =
 * Fixed an issue with some websites "Pay now" button click not working. ([#50](https://github.com/razorpay/razorpay-woocommerce/pull/50))
 
-= 1.5.1 = 
+= 1.5.1 =
 * Fixes backward compatibilty with older WooCommerce releases. ([#49](https://github.com/razorpay/razorpay-woocommerce/pull/49))
 
-= 1.5.0 = 
+= 1.5.0 =
 * Javascript fixes for additional compatibility with other plugins ([#47](https://github.com/razorpay/razorpay-woocommerce/pull/47))
 * Adds multi-currency support using [WooCommerce Currency Switcher](https://wordpress.org/plugins/woocommerce-currency-switcher/) plugin. ([#46](https://github.com/razorpay/razorpay-woocommerce/pull/46))
 
@@ -114,7 +117,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 = 1.4.2 =
 * Added missing classes in the WordPress release (Utility.php was missing)
 
-= 1.4.0 = 
+= 1.4.0 =
 * Added Support for WooCommerce 3.x ([#35](https://github.com/razorpay/razorpay-woocommerce/pull/35]))
 * Fixes around discount coupon handling (Order Amount mismatch)
 * Updates Razorpay SDK
@@ -126,7 +129,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
     * AOSP Browser
     * Opera Mini
     * Google Search App
-    * Any other apps using webviews  
+    * Any other apps using webviews
 * Adds support for refunding payments from within WooCommerce
 
 = 1.3.2 =
@@ -142,7 +145,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Shifts to the Razorpay Orders API. Allows for auto-capturing and improves success rates
 * Wordpress Versions >=3.9.2 only are supported
 
-= 1.2.11 = 
+= 1.2.11 =
 * Fixes issues with Safari and Internet Explorer
 
 = 1.2.10 =
@@ -157,16 +160,16 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Disables buttons while payment is in progress
 * Refactors error message display
 
-= 1.2.7 = 
+= 1.2.7 =
 * Redirects customer to order details page, as per WooCommerce guidelines.
 
 = 1.2.6 =
 * Adds manual capture option
 
 == Frequently Asked Questions ==
- 
+
 = Does this support webhooks? =
- 
+
 Yes, please see https://github.com/razorpay/razorpay-woocommerce/wiki/Webhooks for more details
 
 = How do I enable Multi-currency support =
