@@ -42,7 +42,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 == Changelog ==
 
 = 2.4.1 =
-* Tested upto WordPress 5.4 and WooCommerce 3.7.1
+* Updated WordPress support version info
 
 = 2.4.0 =
 * Added webhook for handling refund create and change order status
