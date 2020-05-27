@@ -704,11 +704,16 @@ EOT;
             try
             {
                 $refund = $client->payment
-                                 ->fetch($paymentId)
-                                 ->refund($data);
+                    ->fetch( $paymentId )
+                    ->refund( $data );
 
-                $order->add_order_note(__( 'Refund Id: ' . $refund->id, 'woocommerce' ));
-
+                $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
+                /**
+                 * @var $refund ->id -- Provides the RazorPay Refund ID
+                 * @var $orderId -> Refunded Order ID
+                 * @var $refund -> WooCommerce Refund Instance.
+                 */
+                do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
                 return true;
             }
             catch(Exception $e)
