@@ -345,7 +345,7 @@ function woocommerce_razorpay_init()
          */
         private function getRedirectUrl()
         {
-            return get_site_url() . '/wc-api/' . $this->id;
+            return add_query_arg( 'wc-api', $this->id, trailingslashit( get_home_url() ) );
         }
 
         /**
