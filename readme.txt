@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.4
-Stable tag: 2.4.1
+Stable tag: 2.4.2
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -24,7 +24,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 == Dependencies ==
 
 1. Wordpress v3.9.2 and later
-2. Woocommerce v2.4 and later
+2. Woocommerce v2.6 and later
 3. PHP v5.6.0 and later
 4. php-curl extension
 
@@ -40,6 +40,11 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 2.4.2 =
+* Bug fix for partial refund shown twice.
+* Bug fix for wc-api redirection after payment completed
+* Tested upto WordPress 5.4.1 and WooCommerce 4.1.1
 
 = 2.4.1 =
 * Updated WordPress support version info
