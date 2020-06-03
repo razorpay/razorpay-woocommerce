@@ -699,6 +699,7 @@ EOT;
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
                     'refund_from_website'   =>  true,
+                    'source'                =>  'woocommerce',
                 )
             );
 
