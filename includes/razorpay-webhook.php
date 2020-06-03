@@ -271,7 +271,7 @@ class RZP_Webhook
             return;
         }
 
-        //Avoid to recreate refund, If already refund save if woocommerce.
+        //Avoid to recreate refund, If already refund saved and initiated from woocommerce website.
         if (isset($data['payload']['refund']['entity']['notes']['refund_from_website']) === true)
         {
             return;
