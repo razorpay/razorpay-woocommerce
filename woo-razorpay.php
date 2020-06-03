@@ -345,7 +345,7 @@ function woocommerce_razorpay_init()
          */
         private function getRedirectUrl()
         {
-            return get_site_url() . '/wc-api/' . $this->id;
+            return add_query_arg( 'wc-api', $this->id, trailingslashit( get_home_url() ) );
         }
 
         /**
@@ -696,16 +696,17 @@ EOT;
             $data = array(
                 'amount'    =>  (int) round($amount * 100),
                 'notes'     =>  array(
-                    'reason'    =>  $reason,
-                    'order_id'  =>  $orderId
+                    'reason'                =>  $reason,
+                    'order_id'              =>  $orderId,
+                    'refund_from_website'   =>  true,
                 )
             );
 
             try
             {
                 $refund = $client->payment
-                    ->fetch( $paymentId )
-                    ->refund( $data );
+                                ->fetch( $paymentId )
+                                ->refund( $data );
 
                 $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
                 /**
@@ -714,6 +715,7 @@ EOT;
                  * @var $refund -> WooCommerce Refund Instance.
                  */
                 do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+
                 return true;
             }
             catch(Exception $e)
