@@ -271,7 +271,15 @@ class RZP_Webhook
             return;
         }
 
+        //Avoid to recreate refund, If already refund save if woocommerce.
+        if (isset($data['payload']['refund']['entity']['notes']['refund_from_website']) === true)
+        {
+            return;
+        }
+
         $razorpayPaymentId = $data['payload']['refund']['entity']['payment_id'];
+
+        $refundId = $data['payload']['refund']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
@@ -307,19 +315,22 @@ class RZP_Webhook
             error_log(json_encode($log));
         }
 
-        $refund_amount = round(($data['payload']['refund']['entity']['amount'] / 100), 2);
+        $refundAmount = round(($data['payload']['refund']['entity']['amount'] / 100), 2);
 
-        $refund_reason = $data['payload']['refund']['entity']['notes']['comment'];
+        $refundReason = $data['payload']['refund']['entity']['notes']['comment'];
 
         try
         {
             wc_create_refund( array(
-                'amount'         => $refund_amount,
-                'reason'         => $refund_reason,
+                'amount'         => $refundAmount,
+                'reason'         => $refundReason,
                 'order_id'       => $orderId,
+                'refund_id'      => $refundId,
                 'line_items'     => array(),
                 'refund_payment' => false
             ));
+
+            $order->add_order_note( __( 'Refund Id: ' . $refundId, 'woocommerce' ) );
 
         }
         catch (Exception $e)
