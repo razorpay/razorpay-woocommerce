@@ -136,7 +136,7 @@ function woocommerce_razorpay_init()
          */
         public function __construct($hooks = true)
         {
-            $this->icon =  plugins_url('images/logo.png' , __FILE__);
+            $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
 
             $this->init_form_fields();
             $this->init_settings();
