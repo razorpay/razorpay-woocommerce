@@ -409,9 +409,10 @@ function woocommerce_razorpay_init()
         {
             $callbackUrl = $this->getRedirectUrl();
 
-            $orderId = $order->get_order_number();
+            $orderId = $order->get_id();
+            $orderNum = $order->get_order_number();
 
-            $productinfo = "Order $orderId";
+            $productinfo = "Order $orderNum";
             $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
 
             return array(
