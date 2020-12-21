@@ -27,6 +27,7 @@ class RZP_Webhook
     const PAYMENT_FAILED            = 'payment.failed';
     const SUBSCRIPTION_CANCELLED    = 'subscription.cancelled';
     const REFUNDED_CREATED          = 'refund.created';
+    const VIRTUAL_ACCOUNT_CREDITED  = 'virtual_account.credited';
 
     public function __construct()
     {
@@ -100,6 +101,7 @@ class RZP_Webhook
                 switch ($data['event'])
                 {
                     case self::PAYMENT_AUTHORIZED:
+                    case self::VIRTUAL_ACCOUNT_CREDITED:
                         return $this->paymentAuthorized($data);
 
                     case self::PAYMENT_FAILED:
@@ -138,7 +140,7 @@ class RZP_Webhook
 
 
     /**
-     * Handling the payment authorized webhook
+     * Handling the payment authorized and virtual account credited webhook
      *
      * @param array $data Webook Data
      */
