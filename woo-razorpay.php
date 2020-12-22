@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.5.0
- * Stable tag: 2.5.0
+ * Version: 2.6.0
+ * Stable tag: 2.6.0
  * Author: Team Razorpay
- * WC tested up to: 4.3.0
+ * WC tested up to: 4.6.1
  * Author URI: https://razorpay.com
 */
 
@@ -818,13 +818,13 @@ EOT;
                 }
 
                 $this->handleErrorCase($order);
-                $this->updateOrder($order, $success, $error, $razorpayPaymentId);
+                $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
 
                 wp_redirect(wc_get_checkout_url());
                 exit;
             }
 
-            $this->updateOrder($order, $success, $error, $razorpayPaymentId);
+            $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
 
             $this->redirectUser($order);
         }
@@ -889,7 +889,7 @@ EOT;
          *
          * @param $success, & $order
          */
-        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId, $webhook = false)
+        public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId = null, $webhook = false)
         {
             global $woocommerce;
 
@@ -902,6 +902,11 @@ EOT;
 
                 $order->payment_complete($razorpayPaymentId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
+
+                if($virtualAccountId != null)
+                {
+                    $order->add_order_note("Virtual Account Id: $virtualAccountId");
+                }
 
                 if (isset($woocommerce->cart) === true)
                 {
