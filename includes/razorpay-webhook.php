@@ -101,8 +101,10 @@ class RZP_Webhook
                 switch ($data['event'])
                 {
                     case self::PAYMENT_AUTHORIZED:
-                    case self::VIRTUAL_ACCOUNT_CREDITED:
                         return $this->paymentAuthorized($data);
+
+                    case self::VIRTUAL_ACCOUNT_CREDITED:
+                        return $this->virtualAccountCredited($data);
 
                     case self::PAYMENT_FAILED:
                         return $this->paymentFailed($data);
@@ -140,7 +142,7 @@ class RZP_Webhook
 
 
     /**
-     * Handling the payment authorized and virtual account credited webhook
+     * Handling the payment authorized webhook
      *
      * @param array $data Webook Data
      */
@@ -216,7 +218,91 @@ class RZP_Webhook
             }
         }
 
-        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, true);
+        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
+
+        // Graceful exit since payment is now processed.
+        exit;
+    }
+
+    /**
+     * Handling the virtual account credited webhook
+     *
+     * @param array $data Webook Data
+     */
+    protected function virtualAccountCredited(array $data)
+    {
+        // We don't process subscription/invoice payments here
+        if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
+        {
+            return;
+        }
+
+        //
+        // Order entity should be sent as part of the webhook payload
+        //
+        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
+
+        $order = new WC_Order($orderId);
+
+        // If it is already marked as paid, ignore the event
+        if ($order->needs_payment() === false)
+        {
+            return;
+        }
+
+        $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
+        $virtualAccountId  = $data['payload']['virtual_account']['entity']['id'];
+
+        $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+        $amount = $this->getOrderAmountAsInteger($order);
+
+        $success = false;
+        $errorMessage = 'The payment has failed.';
+
+        if ($payment['amount'] === $amount and $payment['status'] === 'captured')
+        {
+            $success = true;
+        }
+        else if (($payment['status'] === 'authorized') and $payment['amount'] === $amount and 
+                 ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE))
+        {
+            //
+            // If the payment is only authorized, we capture it
+            // If the merchant has enabled auto capture
+            //
+            try
+            {
+                $payment->capture(array('amount' => $amount));
+
+                $success = true;
+            }
+            catch (Exception $e)
+            {
+                //
+                // Capture will fail if the payment is already captured
+                //
+                $log = array(
+                    'message'         => $e->getMessage(),
+                    'payment_id'      => $razorpayPaymentId,
+                    'event'           => $data['event']
+                );
+
+                error_log(json_encode($log));
+
+                //
+                // We re-fetch the payment entity and check if the payment is captured now
+                //
+                $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+                if ($payment['status'] === 'captured')
+                {
+                    $success = true;
+                }
+            }
+        }
+
+        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId, true);
 
         // Graceful exit since payment is now processed.
         exit;
