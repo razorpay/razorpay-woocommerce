@@ -116,7 +116,7 @@ function woocommerce_razorpay_init()
          */
         public function getSetting($key)
         {
-            return $this->settings[$key];
+            return $this->get_option($key);
         }
 
         protected function getCustomOrdercreationMessage()
