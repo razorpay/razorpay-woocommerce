@@ -175,30 +175,12 @@ class RZP_Webhook
 
         $success = false;
         $errorMessage = 'The payment has failed.';
-        $amountVerified = false;
 
-        if($payment['amount'] >= $amount)
-        {
-            if($payment['amount'] > $amount)
-            {
-                $orderAmountWithoutFeeBearer = $payment['amount'] - $payment['fee'];
-
-                if($orderAmountWithoutFeeBearer === $amount)
-                {
-                    $amountVerified = true;
-                }
-            }
-            else
-            {
-                $amountVerified = true;
-            }
-        }
-
-        if ($payment['status'] === 'captured' and $amountVerified === true)
+        if ($payment['status'] === 'captured')
         {
             $success = true;
         }
-        else if (($payment['status'] === 'authorized') and $amountVerified === true and
+        else if (($payment['status'] === 'authorized') and
                  ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE))
         {
             //
@@ -270,6 +252,7 @@ class RZP_Webhook
 
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
         $virtualAccountId  = $data['payload']['virtual_account']['entity']['id'];
+        $amountPaid        = (int) $data['payload']['virtual_account']['entity']['amount_paid'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
@@ -278,11 +261,11 @@ class RZP_Webhook
         $success = false;
         $errorMessage = 'The payment has failed.';
 
-        if ($payment['amount'] === $amount and $payment['status'] === 'captured')
+        if ($payment['status'] === 'captured' and $amountPaid === $amount)
         {
             $success = true;
         }
-        else if (($payment['status'] === 'authorized') and $payment['amount'] === $amount and 
+        else if (($payment['status'] === 'authorized') and $amountPaid === $amount and
                  ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE))
         {
             //
