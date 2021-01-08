@@ -982,6 +982,24 @@ EOT;
     }
 
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_razorpay_gateway' );
+
+    /**
+     * Creating the settings link from the plugins page
+    **/
+    function razorpay_woo_plugin_links($links)
+    {
+        $pluginLinks = array(
+                        'settings' => '<a href="'. esc_url(admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay')) .'">Settings</a>',
+                        'docs'     => '<a href="https://razorpay.com/docs/payment-gateway/ecommerce-plugins/woocommerce/woocommerce-pg/">Docs</a>',
+                        'support'  => '<a href="https://razorpay.com/contact/">Support</a>'
+                    );
+
+        $links = array_merge($links, $pluginLinks);
+
+        return $links;
+    }
+    
+    add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
 }
 
 // This is set to a priority of 10
