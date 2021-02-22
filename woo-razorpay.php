@@ -390,6 +390,8 @@ function woocommerce_razorpay_init()
             {
                 return $e->getMessage();
             }
+            
+            $order->update_meta_data('rzp_order_id', $params['order_id']);
 
             $checkoutArgs = $this->getCheckoutArguments($order, $params);
 
