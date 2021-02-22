@@ -391,6 +391,8 @@ function woocommerce_razorpay_init()
                 return $e->getMessage();
             }
 
+            $order->update_meta_data('rzp_order_id', $params['order_id']);
+
             $checkoutArgs = $this->getCheckoutArguments($order, $params);
 
             $html = '<p>'.__('Thank you for your order, please click the button below to pay with Razorpay.', $this->id).'</p>';
