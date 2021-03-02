@@ -407,9 +407,14 @@ function woocommerce_razorpay_init()
          */
         private function getDefaultCheckoutArguments($order)
         {
+            global $woocommerce;
+
             $callbackUrl = $this->getRedirectUrl();
 
             $orderId = $order->get_order_number();
+
+            $sessionKey = $this->getOrderSessionKey($orderId);
+            $razorpayOrderId = $woocommerce->session->get($sessionKey);
 
             $productinfo = "Order $orderId";
             $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
