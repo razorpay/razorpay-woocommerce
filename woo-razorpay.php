@@ -427,6 +427,7 @@ function woocommerce_razorpay_init()
                 'notes'        => array(
                     'woocommerce_order_id' => $orderId
                 ),
+                'order_id' => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
                 'prefill'      => $this->getCustomerInfo($order),
                 '_'            => array(
