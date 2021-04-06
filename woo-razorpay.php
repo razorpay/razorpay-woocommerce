@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.6.0
- * Stable tag: 2.6.0
+ * Version: 2.6.1
+ * Stable tag: 2.6.1
  * Author: Team Razorpay
- * WC tested up to: 4.6.1
+ * WC tested up to: 5.0.0
  * Author URI: https://razorpay.com
 */
 
@@ -407,9 +407,14 @@ function woocommerce_razorpay_init()
          */
         private function getDefaultCheckoutArguments($order)
         {
+            global $woocommerce;
+
             $callbackUrl = $this->getRedirectUrl();
 
             $orderId = $order->get_order_number();
+
+            $sessionKey = $this->getOrderSessionKey($orderId);
+            $razorpayOrderId = $woocommerce->session->get($sessionKey);
 
             $productinfo = "Order $orderId";
             $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
@@ -422,6 +427,7 @@ function woocommerce_razorpay_init()
                 'notes'        => array(
                     'woocommerce_order_id' => $orderId
                 ),
+                'order_id' => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
                 'prefill'      => $this->getCustomerInfo($order),
                 '_'            => array(
