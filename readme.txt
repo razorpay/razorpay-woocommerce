@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
-Tested up to: 5.6
-Stable tag: 2.6.0
+Tested up to: 5.6.2
+Stable tag: 2.6.1
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -41,8 +41,12 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= 2.6.1 =
+* Added RAZORPAY ORDER ID in checkout argument.
+* Tested upto WordPress 5.6.2 and WooCommerce 5.0.0
+
 = 2.6.0 =
-* Added webhook for virtual account credited event .
+* Added webhook for virtual account credited event.
 * Tested upto WordPress 5.6 and WooCommerce 4.6.1
 
 = 2.5.0 =
