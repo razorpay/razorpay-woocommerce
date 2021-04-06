@@ -59,6 +59,7 @@ function woocommerce_razorpay_init()
             'payment_action',
             'order_success_message',
             'enable_webhook',
+            'webhook_events',
             'webhook_secret',
         );
 
@@ -149,6 +150,8 @@ function woocommerce_razorpay_init()
             }
 
             $this->title = $this->getSetting('title');
+
+            $this->autoEnableWebhook();
         }
 
         protected function initHooks()
@@ -224,8 +227,24 @@ function woocommerce_razorpay_init()
                     'title' => __('Enable Webhook', $this->id),
                     'type' => 'checkbox',
                     'description' =>  "<span>$webhookUrl</span><br/><br/>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
-                    'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', $this->id),
+                    'label' => __('Enablee Razorpay Webhook', $this->id),
                     'default' => 'no'
+                ),
+                'webhook_events' => array(
+                    'title'       => __('Webhook Events', $this->id),
+                    'type'        => 'multiselect',
+                    'description' =>  "",
+                    'class'       => 'wc-enhanced-select',
+                    'default'     => '',
+                    'options'     => array(
+                        RZP_Webhook::PAYMENT_AUTHORIZED        => 'payment.authorized',
+                        RZP_Webhook::PAYMENT_FAILED            => 'payment.failed',
+                        RZP_Webhook::REFUNDED_CREATED          => 'refund.created',
+                        RZP_Webhook::VIRTUAL_ACCOUNT_CREDITED  => 'virtual_account.credited',
+                    ),
+                    'custom_attributes' => array(
+                        'data-placeholder' => __( 'Select Webhook Events', 'woocommerce' ),
+                    ),
                 ),
                 'webhook_secret' => array(
                     'title' => __('Webhook Secret', $this->id),
@@ -242,6 +261,96 @@ function woocommerce_razorpay_init()
                     $this->form_fields[$key] = $value;
                 }
             }
+        }
+
+        public function autoEnableWebhook()
+        {
+            $webhookExist = false;
+            $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
+
+            $enabled = $this->getSetting('enable_webhook');
+            $secret  = $this->getSetting('webhook_secret');
+
+            $eventsSubscribe = $this->getSetting('webhook_events');
+
+            foreach ($eventsSubscribe as $value) {
+
+                $prepareEventsData[$value] = true;
+            }
+
+            if($enabled === 'no')
+            {
+                $data = [
+                    'url'    => $webhookUrl,
+                    'active' => false,
+                ];
+            }
+            else
+            {
+                $data = [
+                    'url'    => $webhookUrl,
+                    'active' => $enabled == 'yes' ? true: false,
+                    'events' => $prepareEventsData,
+                    'secret' => $secret,
+                ];
+
+            }
+
+            if(in_array($_SERVER['SERVER_ADDR'], ["127.0.0.1","::1"]))
+            {
+                error_log(json_encode('Could not enable webhook for localhost'));
+                return;
+            }
+
+            $webhook = $this->webhookAPI("GET", "webhooks");
+
+            foreach ($webhook['items'] as $key => $value) 
+            {
+                if($value['url'] === $webhookUrl)
+                {
+                    $webhookExist  = true;
+                    $webhookId     = $value['id'];
+
+                    foreach ($value['events'] as $event => $set) {
+
+                        if($set)
+                        {
+                            $subscribedEvents[] = $event;
+                        }
+                    }
+                }
+            }
+
+            if($webhookExist)
+            {
+                $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
+            }
+            else
+            {
+                $this->webhookAPI('POST', "webhooks/", $data);
+            }
+            
+        }
+
+        protected function webhookAPI($method, $url, $data = array())
+        {
+            $webhook = [];
+            try
+            {
+                $api = $this->getRazorpayApiInstance();
+
+                $webhook = $api->request->request($method, $url, $data);
+            }
+            catch(Exception $e)
+            {
+                $log = array(
+                    'message' => $e->getMessage(),
+                );
+
+                error_log(json_encode($log));
+            }
+
+            return $webhook;
         }
 
         public function admin_options()
@@ -427,7 +536,7 @@ function woocommerce_razorpay_init()
                 'notes'        => array(
                     'woocommerce_order_id' => $orderId
                 ),
-                'order_id' => $razorpayOrderId,
+                'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
                 'prefill'      => $this->getCustomerInfo($order),
                 '_'            => array(
