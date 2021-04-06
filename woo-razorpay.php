@@ -227,7 +227,7 @@ function woocommerce_razorpay_init()
                     'title' => __('Enable Webhook', $this->id),
                     'type' => 'checkbox',
                     'description' =>  "<span>$webhookUrl</span><br/><br/>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
-                    'label' => __('Enablee Razorpay Webhook', $this->id),
+                    'label' => __('Enable Razorpay Webhook', $this->id),
                     'default' => 'no'
                 ),
                 'webhook_events' => array(
