@@ -783,7 +783,6 @@ EOT;
         {
             global $woocommerce;
 
-            // $orderId = $_SESSION[self::SESSION_KEY];
             $orderId = get_transient(self::SESSION_KEY);
 
             $order = new WC_Order($orderId);
