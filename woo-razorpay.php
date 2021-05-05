@@ -298,11 +298,11 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                $razorpayOrderId = get_transient($sessionKey);
 
                 // If we don't have an Order
-                // or the if the order is present in session but doesn't match what we have saved
-                if (($razorpayOrderId === null) or
+                // or the if the order is present in transient but doesn't match what we have saved
+                if (($razorpayOrderId === false) or
                     (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId)) === false)))
                 {
                     $create = true;
@@ -414,7 +414,7 @@ function woocommerce_razorpay_init()
             $orderId = $order->get_order_number();
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            $razorpayOrderId = get_transient($sessionKey);
 
             $productinfo = "Order $orderId";
             $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
@@ -510,7 +510,7 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $razorpayOrder['id'];
 
-            $woocommerce->session->set($sessionKey, $razorpayOrderId);
+            set_transient($sessionKey, $razorpayOrderId, 3600);
 
             //update it in order comments
             $order = new WC_Order($orderId);
@@ -739,7 +739,10 @@ EOT;
         {
             global $woocommerce;
             $order = new WC_Order($order_id);
-            $woocommerce->session->set(self::SESSION_KEY, $order_id);
+
+            // $_SESSION[self::SESSION_KEY] = $order_id;
+            set_transient(self::SESSION_KEY, $order_id, 3600);
+
 
             $orderKey = $this->getOrderKey($order);
 
@@ -780,7 +783,9 @@ EOT;
         {
             global $woocommerce;
 
-            $orderId = $woocommerce->session->get(self::SESSION_KEY);
+            // $orderId = $_SESSION[self::SESSION_KEY];
+            $orderId = get_transient(self::SESSION_KEY);
+
             $order = new WC_Order($orderId);
 
             //
@@ -855,7 +860,7 @@ EOT;
             );
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            $attributes[self::RAZORPAY_ORDER_ID] = $woocommerce->session->get($sessionKey);
+            $attributes[self::RAZORPAY_ORDER_ID] = get_transient($sessionKey);
 
             $api->utility->verifyPaymentSignature($attributes);
         }
