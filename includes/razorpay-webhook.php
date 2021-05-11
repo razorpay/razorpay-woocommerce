@@ -159,7 +159,7 @@ class RZP_Webhook
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
-        $order = new WC_Order($orderId);
+        $order = wc_get_order($orderId);
 
         // If it is already marked as paid, ignore the event
         if ($order->needs_payment() === false)
@@ -242,7 +242,7 @@ class RZP_Webhook
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
-        $order = new WC_Order($orderId);
+        $order = wc_get_order($orderId);
 
         // If it is already marked as paid, ignore the event
         if ($order->needs_payment() === false)
@@ -377,7 +377,7 @@ class RZP_Webhook
         //
         $orderId = $payment['notes']['woocommerce_order_id'];
 
-        $order = new WC_Order($orderId);
+        $order = wc_get_order($orderId);
 
         // If it is already marked as unpaid, ignore the event
         if ($order->needs_payment() === true)
