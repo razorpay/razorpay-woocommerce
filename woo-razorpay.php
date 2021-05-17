@@ -273,9 +273,14 @@ function woocommerce_razorpay_init()
 
             $eventsSubscribe = $this->getSetting('webhook_events');
 
-            foreach ($eventsSubscribe as $value) {
+            $prepareEventsData = [];
 
-                $prepareEventsData[$value] = true;
+            if(empty($eventsSubscribe) == false)
+            {
+                foreach ($eventsSubscribe as $value) 
+                {
+                    $prepareEventsData[$value] = true;
+                }
             }
 
             if($enabled === 'no')
