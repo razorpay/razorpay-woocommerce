@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.6.1
- * Stable tag: 2.6.1
+ * Version: 2.6.2
+ * Stable tag: 2.6.2
  * Author: Team Razorpay
- * WC tested up to: 5.0.0
+ * WC tested up to: 5.2.2
  * Author URI: https://razorpay.com
 */
 
@@ -494,7 +494,7 @@ function woocommerce_razorpay_init()
          **/
         public function generate_razorpay_form($orderId)
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             try
             {
@@ -627,7 +627,7 @@ function woocommerce_razorpay_init()
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
 
             //update it in order comments
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             $order->add_order_note("Razorpay OrderId: $razorpayOrderId");
 
@@ -636,7 +636,7 @@ function woocommerce_razorpay_init()
 
         protected function verifyOrderAmount($razorpayOrderId, $orderId)
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             $api = $this->getRazorpayApiInstance();
 
@@ -674,7 +674,7 @@ function woocommerce_razorpay_init()
 
         private function getOrderCreationData($orderId)
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             $data = array(
                 'receipt'         => $orderId,
@@ -803,7 +803,7 @@ EOT;
 
         public function process_refund($orderId, $amount = null, $reason = '')
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             if (! $order or ! $order->get_transaction_id())
             {
@@ -852,7 +852,7 @@ EOT;
         function process_payment($order_id)
         {
             global $woocommerce;
-            $order = new WC_Order($order_id);
+            $order = wc_get_order($order_id);
             $woocommerce->session->set(self::SESSION_KEY, $order_id);
 
             $orderKey = $this->getOrderKey($order);
@@ -895,7 +895,7 @@ EOT;
             global $woocommerce;
 
             $orderId = $woocommerce->session->get(self::SESSION_KEY);
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             //
             // If the order has already been paid for
