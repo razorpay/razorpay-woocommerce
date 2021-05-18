@@ -285,6 +285,12 @@ function woocommerce_razorpay_init()
                 }
             }
 
+            if(in_array($_SERVER['SERVER_ADDR'], ["127.0.0.1","::1"]))
+            {
+                error_log(json_encode('Could not enable webhook for localhost'));
+                return;
+            }
+
             if($enabled === 'no')
             {
                 $data = [
@@ -319,12 +325,6 @@ function woocommerce_razorpay_init()
                     'secret' => $secret,
                 ];
 
-            }
-
-            if(in_array($_SERVER['SERVER_ADDR'], ["127.0.0.1","::1"]))
-            {
-                error_log(json_encode('Could not enable webhook for localhost'));
-                return;
             }
 
             $webhook = $this->webhookAPI("GET", "webhooks");
