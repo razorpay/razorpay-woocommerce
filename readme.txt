@@ -43,6 +43,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 = 2.7.0 =
 * Added auto-webhook setup feature.
+* Updates Razorpay SDK.
 * Tested upto WordPress 5.7.2 and WooCommerce 5.3.0
 
 = 2.6.2 =
