@@ -150,8 +150,6 @@ function woocommerce_razorpay_init()
             }
 
             $this->title = $this->getSetting('title');
-
-            $this->autoEnableWebhook();
         }
 
         protected function initHooks()
