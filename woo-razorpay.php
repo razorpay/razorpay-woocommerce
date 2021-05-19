@@ -693,7 +693,7 @@ function woocommerce_razorpay_init()
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'app_offer'       => ($order->get_discount_total() > 0) ? 1 : 0,
                 'notes'           => array(
-                    self::WC_ORDER_ID  => (string) $orderId,
+                    self::WC_ORDER_ID  => (string) $order->get_order_number(),
                 ),
             );
 
