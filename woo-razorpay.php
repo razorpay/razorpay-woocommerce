@@ -286,7 +286,7 @@ function woocommerce_razorpay_init()
 
             if(in_array($_SERVER['SERVER_ADDR'], ["127.0.0.1","::1"]))
             {
-                error_log(json_encode('Could not enable webhook for localhost'));
+                error_log('Could not enable webhook for localhost');
                 return;
             }
 
@@ -303,18 +303,24 @@ function woocommerce_razorpay_init()
                 {
                     ?>
                         <div class="notice error is-dismissible" >
-                         <p><b><?php _e( 'Please select the atlease one webhook event to enable webhook.' ); ?><b></p>
+                         <p><b><?php _e( 'At least one webhook event needs to be subscribed to enable webhook.'); ?><b></p>
                         </div>
                     <?php
+
+                    error_log('At least one webhook event needs to be subscribed to enable webhook.');
+                    return;
                 }
 
                 if (empty($secret) === true)
                 {
                     ?>
                         <div class="notice error is-dismissible" >
-                         <p><b><?php _e( 'Please enter the webhook secret.' ); ?><b></p>
+                         <p><b><?php _e( 'Webhook secret field can`t be empty.' ); ?><b></p>
                         </div>
                     <?php
+
+                    error_log('Webhook secret field can`t be empty.');
+                    return;
                 }
 
                 $data = [

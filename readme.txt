@@ -42,7 +42,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 == Changelog ==
 
 = 2.7.1 =
-* Update the Razorpay Order notes key.
+* Updated the Razorpay Order notes key from woocommerce_order_id to woocommerce_order_number.
 
 = 2.7.0 =
 * Added auto-webhook setup feature.
