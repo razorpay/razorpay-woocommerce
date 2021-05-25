@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.7.0
- * Stable tag: 2.7.0
+ * Version: 2.7.1
+ * Stable tag: 2.7.1
  * Author: Team Razorpay
  * WC tested up to: 5.3.0
  * Author URI: https://razorpay.com
@@ -45,6 +45,7 @@ function woocommerce_razorpay_init()
         const CAPTURE                        = 'capture';
         const AUTHORIZE                      = 'authorize';
         const WC_ORDER_ID                    = 'woocommerce_order_id';
+        const WC_ORDER_NUMBER                = 'woocommerce_order_number';
 
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
@@ -549,7 +550,7 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    'woocommerce_order_id' => $orderId
+                     self::WC_ORDER_ID => $orderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
@@ -693,7 +694,7 @@ function woocommerce_razorpay_init()
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'app_offer'       => ($order->get_discount_total() > 0) ? 1 : 0,
                 'notes'           => array(
-                    self::WC_ORDER_ID  => (string) $order->get_order_number(),
+                    self::WC_ORDER_NUMBER  => (string) $orderId,
                 ),
             );
 
