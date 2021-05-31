@@ -269,8 +269,23 @@ function woocommerce_razorpay_init()
             $webhookExist = false;
             $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
-            $enabled = $this->getSetting('enable_webhook');
-            $secret  = $this->getSetting('webhook_secret');
+            $key_id      = $this->getSetting('key_id');
+            $key_secret  = $this->getSetting('key_secret');
+            $enabled     = $this->getSetting('enable_webhook');
+            $secret      = $this->getSetting('webhook_secret');
+
+            //validating the key id and key secret set properly or not.
+            if($key_id == null || $key_secret == null)
+            {
+                ?>
+                    <div class="notice error is-dismissible" >
+                     <p><b><?php _e( 'Key Id and Key Secret can`t be empty'); ?><b></p>
+                    </div>
+                <?php
+
+                error_log('Key Id and Key Secret are required to enable the webhook.');
+                return;
+            }
 
             $eventsSubscribe = $this->getSetting('webhook_events');
 
@@ -286,7 +301,7 @@ function woocommerce_razorpay_init()
 
             if(in_array($_SERVER['SERVER_ADDR'], ["127.0.0.1","::1"]))
             {
-                error_log(json_encode('Could not enable webhook for localhost'));
+                error_log('Could not enable webhook for localhost');
                 return;
             }
 
@@ -299,22 +314,30 @@ function woocommerce_razorpay_init()
             }
             else
             {
-                if (empty($eventsSubscribe) === true)
+                //validating event is not empty
+                if(empty($eventsSubscribe) === true)
                 {
                     ?>
                         <div class="notice error is-dismissible" >
-                         <p><b><?php _e( 'Please select the atlease one webhook event to enable webhook.' ); ?><b></p>
+                         <p><b><?php _e( 'At least one webhook event needs to be subscribed to enable webhook.'); ?><b></p>
                         </div>
                     <?php
+
+                    error_log('At least one webhook event needs to be subscribed to enable webhook.');
+                    return;
                 }
 
-                if (empty($secret) === true)
+                //validating webhook secret is not empty
+                if(empty($secret) === true)
                 {
                     ?>
                         <div class="notice error is-dismissible" >
-                         <p><b><?php _e( 'Please enter the webhook secret.' ); ?><b></p>
+                         <p><b><?php _e( 'Webhook secret field can`t be empty.' ); ?><b></p>
                         </div>
                     <?php
+
+                    error_log('Webhook secret field can`t be empty.');
+                    return;
                 }
 
                 $data = [
