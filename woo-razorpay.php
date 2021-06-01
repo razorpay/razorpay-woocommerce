@@ -264,6 +264,40 @@ function woocommerce_razorpay_init()
             }
         }
 
+        /**
+         * The required settings for onboarding setup.
+         *
+         * @return array
+         */
+        public function get_required_settings_keys()
+        {
+            return [ 'key_id', 'key_secret' ];
+        }
+
+        /**
+         * Text provided to users during onboarding setup.
+         *
+         * @return string
+         */
+        public function get_setup_help_text()
+        {
+            return sprintf(
+                __('Your key details can be obtained from your <a href="%s" target="_blank">Razorpay account</a>.', $this->id),
+                'https://dashboard.razorpay.com/#/access/signin'
+            );
+        }
+
+        /**
+         * Determine if the gateway still requires setup.
+         *
+         * @return bool
+         */
+        public function needs_setup()
+        {
+            return ! $this->get_option('key_id') || ! $this->get_option('key_secret');
+        }
+
+
         public function autoEnableWebhook()
         {
             $webhookExist = false;
