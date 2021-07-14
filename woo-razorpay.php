@@ -279,11 +279,11 @@ function woocommerce_razorpay_init()
             {
                 ?>
                     <div class="notice error is-dismissible" >
-                     <p><b><?php _e( 'Key Id and Key Secret can`t be empty'); ?><b></p>
+                     <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
                     </div>
                 <?php
 
-                error_log('Key Id and Key Secret are required to enable the webhook.');
+                error_log('Key Id and Key Secret are required.');
                 return;
             }
 
@@ -299,8 +299,20 @@ function woocommerce_razorpay_init()
                 }
             }
 
-            if(in_array($_SERVER['SERVER_ADDR'], ["127.0.0.1","::1"]))
+            $domain = parse_url($webhookUrl, PHP_URL_HOST);
+
+            $domain_ip = gethostbyname($domain);
+
+            if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
             {
+                $this->update_option( 'enable_webhook', 'no' );
+
+                ?>
+                    <div class="notice error is-dismissible" >
+                     <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
+                    </div>
+                <?php
+
                 error_log('Could not enable webhook for localhost');
                 return;
             }
@@ -351,12 +363,15 @@ function woocommerce_razorpay_init()
 
             $webhook = $this->webhookAPI("GET", "webhooks");
 
-            foreach ($webhook['items'] as $key => $value) 
+            if(count($webhook) > 0)
             {
-                if($value['url'] === $webhookUrl)
+                foreach ($webhook['items'] as $key => $value) 
                 {
-                    $webhookExist  = true;
-                    $webhookId     = $value['id'];
+                    if($value['url'] === $webhookUrl)
+                    {
+                        $webhookExist  = true;
+                        $webhookId     = $value['id'];
+                    }
                 }
             }
 
