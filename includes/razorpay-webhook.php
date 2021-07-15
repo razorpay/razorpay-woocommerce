@@ -157,7 +157,7 @@ class RZP_Webhook
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
+        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
         $order = wc_get_order($orderId);
 
@@ -240,7 +240,7 @@ class RZP_Webhook
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
+        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
         $order = wc_get_order($orderId);
 
@@ -375,7 +375,7 @@ class RZP_Webhook
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $payment['notes']['woocommerce_order_id'];
+        $orderId = $payment['notes']['woocommerce_order_number'];
 
         $order = wc_get_order($orderId);
 
