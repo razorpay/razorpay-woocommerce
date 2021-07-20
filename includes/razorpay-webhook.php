@@ -29,6 +29,14 @@ class RZP_Webhook
     const REFUNDED_CREATED          = 'refund.created';
     const VIRTUAL_ACCOUNT_CREDITED  = 'virtual_account.credited';
 
+    protected $eventsArray = [
+        self::PAYMENT_AUTHORIZED, 
+        self::VIRTUAL_ACCOUNT_CREDITED, 
+        self::REFUNDED_CREATED, 
+        self::PAYMENT_FAILED, 
+        self::SUBSCRIPTION_CANCELLED
+    ];
+
     public function __construct()
     {
         $this->razorpay = new WC_Razorpay(false);
@@ -68,6 +76,12 @@ class RZP_Webhook
         if (($enabled === 'yes') and
             (empty($data['event']) === false))
         {
+            // Skip the webhook if not the valid data and event
+            if ($this->shouldConsumeWebhook($data) === false)
+            {
+                return;
+            }
+            
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true)
             {
                 $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
@@ -147,7 +161,7 @@ class RZP_Webhook
      * @param array $data Webook Data
      */
     protected function paymentAuthorized(array $data)
-    {
+    {   
         // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
@@ -329,6 +343,21 @@ class RZP_Webhook
         }
 
         return $payment;
+    }
+
+    /**
+     * Returns boolean false incase not proper webhook data
+     */
+    protected function shouldConsumeWebhook($data)
+    { 
+        if ((isset($data['event']) === true) and 
+            (in_array($data['event'], $this->eventsArray) === true) and 
+            isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     /**
