@@ -147,7 +147,13 @@ class RZP_Webhook
      * @param array $data Webook Data
      */
     protected function paymentAuthorized(array $data)
-    {
+    {   
+        // Skip the webhook if not the valid data
+        if ($this->shouldConsumeWebhook($data) === false)
+        {
+            return;
+        }
+
         // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
@@ -231,6 +237,12 @@ class RZP_Webhook
      */
     protected function virtualAccountCredited(array $data)
     {
+        // Skip the webhook if not the valid data
+        if ($this->shouldConsumeWebhook($data) === false)
+        {
+            return;
+        }
+
         // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
@@ -332,6 +344,19 @@ class RZP_Webhook
     }
 
     /**
+     * Returns boolean false incase not proper webhook data
+     */
+    protected function shouldConsumeWebhook($data)
+    { 
+        if (isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Returns the order amount, rounded as integer
      * @param WC_Order $order WooCommerce Order instance
      * @return int Order Amount
@@ -371,6 +396,12 @@ class RZP_Webhook
         $refundId = $data['payload']['refund']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+        // Skip the webhook if not the valid data
+        if (isset($payment['notes']['woocommerce_order_number']) === false)
+        {
+            return;
+        }
 
         //
         // Order entity should be sent as part of the webhook payload
