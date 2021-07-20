@@ -30,11 +30,11 @@ class RZP_Webhook
     const VIRTUAL_ACCOUNT_CREDITED  = 'virtual_account.credited';
 
     protected $eventsArray = [
-        PAYMENT_AUTHORIZED, 
-        VIRTUAL_ACCOUNT_CREDITED, 
-        REFUNDED_CREATED, 
-        PAYMENT_FAILED, 
-        SUBSCRIPTION_CANCELLED
+        self::PAYMENT_AUTHORIZED, 
+        self::VIRTUAL_ACCOUNT_CREDITED, 
+        self::REFUNDED_CREATED, 
+        self::PAYMENT_FAILED, 
+        self::SUBSCRIPTION_CANCELLED
     ];
 
     public function __construct()
