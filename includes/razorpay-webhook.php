@@ -29,6 +29,14 @@ class RZP_Webhook
     const REFUNDED_CREATED          = 'refund.created';
     const VIRTUAL_ACCOUNT_CREDITED  = 'virtual_account.credited';
 
+    protected $eventsArray = array(
+        PAYMENT_AUTHORIZED, 
+        VIRTUAL_ACCOUNT_CREDITED, 
+        REFUNDED_CREATED, 
+        PAYMENT_FAILED, 
+        SUBSCRIPTION_CANCELLED
+    );
+
     public function __construct()
     {
         $this->razorpay = new WC_Razorpay(false);
@@ -343,7 +351,7 @@ class RZP_Webhook
     protected function shouldConsumeWebhook($data)
     { 
         if ((isset($data['event']) === true) and 
-            (in_array($data['event'], [PAYMENT_AUTHORIZED, VIRTUAL_ACCOUNT_CREDITED, REFUNDED_CREATED, PAYMENT_FAILED, SUBSCRIPTION_CANCELLED]) === true) and 
+            (in_array($data['event'], $eventsArray) === true) and 
             isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
         {
             return true;
