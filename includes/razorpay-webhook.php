@@ -68,6 +68,12 @@ class RZP_Webhook
         if (($enabled === 'yes') and
             (empty($data['event']) === false))
         {
+            // Skip the webhook if not the valid data and event
+            if ($this->shouldConsumeWebhook($data) === false)
+            {
+                return;
+            }
+            
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true)
             {
                 $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
@@ -148,12 +154,6 @@ class RZP_Webhook
      */
     protected function paymentAuthorized(array $data)
     {   
-        // Skip the webhook if not the valid data
-        if ($this->shouldConsumeWebhook($data) === false)
-        {
-            return;
-        }
-
         // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
@@ -237,12 +237,6 @@ class RZP_Webhook
      */
     protected function virtualAccountCredited(array $data)
     {
-        // Skip the webhook if not the valid data
-        if ($this->shouldConsumeWebhook($data) === false)
-        {
-            return;
-        }
-
         // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
@@ -348,7 +342,9 @@ class RZP_Webhook
      */
     protected function shouldConsumeWebhook($data)
     { 
-        if (isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
+        if ((isset($data['event']) === true) and 
+            (($data['event'] === PAYMENT_AUTHORIZED) or ($data['event'] === REFUNDED_CREATED) or ($data['event'] === VIRTUAL_ACCOUNT_CREDITED) or ($data['event'] === PAYMENT_FAILED) or ($data['event'] === SUBSCRIPTION_CANCELLED)) and 
+            isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
         {
             return true;
         }
@@ -396,12 +392,6 @@ class RZP_Webhook
         $refundId = $data['payload']['refund']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
-
-        // Skip the webhook if not the valid data
-        if (isset($payment['notes']['woocommerce_order_number']) === false)
-        {
-            return;
-        }
 
         //
         // Order entity should be sent as part of the webhook payload

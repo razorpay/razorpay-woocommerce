@@ -239,7 +239,6 @@ function woocommerce_razorpay_init()
                     'default'     => '',
                     'options'     => array(
                         RZP_Webhook::PAYMENT_AUTHORIZED        => 'payment.authorized',
-                        RZP_Webhook::PAYMENT_FAILED            => 'payment.failed',
                         RZP_Webhook::REFUNDED_CREATED          => 'refund.created',
                         RZP_Webhook::VIRTUAL_ACCOUNT_CREDITED  => 'virtual_account.credited',
                     ),
