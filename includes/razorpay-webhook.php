@@ -343,7 +343,7 @@ class RZP_Webhook
     protected function shouldConsumeWebhook($data)
     { 
         if ((isset($data['event']) === true) and 
-            (($data['event'] === PAYMENT_AUTHORIZED) or ($data['event'] === REFUNDED_CREATED) or ($data['event'] === VIRTUAL_ACCOUNT_CREDITED) or ($data['event'] === PAYMENT_FAILED) or ($data['event'] === SUBSCRIPTION_CANCELLED)) and 
+            (in_array($data['event'], [PAYMENT_AUTHORIZED, VIRTUAL_ACCOUNT_CREDITED, REFUNDED_CREATED, PAYMENT_FAILED, SUBSCRIPTION_CANCELLED]) === true) and 
             isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
         {
             return true;
