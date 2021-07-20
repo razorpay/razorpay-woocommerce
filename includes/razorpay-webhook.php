@@ -29,13 +29,13 @@ class RZP_Webhook
     const REFUNDED_CREATED          = 'refund.created';
     const VIRTUAL_ACCOUNT_CREDITED  = 'virtual_account.credited';
 
-    protected $eventsArray = array(
+    protected $eventsArray = [
         PAYMENT_AUTHORIZED, 
         VIRTUAL_ACCOUNT_CREDITED, 
         REFUNDED_CREATED, 
         PAYMENT_FAILED, 
         SUBSCRIPTION_CANCELLED
-    );
+    ];
 
     public function __construct()
     {
