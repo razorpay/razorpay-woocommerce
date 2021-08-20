@@ -292,7 +292,7 @@ function woocommerce_razorpay_init()
 
             if(empty($eventsSubscribe) == false)
             {
-                foreach ($eventsSubscribe as $value) 
+                foreach ($eventsSubscribe as $value)
                 {
                     $prepareEventsData[$value] = true;
                 }
@@ -364,7 +364,7 @@ function woocommerce_razorpay_init()
 
             if(count($webhook) > 0)
             {
-                foreach ($webhook['items'] as $key => $value) 
+                foreach ($webhook['items'] as $key => $value)
                 {
                     if($value['url'] === $webhookUrl)
                     {
@@ -382,7 +382,7 @@ function woocommerce_razorpay_init()
             {
                 $this->webhookAPI('POST', "webhooks/", $data);
             }
-            
+
         }
 
         protected function webhookAPI($method, $url, $data = array())
@@ -579,7 +579,6 @@ function woocommerce_razorpay_init()
             $razorpayOrderId = $woocommerce->session->get($sessionKey);
 
             $productinfo = "Order $orderId";
-            $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
 
             return array(
                 'key'          => $this->getSetting('key_id'),
@@ -591,12 +590,7 @@ function woocommerce_razorpay_init()
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
-                'prefill'      => $this->getCustomerInfo($order),
-                '_'            => array(
-                    'integration'                   => 'woocommerce',
-                    'integration_version'           => $mod_version,
-                    'integration_parent_version'    => WOOCOMMERCE_VERSION,
-                ),
+                'prefill'      => $this->getCustomerInfo($order)
             );
         }
 
@@ -797,6 +791,8 @@ function woocommerce_razorpay_init()
          **/
         function generateOrderForm($data)
         {
+            $data["_"] = $this->getVersionMetaInfo($data);
+
             $redirectUrl = $this->getRedirectUrl();
             $data['cancel_url'] = wc_get_checkout_url();
 
@@ -1138,6 +1134,31 @@ EOT;
                 }
             }
         }
+
+        /**
+         * Fetching version info for woo-razorpay and woo-razorpay-subscription
+         * Which will be sent through checkout as meta info
+         * @param $data
+         * @return array
+         */
+        protected function getVersionMetaInfo($data)
+        {
+            if (isset($data['subscription_id']) && isset($data['recurring'])) {
+                $pluginRoot = WP_PLUGIN_DIR . '/razorpay-subscriptions-for-woocommerce';
+                return array(
+                    'integration' => 'woocommerce-subscription',
+                    'integration_version' => get_plugin_data($pluginRoot . '/razorpay-subscriptions.php')['Version'],
+                    'integration_woo_razorpay_version' => get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'],
+                    'integration_parent_version' => WOOCOMMERCE_VERSION,
+                );
+            } else {
+                return array(
+                    'integration' => 'woocommerce',
+                    'integration_version' => get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'],
+                    'integration_parent_version' => WOOCOMMERCE_VERSION,
+                );
+            }
+        }
     }
 
     /**
@@ -1166,7 +1187,7 @@ EOT;
 
         return $links;
     }
-    
+
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
 }
 
