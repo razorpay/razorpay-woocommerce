@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.6.1
- * Stable tag: 2.6.1
+ * Version: 2.7.2
+ * Stable tag: 2.7.2
  * Author: Team Razorpay
- * WC tested up to: 5.0.0
+ * WC tested up to: 5.5.1
  * Author URI: https://razorpay.com
 */
 
@@ -45,6 +45,7 @@ function woocommerce_razorpay_init()
         const CAPTURE                        = 'capture';
         const AUTHORIZE                      = 'authorize';
         const WC_ORDER_ID                    = 'woocommerce_order_id';
+        const WC_ORDER_NUMBER                = 'woocommerce_order_number';
 
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
@@ -59,6 +60,7 @@ function woocommerce_razorpay_init()
             'payment_action',
             'order_success_message',
             'enable_webhook',
+            'webhook_events',
             'webhook_secret',
         );
 
@@ -164,10 +166,12 @@ function woocommerce_razorpay_init()
             if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
                 add_action("woocommerce_update_options_payment_gateways_{$this->id}", $cb);
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'autoEnableWebhook'));
             }
             else
             {
                 add_action('woocommerce_update_options_payment_gateways', $cb);
+                add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
             }
         }
 
@@ -224,8 +228,23 @@ function woocommerce_razorpay_init()
                     'title' => __('Enable Webhook', $this->id),
                     'type' => 'checkbox',
                     'description' =>  "<span>$webhookUrl</span><br/><br/>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
-                    'label' => __('Enable Razorpay Webhook <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a> with the URL listed below.', $this->id),
+                    'label' => __('Enable Razorpay Webhook', $this->id),
                     'default' => 'no'
+                ),
+                'webhook_events' => array(
+                    'title'       => __('Webhook Events', $this->id),
+                    'type'        => 'multiselect',
+                    'description' =>  "",
+                    'class'       => 'wc-enhanced-select',
+                    'default'     => '',
+                    'options'     => array(
+                        RZP_Webhook::PAYMENT_AUTHORIZED        => 'payment.authorized',
+                        RZP_Webhook::REFUNDED_CREATED          => 'refund.created',
+                        RZP_Webhook::VIRTUAL_ACCOUNT_CREDITED  => 'virtual_account.credited',
+                    ),
+                    'custom_attributes' => array(
+                        'data-placeholder' => __( 'Select Webhook Events', 'woocommerce' ),
+                    ),
                 ),
                 'webhook_secret' => array(
                     'title' => __('Webhook Secret', $this->id),
@@ -242,6 +261,149 @@ function woocommerce_razorpay_init()
                     $this->form_fields[$key] = $value;
                 }
             }
+        }
+
+        public function autoEnableWebhook()
+        {
+            $webhookExist = false;
+            $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
+
+            $key_id      = $this->getSetting('key_id');
+            $key_secret  = $this->getSetting('key_secret');
+            $enabled     = $this->getSetting('enable_webhook');
+            $secret      = $this->getSetting('webhook_secret');
+
+            //validating the key id and key secret set properly or not.
+            if($key_id == null || $key_secret == null)
+            {
+                ?>
+                    <div class="notice error is-dismissible" >
+                     <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
+                    </div>
+                <?php
+
+                error_log('Key Id and Key Secret are required.');
+                return;
+            }
+
+            $eventsSubscribe = $this->getSetting('webhook_events');
+
+            $prepareEventsData = [];
+
+            if(empty($eventsSubscribe) == false)
+            {
+                foreach ($eventsSubscribe as $value) 
+                {
+                    $prepareEventsData[$value] = true;
+                }
+            }
+
+            $domain = parse_url($webhookUrl, PHP_URL_HOST);
+
+            $domain_ip = gethostbyname($domain);
+
+            if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
+            {
+                $this->update_option( 'enable_webhook', 'no' );
+
+                ?>
+                    <div class="notice error is-dismissible" >
+                     <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
+                    </div>
+                <?php
+
+                error_log('Could not enable webhook for localhost');
+                return;
+            }
+
+            if($enabled === 'no')
+            {
+                $data = [
+                    'url'    => $webhookUrl,
+                    'active' => false,
+                ];
+            }
+            else
+            {
+                //validating event is not empty
+                if(empty($eventsSubscribe) === true)
+                {
+                    ?>
+                        <div class="notice error is-dismissible" >
+                         <p><b><?php _e( 'At least one webhook event needs to be subscribed to enable webhook.'); ?><b></p>
+                        </div>
+                    <?php
+
+                    error_log('At least one webhook event needs to be subscribed to enable webhook.');
+                    return;
+                }
+
+                //validating webhook secret is not empty
+                if(empty($secret) === true)
+                {
+                    ?>
+                        <div class="notice error is-dismissible" >
+                         <p><b><?php _e( 'Webhook secret field can`t be empty.' ); ?><b></p>
+                        </div>
+                    <?php
+
+                    error_log('Webhook secret field can`t be empty.');
+                    return;
+                }
+
+                $data = [
+                    'url'    => $webhookUrl,
+                    'active' => $enabled == 'yes' ? true: false,
+                    'events' => $prepareEventsData,
+                    'secret' => $secret,
+                ];
+
+            }
+
+            $webhook = $this->webhookAPI("GET", "webhooks");
+
+            if(count($webhook) > 0)
+            {
+                foreach ($webhook['items'] as $key => $value) 
+                {
+                    if($value['url'] === $webhookUrl)
+                    {
+                        $webhookExist  = true;
+                        $webhookId     = $value['id'];
+                    }
+                }
+            }
+
+            if($webhookExist)
+            {
+                $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
+            }
+            else
+            {
+                $this->webhookAPI('POST', "webhooks/", $data);
+            }
+            
+        }
+
+        protected function webhookAPI($method, $url, $data = array())
+        {
+            $webhook = [];
+            try
+            {
+                $api = $this->getRazorpayApiInstance();
+
+                $webhook = $api->request->request($method, $url, $data);
+            }
+            catch(Exception $e)
+            {
+                $log = array(
+                    'message' => $e->getMessage(),
+                );
+
+                error_log(json_encode($log));
+            }
+
+            return $webhook;
         }
 
         public function admin_options()
@@ -380,7 +542,7 @@ function woocommerce_razorpay_init()
          **/
         public function generate_razorpay_form($orderId)
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             try
             {
@@ -425,9 +587,9 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    'woocommerce_order_id' => $orderId
+                     self::WC_ORDER_ID => $orderId
                 ),
-                'order_id' => $razorpayOrderId,
+                'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
                 'prefill'      => $this->getCustomerInfo($order),
                 '_'            => array(
@@ -513,7 +675,7 @@ function woocommerce_razorpay_init()
             set_transient($sessionKey, $razorpayOrderId, 3600);
 
             //update it in order comments
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             $order->add_order_note("Razorpay OrderId: $razorpayOrderId");
 
@@ -522,7 +684,7 @@ function woocommerce_razorpay_init()
 
         protected function verifyOrderAmount($razorpayOrderId, $orderId)
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             $api = $this->getRazorpayApiInstance();
 
@@ -560,7 +722,7 @@ function woocommerce_razorpay_init()
 
         private function getOrderCreationData($orderId)
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             $data = array(
                 'receipt'         => $orderId,
@@ -569,7 +731,7 @@ function woocommerce_razorpay_init()
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'app_offer'       => ($order->get_discount_total() > 0) ? 1 : 0,
                 'notes'           => array(
-                    self::WC_ORDER_ID  => (string) $orderId,
+                    self::WC_ORDER_NUMBER  => (string) $orderId,
                 ),
             );
 
@@ -689,7 +851,7 @@ EOT;
 
         public function process_refund($orderId, $amount = null, $reason = '')
         {
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
 
             if (! $order or ! $order->get_transaction_id())
             {
@@ -738,11 +900,10 @@ EOT;
         function process_payment($order_id)
         {
             global $woocommerce;
-            $order = new WC_Order($order_id);
 
-            // $_SESSION[self::SESSION_KEY] = $order_id;
+            $order = wc_get_order($order_id);
+
             set_transient(self::SESSION_KEY, $order_id, 3600);
-
 
             $orderKey = $this->getOrderKey($order);
 
@@ -785,7 +946,13 @@ EOT;
 
             $orderId = get_transient(self::SESSION_KEY);
 
-            $order = new WC_Order($orderId);
+            $order = wc_get_order($orderId);
+
+            if($order === false)
+            {
+                wp_redirect(wc_get_checkout_url());
+                exit;
+            }
 
             //
             // If the order has already been paid for
