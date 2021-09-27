@@ -466,11 +466,11 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                $razorpayOrderId = get_transient($sessionKey);
 
                 // If we don't have an Order
-                // or the if the order is present in session but doesn't match what we have saved
-                if (($razorpayOrderId === null) or
+                // or the if the order is present in transient but doesn't match what we have saved
+                if (($razorpayOrderId === false) or
                     (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId)) === false)))
                 {
                     $create = true;
@@ -582,10 +582,9 @@ function woocommerce_razorpay_init()
             $orderId = $order->get_order_number();
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            $razorpayOrderId = get_transient($sessionKey);
 
             $productinfo = "Order $orderId";
-            $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
 
             return array(
                 'key'          => $this->getSetting('key_id'),
@@ -597,12 +596,7 @@ function woocommerce_razorpay_init()
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
-                'prefill'      => $this->getCustomerInfo($order),
-                '_'            => array(
-                    'integration'                   => 'woocommerce',
-                    'integration_version'           => $mod_version,
-                    'integration_parent_version'    => WOOCOMMERCE_VERSION,
-                ),
+                'prefill'      => $this->getCustomerInfo($order)
             );
         }
 
@@ -678,7 +672,7 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $razorpayOrder['id'];
 
-            $woocommerce->session->set($sessionKey, $razorpayOrderId);
+            set_transient($sessionKey, $razorpayOrderId, 3600);
 
             //update it in order comments
             $order = wc_get_order($orderId);
@@ -789,7 +783,7 @@ function woocommerce_razorpay_init()
 
         private function enqueueCheckoutScripts($data)
         {
-            if($data === 'checkoutForm')
+            if($data === 'checkoutForm' || $data === 'routeAnalyticsForm')
             {
                 wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                     null, null);
@@ -845,6 +839,8 @@ function woocommerce_razorpay_init()
          **/
         function generateOrderForm($data)
         {
+            $data["_"] = $this->getVersionMetaInfo($data);
+
             $redirectUrl = $this->getRedirectUrl();
             $data['cancel_url'] = wc_get_checkout_url();
 
@@ -948,8 +944,10 @@ EOT;
         function process_payment($order_id)
         {
             global $woocommerce;
+
             $order = wc_get_order($order_id);
-            $woocommerce->session->set(self::SESSION_KEY, $order_id);
+
+            set_transient(self::SESSION_KEY, $order_id, 3600);
 
             $orderKey = $this->getOrderKey($order);
 
@@ -990,8 +988,15 @@ EOT;
         {
             global $woocommerce;
 
-            $orderId = $woocommerce->session->get(self::SESSION_KEY);
+            $orderId = get_transient(self::SESSION_KEY);
+
             $order = wc_get_order($orderId);
+
+            if($order === false)
+            {
+                wp_redirect(wc_get_checkout_url());
+                exit;
+            }
 
             //
             // If the order has already been paid for
@@ -1065,7 +1070,7 @@ EOT;
             );
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            $attributes[self::RAZORPAY_ORDER_ID] = $woocommerce->session->get($sessionKey);
+            $attributes[self::RAZORPAY_ORDER_ID] = get_transient($sessionKey);
 
             $api->utility->verifyPaymentSignature($attributes);
         }
@@ -1189,6 +1194,31 @@ EOT;
             }
         }
 
+        /**
+         * Fetching version info for woo-razorpay and woo-razorpay-subscription
+         * Which will be sent through checkout as meta info
+         * @param $data
+         * @return array
+         */
+        protected function getVersionMetaInfo($data)
+        {
+            if (isset($data['subscription_id']) && isset($data['recurring'])) {
+                $pluginRoot = WP_PLUGIN_DIR . '/razorpay-subscriptions-for-woocommerce';
+                return array(
+                    'integration' => 'woocommerce-subscription',
+                    'integration_version' => get_plugin_data($pluginRoot . '/razorpay-subscriptions.php')['Version'],
+                    'integration_woo_razorpay_version' => get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'],
+                    'integration_parent_version' => WOOCOMMERCE_VERSION,
+                );
+            } else {
+                return array(
+                    'integration' => 'woocommerce',
+                    'integration_version' => get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'],
+                    'integration_parent_version' => WOOCOMMERCE_VERSION,
+                );
+            }
+        }
+
         function transferFromPayment($orderId, $razorpayPaymentId){
 
             $order = wc_get_order($orderId);
@@ -1237,7 +1267,46 @@ EOT;
 
                 $api->request->request("POST", $url, $data);
 
+                $this->addRouteAnalyticsScript();
+
             }
+
+        }
+
+        function addRouteAnalyticsScript() {
+
+            $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
+
+            $data = array(
+                'key'          => $this->getSetting('key_id'),
+                'name'         => get_bloginfo('name'),
+                '_'            => array(
+                    'x-integration'                   => 'Woocommerce',
+                    'x-integration-module'            => 'Route',
+                    'x-integration-version'           => $mod_version,
+                    'x-integration-parent-version'    => WOOCOMMERCE_VERSION,
+                ),
+            );
+
+            $this->enqueueCheckoutScripts('routeAnalyticsForm');
+
+            $url = Api::getFullUrl("checkout/embedded");
+
+            $formFields = "";
+            foreach ($data as $fieldKey => $val) {
+                if(in_array($fieldKey, array('prefill', '_')))
+                {
+                    foreach ($data[$fieldKey] as $field => $fieldVal) {
+                        $formFields .= "<input type='hidden' name='$fieldKey" ."[$field]"."' value='$fieldVal'> \n";
+                    }
+                }
+            }
+
+            return '<form method="POST" action="'.$url.'" id="routeAnalyticsForm">
+                    <input type="hidden" name="key_id" value="'.$data['key'].'">
+                    <input type="hidden" name="name" value="'.$data['name'].'">
+                    '. $formFields .'
+                </form>';
 
         }
 
@@ -1316,14 +1385,19 @@ function rzp_add_plugin_page()
     /* add pages & menu items */
 
     add_menu_page(esc_attr__('Razorpay Route woocommerce', 'textdomain'), esc_html__('Razorpay Route woocommerce', 'textdomain'),'administrator', 'razorpay_route_woocommerce', 'razorpay_route_woocommerce', '', 10);
+
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
         'Razorpay Route woocommerce', 'administrator','razorpay_transfers', 'razorpay_transfers' );
+
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
         'Razorpay Route woocommerce', 'administrator','razorpay_route_reversals', 'razorpay_route_reversals' );
+
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
         'Razorpay Route woocommerce', 'administrator','razorpay_route_payments', 'razorpay_route_payments' );
+
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
         'Razorpay Route woocommerce', 'administrator','razorpay_settlement_transfers', 'razorpay_settlement_transfers' );
+
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
         'Razorpay Route woocommerce', 'administrator','razorpay_payments_view', 'razorpay_payments_view' );
 
