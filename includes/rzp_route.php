@@ -224,9 +224,12 @@ class RZP_Route extends WP_List_Table
         }
         if ($transfers) {
             foreach ($transfers['items'] as $transfer) {
+
+                $source_key = explode('_',$transfer['source']);
+
                 $items[] = array(
                     'transfer_id' => '<a href="?page=razorpay_transfers&id=' . $transfer['id'] . '">' . $transfer['id'] . '</a>',
-                    'source' => ($transfer['source'] == $transfer['recipient']) ? 'Direct Transfer' : $transfer['source'],
+                    'source' => (($source_key[0] == 'order') || ($source_key[0] == 'pay'))? $transfer['source'] : 'Direct Transfer',
                     'recipient' => $transfer['recipient'],
                     'amount' => '<span class="rzp-currency">₹</span> ' . (int)round($transfer['amount'] / 100),
                     'created_at' => date("d F Y h:i A", strtotime('+5 hour +30 minutes', $transfer['created_at'])),
@@ -254,7 +257,7 @@ class RZP_Route extends WP_List_Table
 
             $transfer_detail = $api->request->request("GET", $url);
 
-            $prev_url = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+            $prev_url = admin_url('admin.php?page=razorpay_route_woocommerce');
 
             $show = "jQuery('.rev_trf_overlay').show()";
             $hide = "jQuery('.rev_trf_overlay').hide()";
@@ -262,10 +265,13 @@ class RZP_Route extends WP_List_Table
             $show_setl = "jQuery('.trf_settlement_overlay').show()";
             $hide_setl = "jQuery('.trf_settlement_overlay').hide()";
 
+            $source_key = explode('_',$transfer_detail['source']) ;
+            $source = (($source_key[0] == 'order') || ($source_key[0] == 'pay')) ? $transfer_detail['source'] : "Direct Transfer" ;
+
             echo '<div class="wrap">
             <div class="content-header">
                 <a href="' . $prev_url . '">
-                    <span class="dashicons rzp-dashicons dashicons-arrow-left-alt"></span>  Back
+                    <span class="dashicons rzp-dashicons dashicons-arrow-left-alt"></span>  Transfer List
                 </a>
             </div>
             <div class="container rzp-container">
@@ -280,7 +286,7 @@ class RZP_Route extends WP_List_Table
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Source</div>
-                            <div class="col-sm-8 panel-value">' . $transfer_detail['source'] . '</div>
+                            <div class="col-sm-8 panel-value">' . $source . '</div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Recipient</div>
@@ -380,18 +386,17 @@ class RZP_Route extends WP_List_Table
                 </script>';
             echo $reverse_transfer_modal;
 
+            $onhold_status = $settle_sts = $hold_until_status = $hold_date = $disable_date = '';
+
             if ($transfer_detail['on_hold_until'] != '') {
                 $hold_date = date("Y-m-d", $transfer_detail['on_hold_until']);
                 $hold_until_status = "checked";
-                $disable_date = "";
             }
             if ($transfer_detail['on_hold'] == 1 && $transfer_detail['on_hold_until'] == '') {
-                $hold_date = '';
                 $onhold_status = "checked";
                 $disable_date = "disabled";
             }
             if ($transfer_detail['on_hold'] == 0 && $transfer_detail['recipient_settlement_id'] == '') {
-                $hold_date = '';
                 $settle_sts = "checked";
                 $disable_date = "disabled";
             }
@@ -768,7 +773,7 @@ class RZP_Route extends WP_List_Table
 
             $payment_transfers = $api->payment->fetch($payment_id)->transfers();
 
-            $prev_url = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+            $prev_url = admin_url('admin.php?page=razorpay_route_payments');
 
             $show = "jQuery('.overlay').show()";
             $hide = "jQuery('.overlay').hide()";
@@ -799,7 +804,7 @@ class RZP_Route extends WP_List_Table
             echo '<div class="wrap">
                 <div class="content-header">
                     <a href="' . $prev_url . '">
-                        <span class="dashicons rzp-dashicons dashicons-arrow-left-alt"></span>  Back
+                        <span class="dashicons rzp-dashicons dashicons-arrow-left-alt"></span>  Payment List
                     </a>
                 </div>
                 <div class="container rzp-container">

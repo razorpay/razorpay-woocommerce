@@ -1476,6 +1476,7 @@ function product_transfer_data_fields()
     woocommerce_wp_radio( array(
         'id'            => 'rzp_transfer_from',
         'wrapper_class' => 'show_if_simple',
+        'label'         => '',
         'description'   => __( 'You can transfer funds to linked accounts from order or payments', 'my_theme_domain' ),
         'desc_tip'      => true,
         'options'       => array(
