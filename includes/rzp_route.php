@@ -140,30 +140,6 @@ class RZP_Route extends WP_List_Table
         }
     }
 
-
-    function usort_reorder($a, $b)
-    {
-        if (isset($_GET['orderby']) && isset($_GET['order'])) {
-            // If no sort, default to title
-            $orderby = (!empty(sanitize_text_field($_GET['orderby']))) ? sanitize_text_field($_GET['orderby']) : 'title';
-            // If no order, default to asc
-            $order = (!empty(sanitize_text_field($_GET['order']))) ? sanitize_text_field($_GET['order']) : 'desc';
-            // Determine sort order
-            $result = strcmp($a[$orderby], $b[$orderby]);
-            // Send final sort direction to usort
-            return ($order === 'asc') ? $result : -$result;
-        }
-
-    }
-
-    function get_sortable_columns()
-    {
-        $sortable_columns = array(
-            'title' => array('title', false),
-        );
-        return $sortable_columns;
-    }
-
     /**
      * Prepare admin view
      */
@@ -189,10 +165,8 @@ class RZP_Route extends WP_List_Table
         }
         $columns = $this->get_columns();
         $hidden = array();
-        $sortable = $this->get_sortable_columns();
+        $sortable = array();
         $this->_column_headers = array($columns, $hidden, $sortable);
-        usort($transfer_pages, array(&$this, 'usort_reorder'));
-
 
         $this->items = $transfer_pages;
 
@@ -246,10 +220,12 @@ class RZP_Route extends WP_List_Table
     function rzp_transfer_details()
     {
         if (empty(sanitize_text_field($_REQUEST['id'])) || null == (sanitize_text_field($_REQUEST['id']))) {
-            wp_die("This page consist some request parameters to view response");
+
+            wp_die('<div class="error notice"><p>This page consist some request parameters to view response</p></div>');
+
         } else {
 
-            $transfer_id = $_REQUEST['id'];
+            $transfer_id = sanitize_text_field($_REQUEST['id']);
             $Wc_Razorpay_Loader = new WC_Razorpay();
 
             $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
@@ -510,9 +486,8 @@ class RZP_Route extends WP_List_Table
         }
         $columns = $this->get_reversal_columns();
         $hidden = array();
-        $sortable = $this->get_sortable_columns();
+        $sortable = array();
         $this->_column_headers = array($columns, $hidden, $sortable);
-        usort($reversal_pages, array(&$this, 'usort_reorder'));
 
         $this->items = $reversal_pages;
 
@@ -616,9 +591,8 @@ class RZP_Route extends WP_List_Table
         }
         $columns = $this->get_payment_columns();
         $hidden = array();
-        $sortable = $this->get_sortable_columns();
+        $sortable = array();
         $this->_column_headers = array($columns, $hidden, $sortable);
-        usort($payment_pages, array(&$this, 'usort_reorder'));
 
         $this->items = $payment_pages;
 
@@ -696,7 +670,7 @@ class RZP_Route extends WP_List_Table
             wp_die("This page consist some request parameters to view response");
         } else {
 
-            $settlement_id = $_REQUEST['id'];
+            $settlement_id = sanitize_text_field($_REQUEST['id']);
             $Wc_Razorpay_Loader = new WC_Razorpay();
 
             $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
@@ -765,7 +739,7 @@ class RZP_Route extends WP_List_Table
             wp_die("This page consist some request parameters to view response");
         } else {
 
-            $payment_id = $_REQUEST['id'];
+            $payment_id = sanitize_text_field($_REQUEST['id']);
             $Wc_Razorpay_Loader = new WC_Razorpay();
 
             $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
@@ -927,8 +901,11 @@ class RZP_Route extends WP_List_Table
     function  check_direct_transfer_feature(){
 
         $Wc_Razorpay_Loader = new WC_Razorpay();
+        $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
 
-        $url = 'https://api.razorpay.com/v1/accounts/me/features';
+        $base_url = $api->getBaseUrl();
+
+        $url = $base_url.'accounts/me/features';
         $context = stream_context_create(array(
             'http' => array(
                 'header'  => "Authorization: Basic " . base64_encode($Wc_Razorpay_Loader->getSetting('key_id').":".$Wc_Razorpay_Loader->getSetting('key_secret'))
@@ -938,15 +915,18 @@ class RZP_Route extends WP_List_Table
                 "verify_peer_name"=>false,
             ),
         ));
-        $features_data = file_get_contents($url, false, $context);
-        $api_response = json_decode($features_data, true);
+
         $direct_transfer_btn = '';
-        foreach ($api_response['assigned_features'] as $features){
-            if($features['name'] == 'direct_transfer'){
+        $features_data = @file_get_contents($url, false, $context);
+        if($features_data !== false) {
+            $api_response = json_decode($features_data, true);
+            foreach ($api_response['assigned_features'] as $features) {
+                if ($features['name'] == 'direct_transfer') {
 
-                $show = "jQuery('.overlay').show()";
-                $direct_transfer_btn = '<button class="btn btn-primary" onclick="' . $show . '">Create Direct Transfer</button>';
+                    $show = "jQuery('.overlay').show()";
+                    $direct_transfer_btn = '<button class="btn btn-primary" onclick="' . $show . '">Create Direct Transfer</button>';
 
+                }
             }
         }
         echo  $direct_transfer_btn;
