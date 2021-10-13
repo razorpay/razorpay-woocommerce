@@ -6,6 +6,59 @@ require_once __DIR__ . '/../razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
+add_action('admin_post_rzp_direct_transfer', 'razorpay_direct_transfer');
+add_action('admin_post_rzp_reverse_transfer', 'razorpay_reverse_transfer');
+add_action('admin_post_rzp_settlement_change', 'razorpay_settlement_update');
+add_action('admin_post_rzp_payment_transfer', 'razorpay_payment_transfer');
+add_action('admin_post_rzp_add_linked_accounts', 'razorpay_add_linked_accounts');
+
+add_action( 'check_route_enable_status', 'razorpay_route_module',0 );
+do_action('check_route_enable_status');
+
+function razorpay_route_module(){
+
+    $settings_fields = get_option('woocommerce_razorpay_settings');
+    $route_setting_field = $settings_fields['route_enable'];
+
+    if($route_setting_field == 'yes')
+    {
+        add_action('admin_menu',  'rzp_add_plugin_page');
+        add_action('admin_enqueue_scripts', 'admin_enqueue_scripts_func', 0);
+
+        add_filter( 'woocommerce_product_data_tabs', 'transfer_data_tab', 90 , 1 );
+        add_action( 'woocommerce_product_data_panels', 'product_transfer_data_fields' );
+        add_action( 'woocommerce_process_product_meta', 'woocommerce_process_transfer_meta_fields_save' );
+        add_action( 'add_meta_boxes', 'payment_transfer_meta_box' );
+
+    }
+}
+
+function rzp_add_plugin_page()
+{
+    /* add pages & menu items */
+
+    add_menu_page(esc_attr__('Razorpay Route woocommerce', 'textdomain'), esc_html__('Razorpay Route woocommerce', 'textdomain'),'administrator', 'razorpay_route_woocommerce', 'razorpay_route_woocommerce', '', 10);
+
+    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
+        'Razorpay Route woocommerce', 'administrator','razorpay_transfers', 'razorpay_transfers' );
+
+    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
+        'Razorpay Route woocommerce', 'administrator','razorpay_route_reversals', 'razorpay_route_reversals' );
+
+    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
+        'Razorpay Route woocommerce', 'administrator','razorpay_route_payments', 'razorpay_route_payments' );
+
+    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
+        'Razorpay Route woocommerce', 'administrator','razorpay_settlement_transfers', 'razorpay_settlement_transfers' );
+
+    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
+        'Razorpay Route woocommerce', 'administrator','razorpay_payments_view', 'razorpay_payments_view' );
+
+    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
+        'Razorpay Route woocommerce', 'administrator','razorpay_route_accounts', 'razorpay_route_accounts' );
+
+}
+
 if (!class_exists('WP_List_Table')) {
     require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
 }
@@ -41,12 +94,17 @@ class RZP_Route extends WP_List_Table
         echo '<form method="get">
             <input type="hidden" name="page" value="razorpay_route_woocommerce">';
 
-//        $this->search_box( 'search', 'search_id' );
         $this->display();
 
         echo '</form></div>
             </div>';
         $hide = "jQuery('.overlay').hide()";
+
+        $linked_accounts = $this->fetch_linked_accounts();
+        $accounts_drop_down = '';
+        foreach ($linked_accounts as $account){
+            $accounts_drop_down .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
+        }
 
         $direct_transfer_modal = '<div class="overlay">
             <div class="modal" id="transferModal" >
@@ -67,9 +125,10 @@ class RZP_Route extends WP_List_Table
                             <input name="drct_trf_amount" type="number" autocomplete="off" class="form-control" placeholder="Enter amount">
                             </div>
                             </div></div>
-                            <div class="form-group"><label>Account Number</label>
+                            <div class="form-group"><label>Linked Account Number</label>
                             <div class="InputField ">
-                                <input type="text" name="drct_trf_account" class="form-control" placeholder="Linked account number">
+                                <select name="drct_trf_account"  class="form-control">
+                                        <option value="">Select</option>'. $accounts_drop_down .'</select>
                             </div>
                             </div>
                             <div>
@@ -132,6 +191,8 @@ class RZP_Route extends WP_List_Table
             case 'contact':
             case 'status':
             case 'reversal_id':
+            case 'la_name':
+            case 'la_number':
                 return $item[$column_name];
 
             default:
@@ -441,6 +502,8 @@ class RZP_Route extends WP_List_Table
                 href="?page=razorpay_route_payments">Payments</a>
             <a <?php if ($_GET['page'] == "razorpay_route_reversals") { ?> class="active" <?php } ?>
                 href="?page=razorpay_route_reversals">Reversals</a>
+            <a <?php if ($_GET['page'] == "razorpay_route_accounts") { ?> class="active" <?php } ?>
+                href="?page=razorpay_route_accounts">Accounts</a>
 
         </header>
         <?php
@@ -458,7 +521,6 @@ class RZP_Route extends WP_List_Table
         echo '<form method="get">
             <input type="hidden" name="page" value="razorpay_route_reversals">';
 
-//        $this->search_box('search', 'search_id');
         $this->display();
 
         echo '</form></div>
@@ -603,7 +665,6 @@ class RZP_Route extends WP_List_Table
             'total_pages' => ceil($count / $per_page)
         ));
     }
-
 
     function get_payment_columns()
     {
@@ -814,7 +875,6 @@ class RZP_Route extends WP_List_Table
                 echo '<span>' . $trf_count . ' transfers created</span>';
             }
 
-
             if ($payment_detail['status'] == 'captured' && $payment_detail['amount'] > $transferred_amount) {
                 echo '<button onclick="' . $show . '" class="button">Create Transfer</button>';
             }
@@ -831,6 +891,12 @@ class RZP_Route extends WP_List_Table
                 </div>
 
             </div>';
+
+            $linked_accounts = $this->fetch_linked_accounts();
+            $accounts_drop_down = '';
+            foreach ($linked_accounts as $account){
+                $accounts_drop_down .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
+            }
 
             $payment_transfer_modal = '<div class="overlay">
                 <div class="modal" id="paymentTransferModal" >
@@ -853,9 +919,10 @@ class RZP_Route extends WP_List_Table
                                 </div>
                                 <p class="text-danger" id="payment_trf_error"></p>
                                 </div>
-                                <div class="form-group"><label>Account Number</label>
+                                <div class="form-group"><label>Linked Account Number</label>
                                 <div class="InputField ">
-                                    <input type="text" name="pay_trf_account" class="form-control" placeholder="Linked account number">
+                                    <select name="pay_trf_account" id="pay_trf_account" class="form-control">
+                                        <option value="">Select</option>'. $accounts_drop_down .'</select>
                                 </div>
                                 </div>
                                 <div class="form-group"><label>Settlement schedule</label>
@@ -932,4 +999,396 @@ class RZP_Route extends WP_List_Table
         echo  $direct_transfer_btn;
     }
 
+    function  rzp_route_accounts(){
+        echo '<div>
+            <div class="wrap route-container">';
+
+        $this->route_header();
+
+        $show = "jQuery('.overlay').show()";
+        $hide = "jQuery('.overlay').hide()";
+
+        echo '<button class="btn btn-primary float-right" onclick="' . $show . '">Add Account</button>';
+
+        $this->prepare_account_items();
+
+        echo '<form method="get">
+            <input type="hidden" name="page" value="razorpay_route_accounts">';
+        $this->display();
+
+        echo '</form></div>
+            </div>';
+
+        $add_account_modal = '<div class="overlay">
+            <div class="modal" id="transferModal" >
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h4 class="modal-title">Add Linked Accounts</h4>
+                            <button type="button" class="close" data-dismiss="modal" onclick="' . $hide . '">&times;</button>
+
+                        </div>
+                        <div class="modal-body">
+                        <form method="POST" action="' . esc_url(admin_url('admin-post.php')) . '">
+                            <div class="form-group">
+                                <label class="">Linked Account Name</label>
+                                <div class="InputField ">
+                                <input name="rzp_account_name" type="text" autocomplete="off" class="form-control" placeholder="Enter Name">
+                                </div>
+                            </div>
+                            <div class="form-group"><label>Linked Account Number</label>
+                                <div class="InputField ">
+                                    <input type="text" name="rzp_account_number" class="form-control" placeholder="Linked account number">
+                                </div>
+                            </div>
+                            <div>
+                            <button type="submit" onclick="' . $hide . '" name="add_accounts" class="btn btn-primary">Create</button>
+                            <input type="hidden" name="action" value="rzp_add_linked_accounts">
+                            </div>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            </div>
+        <script type="text/javascript">
+            jQuery("' . '.overlay' . '").on("' . 'click' . '", function(e) {
+              if (e.target !== this) {
+                return;
+              }
+              jQuery("' . '.overlay' . '").hide();
+            });
+        </script>';
+        echo $add_account_modal;
+    }
+
+    function prepare_account_items(){
+        $per_page = 20;
+        $current_page = $this->get_pagenum();
+
+        if (1 < $current_page) {
+            $offset = $per_page * ($current_page - 1);
+        } else {
+            $offset = 0;
+        }
+
+        $accounts_page = $this->get_account_items($per_page, $offset);
+        $count = count($this->fetch_linked_accounts());
+
+        $columns = $this->get_accounts_columns();
+        $hidden = array();
+        $sortable = array();
+        $this->_column_headers = array($columns, $hidden, $sortable);
+
+        $this->items = $accounts_page;
+
+        // Set the pagination
+        $this->set_pagination_args(array(
+            'total_items' => $count,
+            'per_page' => $per_page,
+            'total_pages' => ceil($count / $per_page)
+        ));
+    }
+
+    function get_account_items($limit,$offset)
+    {
+        $items = array();
+
+        try {
+            global $wpdb;
+            $table = $wpdb->prefix . "razorpay_accounts";
+            $linked_accounts = $wpdb->get_results("SELECT la_name, la_number from $table LIMIT $offset, $limit");
+
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+
+            wp_die('<div class="error notice">
+                    <p>RAZORPAY ERROR: Accounts fetch failed with the following message: ' . $message . '</p>
+                 </div>');
+        }
+        if ($linked_accounts) {
+            foreach ($linked_accounts as $account) {
+
+                $items[] = array(
+
+                    'la_name' => ucwords($account->la_name),
+                    'la_number' => $account->la_number,
+
+                );
+            }
+        }
+        return $items;
+    }
+
+    function get_accounts_columns()
+    {
+
+        $columns = array(
+            'la_name' => __('Linked Account Name'),
+            'la_number' => __('Linked Account Number'),
+        );
+
+        return $columns;
+    }
+
+    function  fetch_linked_accounts(){
+        global $wpdb;
+        $table = $wpdb->prefix . "razorpay_accounts";
+        return $linked_accounts = $wpdb->get_results("SELECT la_name, la_number from $table ");
+    }
+
+}
+
+function razorpay_route_woocommerce()
+{
+    $rzp_route = new RZP_Route();
+    $rzp_route->rzp_transfers();
+}
+
+function razorpay_transfers(){
+    $rzp_route = new RZP_Route();
+    $rzp_route->rzp_transfer_details();
+}
+
+function razorpay_route_reversals(){
+    $rzp_route = new RZP_Route();
+    $rzp_route->rzp_transfer_reversals();
+}
+
+function razorpay_route_payments(){
+    $rzp_route = new RZP_Route();
+    $rzp_route->rzp_route_payments();
+}
+
+function razorpay_settlement_transfers(){
+    $rzp_route = new RZP_Route();
+    $rzp_route->rzp_settlement_transfers();
+}
+
+function razorpay_payments_view(){
+    $rzp_route = new RZP_Route();
+    $rzp_route->rzp_payment_details();
+}
+
+function razorpay_route_accounts(){
+    $rzp_route = new RZP_Route();
+    $rzp_route->rzp_route_accounts();
+}
+
+function admin_enqueue_scripts_func()
+{
+    //$name, $src, $dependencies, $version, $in_footer
+    wp_enqueue_script( 'dynamic-script', plugin_dir_url(dirname(__FILE__)) . 'js/woo_route.js', array( 'jquery' ), null, true );
+    wp_enqueue_script( 'bootstrap-script', plugin_dir_url(dirname(__FILE__)) . 'js/bootstrap.min.js', array( 'jquery' ), null, true );
+
+    wp_register_style('bootstrap-css', plugin_dir_url(dirname(__FILE__))  . 'css/bootstrap.min.css',
+        null, null);
+    wp_register_style('woo_route-css', plugin_dir_url(dirname(__FILE__))  . 'css/woo_route.css',
+        null, null);
+    wp_enqueue_style('bootstrap-css');
+    wp_enqueue_style('woo_route-css');
+
+    wp_enqueue_script('jquery');
+}
+
+// Add a custom tab in edit product page settings
+function transfer_data_tab( $tabs ) {
+    $tabs['route'] = array(
+        'label' => __( 'Razorpay Route', 'my_theme_domain' ),
+        'target' => 'rzp_transfer_product_data',
+        'priority' => 11,
+    );
+    return $tabs;
+}
+
+// Add the content to the custom tab in edit product page settings
+function product_transfer_data_fields()
+{
+    global $woocommerce, $post;
+    echo '<div class="rzp_transfer_custom_field panel woocommerce_options_panel" id="rzp_transfer_product_data">';
+
+    // Radio Buttons field
+    woocommerce_wp_radio( array(
+        'id'            => 'rzp_transfer_from',
+        'wrapper_class' => 'show_if_simple',
+        'label'         => '',
+        'description'   => __( 'You can transfer funds to linked accounts from order or payments', 'my_theme_domain' ),
+        'desc_tip'      => true,
+        'options'       => array(
+            'from_order'       => __('Transfer from Order'),
+            'from_payment'     => __('Transfer from Payment'),
+
+        )
+    ) );
+    $LA_number_arr =   get_post_meta($post->ID, 'LA_number', true);
+    $LA_amount_arr =   get_post_meta($post->ID, 'LA_transfer_amount', true);
+    $LA_trf_status_arr =   get_post_meta($post->ID, 'LA_transfer_status', true);
+
+
+    if (isset($LA_number_arr) && is_array($LA_number_arr) && isset($LA_amount_arr) && is_array($LA_amount_arr)) {
+        $LA_transfer_count = count($LA_number_arr);
+        for ($i = 0; $i < $LA_transfer_count; $i++) {
+            if (!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])) {
+                echo '<p><input type="text" name="LA_number[]" placeholder="Linked Account Number" value="' . $LA_number_arr[$i] . '">
+                <input type="number" name="LA_transfer_amount[]" class="LA_transfer_amount" placeholder="Amount" value="' . $LA_amount_arr[$i] . '">
+                <label class="trf_settlement_label">Hold Settlement:</label>  <select name="LA_transfer_status[]"><optgroup label="On Hold">';
+                echo '<option value="1"';
+                if ($LA_trf_status_arr[$i] == 1) {
+                    echo "selected";
+                }
+                echo '> Yes</option><option value="0"';
+                if ($LA_trf_status_arr[$i] == 0) {
+                    echo "selected";
+                }
+                echo ' > No</option></optgroup></select> </p>';
+            }
+
+        }
+    }
+
+    echo '<p class="input_fields_wrap"> <a class="add_field_button button-secondary">Add Field</a>
+            <input type="text" name="LA_number[]"  placeholder="Linked Account Number">
+            <input type="number" name="LA_transfer_amount[]"  class="LA_transfer_amount" placeholder="Amount" >
+            <label class="trf_settlement_label">Hold Settlement:</label>
+            <select name="LA_transfer_status[]"><optgroup label="On Hold">
+                <option value="1"> Yes</option>
+                <option value="0" selected> No</option></optgroup>
+            </select>
+         </p>
+    </div>
+          <p class="text-danger" id="transfer_err_msg"></p>';
+
+}
+
+// Save the data of the custom tab in edit product page settings
+
+function woocommerce_process_transfer_meta_fields_save( $post_id ){
+
+    $wc_radio = isset( $_POST['rzp_transfer_from'] ) ? $_POST['rzp_transfer_from'] : '';
+    update_post_meta( $post_id, 'rzp_transfer_from', $wc_radio );
+
+    if(isset($_POST['LA_number']) && !empty($_POST['LA_number'])) {
+        update_post_meta( $post_id, 'LA_number', $_POST['LA_number'] );
+    }
+
+    if(isset($_POST['LA_transfer_amount']) && !empty($_POST['LA_transfer_amount'])) {
+        update_post_meta( $post_id, 'LA_transfer_amount', $_POST['LA_transfer_amount'] );
+    }
+    if(isset($_POST['LA_transfer_status']) && !empty($_POST['LA_transfer_status'])) {
+        update_post_meta( $post_id, 'LA_transfer_status', $_POST['LA_transfer_status'] );
+    }
+
+}
+
+//fetch transfers of order/payment in order edit page
+
+function payment_transfer_meta_box() {
+    add_meta_box(
+        'rzp_trf_payment_meta',
+        esc_html__( 'Razorpay transfers from Order / Payment', 'text-domain' ),
+        'render_payment_transfer_meta_box',
+        'shop_order', // shop_order is the post type of the admin order page
+        'normal', // change to 'side' to move box to side column
+        'low'
+    );
+
+    add_meta_box(
+        'rzp_payment_meta',
+        esc_html__( 'Razorpay Payment ID', 'text-domain' ),
+        'render_payment_meta_box',
+        'shop_order', // shop_order is the post type of the admin order page
+        'normal', // change to 'side' to move box to side column
+        'low'
+    );
+
+}
+
+function render_payment_transfer_meta_box() {
+    global $woocommerce, $post;
+    $order_id= $post->ID;
+    $rzp_payment_id = get_post_meta($order_id,'_transaction_id',true);
+
+    $rzp = new WC_Razorpay();
+
+    $api = $rzp->getRazorpayApiInstance();
+    $url = "payments/".$rzp_payment_id."/transfers";
+
+    $transfers_data = $api->request->request("GET", $url);
+
+    if(!empty($transfers_data['items'])) {
+        echo '<table class="wp-list-table widefat fixed striped table-view-list wp_list_test_links">
+        <thead>
+            <tr>
+                <th>Transfer Id</th>
+                <th>Source</th>
+                <th>Recipient</th>
+                <th>Amount</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>';
+
+        foreach ($transfers_data['items'] as $transfer) {
+            echo '<tr>
+                        <td><a href="?page=razorpay_transfers&id=' . $transfer['id'] . '">' . $transfer['id'] . '</a></td>
+                        <td>' . $transfer['source'] . '</td>
+                        <td>' . $transfer['recipient'] . '</td>
+                        <td><span class="rzp-currency">₹ </span>' . (int)round($transfer['amount'] / 100) . '</td>
+                        <td>' . date("d F Y H:i A", $transfer['created_at']) . '</td>
+                    </tr>';
+        }
+
+        echo '</tbody>
+    </table>';
+    }else{
+        echo '<p>No transfers found</p>';
+    }
+
+}
+
+function render_payment_meta_box(){
+
+    global $woocommerce, $post;
+    $order_id= $post->ID;
+    $rzp_payment_id = get_post_meta($order_id,'_transaction_id',true);
+
+    echo '<p>'.$rzp_payment_id.' <span><a href="?page=razorpay_payments_view&id='.$rzp_payment_id.'"><input type="button" class="button" value="View"></a></span></p>';
+
+}
+
+function razorpay_direct_transfer()
+{
+    $route_action = new RZP_Route_Action();
+
+    $route_action->direct_transfer();
+}
+
+function razorpay_reverse_transfer()
+{
+    $route_action = new RZP_Route_Action();
+
+    $route_action->reverse_transfer();
+}
+
+function razorpay_settlement_update()
+{
+    $route_action = new RZP_Route_Action();
+
+    $route_action->update_transfer_settlement();
+}
+
+function razorpay_payment_transfer()
+{
+    $route_action = new RZP_Route_Action();
+
+    $route_action->create_payment_transfer();
+}
+
+function razorpay_add_linked_accounts()
+{
+    $route_action = new RZP_Route_Action();
+
+    $route_action->add_linked_account();
 }

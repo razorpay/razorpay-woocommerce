@@ -18,18 +18,15 @@ if ( ! defined( 'ABSPATH' ) )
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
-require_once __DIR__.'/includes/rzp_route_actions.php';
-require_once __DIR__.'/includes/rzp_route.php';
+require_once __DIR__.'/includes/razorpay-route.php';
+require_once __DIR__ . '/includes/razorpay-route-actions.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
-add_action('admin_post_rzp_direct_transfer', 'razorpay_direct_transfer');
-add_action('admin_post_rzp_reverse_transfer', 'razorpay_reverse_transfer');
-add_action('admin_post_rzp_settlement_change', 'razorpay_settlement_update');
-add_action('admin_post_rzp_payment_transfer', 'razorpay_payment_transfer');
+
 
 function woocommerce_razorpay_init()
 {
@@ -68,6 +65,7 @@ function woocommerce_razorpay_init()
             'enable_webhook',
             'webhook_events',
             'webhook_secret',
+            'route_enable',
         );
 
         public $form_fields = array();
@@ -257,6 +255,13 @@ function woocommerce_razorpay_init()
                     'type' => 'text',
                     'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', $this->id),
                     'default' => ''
+                ),
+                'route_enable' => array(
+                    'title' => __('Route Module', $this->id),
+                    'type' => 'checkbox',
+                    'label' => __('Enable route module?', $this->id),
+                    'description' =>  "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>",
+                    'default' => 'no'
                 ),
             );
 
@@ -724,40 +729,6 @@ function woocommerce_razorpay_init()
         {
             $order = wc_get_order($orderId);
 
-            $items = $order->get_items();
-            $order_transfer_arr = array();
-
-            foreach ( $items as $item ) {
-                $product_id = $item['product_id'];
-                $rzp_transfer_from =   get_post_meta($product_id, 'rzp_transfer_from', true);
-
-                if($rzp_transfer_from == 'from_order'){
-
-                    $LA_number_arr =   get_post_meta($product_id, 'LA_number', true);
-                    $LA_amount_arr =   get_post_meta($product_id, 'LA_transfer_amount', true);
-                    $LA_trf_status_arr =   get_post_meta($product_id, 'LA_transfer_status', true);
-
-                    if(isset($LA_number_arr) && is_array($LA_number_arr) && isset($LA_amount_arr) && is_array($LA_amount_arr)) {
-                        $LA_transfer_count = count($LA_number_arr);
-                        for($i=0;$i<$LA_transfer_count;$i++){
-                            if(!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])){
-
-                                $transfer_arr = array(
-
-                                    'account'=> $LA_number_arr[$i],
-                                    'amount'=> (int) round($LA_amount_arr[$i] * 100),
-                                    'currency'=> 'INR',
-                                    'on_hold'=> $LA_trf_status_arr[$i]
-                                );
-
-                                array_push($order_transfer_arr, $transfer_arr);
-                            }
-                        }
-                    }
-                }
-
-            }
-
             $data = array(
                 'receipt'         => $orderId,
                 'amount'          => (int) round($order->get_total() * 100),
@@ -769,12 +740,18 @@ function woocommerce_razorpay_init()
                 ),
             );
 
-            if(isset($order_transfer_arr) && !empty($order_transfer_arr)){
+            if($this->getSetting('route_enable') == 'yes')
+            {
+                $razorpay_route = new RZP_Route_Action();
+                $order_transfer_arr = $razorpay_route->getOrderTransferData($orderId);
 
-                $transfer_data = array(
-                    'transfers' => $order_transfer_arr
-                );
-                $data = array_merge($data,$transfer_data);
+                if(isset($order_transfer_arr) && !empty($order_transfer_arr)){
+
+                    $transfer_data = array(
+                        'transfers' => $order_transfer_arr
+                    );
+                    $data = array_merge($data,$transfer_data);
+                }
             }
 
             return $data;
@@ -1124,7 +1101,11 @@ EOT;
                 $order->payment_complete($razorpayPaymentId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
-                $this->transferFromPayment($orderId, $razorpayPaymentId); // creates transfers from payment
+                if($this->getSetting('route_enable') == 'yes')
+                {
+                    $razorpay_route = new RZP_Route_Action();
+                    $razorpay_route->transferFromPayment($orderId, $razorpayPaymentId); // creates transfers from payment
+                }
 
                 if($virtualAccountId != null)
                 {
@@ -1219,60 +1200,6 @@ EOT;
             }
         }
 
-        function transferFromPayment($orderId, $razorpayPaymentId){
-
-            $order = wc_get_order($orderId);
-
-            $items = $order->get_items();
-            $payment_transfer_arr = array();
-
-            foreach ( $items as $item ) {
-                $product_id = $item['product_id'];
-                $rzp_transfer_from =   get_post_meta($product_id, 'rzp_transfer_from', true);
-
-                if($rzp_transfer_from == 'from_payment'){
-
-                    $LA_number_arr =   get_post_meta($product_id, 'LA_number', true);
-                    $LA_amount_arr =   get_post_meta($product_id, 'LA_transfer_amount', true);
-                    $LA_trf_status_arr =   get_post_meta($product_id, 'LA_transfer_status', true);
-
-                    if(isset($LA_number_arr) && is_array($LA_number_arr) && isset($LA_amount_arr) && is_array($LA_amount_arr)) {
-                        $LA_transfer_count = count($LA_number_arr);
-                        for($i=0;$i<$LA_transfer_count;$i++){
-                            if(!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])){
-                                $transfer_arr = array(
-
-                                    'account'=> $LA_number_arr[$i],
-                                    'amount'=> (int) round($LA_amount_arr[$i] * 100),
-                                    'currency'=> 'INR',
-                                    'on_hold'=> $LA_trf_status_arr[$i]
-                                );
-                                array_push($payment_transfer_arr, $transfer_arr);
-                            }
-                        }
-                    }
-                }
-
-            }
-
-            if(isset($payment_transfer_arr) && !empty($payment_transfer_arr)){
-
-                $data = array(
-
-                    'transfers' => $payment_transfer_arr
-                );
-
-                $api = $this->getRazorpayApiInstance();
-                $url = "payments/".$razorpayPaymentId."/transfers";
-
-                $api->request->request("POST", $url, $data);
-
-                $this->addRouteAnalyticsScript();
-
-            }
-
-        }
-
         function addRouteAnalyticsScript() {
 
             $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
@@ -1349,278 +1276,3 @@ function razorpay_webhook_init()
 
     $rzpWebhook->process();
 }
-
-function razorpay_direct_transfer()
-{
-    $route_action = new RZP_Route_Action();
-
-    $route_action->direct_transfer();
-}
-
-function razorpay_reverse_transfer()
-{
-    $route_action = new RZP_Route_Action();
-
-    $route_action->reverse_transfer();
-}
-
-function razorpay_settlement_update()
-{
-    $route_action = new RZP_Route_Action();
-
-    $route_action->update_transfer_settlement();
-}
-
-function razorpay_payment_transfer()
-{
-    $route_action = new RZP_Route_Action();
-
-    $route_action->create_payment_transfer();
-}
-
-add_action('admin_menu',  'rzp_add_plugin_page');
-
-function rzp_add_plugin_page()
-{
-    /* add pages & menu items */
-
-    add_menu_page(esc_attr__('Razorpay Route woocommerce', 'textdomain'), esc_html__('Razorpay Route woocommerce', 'textdomain'),'administrator', 'razorpay_route_woocommerce', 'razorpay_route_woocommerce', '', 10);
-
-    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_transfers', 'razorpay_transfers' );
-
-    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_route_reversals', 'razorpay_route_reversals' );
-
-    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_route_payments', 'razorpay_route_payments' );
-
-    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_settlement_transfers', 'razorpay_settlement_transfers' );
-
-    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_payments_view', 'razorpay_payments_view' );
-
-}
-
-function razorpay_route_woocommerce()
-{
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_transfers();
-}
-
-function razorpay_transfers(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_transfer_details();
-}
-
-function razorpay_route_reversals(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_transfer_reversals();
-}
-
-function razorpay_route_payments(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_route_payments();
-}
-
-function razorpay_settlement_transfers(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_settlement_transfers();
-}
-
-function razorpay_payments_view(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_payment_details();
-}
-
-add_action('admin_enqueue_scripts', 'admin_enqueue_scripts_func', 0);
-
-function admin_enqueue_scripts_func()
-{
-    //$name, $src, $dependencies, $version, $in_footer
-    wp_enqueue_script( 'dynamic-script', plugin_dir_url(__FILE__) . 'js/woo_route.js', array( 'jquery' ), null, true );
-    wp_enqueue_script( 'bootstrap-script', plugin_dir_url(__FILE__) . 'js/bootstrap.min.js', array( 'jquery' ), null, true );
-
-    wp_register_style('bootstrap-css', plugin_dir_url(__FILE__)  . 'css/bootstrap.min.css',
-        null, null);
-    wp_register_style('woo_route-css', plugin_dir_url(__FILE__)  . 'css/woo_route.css',
-        null, null);
-    wp_enqueue_style('bootstrap-css');
-    wp_enqueue_style('woo_route-css');
-
-    wp_enqueue_script('jquery');
-}
-
-// Add a custom tab in edit product page settings
-add_filter( 'woocommerce_product_data_tabs', 'transfer_data_tab', 90 , 1 );
-
-function transfer_data_tab( $tabs ) {
-    $tabs['route'] = array(
-        'label' => __( 'Razorpay Route', 'my_theme_domain' ),
-        'target' => 'rzp_transfer_product_data',
-        'priority' => 11,
-    );
-    return $tabs;
-}
-
-// Add the content to the custom tab in edit product page settings
-add_action( 'woocommerce_product_data_panels', 'product_transfer_data_fields' );
-
-function product_transfer_data_fields()
-{
-    global $woocommerce, $post;
-    echo '<div class="rzp_transfer_custom_field panel woocommerce_options_panel" id="rzp_transfer_product_data">';
-
-    // Radio Buttons field
-    woocommerce_wp_radio( array(
-        'id'            => 'rzp_transfer_from',
-        'wrapper_class' => 'show_if_simple',
-        'label'         => '',
-        'description'   => __( 'You can transfer funds to linked accounts from order or payments', 'my_theme_domain' ),
-        'desc_tip'      => true,
-        'options'       => array(
-            'from_order'       => __('Transfer from Order'),
-            'from_payment'     => __('Transfer from Payment'),
-
-        )
-    ) );
-    $LA_number_arr =   get_post_meta($post->ID, 'LA_number', true);
-    $LA_amount_arr =   get_post_meta($post->ID, 'LA_transfer_amount', true);
-    $LA_trf_status_arr =   get_post_meta($post->ID, 'LA_transfer_status', true);
-
-
-    if (isset($LA_number_arr) && is_array($LA_number_arr) && isset($LA_amount_arr) && is_array($LA_amount_arr)) {
-        $LA_transfer_count = count($LA_number_arr);
-        for ($i = 0; $i < $LA_transfer_count; $i++) {
-            if (!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])) {
-                echo '<p><input type="text" name="LA_number[]" placeholder="Linked Account Number" value="' . $LA_number_arr[$i] . '">
-                <input type="number" name="LA_transfer_amount[]" class="LA_transfer_amount" placeholder="Amount" value="' . $LA_amount_arr[$i] . '">
-                <label class="trf_settlement_label">Hold Settlement:</label>  <select name="LA_transfer_status[]"><optgroup label="On Hold">';
-                echo '<option value="1"';
-                if ($LA_trf_status_arr[$i] == 1) {
-                    echo "selected";
-                }
-                echo '> Yes</option><option value="0"';
-                if ($LA_trf_status_arr[$i] == 0) {
-                    echo "selected";
-                }
-                echo ' > No</option></optgroup></select> </p>';
-            }
-
-        }
-    }
-
-    echo '<p class="input_fields_wrap"> <a class="add_field_button button-secondary">Add Field</a>
-            <input type="text" name="LA_number[]"  placeholder="Linked Account Number">
-            <input type="number" name="LA_transfer_amount[]"  class="LA_transfer_amount" placeholder="Amount" >
-            <label class="trf_settlement_label">Hold Settlement:</label>
-            <select name="LA_transfer_status[]"><optgroup label="On Hold">
-                <option value="1"> Yes</option>
-                <option value="0" selected> No</option></optgroup>
-            </select>
-         </p>
-    </div>
-          <p class="text-danger" id="transfer_err_msg"></p>';
-
-}
-
-// Save the data of the custom tab in edit product page settings
-add_action( 'woocommerce_process_product_meta', 'woocommerce_process_transfer_meta_fields_save' );
-
-function woocommerce_process_transfer_meta_fields_save( $post_id ){
-
-    $wc_radio = isset( $_POST['rzp_transfer_from'] ) ? $_POST['rzp_transfer_from'] : '';
-    update_post_meta( $post_id, 'rzp_transfer_from', $wc_radio );
-
-    if(isset($_POST['LA_number']) && !empty($_POST['LA_number'])) {
-        update_post_meta( $post_id, 'LA_number', $_POST['LA_number'] );
-    }
-
-    if(isset($_POST['LA_transfer_amount']) && !empty($_POST['LA_transfer_amount'])) {
-        update_post_meta( $post_id, 'LA_transfer_amount', $_POST['LA_transfer_amount'] );
-    }
-    if(isset($_POST['LA_transfer_status']) && !empty($_POST['LA_transfer_status'])) {
-        update_post_meta( $post_id, 'LA_transfer_status', $_POST['LA_transfer_status'] );
-    }
-
-}
-
-//fetch transfers of order/payment in order edit page
-
-function payment_transfer_meta_box() {
-    add_meta_box(
-        'rzp_trf_payment_meta',
-        esc_html__( 'Razorpay transfers from Order / Payment', 'text-domain' ),
-        'render_payment_transfer_meta_box',
-        'shop_order', // shop_order is the post type of the admin order page
-        'normal', // change to 'side' to move box to side column
-        'low'
-    );
-
-    add_meta_box(
-        'rzp_payment_meta',
-        esc_html__( 'Razorpay Payment ID', 'text-domain' ),
-        'render_payment_meta_box',
-        'shop_order', // shop_order is the post type of the admin order page
-        'normal', // change to 'side' to move box to side column
-        'low'
-    );
-
-}
-
-add_action( 'add_meta_boxes', 'payment_transfer_meta_box' );
-
-function render_payment_transfer_meta_box() {
-    global $woocommerce, $post;
-    $order_id= $post->ID;
-    $rzp_payment_id = get_post_meta($order_id,'_transaction_id',true);
-
-    $rzp = new WC_Razorpay();
-
-    $api = $rzp->getRazorpayApiInstance();
-    $url = "payments/".$rzp_payment_id."/transfers";
-
-    $transfers_data = $api->request->request("GET", $url);
-
-    if(!empty($transfers_data['items'])) {
-        echo '<table class="wp-list-table widefat fixed striped table-view-list wp_list_test_links">
-        <thead>
-            <tr>
-                <th>Transfer Id</th>
-                <th>Source</th>
-                <th>Recipient</th>
-                <th>Amount</th>
-                <th>Created At</th>
-            </tr>
-        </thead>
-        <tbody>';
-
-        foreach ($transfers_data['items'] as $transfer) {
-            echo '<tr>
-                        <td><a href="?page=razorpay_transfers&id=' . $transfer['id'] . '">' . $transfer['id'] . '</a></td>
-                        <td>' . $transfer['source'] . '</td>
-                        <td>' . $transfer['recipient'] . '</td>
-                        <td><span class="rzp-currency">₹ </span>' . (int)round($transfer['amount'] / 100) . '</td>
-                        <td>' . date("d F Y H:i A", $transfer['created_at']) . '</td>
-                    </tr>';
-        }
-
-        echo '</tbody>
-    </table>';
-    }else{
-        echo '<p>No transfers found</p>';
-    }
-
-}
-
-function render_payment_meta_box(){
-
-    global $woocommerce, $post;
-    $order_id= $post->ID;
-    $rzp_payment_id = get_post_meta($order_id,'_transaction_id',true);
-
-    echo '<p>'.$rzp_payment_id.' <span><a href="?page=razorpay_payments_view&id='.$rzp_payment_id.'"><input type="button" class="button" value="View"></a></span></p>';
-
-}
-
