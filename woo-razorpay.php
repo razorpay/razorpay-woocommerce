@@ -18,12 +18,18 @@ if ( ! defined( 'ABSPATH' ) )
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
+require_once __DIR__ .'/includes/razorpay-cod.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
+
+if(isCODModeEnabled())
+{
+    add_action('plugins_loaded', 'razorpay_cod_init', 9);
+}
 
 function woocommerce_razorpay_init()
 {
@@ -50,6 +56,7 @@ function woocommerce_razorpay_init()
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
         const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
+        const DEFAULT_PAY_LINK_DESCRIPTION   = 'Payment Link Description for COD';
 
         protected $visibleSettings = array(
             'enabled',
@@ -62,6 +69,10 @@ function woocommerce_razorpay_init()
             'enable_webhook',
             'webhook_events',
             'webhook_secret',
+            'enable_cod_pay_link',
+            'payment_link_description',
+            'payment_link_prefix',
+            'payment_link_reminder'
         );
 
         public $form_fields = array();
@@ -251,6 +262,38 @@ function woocommerce_razorpay_init()
                     'type' => 'text',
                     'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', $this->id),
                     'default' => ''
+                ),
+                'enable_cod_pay_link' => array(
+                    'title' => __('Enable COD with Payment Link', $this->id),
+                    'type' => 'checkbox',
+                    'description' =>  "It will trigger a payment link notification to customer when the delivery date set for the order.",
+                    'label' => __('Enable Razorpay COD with Payment Link', $this->id),
+                    'default' => 'no'
+                ),
+                'payment_link_description' => array(
+                    'title' => __('Payment Link Description', $this->id),
+                    'type' => 'textarea',
+                    'description' => __('This controls the description which the user sees during payment through payment link.', $this->id),
+                    'default' => __(static::DEFAULT_PAY_LINK_DESCRIPTION, $this->id)
+                ),
+                'payment_link_prefix' => array(
+                    'title' => __('Payment Link Prefix', $this->id),
+                    'type' => 'text',
+                    'description' => __('Payment Link prefix is used for storing the payment link unique.', $this->id),
+                    'default' => ''
+                ),
+                'payment_link_reminder' => array(
+                    'title'       => __('Payment Link Reminders', $this->id),
+                    'type'        => 'select',
+                    'description' =>  "",
+                    'class'       => 'wc-enhanced-select',
+                    'default'     => '',
+                    'options'     => array(
+                        '4' => '3 Days Prior',
+                        '3' => '2 Days Prior',
+                        '2' => '1 Days Prior',
+                        '1' => '1 Hour Prior'
+                    )
                 ),
             );
 
@@ -598,7 +641,7 @@ function woocommerce_razorpay_init()
          * @param  WC_Order $order
          * @return string currency
          */
-        private function getOrderCurrency($order)
+        public function getOrderCurrency($order)
         {
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
@@ -1200,10 +1243,23 @@ EOT;
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
 }
 
+function isCODModeEnabled() {
+   return (
+       empty(get_option('woocommerce_razorpay_settings')['enable_cod_pay_link']) === false
+       && 'yes' == get_option('woocommerce_razorpay_settings')['enable_cod_pay_link']
+     );
+ }
+
 // This is set to a priority of 10
 function razorpay_webhook_init()
 {
     $rzpWebhook = new RZP_Webhook();
 
     $rzpWebhook->process();
+}
+
+// This is set to a priority of 9
+function razorpay_cod_init()
+{
+    $rzpCOD = new Razorpay_COD(true);
 }
