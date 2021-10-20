@@ -3,7 +3,7 @@
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
-require_once __DIR__ . '/razorpay-route.php';
+require_once __DIR__ .'/razorpay-route.php';
 
 class RZP_Route_Action
 {
@@ -15,21 +15,21 @@ class RZP_Route_Action
 
     }
 
-    function direct_transfer()
+    function directTransfer()
     {
 
-        $trf_account = sanitize_text_field($_POST['drct_trf_account']);
-        $trf_amount = sanitize_text_field($_POST['drct_trf_amount']);
-        $page_url = admin_url('admin.php?page=razorpay_route_woocommerce');
+        $trfAccount = sanitize_text_field($_POST['drct_trf_account']);
+        $trfAmount = sanitize_text_field($_POST['drct_trf_amount']);
+        $pageUrl = admin_url('admin.php?page=razorpayRouteWoocommerce');
         try {
-            $transfer_data = array(
+            $transferData = array(
 
-                'account' => $trf_account,
-                'amount' => (int)round($trf_amount * 100),
+                'account' => $trfAccount,
+                'amount' => (int)round($trfAmount * 100),
                 'currency' => 'INR'
             );
 
-            $this->api->transfer->create($transfer_data);
+            $this->api->transfer->create($transferData);
         } catch (Exception $e) {
             $message = $e->getMessage();
 
@@ -37,21 +37,21 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Transfers create failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($page_url);
+        wp_redirect($pageUrl);
     }
 
-    function reverse_transfer()
+    function reverseTransfer()
     {
 
-        $transfer_id = sanitize_text_field($_POST['transfer_id']);
-        $reversal_amount = sanitize_text_field($_POST['reversal_amount']);
-        $page_url = admin_url('admin.php?page=razorpay_transfers&id=' . $transfer_id);
+        $transferId = sanitize_text_field($_POST['transfer_id']);
+        $reversalAmount = sanitize_text_field($_POST['reversal_amount']);
+        $pageUrl = admin_url('admin.php?page=razorpayTransfers&id=' . $transferId);
         try {
-            $reversal_data = array(
-                'amount' => (int)round($reversal_amount * 100),
+            $reversalData = array(
+                'amount' => (int)round($reversalAmount * 100),
             );
 
-            $this->api->transfer->fetch($transfer_id)->reverse($reversal_data);
+            $this->api->transfer->fetch($transferId)->reverse($reversalData);
         } catch (Exception $e) {
             $message = $e->getMessage();
 
@@ -59,30 +59,30 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Reverse Transfer failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($page_url);
+        wp_redirect($pageUrl);
     }
 
-    function update_transfer_settlement()
+    function updateTransferSettlement()
     {
 
-        $transfer_id = sanitize_text_field($_POST['transfer_id']);
-        $trf_hold_status = sanitize_text_field($_POST['on_hold']);
-        if ($trf_hold_status == "on_hold_until") {
-            $trf_hold_until = sanitize_text_field($_POST['hold_until']);
-            $unix_time = strtotime($trf_hold_until);
+        $transferId = sanitize_text_field($_POST['transfer_id']);
+        $trfHoldStatus = sanitize_text_field($_POST['on_hold']);
+        if ($trfHoldStatus == "on_hold_until") {
+            $trfHoldUntil = sanitize_text_field($_POST['hold_until']);
+            $unixTime = strtotime($trfHoldUntil);
 
-            $trf_hold_status = true;
+            $trfHoldStatus = true;
         }
 
-        $page_url = admin_url('admin.php?page=razorpay_transfers&id=' . $transfer_id);
+        $pageUrl = admin_url('admin.php?page=razorpayTransfers&id=' . $transferId);
         try {
-            $update_data = array(
-                'on_hold' => $trf_hold_status,
-                'on_hold_until' => $unix_time,
+            $updateData = array(
+                'on_hold' => $trfHoldStatus,
+                'on_hold_until' => $unixTime,
             );
 
-            $url = "transfers/" . $transfer_id;
-            $this->api->request->request("PATCH", $url, $update_data);
+            $url = "transfers/" . $transferId;
+            $this->api->request->request("PATCH", $url, $updateData);
 
         } catch (Exception $e) {
             $message = $e->getMessage();
@@ -91,38 +91,38 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Change settlement schedule failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($page_url);
+        wp_redirect($pageUrl);
     }
 
-    function create_payment_transfer()
+    function createPaymentTransfer()
     {
 
-        $payment_id = sanitize_text_field($_POST['payment_id']);
-        $trf_account = sanitize_text_field($_POST['pay_trf_account']);
-        $trf_amount = sanitize_text_field($_POST['pay_trf_amount']);
-        $page_url = admin_url('admin.php?page=razorpay_payments_view&id=' . $payment_id);
+        $paymentId = sanitize_text_field($_POST['payment_id']);
+        $trfAccount = sanitize_text_field($_POST['pay_trf_account']);
+        $trfAmount = sanitize_text_field($_POST['pay_trf_amount']);
+        $pageUrl = admin_url('admin.php?page=razorpayPaymentsView&id=' . $paymentId);
 
-        $trf_hold_status = sanitize_text_field($_POST['on_hold']);
-        if ($trf_hold_status == "on_hold_until") {
-            $trf_hold_until = sanitize_text_field($_POST['hold_until']);
-            $unix_time = strtotime($trf_hold_until);
+        $trfHoldStatus = sanitize_text_field($_POST['on_hold']);
+        if ($trfHoldStatus == "on_hold_until") {
+            $trfHoldUntil = sanitize_text_field($_POST['hold_until']);
+            $unixTime = strtotime($trfHoldUntil);
 
-            $trf_hold_status = true;
+            $trfHoldStatus = true;
         }
         try {
 
             $data = array(
                 'transfers' => array(
                     array(
-                        'account' => $trf_account,
-                        'amount' => (int)round($trf_amount * 100),
+                        'account' => $trfAccount,
+                        'amount' => (int)round($trfAmount * 100),
                         'currency' => 'INR',
-                        'on_hold' => $trf_hold_status,
-                        'on_hold_until' => $unix_time,)
+                        'on_hold' => $trfHoldStatus,
+                        'on_hold_until' => $unixTime,)
                 )
             );
 
-            $this->api->payment->fetch($payment_id)->transfer($data);
+            $this->api->payment->fetch($paymentId)->transfer($data);
 
         } catch (Exception $e) {
             $message = $e->getMessage();
@@ -131,20 +131,20 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Transfers create failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($page_url);
+        wp_redirect($pageUrl);
     }
 
-    function add_linked_account()
+    function addLinkedAccount()
     {
 
-        $la_number = sanitize_text_field($_POST['rzp_account_number']);
-        $la_name = sanitize_text_field($_POST['rzp_account_name']);
-        $page_url = admin_url('admin.php?page=razorpay_route_accounts');
+        $laNumber = sanitize_text_field($_POST['rzp_account_number']);
+        $laName = sanitize_text_field($_POST['rzp_account_name']);
+        $pageUrl = admin_url('admin.php?page=razorpayRouteAccounts');
         try {
             global $wpdb;
-            $table_name = $wpdb->prefix . "razorpay_accounts";
+            $tableName = $wpdb->prefix . "razorpay_accounts";
             $charset_collate = $wpdb->get_charset_collate();
-            $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+            $sql = "CREATE TABLE IF NOT EXISTS $tableName (
                           id int(11) NOT NULL AUTO_INCREMENT,
                           la_name tinytext NOT NULL,
                           la_number varchar(50) NOT NULL,
@@ -153,10 +153,10 @@ class RZP_Route_Action
 
             $wpdb->query($sql);
 
-            $insert = "INSERT INTO $table_name (la_name, la_number)
-            SELECT * FROM (SELECT '$la_name', '$la_number') AS tmp
+            $insert = "INSERT INTO $tableName (la_name, la_number)
+            SELECT * FROM (SELECT '$laName', '$laNumber') AS tmp
             WHERE NOT EXISTS (
-                            SELECT la_number FROM $table_name WHERE la_number = '$la_number'
+                            SELECT la_number FROM $tableName WHERE la_number = '$laNumber'
             ) LIMIT 1";
 
             $wpdb->query($insert);
@@ -168,31 +168,31 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Add accounts failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($page_url);
+        wp_redirect($pageUrl);
     }
 
     function getOrderTransferData($orderId){
         $order = wc_get_order($orderId);
 
         $items = $order->get_items();
-        $order_transfer_arr = array();
+        $orderTransferArr = array();
 
         foreach ( $items as $item ) {
-            $product_id = $item['product_id'];
-            $rzp_transfer_from =   get_post_meta($product_id, 'rzp_transfer_from', true);
+            $productId = $item['product_id'];
+            $rzpTransferFrom =   get_post_meta($productId, 'rzp_transfer_from', true);
 
-            if($rzp_transfer_from == 'from_order'){
+            if($rzpTransferFrom == 'from_order'){
 
-                $LA_number_arr =   get_post_meta($product_id, 'LA_number', true);
-                $LA_amount_arr =   get_post_meta($product_id, 'LA_transfer_amount', true);
-                $LA_trf_status_arr =   get_post_meta($product_id, 'LA_transfer_status', true);
+                $LA_number_arr =   get_post_meta($productId, 'LA_number', true);
+                $LA_amount_arr =   get_post_meta($productId, 'LA_transfer_amount', true);
+                $LA_trf_status_arr =   get_post_meta($productId, 'LA_transfer_status', true);
 
                 if(isset($LA_number_arr) && is_array($LA_number_arr) && isset($LA_amount_arr) && is_array($LA_amount_arr)) {
                     $LA_transfer_count = count($LA_number_arr);
                     for($i=0;$i<$LA_transfer_count;$i++){
                         if(!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])){
 
-                            $transfer_arr = array(
+                            $transferArr = array(
 
                                 'account'=> $LA_number_arr[$i],
                                 'amount'=> (int) round($LA_amount_arr[$i] * 100),
@@ -200,7 +200,7 @@ class RZP_Route_Action
                                 'on_hold'=> $LA_trf_status_arr[$i]
                             );
 
-                            array_push($order_transfer_arr, $transfer_arr);
+                            array_push($orderTransferArr, $transferArr);
                         }
                     }
                 }
@@ -208,7 +208,7 @@ class RZP_Route_Action
 
         }
 
-        return $order_transfer_arr;
+        return $orderTransferArr;
     }
 
     function transferFromPayment($orderId, $razorpayPaymentId){
@@ -216,30 +216,30 @@ class RZP_Route_Action
         $order = wc_get_order($orderId);
 
         $items = $order->get_items();
-        $payment_transfer_arr = array();
+        $paymentTransferArr = array();
 
         foreach ( $items as $item ) {
-            $product_id = $item['product_id'];
-            $rzp_transfer_from =   get_post_meta($product_id, 'rzp_transfer_from', true);
+            $productId = $item['product_id'];
+            $rzp_transfer_from =   get_post_meta($productId, 'rzp_transfer_from', true);
 
             if($rzp_transfer_from == 'from_payment'){
 
-                $LA_number_arr =   get_post_meta($product_id, 'LA_number', true);
-                $LA_amount_arr =   get_post_meta($product_id, 'LA_transfer_amount', true);
-                $LA_trf_status_arr =   get_post_meta($product_id, 'LA_transfer_status', true);
+                $LA_number_arr =   get_post_meta($productId, 'LA_number', true);
+                $LA_amount_arr =   get_post_meta($productId, 'LA_transfer_amount', true);
+                $LA_trf_status_arr =   get_post_meta($productId, 'LA_transfer_status', true);
 
                 if(isset($LA_number_arr) && is_array($LA_number_arr) && isset($LA_amount_arr) && is_array($LA_amount_arr)) {
                     $LA_transfer_count = count($LA_number_arr);
                     for($i=0;$i<$LA_transfer_count;$i++){
                         if(!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])){
-                            $transfer_arr = array(
+                            $transferArr = array(
 
                                 'account'=> $LA_number_arr[$i],
                                 'amount'=> (int) round($LA_amount_arr[$i] * 100),
                                 'currency'=> 'INR',
                                 'on_hold'=> $LA_trf_status_arr[$i]
                             );
-                            array_push($payment_transfer_arr, $transfer_arr);
+                            array_push($paymentTransferArr, $transferArr);
                         }
                     }
                 }
@@ -247,13 +247,12 @@ class RZP_Route_Action
 
         }
 
-        if(isset($payment_transfer_arr) && !empty($payment_transfer_arr)){
+        if(isset($paymentTransferArr) && !empty($paymentTransferArr)){
 
             $data = array(
 
-                'transfers' => $payment_transfer_arr
+                'transfers' => $paymentTransferArr
             );
-
 
             $url = "payments/".$razorpayPaymentId."/transfers";
 

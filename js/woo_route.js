@@ -19,7 +19,6 @@ var add_button      = $(".add_field_button"); //Add button ID
         x--;
     });
 
-
     $(document).on('keyup', ".LA_transfer_amount",function () {
 
         var productPrice = $('#_regular_price').val();
@@ -62,7 +61,7 @@ $(document).on('keyup', "#payment_trf_amount", function () {
 
 $(function(){
     $('input[name="rzp_transfer_from"]').click(function(){
-        var $radio = $(this);
+        var $radio = $('input[name="rzp_transfer_from"]');
 
         // if this was previously checked
         if ($radio.data('waschecked') == true)

@@ -1,61 +1,61 @@
 <?php
 
-require_once __DIR__ . '/../woo-razorpay.php';
-require_once __DIR__ . '/../razorpay-sdk/Razorpay.php';
+require_once __DIR__ .'/../woo-razorpay.php';
+require_once __DIR__ .'/../razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
-add_action('admin_post_rzp_direct_transfer', 'razorpay_direct_transfer');
-add_action('admin_post_rzp_reverse_transfer', 'razorpay_reverse_transfer');
-add_action('admin_post_rzp_settlement_change', 'razorpay_settlement_update');
-add_action('admin_post_rzp_payment_transfer', 'razorpay_payment_transfer');
-add_action('admin_post_rzp_add_linked_accounts', 'razorpay_add_linked_accounts');
+add_action('admin_post_rzp_direct_transfer', 'razorpayDirectTransfer');
+add_action('admin_post_rzp_reverse_transfer', 'razorpayReverseTransfer');
+add_action('admin_post_rzp_settlement_change', 'razorpaySettlementUpdate');
+add_action('admin_post_rzp_payment_transfer', 'razorpayPaymentTransfer');
+add_action('admin_post_rzp_add_linked_accounts', 'razorpayAddLinkedAccounts');
 
-add_action( 'check_route_enable_status', 'razorpay_route_module',0 );
+add_action( 'check_route_enable_status', 'razorpayRouteModule',0 );
 do_action('check_route_enable_status');
 
-function razorpay_route_module(){
+function razorpayRouteModule(){
 
-    $settings_fields = get_option('woocommerce_razorpay_settings');
-    $route_setting_field = $settings_fields['route_enable'];
+    $settingsFields = get_option('woocommerce_razorpay_settings');
+    $routeSettingField = $settingsFields['route_enable'];
 
-    if($route_setting_field == 'yes')
+    if($routeSettingField == 'yes')
     {
-        add_action('admin_menu',  'rzp_add_plugin_page');
-        add_action('admin_enqueue_scripts', 'admin_enqueue_scripts_func', 0);
+        add_action('admin_menu',  'rzpAddPluginPage');
+        add_action('admin_enqueue_scripts', 'adminEnqueueScriptsFunc', 0);
 
-        add_filter( 'woocommerce_product_data_tabs', 'transfer_data_tab', 90 , 1 );
-        add_action( 'woocommerce_product_data_panels', 'product_transfer_data_fields' );
+        add_filter( 'woocommerce_product_data_tabs', 'transferDataTab', 90 , 1 );
+        add_action( 'woocommerce_product_data_panels', 'productTransferDataFields' );
         add_action( 'woocommerce_process_product_meta', 'woocommerce_process_transfer_meta_fields_save' );
-        add_action( 'add_meta_boxes', 'payment_transfer_meta_box' );
+        add_action( 'add_meta_boxes', 'paymentTransferMetaBox' );
 
     }
 }
 
-function rzp_add_plugin_page()
+function rzpAddPluginPage()
 {
     /* add pages & menu items */
 
-    add_menu_page(esc_attr__('Razorpay Route woocommerce', 'textdomain'), esc_html__('Razorpay Route woocommerce', 'textdomain'),'administrator', 'razorpay_route_woocommerce', 'razorpay_route_woocommerce', '', 10);
+    add_menu_page(esc_attr__('Razorpay Route woocommerce', 'textdomain'), esc_html__('Razorpay Route woocommerce', 'textdomain'),'administrator', 'razorpayRouteWoocommerce', 'razorpayRouteWoocommerce', '', 10);
 
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_transfers', 'razorpay_transfers' );
+        'Razorpay Route woocommerce', 'administrator','razorpayTransfers', 'razorpayTransfers' );
 
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_route_reversals', 'razorpay_route_reversals' );
+        'Razorpay Route woocommerce', 'administrator','razorpayRouteReversals', 'razorpayRouteReversals' );
 
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_route_payments', 'razorpay_route_payments' );
+        'Razorpay Route woocommerce', 'administrator','razorpayRoutePayments', 'razorpayRoutePayments' );
 
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_settlement_transfers', 'razorpay_settlement_transfers' );
+        'Razorpay Route woocommerce', 'administrator','razorpaySettlementTransfers', 'razorpaySettlementTransfers' );
 
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_payments_view', 'razorpay_payments_view' );
+        'Razorpay Route woocommerce', 'administrator','razorpayPaymentsView', 'razorpayPaymentsView' );
 
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpay_route_accounts', 'razorpay_route_accounts' );
+        'Razorpay Route woocommerce', 'administrator','razorpayRouteAccounts', 'razorpayRouteAccounts' );
 
 }
 
@@ -77,14 +77,14 @@ class RZP_Route extends WP_List_Table
         );
     }
 
-    function rzp_transfers()
+    function rzpTransfers()
     {
         echo '<div>
             <div class="wrap route-container">';
 
-        $this->route_header();
-        $this->check_direct_transfer_feature();
-        $this->prepare_items();
+        $this->routeHeader();
+        $this->checkDirectTransferFeature();
+        $this->prepareItems();
 
         echo '<input type="hidden" name="page" value="" />
             <input type="hidden" name="section" value="issues" />';
@@ -92,7 +92,7 @@ class RZP_Route extends WP_List_Table
         $this->views();
 
         echo '<form method="get">
-            <input type="hidden" name="page" value="razorpay_route_woocommerce">';
+            <input type="hidden" name="page" value="razorpayRouteWoocommerce">';
 
         $this->display();
 
@@ -100,13 +100,13 @@ class RZP_Route extends WP_List_Table
             </div>';
         $hide = "jQuery('.overlay').hide()";
 
-        $linked_accounts = $this->fetch_linked_accounts();
-        $accounts_drop_down = '';
-        foreach ($linked_accounts as $account){
-            $accounts_drop_down .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
+        $linkedAccounts = $this->fetchLinkedAccounts();
+        $accountsDropDown = '';
+        foreach ($linkedAccounts as $account){
+            $accountsDropDown .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
         }
 
-        $direct_transfer_modal = '<div class="overlay">
+        $directTransferModal = '<div class="overlay">
             <div class="modal" id="transferModal" >
                 <div class="modal-dialog">
                     <!-- Modal content-->
@@ -128,7 +128,7 @@ class RZP_Route extends WP_List_Table
                             <div class="form-group"><label>Linked Account Number</label>
                             <div class="InputField ">
                                 <select name="drct_trf_account"  class="form-control">
-                                        <option value="">Select</option>'. $accounts_drop_down .'</select>
+                                        <option value="">Select</option>'. $accountsDropDown .'</select>
                             </div>
                             </div>
                             <div>
@@ -150,7 +150,7 @@ class RZP_Route extends WP_List_Table
               jQuery("' . '.overlay' . '").hide();
             });
         </script>';
-        echo $direct_transfer_modal;
+        echo $directTransferModal;
     }
 
     /**
@@ -204,24 +204,24 @@ class RZP_Route extends WP_List_Table
     /**
      * Prepare admin view
      */
-    function prepare_items()
+    function prepareItems()
     {
 
-        $per_page = 10;
-        $current_page = $this->get_pagenum();
+        $perPage = 10;
+        $currentPage = $this->get_pagenum();
 
-        if (1 < $current_page) {
-            $offset = $per_page * ($current_page - 1);
+        if (1 < $currentPage) {
+            $offset = $perPage * ($currentPage - 1);
         } else {
             $offset = 0;
         }
 
-        $transfer_page = $this->get_items($per_page);
-        $count = count($transfer_page);
+        $transferPage = $this->getItems($perPage);
+        $count = count($transferPage);
 
         for ($i = 0; $i < $count; $i++) {
-            if ($i >= $offset && $i < $offset + $per_page) {
-                $transfer_pages[] = $transfer_page[$i];
+            if ($i >= $offset && $i < $offset + $perPage) {
+                $transferPages[] = $transferPage[$i];
             }
         }
         $columns = $this->get_columns();
@@ -229,17 +229,17 @@ class RZP_Route extends WP_List_Table
         $sortable = array();
         $this->_column_headers = array($columns, $hidden, $sortable);
 
-        $this->items = $transfer_pages;
+        $this->items = $transferPages;
 
         // Set the pagination
         $this->set_pagination_args(array(
             'total_items' => $count,
-            'per_page' => $per_page,
-            'total_pages' => ceil($count / $per_page)
+            'per_page' => $perPage,
+            'total_pages' => ceil($count / $perPage)
         ));
     }
 
-    function get_items($count)
+    function getItems($count)
     {
         $items = array();
 
@@ -263,14 +263,14 @@ class RZP_Route extends WP_List_Table
                 $source_key = explode('_',$transfer['source']);
 
                 $items[] = array(
-                    'transfer_id' => '<a href="?page=razorpay_transfers&id=' . $transfer['id'] . '">' . $transfer['id'] . '</a>',
+                    'transfer_id' => '<a href="?page=razorpayTransfers&id=' . $transfer['id'] . '">' . $transfer['id'] . '</a>',
                     'source' => (($source_key[0] == 'order') || ($source_key[0] == 'pay'))? $transfer['source'] : 'Direct Transfer',
                     'recipient' => $transfer['recipient'],
                     'amount' => '<span class="rzp-currency">₹</span> ' . (int)round($transfer['amount'] / 100),
                     'created_at' => date("d F Y h:i A", strtotime('+5 hour +30 minutes', $transfer['created_at'])),
                     'transfer_status' => ucwords($transfer['status']),
                     'settlement_status' => (empty($transfer['settlement_status'])) ? 'Not Applicable' : ucwords($transfer['settlement_status']),
-                    'settlement_id' => (!empty($transfer['recipient_settlement_id'])) ? '<a href="?page=razorpay_settlement_transfers&id=' . $transfer['recipient_settlement_id'] . '">' . $transfer['recipient_settlement_id'] . '</a>' : '--',
+                    'settlement_id' => (!empty($transfer['recipient_settlement_id'])) ? '<a href="?page=razorpaySettlementTransfers&id=' . $transfer['recipient_settlement_id'] . '">' . $transfer['recipient_settlement_id'] . '</a>' : '--',
 
                 );
             }
@@ -278,7 +278,7 @@ class RZP_Route extends WP_List_Table
         return $items;
     }
 
-    function rzp_transfer_details()
+    function rzpTransferDetails()
     {
         if (empty(sanitize_text_field($_REQUEST['id'])) || null == (sanitize_text_field($_REQUEST['id']))) {
 
@@ -286,24 +286,24 @@ class RZP_Route extends WP_List_Table
 
         } else {
 
-            $transfer_id = sanitize_text_field($_REQUEST['id']);
+            $transferId = sanitize_text_field($_REQUEST['id']);
             $Wc_Razorpay_Loader = new WC_Razorpay();
 
             $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
-            $url = "transfers/" . $transfer_id . "/?expand[]=recipient_settlement";
+            $url = "transfers/" . $transferId . "/?expand[]=recipient_settlement";
 
-            $transfer_detail = $api->request->request("GET", $url);
+            $transferDetail = $api->request->request("GET", $url);
 
-            $prev_url = admin_url('admin.php?page=razorpay_route_woocommerce');
+            $prev_url = admin_url('admin.php?page=razorpayRouteWoocommerce');
 
             $show = "jQuery('.rev_trf_overlay').show()";
             $hide = "jQuery('.rev_trf_overlay').hide()";
 
-            $show_setl = "jQuery('.trf_settlement_overlay').show()";
-            $hide_setl = "jQuery('.trf_settlement_overlay').hide()";
+            $showSetl = "jQuery('.trf_settlement_overlay').show()";
+            $hideSetl = "jQuery('.trf_settlement_overlay').hide()";
 
-            $source_key = explode('_',$transfer_detail['source']) ;
-            $source = (($source_key[0] == 'order') || ($source_key[0] == 'pay')) ? $transfer_detail['source'] : "Direct Transfer" ;
+            $sourceKey = explode('_',$transferDetail['source']) ;
+            $source = (($sourceKey[0] == 'order') || ($sourceKey[0] == 'pay')) ? $transferDetail['source'] : "Direct Transfer" ;
 
             echo '<div class="wrap">
             <div class="content-header">
@@ -319,7 +319,7 @@ class RZP_Route extends WP_List_Table
                     <div class="col-md-12 panel-body-left">
                         <div class="row">
                             <div class="col-sm-4 panel-label">Transfer ID</div>
-                            <div class="col-sm-8 panel-value">' . $transfer_detail["id"] . '</div>
+                            <div class="col-sm-8 panel-value">' . $transferDetail["id"] . '</div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Source</div>
@@ -327,48 +327,48 @@ class RZP_Route extends WP_List_Table
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Recipient</div>
-                            <div class="col-sm-8 panel-value">' . $transfer_detail['recipient'] . '</div>
+                            <div class="col-sm-8 panel-value">' . $transferDetail['recipient'] . '</div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Amount</div>
-                            <div class="col-sm-8 panel-value"><span class="rzp-currency">₹ </span>' . (int)round($transfer_detail['amount'] / 100) . '</div>
+                            <div class="col-sm-8 panel-value"><span class="rzp-currency">₹ </span>' . (int)round($transferDetail['amount'] / 100) . '</div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Transfer Status</div>
-                            <div class="col-sm-8 panel-value"><span class="text-info">'. ucwords($transfer_detail['status']) .'</span></div>
+                            <div class="col-sm-8 panel-value"><span class="text-info">'. ucwords($transferDetail['status']) .'</span></div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Settlement Status</div>
                             <div class="col-sm-8 panel-value">';
 
-            if ($transfer_detail['settlement_status'] == 'on_hold' && $transfer_detail['on_hold_until'] != '') {
-                echo '<span class="text-warning trf-status">Scheduled for ' . date("d M Y", $transfer_detail['on_hold_until']) . '</span>';
-                echo '<span><a href="javascript:void(0);" onclick="' . $show_setl . '" >Change</a></span>';
-            } elseif ($transfer_detail['settlement_status'] == 'on_hold' && $transfer_detail['on_hold_until'] == '') {
+            if ($transferDetail['settlement_status'] == 'on_hold' && $transferDetail['on_hold_until'] != '') {
+                echo '<span class="text-warning trf-status">Scheduled for ' . date("d M Y", $transferDetail['on_hold_until']) . '</span>';
+                echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
+            } elseif ($transferDetail['settlement_status'] == 'on_hold' && $transferDetail['on_hold_until'] == '') {
                 echo '<span class="text-danger trf-status">On Hold</span>';
-                echo '<span><a href="javascript:void(0);" onclick="' . $show_setl . '" >Change</a></span>';
-            } elseif ($transfer_detail['settlement_status'] == 'pending') {
+                echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
+            } elseif ($transferDetail['settlement_status'] == 'pending') {
                 echo '<span class="text-success trf-status">Pending</span>';
-                echo '<span><a href="javascript:void(0);" onclick="' . $show_setl . '" >Change</a></span>';
-            } elseif ($transfer_detail['settlement_status'] == ''){
+                echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
+            } elseif ($transferDetail['settlement_status'] == ''){
                 echo '<span>Not Applicable</span>';
             } else {
-                echo '<span>' . ucwords($transfer_detail['settlement_status']) . '</span>';
+                echo '<span>' . ucwords($transferDetail['settlement_status']) . '</span>';
             }
 
             echo '</div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Amount Reversed</div>
-                            <div class="col-sm-8 panel-value"><span class="rzp-currency">₹ </span>' . (int)round($transfer_detail['amount_reversed'] / 100);
-            if ($transfer_detail["amount_reversed"] < $transfer_detail["amount"]) {
+                            <div class="col-sm-8 panel-value"><span class="rzp-currency">₹ </span>' . (int)round($transferDetail['amount_reversed'] / 100);
+            if ($transferDetail["amount_reversed"] < $transferDetail["amount"]) {
                 echo '<button onclick="' . $show . '" class="btn btn-primary">Create Reversal</button>';
             }
             echo '</div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Created on</div>
-                            <div class="col-sm-8 panel-value">' . date("d F Y h:i A", strtotime('+5 hour +30 minutes', $transfer_detail['created_at'])) . '</div>
+                            <div class="col-sm-8 panel-value">' . date("d F Y h:i A", strtotime('+5 hour +30 minutes', $transferDetail['created_at'])) . '</div>
                         </div>
                     </div>
                 </div>
@@ -376,7 +376,7 @@ class RZP_Route extends WP_List_Table
 
         </div>';
 
-            $reverse_transfer_modal = '<div class="rev_trf_overlay">
+            $reverseTransferModal = '<div class="rev_trf_overlay">
                 <div class="modal" id="revTransferModal">
                     <div class="modal-dialog">
                         <!-- Modal content-->
@@ -392,7 +392,7 @@ class RZP_Route extends WP_List_Table
                                 <label class="label-required">Reversal Amount</label>
                                 <div class="input-group"><div class="input-group-addon">INR</div>
                                 <div class="InputField ">
-                                <input name="reversal_amount" type="number" autocomplete="off" class="form-control" id="trf_reversal_amount" placeholder="Enter the reversal amount" value="'.(int)round(($transfer_detail['amount'] - $transfer_detail['amount_reversed'])/ 100).'">
+                                <input name="reversal_amount" type="number" autocomplete="off" class="form-control" id="trf_reversal_amount" placeholder="Enter the reversal amount" value="'.(int)round(($transferDetail['amount'] - $transferDetail['amount_reversed'])/ 100).'">
                                 </div>
                                 </div>
                                 <p class="text-danger" id="trf_reverse_text"></p>
@@ -402,8 +402,8 @@ class RZP_Route extends WP_List_Table
 
                                 <button type="submit" onclick="' . $hide . '" name="create_reversal" id="reverse_transfer_btn" class="btn btn-primary">Create Reversal</button>
                                 <input type="hidden" name="action" value="rzp_reverse_transfer">
-                                <input type="hidden" name="transfer_id" value="' . $transfer_detail['id'] . '">
-                                <input type="hidden" name="transfer_amount" value="' . $transfer_detail['amount'] . '">
+                                <input type="hidden" name="transfer_id" value="' . $transferDetail['id'] . '">
+                                <input type="hidden" name="transfer_amount" value="' . $transferDetail['amount'] . '">
 
                                 </div>
                                 </form>
@@ -421,57 +421,57 @@ class RZP_Route extends WP_List_Table
                       jQuery("' . '.rev_trf_overlay' . '").hide();
                     });
                 </script>';
-            echo $reverse_transfer_modal;
+            echo $reverseTransferModal;
 
-            $onhold_status = $settle_sts = $hold_until_status = $hold_date = $disable_date = '';
+            $onHoldStatus = $settleStatus = $holdUntilStatus = $holdDate = $disableDate = '';
 
-            if ($transfer_detail['on_hold_until'] != '') {
-                $hold_date = date("Y-m-d", $transfer_detail['on_hold_until']);
-                $hold_until_status = "checked";
+            if ($transferDetail['on_hold_until'] != '') {
+                $holdDate = date("Y-m-d", $transferDetail['on_hold_until']);
+                $holdUntilStatus = "checked";
             }
-            if ($transfer_detail['on_hold'] == 1 && $transfer_detail['on_hold_until'] == '') {
-                $onhold_status = "checked";
-                $disable_date = "disabled";
+            if ($transferDetail['on_hold'] == 1 && $transferDetail['on_hold_until'] == '') {
+                $onHoldStatus = "checked";
+                $disableDate = "disabled";
             }
-            if ($transfer_detail['on_hold'] == 0 && $transfer_detail['recipient_settlement_id'] == '') {
-                $settle_sts = "checked";
-                $disable_date = "disabled";
+            if ($transferDetail['on_hold'] == 0 && $transferDetail['recipient_settlement_id'] == '') {
+                $settleStatus = "checked";
+                $disableDate = "disabled";
             }
 
-            $transfer_settlement_modal = '<div class="trf_settlement_overlay">
+            $transferSettlementModal = '<div class="trf_settlement_overlay">
                 <div class="modal" id="transferModal" >
                     <div class="modal-dialog">
                         <!-- Modal content-->
                         <div class="modal-content">
                             <div class="modal-header">
                             <h4 class="modal-title">Change Settlement Schedule</h4>
-                                <button type="button" class="close" data-dismiss="modal" onclick="' . $hide_setl . '">&times;</button>
+                                <button type="button" class="close" data-dismiss="modal" onclick="' . $hideSetl . '">&times;</button>
 
                             </div>
                             <div class="modal-body">
                             <form method="POST" action="' . esc_url(admin_url('admin-post.php')) . '">
                                 <div class="RadioButton">
-                                    <label><input type="radio" name="on_hold" class="enable_hold_until" value="on_hold_until" ' . $hold_until_status . '>
+                                    <label><input type="radio" name="on_hold" class="enable_hold_until" value="on_hold_until" ' . $holdUntilStatus . '>
                                         <span>Schedule settlement on</span>
                                     </label>
-                                    <input type="date" name="hold_until" id="hold_until"  min="' . date('Y-m-d', strtotime('+4 days')) . '" value="' . $hold_date . '" ' . $disable_date . ' >
+                                    <input type="date" name="hold_until" id="hold_until"  min="' . date('Y-m-d', strtotime('+4 days')) . '" value="' . $holdDate . '" ' . $disableDate . ' >
                                 </div>
                                 <div class="RadioButton">
-                                    <label><input type="radio" name="on_hold" class="disable_hold_until" value="1" ' . $onhold_status . '>
+                                    <label><input type="radio" name="on_hold" class="disable_hold_until" value="1" ' . $onHoldStatus . '>
                                         <span>Put on hold</span>
                                     </label>
                                 </div>
                                 <div class="RadioButton">
-                                    <label><input type="radio" name="on_hold" class="disable_hold_until" value="0" ' . $settle_sts . ' >
+                                    <label><input type="radio" name="on_hold" class="disable_hold_until" value="0" ' . $settleStatus . ' >
                                         <span>Settle in next slot</span>
                                     </label>
                                 </div>
 
                                 <div>
 
-                                <button type="submit" onclick="' . $hide_setl . '" name="update_setl_status"  class="btn btn-primary">Save</button>
+                                <button type="submit" onclick="' . $hideSetl . '" name="update_setl_status"  class="btn btn-primary">Save</button>
                                 <input type="hidden" name="action" value="rzp_settlement_change">
-                                <input type="hidden" name="transfer_id" value="' . $transfer_detail['id'] . '">
+                                <input type="hidden" name="transfer_id" value="' . $transferDetail['id'] . '">
                                 </div>
                                 </form>
                             </div>
@@ -487,36 +487,36 @@ class RZP_Route extends WP_List_Table
                       jQuery("' . '.trf_settlement_overlay' . '").hide();
                     });
                 </script>';
-            echo $transfer_settlement_modal;
+            echo $transferSettlementModal;
         }
     }
 
-    function route_header()
+    function routeHeader()
     {
 
         ?>
         <header id="rzp-route-header" class="rzp-route-header">
-            <a <?php if ($_GET['page'] == "razorpay_route_woocommerce") { ?> class="active" <?php } ?>
-                href="?page=razorpay_route_woocommerce">Transfers</a>
-            <a <?php if ($_GET['page'] == "razorpay_route_payments") { ?> class="active" <?php } ?>
-                href="?page=razorpay_route_payments">Payments</a>
-            <a <?php if ($_GET['page'] == "razorpay_route_reversals") { ?> class="active" <?php } ?>
-                href="?page=razorpay_route_reversals">Reversals</a>
-            <a <?php if ($_GET['page'] == "razorpay_route_accounts") { ?> class="active" <?php } ?>
-                href="?page=razorpay_route_accounts">Accounts</a>
+            <a <?php if ($_GET['page'] == "razorpayRouteWoocommerce") { ?> class="active" <?php } ?>
+                href="?page=razorpayRouteWoocommerce">Transfers</a>
+            <a <?php if ($_GET['page'] == "razorpayRoutePayments") { ?> class="active" <?php } ?>
+                href="?page=razorpayRoutePayments">Payments</a>
+            <a <?php if ($_GET['page'] == "razorpayRouteReversals") { ?> class="active" <?php } ?>
+                href="?page=razorpayRouteReversals">Reversals</a>
+            <a <?php if ($_GET['page'] == "razorpayRouteAccounts") { ?> class="active" <?php } ?>
+                href="?page=razorpayRouteAccounts">Accounts</a>
 
         </header>
         <?php
     }
 
-    function rzp_transfer_reversals()
+    function rzpTransferReversals()
     {
         echo '<div>
             <div class="wrap route-container">';
 
-        $this->route_header();
+        $this->routeHeader();
 
-        $this->prepare_reversal_items();
+        $this->prepareReversalItems();
 
         echo '<form method="get">
             <input type="hidden" name="page" value="razorpay_route_reversals">';
@@ -527,42 +527,42 @@ class RZP_Route extends WP_List_Table
             </div>';
     }
 
-    function prepare_reversal_items()
+    function prepareReversalItems()
     {
 
-        $per_page = 10;
-        $current_page = $this->get_pagenum();
-        if (1 < $current_page) {
-            $offset = $per_page * ($current_page - 1);
+        $perPage = 10;
+        $currentPage = $this->get_pagenum();
+        if (1 < $currentPage) {
+            $offset = $perPage * ($currentPage - 1);
         } else {
             $offset = 0;
         }
 
-        $reversal_page = $this->get_reversal_items($per_page);
-        $count = count($reversal_page);
+        $reversalPage = $this->getReversalItems($perPage);
+        $count = count($reversalPage);
 
         for ($i = 0; $i < $count; $i++) {
-            if ($i >= $offset && $i < $offset + $per_page) {
-                $reversal_pages[] = $reversal_page[$i];
+            if ($i >= $offset && $i < $offset + $perPage) {
+                $reversalPages[] = $reversalPage[$i];
             }
         }
-        $columns = $this->get_reversal_columns();
+        $columns = $this->getReversalColumns();
         $hidden = array();
         $sortable = array();
         $this->_column_headers = array($columns, $hidden, $sortable);
 
-        $this->items = $reversal_pages;
+        $this->items = $reversalPages;
 
         // Set the pagination
         $this->set_pagination_args(array(
             'total_items' => $count,
-            'per_page' => $per_page,
-            'total_pages' => ceil($count / $per_page)
+            'per_page' => $perPage,
+            'total_pages' => ceil($count / $perPage)
         ));
     }
 
 
-    function get_reversal_columns()
+    function getReversalColumns()
     {
         $columns = array(
             'reversal_id' => __('Reversal Id'),
@@ -573,7 +573,7 @@ class RZP_Route extends WP_List_Table
         return $columns;
     }
 
-    function get_reversal_items($count)
+    function getReversalItems($count)
     {
         $result = array();
         $Wc_Razorpay_Loader = new WC_Razorpay();
@@ -610,14 +610,14 @@ class RZP_Route extends WP_List_Table
 
     }
 
-    function rzp_route_payments()
+    function rzpRoutePayments()
     {
         echo '<div>
             <div class="wrap route-container">';
 
-        $this->route_header();
+        $this->routeHeader();
 
-        $this->prepare_payment_items();
+        $this->preparePaymentItems();
 
         echo '<form method="get">
             <input type="hidden" name="page" value="razorpay_route_payments">';
@@ -629,44 +629,44 @@ class RZP_Route extends WP_List_Table
             </div>';
     }
 
-    function prepare_payment_items()
+    function preparePaymentItems()
     {
 
-        $per_page = 10;
-        $current_page = $this->get_pagenum();
+        $perPage = 10;
+        $currentPage = $this->get_pagenum();
 
-        if (1 < $current_page) {
-            $offset = $per_page * ($current_page - 1);
+        if (1 < $currentPage) {
+            $offset = $perPage * ($currentPage - 1);
         } else {
             $offset = 0;
         }
 
-        $acc_id = isset($_REQUEST['s']) ? sanitize_text_field($_REQUEST['s']) : '';
+        $accId = isset($_REQUEST['s']) ? sanitize_text_field($_REQUEST['s']) : '';
 
-        $payment_page = $this->get_payment_items($per_page, $acc_id);
-        $count = count($payment_page);
+        $paymentPage = $this->getPaymentItems($perPage, $accId);
+        $count = count($paymentPage);
 
         for ($i = 0; $i < $count; $i++) {
-            if ($i >= $offset && $i < $offset + $per_page) {
-                $payment_pages[] = $payment_page[$i];
+            if ($i >= $offset && $i < $offset + $perPage) {
+                $paymentPages[] = $paymentPage[$i];
             }
         }
-        $columns = $this->get_payment_columns();
+        $columns = $this->getPaymentColumns();
         $hidden = array();
         $sortable = array();
         $this->_column_headers = array($columns, $hidden, $sortable);
 
-        $this->items = $payment_pages;
+        $this->items = $paymentPages;
 
         // Set the pagination
         $this->set_pagination_args(array(
             'total_items' => $count,
-            'per_page' => $per_page,
-            'total_pages' => ceil($count / $per_page)
+            'per_page' => $perPage,
+            'total_pages' => ceil($count / $perPage)
         ));
     }
 
-    function get_payment_columns()
+    function getPaymentColumns()
     {
         $columns = array(
             'payment_id' => __('Payment Id'),
@@ -680,8 +680,7 @@ class RZP_Route extends WP_List_Table
         return $columns;
     }
 
-
-    function get_payment_items($count, $acc_id)
+    function getPaymentItems($count, $accId)
     {
         $result = array();
         $Wc_Razorpay_Loader = new WC_Razorpay();
@@ -693,8 +692,8 @@ class RZP_Route extends WP_List_Table
                 'count' => 100,
             );
 
-            if (isset($acc_id) && $acc_id != '') {
-                $api->request->addHeader('X-Razorpay-Account', $acc_id);
+            if (isset($accId) && $accId != '') {
+                $api->request->addHeader('X-Razorpay-Account', $accId);
             }
 
             $payments = $api->request->request("GET", $url, $data);
@@ -710,7 +709,7 @@ class RZP_Route extends WP_List_Table
         if ($payments) {
             foreach ($payments['items'] as $payment) {
                 $result[] = array(
-                    'payment_id' => ($acc_id != "") ? $payment['id'] : '<a href="?page=razorpay_payments_view&id=' . $payment['id'] . '">' . $payment['id'] . '</a>',
+                    'payment_id' => ($accId != "") ? $payment['id'] : '<a href="?page=razorpayPaymentsView&id=' . $payment['id'] . '">' . $payment['id'] . '</a>',
                     'order_id' => $payment['order_id'],
                     'amount' => '<span class="rzp-currency">₹</span> ' . (int)round($payment['amount'] / 100),
                     'email' => $payment['email'],
@@ -725,21 +724,21 @@ class RZP_Route extends WP_List_Table
 
     }
 
-    function rzp_settlement_transfers()
+    function rzpSettlementTransfers()
     {
         if (empty(sanitize_text_field($_REQUEST['id'])) || null == (sanitize_text_field($_REQUEST['id']))) {
             wp_die("This page consist some request parameters to view response");
         } else {
 
-            $settlement_id = sanitize_text_field($_REQUEST['id']);
+            $settlementId = sanitize_text_field($_REQUEST['id']);
             $Wc_Razorpay_Loader = new WC_Razorpay();
 
             $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
             try {
                 $data = array(
-                    'recipient_settlement_id' => $settlement_id
+                    'recipient_settlement_id' => $settlementId
                 );
-                $stl_transfers = $api->transfer->all($data);
+                $settlTransfers = $api->transfer->all($data);
 
             } catch (Exception $e) {
                 $message = $e->getMessage();
@@ -760,7 +759,7 @@ class RZP_Route extends WP_List_Table
             </div>
             <div class="container rzp-container">
                 <div class="row panel-heading">
-                    Settlement ID :  <strong>' . $settlement_id . '</strong>
+                    Settlement ID :  <strong>' . $settlementId . '</strong>
                 </div>
                 <div class="row panel-body">
                     <div class="col-md-12 panel-body-left">
@@ -776,7 +775,7 @@ class RZP_Route extends WP_List_Table
                                 <div class="col">Amount</div>
                                 <div class="col">Created At</div>
                             </div>';
-            foreach ($stl_transfers['items'] as $transfer) {
+            foreach ($settlTransfers['items'] as $transfer) {
                 echo '<div class="row panel-value">
                                 <div class="col">' . $transfer['id'] . '</div>
                                 <div class="col">' . $transfer['source'] . '</div>
@@ -794,46 +793,46 @@ class RZP_Route extends WP_List_Table
         }
     }
 
-    function rzp_payment_details()
+    function rzpPaymentDetails()
     {
         if (empty(sanitize_text_field($_REQUEST['id'])) || null == (sanitize_text_field($_REQUEST['id']))) {
             wp_die("This page consist some request parameters to view response");
         } else {
 
-            $payment_id = sanitize_text_field($_REQUEST['id']);
+            $paymentId = sanitize_text_field($_REQUEST['id']);
             $Wc_Razorpay_Loader = new WC_Razorpay();
 
             $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
-            $payment_detail = $api->payment->fetch($payment_id);
+            $paymentDetail = $api->payment->fetch($paymentId);
 
-            $payment_transfers = $api->payment->fetch($payment_id)->transfers();
+            $paymentTransfers = $api->payment->fetch($paymentId)->transfers();
 
-            $prev_url = admin_url('admin.php?page=razorpay_route_payments');
+            $prev_url = admin_url('admin.php?page=razorpayRoutePayments');
 
             $show = "jQuery('.overlay').show()";
             $hide = "jQuery('.overlay').hide()";
 
-            $trf_details = '';
-            $transferred_amount = 0;
-            if ($payment_transfers['count'] != 0) {
+            $trfDetails = '';
+            $transferredAmount = 0;
+            if ($paymentTransfers['count'] != 0) {
 
-                $trf_details = '<div class="button-items-detail">
+                $trfDetails = '<div class="button-items-detail">
                     <div class="row">
                         <div class="col">Transfer Id</div>
                         <div class="col">Amount</div>
                         <div class="col">Created At</div>
                     </div>';
 
-                foreach ($payment_transfers['items'] as $transfer) {
-                    $transferred_amount = $transferred_amount + $transfer['amount'];
+                foreach ($paymentTransfers['items'] as $transfer) {
+                    $transferredAmount = $transferredAmount + $transfer['amount'];
 
-                    $trf_details .= '<div class="row panel-value">
-                                            <div class="col"><a href="?page=razorpay_transfers&id='.$transfer['id'].'">' . $transfer['id'] . '</a></div>
+                    $trfDetails .= '<div class="row panel-value">
+                                            <div class="col"><a href="?page=razorpayTransfers&id='.$transfer['id'].'">' . $transfer['id'] . '</a></div>
                                             <div class="col"><span class="rzp-currency">₹ </span>' . (int)round($transfer['amount'] / 100) . '</div>
                                             <div class="col">' . date("d F Y h:i A", strtotime('+5 hour +30 minutes', $transfer['created_at'])) . '</div>
                                         </div>';
                 }
-                $trf_details .= '</div> ';
+                $trfDetails .= '</div> ';
             }
 
             echo '<div class="wrap">
@@ -850,41 +849,41 @@ class RZP_Route extends WP_List_Table
                         <div class="col-md-12 panel-body-left">
                             <div class="row">
                                 <div class="col-sm-4 panel-label">Payment ID</div>
-                                <div class="col-sm-8 panel-value">' . $payment_detail["id"] . '</div>
+                                <div class="col-sm-8 panel-value">' . $paymentDetail["id"] . '</div>
                             </div>
                             <div class="row">
                                 <div class="col-sm-4 panel-label">Amount</div>
-                                <div class="col-sm-8 panel-value"><span class="rzp-currency">₹ </span>' . (int)round($payment_detail['amount'] / 100) . '</div>
+                                <div class="col-sm-8 panel-value"><span class="rzp-currency">₹ </span>' . (int)round($paymentDetail['amount'] / 100) . '</div>
                             </div>
                             <div class="row">
                                 <div class="col-sm-4 panel-label">Status</div>
-                                <div class="col-sm-8 panel-value">' . ucfirst($payment_detail['status']) . '</div>
+                                <div class="col-sm-8 panel-value">' . ucfirst($paymentDetail['status']) . '</div>
                             </div>
                             <div class="row">
                                 <div class="col-sm-4 panel-label">Order ID</div>
-                                <div class="col-sm-8 panel-value">' . $payment_detail['order_id'] . '</div>
+                                <div class="col-sm-8 panel-value">' . $paymentDetail['order_id'] . '</div>
                             </div>
                             <div class="row">
                                 <div class="col-sm-4 panel-label">Transfers</div>
                                 <div class="col-sm-8 panel-value">';
 
-            if ($payment_detail['status'] == 'created') {
+            if ($paymentDetail['status'] == 'created') {
                 echo '--';
             } else {
-                $trf_count = ($payment_transfers['count'] == 0) ? 'No' : $payment_transfers['count'];
-                echo '<span>' . $trf_count . ' transfers created</span>';
+                $trfCount = ($paymentTransfers['count'] == 0) ? 'No' : $paymentTransfers['count'];
+                echo '<span>' . $trfCount . ' transfers created</span>';
             }
 
-            if ($payment_detail['status'] == 'captured' && $payment_detail['amount'] > $transferred_amount) {
+            if ($paymentDetail['status'] == 'captured' && $paymentDetail['amount'] > $transferredAmount) {
                 echo '<button onclick="' . $show . '" class="button">Create Transfer</button>';
             }
 
-            echo $trf_details;
+            echo $trfDetails;
             echo '</div>
                             </div>
                             <div class="row">
                                 <div class="col-sm-4 panel-label">Created on</div>
-                                <div class="col-sm-8 panel-value">' . date("d F Y h:i A", strtotime('+5 hour +30 minutes', $payment_detail['created_at'])) . '</div>
+                                <div class="col-sm-8 panel-value">' . date("d F Y h:i A", strtotime('+5 hour +30 minutes', $paymentDetail['created_at'])) . '</div>
                             </div>
                         </div>
                     </div>
@@ -892,13 +891,13 @@ class RZP_Route extends WP_List_Table
 
             </div>';
 
-            $linked_accounts = $this->fetch_linked_accounts();
-            $accounts_drop_down = '';
-            foreach ($linked_accounts as $account){
-                $accounts_drop_down .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
+            $linkedAccounts = $this->fetchLinkedAccounts();
+            $accountsDropDown = '';
+            foreach ($linkedAccounts as $account){
+                $accountsDropDown .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
             }
 
-            $payment_transfer_modal = '<div class="overlay">
+            $paymentTransferModal = '<div class="overlay">
                 <div class="modal" id="paymentTransferModal" >
                     <div class="modal-dialog">
                         <!-- Modal content-->
@@ -914,7 +913,7 @@ class RZP_Route extends WP_List_Table
                                 <label class="">Transfer Amount</label>
                                 <div class="input-group"><div class="input-group-addon">INR</div>
                                 <div class="InputField ">
-                                <input name="pay_trf_amount" type="number" autocomplete="off" class="form-control" id="payment_trf_amount" placeholder="Enter amount" value="'.(int)round(($payment_detail['amount'] - $transferred_amount)/ 100).'">
+                                <input name="pay_trf_amount" type="number" autocomplete="off" class="form-control" id="payment_trf_amount" placeholder="Enter amount" value="'.(int)round(($paymentDetail['amount'] - $transferredAmount)/ 100).'">
                                 </div>
                                 </div>
                                 <p class="text-danger" id="payment_trf_error"></p>
@@ -922,7 +921,7 @@ class RZP_Route extends WP_List_Table
                                 <div class="form-group"><label>Linked Account Number</label>
                                 <div class="InputField ">
                                     <select name="pay_trf_account" id="pay_trf_account" class="form-control">
-                                        <option value="">Select</option>'. $accounts_drop_down .'</select>
+                                        <option value="">Select</option>'. $accountsDropDown .'</select>
                                 </div>
                                 </div>
                                 <div class="form-group"><label>Settlement schedule</label>
@@ -944,7 +943,7 @@ class RZP_Route extends WP_List_Table
                                 </div> </div>
                                 <div>
                                 <button type="submit" onclick="' . $hide . '" name="trf_create" class="btn btn-primary" id="payment_transfer_btn">Create</button>
-                                <input type="hidden" name="payment_id" value="' . $payment_detail['id'] . '">
+                                <input type="hidden" name="payment_id" value="' . $paymentDetail['id'] . '">
                                 <input type="hidden" name="action" value="rzp_payment_transfer">
                                 </div>
                                 </form>
@@ -961,11 +960,11 @@ class RZP_Route extends WP_List_Table
                       jQuery("' . '.overlay' . '").hide();
                     });
                 </script>';
-            echo $payment_transfer_modal;
+            echo $paymentTransferModal;
         }
     }
 
-    function  check_direct_transfer_feature(){
+    function  checkDirectTransferFeature(){
 
         $Wc_Razorpay_Loader = new WC_Razorpay();
         $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
@@ -983,34 +982,34 @@ class RZP_Route extends WP_List_Table
             ),
         ));
 
-        $direct_transfer_btn = '';
-        $features_data = @file_get_contents($url, false, $context);
-        if($features_data !== false) {
-            $api_response = json_decode($features_data, true);
-            foreach ($api_response['assigned_features'] as $features) {
+        $directTransferBtn = '';
+        $featuresData = @file_get_contents($url, false, $context);
+        if($featuresData !== false) {
+            $apiResponse = json_decode($featuresData, true);
+            foreach ($apiResponse['assigned_features'] as $features) {
                 if ($features['name'] == 'direct_transfer') {
 
                     $show = "jQuery('.overlay').show()";
-                    $direct_transfer_btn = '<button class="btn btn-primary" onclick="' . $show . '">Create Direct Transfer</button>';
+                    $directTransferBtn = '<button class="btn btn-primary" onclick="' . $show . '">Create Direct Transfer</button>';
 
                 }
             }
         }
-        echo  $direct_transfer_btn;
+        echo  $directTransferBtn;
     }
 
-    function  rzp_route_accounts(){
+    function  rzpRouteAccounts(){
         echo '<div>
             <div class="wrap route-container">';
 
-        $this->route_header();
+        $this->routeHeader();
 
         $show = "jQuery('.overlay').show()";
         $hide = "jQuery('.overlay').hide()";
 
         echo '<button class="btn btn-primary float-right" onclick="' . $show . '">Add Account</button>';
 
-        $this->prepare_account_items();
+        $this->prepareAccountItems();
 
         echo '<form method="get">
             <input type="hidden" name="page" value="razorpay_route_accounts">';
@@ -1019,7 +1018,7 @@ class RZP_Route extends WP_List_Table
         echo '</form></div>
             </div>';
 
-        $add_account_modal = '<div class="overlay">
+        $addAccountModal = '<div class="overlay">
             <div class="modal" id="transferModal" >
                 <div class="modal-dialog">
                     <!-- Modal content-->
@@ -1061,45 +1060,45 @@ class RZP_Route extends WP_List_Table
               jQuery("' . '.overlay' . '").hide();
             });
         </script>';
-        echo $add_account_modal;
+        echo $addAccountModal;
     }
 
-    function prepare_account_items(){
-        $per_page = 20;
-        $current_page = $this->get_pagenum();
+    function prepareAccountItems(){
+        $perPage = 20;
+        $currentPage = $this->get_pagenum();
 
-        if (1 < $current_page) {
-            $offset = $per_page * ($current_page - 1);
+        if (1 < $currentPage) {
+            $offset = $perPage * ($currentPage - 1);
         } else {
             $offset = 0;
         }
 
-        $accounts_page = $this->get_account_items($per_page, $offset);
-        $count = count($this->fetch_linked_accounts());
+        $accountsPage = $this->getAccountItems($perPage, $offset);
+        $count = count($this->fetchLinkedAccounts());
 
-        $columns = $this->get_accounts_columns();
+        $columns = $this->getAccountsColumns();
         $hidden = array();
         $sortable = array();
         $this->_column_headers = array($columns, $hidden, $sortable);
 
-        $this->items = $accounts_page;
+        $this->items = $accountsPage;
 
         // Set the pagination
         $this->set_pagination_args(array(
             'total_items' => $count,
-            'per_page' => $per_page,
-            'total_pages' => ceil($count / $per_page)
+            'per_page' => $perPage,
+            'total_pages' => ceil($count / $perPage)
         ));
     }
 
-    function get_account_items($limit,$offset)
+    function getAccountItems($limit,$offset)
     {
         $items = array();
 
         try {
             global $wpdb;
             $table = $wpdb->prefix . "razorpay_accounts";
-            $linked_accounts = $wpdb->get_results("SELECT la_name, la_number from $table LIMIT $offset, $limit");
+            $linkedAccounts = $wpdb->get_results("SELECT la_name, la_number from $table LIMIT $offset, $limit");
 
         } catch (Exception $e) {
             $message = $e->getMessage();
@@ -1108,8 +1107,8 @@ class RZP_Route extends WP_List_Table
                     <p>RAZORPAY ERROR: Accounts fetch failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        if ($linked_accounts) {
-            foreach ($linked_accounts as $account) {
+        if ($linkedAccounts) {
+            foreach ($linkedAccounts as $account) {
 
                 $items[] = array(
 
@@ -1122,7 +1121,7 @@ class RZP_Route extends WP_List_Table
         return $items;
     }
 
-    function get_accounts_columns()
+    function getAccountsColumns()
     {
 
         $columns = array(
@@ -1133,54 +1132,54 @@ class RZP_Route extends WP_List_Table
         return $columns;
     }
 
-    function  fetch_linked_accounts(){
+    function  fetchLinkedAccounts(){
         global $wpdb;
         $table = $wpdb->prefix . "razorpay_accounts";
-        return $linked_accounts = $wpdb->get_results("SELECT la_name, la_number from $table ");
+        return $linkedAccounts = $wpdb->get_results("SELECT la_name, la_number from $table ");
     }
 
 }
 
-function razorpay_route_woocommerce()
+function razorpayRouteWoocommerce()
 {
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_transfers();
+    $rzpRoute = new RZP_Route();
+    $rzpRoute->rzpTransfers();
 }
 
-function razorpay_transfers(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_transfer_details();
+function razorpayTransfers(){
+    $rzpRoute = new RZP_Route();
+    $rzpRoute->rzpTransferDetails();
 }
 
-function razorpay_route_reversals(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_transfer_reversals();
+function razorpayRouteReversals(){
+    $rzpRoute = new RZP_Route();
+    $rzpRoute->rzpTransferReversals();
 }
 
-function razorpay_route_payments(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_route_payments();
+function razorpayRoutePayments(){
+    $rzpRoute = new RZP_Route();
+    $rzpRoute->rzpRoutePayments();
 }
 
-function razorpay_settlement_transfers(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_settlement_transfers();
+function razorpaySettlementTransfers(){
+    $rzpRoute = new RZP_Route();
+    $rzpRoute->rzpSettlementTransfers();
 }
 
-function razorpay_payments_view(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_payment_details();
+function razorpayPaymentsView(){
+    $rzpRoute = new RZP_Route();
+    $rzpRoute->rzpPaymentDetails();
 }
 
-function razorpay_route_accounts(){
-    $rzp_route = new RZP_Route();
-    $rzp_route->rzp_route_accounts();
+function razorpayRouteAccounts(){
+    $rzpRoute = new RZP_Route();
+    $rzpRoute->rzpRouteAccounts();
 }
 
-function admin_enqueue_scripts_func()
+function adminEnqueueScriptsFunc()
 {
     //$name, $src, $dependencies, $version, $in_footer
-    wp_enqueue_script( 'dynamic-script', plugin_dir_url(dirname(__FILE__)) . 'js/woo_route.js', array( 'jquery' ), null, true );
+    wp_enqueue_script( 'route-script', plugin_dir_url(dirname(__FILE__)) . 'js/woo_route.js', array( 'jquery' ), null, true );
     wp_enqueue_script( 'bootstrap-script', plugin_dir_url(dirname(__FILE__)) . 'js/bootstrap.min.js', array( 'jquery' ), null, true );
 
     wp_register_style('bootstrap-css', plugin_dir_url(dirname(__FILE__))  . 'css/bootstrap.min.css',
@@ -1194,7 +1193,7 @@ function admin_enqueue_scripts_func()
 }
 
 // Add a custom tab in edit product page settings
-function transfer_data_tab( $tabs ) {
+function transferDataTab( $tabs ) {
     $tabs['route'] = array(
         'label' => __( 'Razorpay Route', 'my_theme_domain' ),
         'target' => 'rzp_transfer_product_data',
@@ -1204,7 +1203,7 @@ function transfer_data_tab( $tabs ) {
 }
 
 // Add the content to the custom tab in edit product page settings
-function product_transfer_data_fields()
+function productTransferDataFields()
 {
     global $woocommerce, $post;
     echo '<div class="rzp_transfer_custom_field panel woocommerce_options_panel" id="rzp_transfer_product_data">';
@@ -1266,8 +1265,8 @@ function product_transfer_data_fields()
 
 function woocommerce_process_transfer_meta_fields_save( $post_id ){
 
-    $wc_radio = isset( $_POST['rzp_transfer_from'] ) ? $_POST['rzp_transfer_from'] : '';
-    update_post_meta( $post_id, 'rzp_transfer_from', $wc_radio );
+    $wcRadio = isset( $_POST['rzp_transfer_from'] ) ? $_POST['rzp_transfer_from'] : '';
+    update_post_meta( $post_id, 'rzp_transfer_from', $wcRadio );
 
     if(isset($_POST['LA_number']) && !empty($_POST['LA_number'])) {
         update_post_meta( $post_id, 'LA_number', $_POST['LA_number'] );
@@ -1284,11 +1283,11 @@ function woocommerce_process_transfer_meta_fields_save( $post_id ){
 
 //fetch transfers of order/payment in order edit page
 
-function payment_transfer_meta_box() {
+function paymentTransferMetaBox() {
     add_meta_box(
         'rzp_trf_payment_meta',
         esc_html__( 'Razorpay transfers from Order / Payment', 'text-domain' ),
-        'render_payment_transfer_meta_box',
+        'renderPaymentTransferMetaBox',
         'shop_order', // shop_order is the post type of the admin order page
         'normal', // change to 'side' to move box to side column
         'low'
@@ -1297,7 +1296,7 @@ function payment_transfer_meta_box() {
     add_meta_box(
         'rzp_payment_meta',
         esc_html__( 'Razorpay Payment ID', 'text-domain' ),
-        'render_payment_meta_box',
+        'renderPaymentMetaBox',
         'shop_order', // shop_order is the post type of the admin order page
         'normal', // change to 'side' to move box to side column
         'low'
@@ -1305,19 +1304,19 @@ function payment_transfer_meta_box() {
 
 }
 
-function render_payment_transfer_meta_box() {
+function renderPaymentTransferMetaBox() {
     global $woocommerce, $post;
-    $order_id= $post->ID;
-    $rzp_payment_id = get_post_meta($order_id,'_transaction_id',true);
+    $orderId= $post->ID;
+    $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
 
     $rzp = new WC_Razorpay();
 
     $api = $rzp->getRazorpayApiInstance();
-    $url = "payments/".$rzp_payment_id."/transfers";
+    $url = "payments/".$rzpPaymentId."/transfers";
 
-    $transfers_data = $api->request->request("GET", $url);
+    $transfersData = $api->request->request("GET", $url);
 
-    if(!empty($transfers_data['items'])) {
+    if(!empty($transfersData['items'])) {
         echo '<table class="wp-list-table widefat fixed striped table-view-list wp_list_test_links">
         <thead>
             <tr>
@@ -1330,9 +1329,9 @@ function render_payment_transfer_meta_box() {
         </thead>
         <tbody>';
 
-        foreach ($transfers_data['items'] as $transfer) {
+        foreach ($transfersData['items'] as $transfer) {
             echo '<tr>
-                        <td><a href="?page=razorpay_transfers&id=' . $transfer['id'] . '">' . $transfer['id'] . '</a></td>
+                        <td><a href="?page=razorpayTransfers&id=' . $transfer['id'] . '">' . $transfer['id'] . '</a></td>
                         <td>' . $transfer['source'] . '</td>
                         <td>' . $transfer['recipient'] . '</td>
                         <td><span class="rzp-currency">₹ </span>' . (int)round($transfer['amount'] / 100) . '</td>
@@ -1348,47 +1347,47 @@ function render_payment_transfer_meta_box() {
 
 }
 
-function render_payment_meta_box(){
+function renderPaymentMetaBox(){
 
     global $woocommerce, $post;
-    $order_id= $post->ID;
-    $rzp_payment_id = get_post_meta($order_id,'_transaction_id',true);
+    $orderId= $post->ID;
+    $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
 
-    echo '<p>'.$rzp_payment_id.' <span><a href="?page=razorpay_payments_view&id='.$rzp_payment_id.'"><input type="button" class="button" value="View"></a></span></p>';
+    echo '<p>'.$rzpPaymentId.' <span><a href="?page=razorpayPaymentsView&id='.$rzpPaymentId.'"><input type="button" class="button" value="View"></a></span></p>';
 
 }
 
-function razorpay_direct_transfer()
+function razorpayDirectTransfer()
 {
-    $route_action = new RZP_Route_Action();
+    $routeAction = new RZP_Route_Action();
 
-    $route_action->direct_transfer();
+    $routeAction->directTransfer();
 }
 
-function razorpay_reverse_transfer()
+function razorpayReverseTransfer()
 {
-    $route_action = new RZP_Route_Action();
+    $routeAction = new RZP_Route_Action();
 
-    $route_action->reverse_transfer();
+    $routeAction->reverseTransfer();
 }
 
-function razorpay_settlement_update()
+function razorpaySettlementUpdate()
 {
-    $route_action = new RZP_Route_Action();
+    $routeAction = new RZP_Route_Action();
 
-    $route_action->update_transfer_settlement();
+    $routeAction->updateTransferSettlement();
 }
 
-function razorpay_payment_transfer()
+function razorpayPaymentTransfer()
 {
-    $route_action = new RZP_Route_Action();
+    $routeAction = new RZP_Route_Action();
 
-    $route_action->create_payment_transfer();
+    $routeAction->createPaymentTransfer();
 }
 
-function razorpay_add_linked_accounts()
+function razorpayAddLinkedAccounts()
 {
-    $route_action = new RZP_Route_Action();
+    $routeAction = new RZP_Route_Action();
 
-    $route_action->add_linked_account();
+    $routeAction->addLinkedAccount();
 }

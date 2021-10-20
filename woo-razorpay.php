@@ -19,14 +19,13 @@ require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 require_once __DIR__.'/includes/razorpay-route.php';
-require_once __DIR__ . '/includes/razorpay-route-actions.php';
+require_once __DIR__ .'/includes/razorpay-route-actions.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
-
 
 function woocommerce_razorpay_init()
 {
@@ -742,15 +741,15 @@ function woocommerce_razorpay_init()
 
             if($this->getSetting('route_enable') == 'yes')
             {
-                $razorpay_route = new RZP_Route_Action();
-                $order_transfer_arr = $razorpay_route->getOrderTransferData($orderId);
+                $razorpayRoute = new RZP_Route_Action();
+                $orderTransferArr = $razorpayRoute->getOrderTransferData($orderId);
 
-                if(isset($order_transfer_arr) && !empty($order_transfer_arr)){
+                if(isset($orderTransferArr) && !empty($orderTransferArr)){
 
-                    $transfer_data = array(
-                        'transfers' => $order_transfer_arr
+                    $transferData = array(
+                        'transfers' => $orderTransferArr
                     );
-                    $data = array_merge($data,$transfer_data);
+                    $data = array_merge($data,$transferData);
                 }
             }
 
@@ -1103,8 +1102,8 @@ EOT;
 
                 if($this->getSetting('route_enable') == 'yes')
                 {
-                    $razorpay_route = new RZP_Route_Action();
-                    $razorpay_route->transferFromPayment($orderId, $razorpayPaymentId); // creates transfers from payment
+                    $razorpayRoute = new RZP_Route_Action();
+                    $razorpayRoute->transferFromPayment($orderId, $razorpayPaymentId); // creates transfers from payment
                 }
 
                 if($virtualAccountId != null)
