@@ -36,15 +36,28 @@ class Razorpay_COD
         // Adding custom fields meta data for each new column (example)
         add_action( 'manage_shop_order_posts_custom_column' , array($this, 'custom_rzp_orders_list_column_content'), 20, 2 );
 
-        add_action('woocommerce_api_plink_' . $this->razopray->id, array($this, 'check_razorpay_plink_response'));
+        add_action('woocommerce_api_plink_' . $this->razopray->id, array($this, 'checkRazorpayPlinkResponse'));
 
-        add_action('razorpay_delivery_date_set', array($this,'enroll_plink'), 10, 1);
+        add_action('razorpay_delivery_date_set', array($this,'enrollPlink'), 10, 2);
 
-        add_filter( 'woocommerce_endpoint_order-received_title', array($this, 'plink_thank_you_title'), 10, 1 );
+        add_filter( 'woocommerce_endpoint_order-received_title', array($this, 'plinkThankYouTitle'), 10, 1 );
 
-        add_filter( 'woocommerce_thankyou_order_received_text', array( $this, 'plink_order_received_text' ), 10, 2 );
+        add_filter( 'woocommerce_thankyou_order_received_text', array( $this, 'plinkOrderReceivedText' ), 10, 2 );
+
+        add_action( 'update_post_meta',  array($this, 'plinkOrderMetaUpdate'), 10, 4);
+
+        add_action( 'sendOneHourReminder', array($this, 'send1HourReminder'), 10, 0);
 
     }
+
+    public function plinkOrderMetaUpdate($metaId, $orderId, $metaKey, $metaValue)
+    {
+        if($metaKey === '_rzp_delivery_date_slug')
+        {
+            $this->enrollPlink($orderId, $metaValue);
+        }
+    }
+
 
     public function add_rzp_meta_delivery_date()
     {
@@ -72,7 +85,8 @@ class Razorpay_COD
 
     public function save_rzp_delivery_date_field( $post_id ) 
     {
-        if($_POST[ 'delivery_date' ] != 'Delivery Date')
+        if(isset($_POST[ 'delivery_date' ]) and
+            ($_POST[ 'delivery_date' ] != 'Delivery Date'))
         {
             global $woocommerce;
             $order = wc_get_order($post_id);
@@ -119,14 +133,12 @@ class Razorpay_COD
             if(strtotime($rzp_delivery_date_meta) != strtotime($new_delivery_date))
             {
                 // --- Its safe for us to save the data ! --- //
-
                 // Sanitize user input  and update the meta field in the database.
                 update_post_meta( $post_id, '_rzp_delivery_date_slug', $new_delivery_date );
 
                 $order->add_order_note("Delivery Date is updated: $new_delivery_date<br/>");
 
-                do_action( 'razorpay_delivery_date_set', $post_id );
-
+                do_action( 'razorpay_delivery_date_set', $post_id , $new_delivery_date);
             }
         }
     }  
@@ -213,7 +225,7 @@ class Razorpay_COD
     }
 
     //Plink code
-    function plink_thank_you_title($thank_you_title)
+    function plinkThankYouTitle($thankYouTitle)
     {
         if(isset($_GET['plink']) and
             ($_GET['plink'] === 'thanks'))
@@ -223,7 +235,7 @@ class Razorpay_COD
     }
 
     //Plink code
-    public function plink_order_received_text($text, $order)
+    public function plinkOrderReceivedText($text, $order)
     {
         global $wp;
 
@@ -253,20 +265,27 @@ class Razorpay_COD
     }
 
     //Plink code
-    function enroll_plink($order_id)
+    function enrollPlink($orderId, $deliveryDate)
     {
 
-        if ( ! $order_id )
+        if (! $orderId or
+            (empty($deliveryDate) === true))
             return;
 
         // Getting an instance of the order object
-        $order = wc_get_order( $order_id );
+        $order = wc_get_order( $orderId );
 
-        file_put_contents("maas1.log", print_r($order,1));
+        $pLinkPaid = $order->get_meta('_rzp_payment_Link_paid',true);
 
-        if($order->get_status() === 'processing')
+        if((isset($pLinkPaid) === true) and $pLinkPaid === '1')
         {
-            $order->update_status( 'pending' );
+            return;
+        }
+
+        if($order->get_payment_method() !== 'cod' or
+            $order->get_status() !== 'processing')
+        {
+            return;
         }
 
         $api = $this->razopray->getRazorpayApiInstance();
@@ -277,6 +296,14 @@ class Razorpay_COD
 
         $callbackUrl = $this->getPlinkRedirectUrl();
 
+        $timezoneString = wp_timezone_string();
+
+        $siteTimezone = new \DateTimeZone($timezoneString);
+        $siteDate = new \DateTime($deliveryDate, $siteTimezone);
+        $expire_by = $siteDate->getTimestamp();
+
+        $pLinkOrderRefId = $this->getPlinkRefFromOrderId($orderId);
+
         //create the plink
         try
         {
@@ -284,22 +311,22 @@ class Razorpay_COD
 
             if(empty($pLink) === false)
             {
+
                 $link = $api->paymentLink->fetch($pLink)
                                          ->edit([
-                                            "expire_by" => strtotime($order->get_meta('_rzp_delivery_date_slug',true)),
+                                            "expire_by" => $expire_by,
                                             "notes" => [
-                                                "expire_updated" => strtotime($order->get_meta('_rzp_delivery_date_slug',true)),
-                                                "woo_order_id" => $order_id
+                                                "expire_updated" => $expire_by,
+                                                "woo_order_id" => $pLinkOrderRefId
                                             ]
                                          ]);
             }
             else
             {
-
                 $link = $api->paymentLink->create([
                     'amount' => (int) round($order->get_total() * 100),
-                    'description' => 'Pay for ' . get_bloginfo('name') . ' Order #'.$order_id,
-                    'reference_id' => "$order_id",
+                    'description' => 'Pay for ' . get_bloginfo('name') . ' Order #'.$orderId,
+                    'reference_id' => "$pLinkOrderRefId",
                     'currency' => $this->razopray->getOrderCurrency($order),
                     'customer' => [
                         'email'     => $billingEmail,
@@ -310,12 +337,13 @@ class Razorpay_COD
                         "email" =>true
                     ],
                     "reminder_enable"   => true,
-                    "expire_by" => strtotime($order->get_meta('_rzp_delivery_date_slug',true)),
+                    "expire_by" => $expire_by,
                     "callback_url" => $callbackUrl,
                     "callback_method" => "get"
                 ]); // create payment link
 
-                update_post_meta($order->get_id(),'_rzp_payment_Link', $link->id);
+                update_post_meta($order->get_id(), '_rzp_payment_Link', $link->id);
+                update_post_meta($order->get_id(), '_rzp_payment_Link_paid', '0' );
             }
         }
         catch(Exception $e)
@@ -324,13 +352,43 @@ class Razorpay_COD
         }
     }
 
-    //Plink code
-    function check_razorpay_plink_response()
+    public function getOrderIdFromPlinkRef($refId)
     {
-        $order = new WC_Order(sanitize_text_field($_GET['razorpay_payment_link_reference_id']));
+        $plinkPrefix = sanitize_text_field($this->razopray->getSetting('payment_link_prefix'));
+
+        return $orderId = substr($refId, (strlen($plinkPrefix) + 1));
+    }
+
+    public function getPlinkRefFromOrderId($orderId)
+    {
+        return sanitize_text_field($this->razopray->getSetting('payment_link_prefix')) . '#' . $orderId;
+    }
+
+    //Plink code
+    function checkRazorpayPlinkResponse()
+    {
+        $orderId = $this->getOrderIdFromPlinkRef($_GET['razorpay_payment_link_reference_id']);
+
+        if(empty($orderId) === true)
+        {
+            return;
+        }
+
+        $order = new WC_Order(sanitize_text_field($orderId));
 
         if (empty($order) === true)
+        {
             return;
+        }
+
+        //$order->get_id();
+        $pLink = $order->get_meta('_rzp_payment_Link',true);
+        $pLinkPaid = $order->get_meta('_rzp_payment_Link_paid',true);
+
+        if($order->get_status() === 'processing' and (isset($pLinkPaid) === true) and $pLinkPaid === '0')
+        {
+            $order->update_status('pending');
+        }
 
         //
         // If the order has already been paid for
@@ -338,11 +396,13 @@ class Razorpay_COD
         //
         if ($order->needs_payment() === false)
         {
-            $pLink = $order->get_meta('_rzp_payment_Link',true);
-
-            if(empty($pLink) === false)
+            if(empty($pLink) === false and $pLinkPaid === '1')
             {
                 $this->redirectUser($order,'&plink=thanks');
+            }
+            elseif($pLinkPaid === '0')
+            {
+                $this->updatePlinkOrderPayment($order);
             }
             else
             {
@@ -350,7 +410,14 @@ class Razorpay_COD
             }
         }
 
+        if(empty($pLink) === false and $pLinkPaid === '0')
+        {
+            $this->updatePlinkOrderPayment($order);
+        }
+    }
 
+    public function updatePlinkOrderPayment($order)
+    {
         $attributes = [
             'razorpay_payment_id' => $_GET['razorpay_payment_id'],
             'razorpay_payment_link_id' => sanitize_text_field($order->get_meta('_rzp_payment_Link',true)),
@@ -367,6 +434,7 @@ class Razorpay_COD
         {
             $api = $this->razopray->getRazorpayApiInstance();
 
+
             $api->utility->verifyPaymentSignature($attributes);
 
             $success = true;
@@ -380,7 +448,81 @@ class Razorpay_COD
 
         $this->razopray->updateOrder($order, $success, $error, $razorpayPaymentId, null);
 
-        $this->redirectUser($order,'&plink=thanks');
+        if($order->get_status() === 'completed')
+        {
+            update_post_meta($order->get_id(), '_rzp_payment_Link_paid', '1' );
+
+            $paymentMethodTitle = $order->get_payment_method_title() . ' - Razorpay Payment Links';
+
+            $order->set_payment_method_title($paymentMethodTitle);
+
+            $order->update_status( 'processing' );
+
+            $this->redirectUser($order,'&plink=thanks');
+        }
+        else
+        {
+            $this->redirectUser($order);
+        }
+
+    }
+
+    public function send1HourReminder()
+    {
+        global $wpdb;
+
+        $post_type = 'shop_order';
+        $post_status = "wc-processing";
+
+        $postIds = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts AS P WHERE post_type=%s AND post_status = %s"
+            , $post_type, $post_status ) );
+
+        if(count($postIds) > 0)
+        {
+            foreach ($postIds as $orderId)
+            {
+                $order = new WC_Order($orderId);
+
+                if($order->get_payment_method() !== 'cod')
+                {
+                    if((empty($order->get_meta('_rzp_delivery_date_slug',true)) === false) and
+                        (empty($order->get_meta('_rzp_payment_Link',true)) === false) and
+                        (substr($order->get_meta('_rzp_payment_Link',true), 0, 6) === 'plink_'))
+                    {
+                        $timezoneString = wp_timezone_string();
+
+                        $siteTimezone = new \DateTimeZone($timezoneString);
+
+                        $orderDeleiveryDate = new \DateTime($order->get_meta('_rzp_delivery_date_slug',true), $siteTimezone);
+                        $orderDeleiveryTime = $orderDeleiveryDate->getTimestamp();
+
+                        $siteCurrentDate = new \DateTime(current_datetime()->format('Y-m-d H:i:s'), $siteTimezone);
+                        $siteCurrentTime = $siteCurrentDate->getTimestamp();
+
+                        $timeGap = ($orderDeleiveryTime - $siteCurrentTime);
+
+                        if(($timeGap > 3595) and ($timeGap < 4500))
+                        {
+                            echo "send reminder";
+                            try
+                            {
+                                $api = $this->razopray->getRazorpayApiInstance();
+
+                                $orderPaymentLink = sanitize_text_field($order->get_meta('_rzp_payment_Link',true));
+
+                                $api->paymentLink->fetch($orderPaymentLink)->notifyBy('sms');
+
+                                $api->paymentLink->fetch($orderPaymentLink)->notifyBy('email');
+                            }
+                            catch(Exception $e)
+                            {
+                                return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     protected function redirectUser($order, $extraPrams = null)
