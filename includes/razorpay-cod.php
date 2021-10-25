@@ -46,15 +46,24 @@ class Razorpay_COD
 
         add_action( 'update_post_meta',  array($this, 'plinkOrderMetaUpdate'), 10, 4);
 
+        add_action( 'update_razorpay_delivery_date',  array($this, 'plinkOrderUpdate'), 10, 3);
+
         add_action( 'sendOneHourReminder', array($this, 'send1HourReminder'), 10, 0);
+
+        add_action('admin_post_nopriv_rzp_plink_reminder', array($this, 'send1HourReminder'), 10);
+
+        add_action('woocommerce_api_plink_send_reminder_' . $this->razopray->id, array($this, 'send1HourReminder'));
 
     }
 
     public function plinkOrderMetaUpdate($metaId, $orderId, $metaKey, $metaValue)
     {
-        if($metaKey === '_rzp_delivery_date_slug')
+        if($this->isCODModeEnabled())
         {
-            $this->enrollPlink($orderId, $metaValue);
+            if($metaKey === '_rzp_delivery_date_slug')
+            {
+                $this->enrollPlink($orderId, $metaValue);
+            }
         }
     }
 
@@ -264,6 +273,15 @@ class Razorpay_COD
         return add_query_arg( 'wc-api', 'plink_' . $this->razopray->id, trailingslashit( get_home_url() ) );
     }
 
+    /**
+     * Returns cron URL to send reminder for Plink
+     * @return string redirect URL
+     */
+    private function getPlinkReminderUrl()
+    {
+        return add_query_arg( 'wc-api', 'plink_send_reminder_' . $this->razopray->id, trailingslashit( get_home_url() ) );
+    }
+
     //Plink code
     function enrollPlink($orderId, $deliveryDate)
     {
@@ -471,6 +489,11 @@ class Razorpay_COD
     {
         global $wpdb;
 
+        if(!$this->isCODModeEnabled())
+        {
+            return;
+        }
+
         $post_type = 'shop_order';
         $post_status = "wc-processing";
 
@@ -483,7 +506,7 @@ class Razorpay_COD
             {
                 $order = new WC_Order($orderId);
 
-                if($order->get_payment_method() !== 'cod')
+                if($order->get_payment_method() === 'cod')
                 {
                     if((empty($order->get_meta('_rzp_delivery_date_slug',true)) === false) and
                         (empty($order->get_meta('_rzp_payment_Link',true)) === false) and
@@ -531,6 +554,23 @@ class Razorpay_COD
 
         wp_redirect($redirectUrl . $extraPrams);
         exit;
+    }
+
+    public function isCODModeEnabled()
+    {
+       return (
+           empty(get_option('woocommerce_razorpay_settings')['enable_cod_pay_link']) === false
+           && 'yes' == get_option('woocommerce_razorpay_settings')['enable_cod_pay_link']
+         );
+    }
+
+    public function plinkOrderUpdate($orderId, $metaValue)
+    {
+        if($this->isCODModeEnabled())
+        {
+            update_post_meta($orderId, '_rzp_delivery_date_slug', $metaValue);
+            $this->enrollPlink($orderId, $metaValue);
+        }
     }
 
 }

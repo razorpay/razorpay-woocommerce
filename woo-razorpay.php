@@ -190,6 +190,8 @@ function woocommerce_razorpay_init()
         {
             $webhookUrl = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
+            $reminderUrl = esc_url(admin_url('admin-post.php')) . '?action=rzp_plink_reminder';
+
             $defaultFormFields = array(
                 'enabled' => array(
                     'title' => __('Enable/Disable', $this->id),
@@ -285,7 +287,7 @@ function woocommerce_razorpay_init()
                 'payment_link_reminder' => array(
                     'title'       => __('Payment Link Reminders', $this->id),
                     'type'        => 'select',
-                    'description' =>  "",
+                    'description' =>  "<span><br/>$reminderUrl</span><br/><span>Instructions and guide to Setup cron <br/></span>",
                     'class'       => 'wc-enhanced-select',
                     'default'     => '',
                     'options'     => array(
