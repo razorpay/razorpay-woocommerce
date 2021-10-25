@@ -512,6 +512,14 @@ class Razorpay_COD
                         (empty($order->get_meta('_rzp_payment_Link',true)) === false) and
                         (substr($order->get_meta('_rzp_payment_Link',true), 0, 6) === 'plink_'))
                     {
+                        $pLinkPaid = $order->get_meta('_rzp_payment_Link_paid',true);
+
+                        if((isset($pLinkPaid) === true) and $pLinkPaid === '1')
+                        {
+                            echo "Order (:$orderId) : already paid";
+                            continue;
+                        }
+
                         $timezoneString = wp_timezone_string();
 
                         $siteTimezone = new \DateTimeZone($timezoneString);
