@@ -89,7 +89,7 @@ class Razorpay_COD
                 <p>
                 @
                 <input type="number" class="hour" placeholder="'.$convertRzpDeliveryDate['hour'].'" name="delivery_date_hour" min="0" max="23" style="width: 4.5em;" step="1" value="'.$convertRzpDeliveryDate['hour'].'" pattern="([01]?[0-9]{1}|2[0-3]{1})"> :
-                <input type="number" class="minute" style="width: 4.5em;" placeholder="'.$convertRzpDeliveryDate['minute'].'" name="delivery_date_minute" min="0" max="59" step="1" value="'.$convertRzpDeliveryDate['minute'].'" pattern="([01]?[0-9]{1}|2[0-3]{1})"> ';
+                <input type="number" class="minute" style="width: 4.5em;" placeholder="'.$convertRzpDeliveryDate['minute'].'" name="delivery_date_minute" min="0" max="59" step="15" value="'.$convertRzpDeliveryDate['minute'].'" pattern="([01]?[0-9]{1}|2[0-3]{1})"> ';
     }
 
     public function save_rzp_delivery_date_field( $post_id ) 
