@@ -258,10 +258,62 @@ class RZP_Route_Action
 
             $this->api->request->request("POST", $url, $data);
 
-            $this->Wc_Razorpay_Loader->addRouteAnalyticsScript();
+            $this->addRouteAnalyticsScript();
 
         }
 
+    }
+
+    function addRouteAnalyticsScript() {
+
+        $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
+
+        $data = array(
+            'key'          => $this->Wc_Razorpay_Loader->getSetting('key_id'),
+            'name'         => get_bloginfo('name'),
+            '_'            => array(
+                'x-integration'                   => 'Woocommerce',
+                'x-integration-module'            => 'Route',
+                'x-integration-version'           => $mod_version,
+                'x-integration-parent-version'    => WOOCOMMERCE_VERSION,
+            ),
+        );
+
+        $this->Wc_Razorpay_Loader->enqueueCheckoutScripts('routeAnalyticsForm');
+
+        $url = Api::getFullUrl("checkout/embedded");
+
+        $formFields = "";
+        foreach ($data as $fieldKey => $val) {
+            if(in_array($fieldKey, array('prefill', '_')))
+            {
+                foreach ($data[$fieldKey] as $field => $fieldVal) {
+                    $formFields .= "<input type='hidden' name='$fieldKey" ."[$field]"."' value='$fieldVal'> \n";
+                }
+            }
+        }
+
+        return '<form method="POST" action="'.$url.'" id="routeAnalyticsForm">
+                    <input type="hidden" name="key_id" value="'.$data['key'].'">
+                    <input type="hidden" name="name" value="'.$data['name'].'">
+                    '. $formFields .'
+                </form>';
+
+    }
+
+    public static function addRouteModuleFormFields($defaultFormFields){
+        $routeEnableFields = array(
+            'route_enable' => array(
+                'title' => __('Route Module'),
+                'type' => 'checkbox',
+                'label' => __('Enable route module?'),
+                'description' =>  "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>",
+                'default' => 'no'
+            )
+        );
+        $defaultFormFields = array_merge($defaultFormFields, $routeEnableFields);
+
+        return $defaultFormFields;
     }
 
 }

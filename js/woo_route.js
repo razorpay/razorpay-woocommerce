@@ -61,19 +61,19 @@ $(document).on('keyup', "#payment_trf_amount", function () {
 
 $(function(){
     $('input[name="rzp_transfer_from"]').click(function(){
-        var $radio = $('input[name="rzp_transfer_from"]');
+        var $routeTransferRadio = $(this);
 
         // if this was previously checked
-        if ($radio.data('waschecked') == true)
+        if ($routeTransferRadio.data('waschecked') == true)
         {
-            $radio.prop('checked', false);
-            $radio.data('waschecked', false);
+            $routeTransferRadio.prop('checked', false);
+            $routeTransferRadio.data('waschecked', false);
         }
         else
-            $radio.data('waschecked', true);
+            $routeTransferRadio.data('waschecked', true);
 
         // remove was checked from other radios
-        $radio.siblings('input[name="rzp_transfer_from"]').data('waschecked', false);
+        $routeTransferRadio.siblings('input[name="rzp_transfer_from"]').data('waschecked', false);
     });
 });
 

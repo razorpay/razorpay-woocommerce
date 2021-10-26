@@ -26,6 +26,7 @@ use Razorpay\Api\Errors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
+add_filter('route_module_setting_fields', array( "RZP_Route_Action", "addRouteModuleFormFields" ));
 
 function woocommerce_razorpay_init()
 {
@@ -255,14 +256,10 @@ function woocommerce_razorpay_init()
                     'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', $this->id),
                     'default' => ''
                 ),
-                'route_enable' => array(
-                    'title' => __('Route Module', $this->id),
-                    'type' => 'checkbox',
-                    'label' => __('Enable route module?', $this->id),
-                    'description' =>  "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>",
-                    'default' => 'no'
-                ),
+
             );
+            /* adds route enable form fields to the defaultFormFields  */
+            $defaultFormFields = apply_filters( 'route_module_setting_fields', $defaultFormFields );
 
             foreach ($defaultFormFields as $key => $value)
             {
@@ -756,8 +753,7 @@ function woocommerce_razorpay_init()
             return $data;
         }
 
-
-        private function enqueueCheckoutScripts($data)
+        public function enqueueCheckoutScripts($data)
         {
             if($data === 'checkoutForm' || $data === 'routeAnalyticsForm')
             {
@@ -1197,43 +1193,6 @@ EOT;
                     'integration_parent_version' => WOOCOMMERCE_VERSION,
                 );
             }
-        }
-
-        function addRouteAnalyticsScript() {
-
-            $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
-
-            $data = array(
-                'key'          => $this->getSetting('key_id'),
-                'name'         => get_bloginfo('name'),
-                '_'            => array(
-                    'x-integration'                   => 'Woocommerce',
-                    'x-integration-module'            => 'Route',
-                    'x-integration-version'           => $mod_version,
-                    'x-integration-parent-version'    => WOOCOMMERCE_VERSION,
-                ),
-            );
-
-            $this->enqueueCheckoutScripts('routeAnalyticsForm');
-
-            $url = Api::getFullUrl("checkout/embedded");
-
-            $formFields = "";
-            foreach ($data as $fieldKey => $val) {
-                if(in_array($fieldKey, array('prefill', '_')))
-                {
-                    foreach ($data[$fieldKey] as $field => $fieldVal) {
-                        $formFields .= "<input type='hidden' name='$fieldKey" ."[$field]"."' value='$fieldVal'> \n";
-                    }
-                }
-            }
-
-            return '<form method="POST" action="'.$url.'" id="routeAnalyticsForm">
-                    <input type="hidden" name="key_id" value="'.$data['key'].'">
-                    <input type="hidden" name="name" value="'.$data['name'].'">
-                    '. $formFields .'
-                </form>';
-
         }
 
     }

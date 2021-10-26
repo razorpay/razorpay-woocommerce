@@ -190,3 +190,4 @@ span.trf-status{ margin-right: 10px; }
 .rzp_transfer_from_field li{ float: left}
 .rzp_transfer_from_field li label{ width: 330px;}
 .rzp_transfer_from_field .woocommerce-help-tip{ right: 146px;}
+.post-type-shop_order .wp-list-table .check-column { width: 15px !important; }
