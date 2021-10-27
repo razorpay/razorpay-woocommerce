@@ -41,6 +41,10 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= 2.8.0 =
+* Buf fix in callback handler.
+* Tested up to Woocommerce 5.8.0
+
 = 2.7.2 =
 * Buf fix in webhook.
 * Tested up to Woocommerce 5.5.1
