@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.7.2
-Stable tag: 2.8.0
+Stable tag: 2.7.3
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -41,7 +41,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
-= 2.8.0 =
+= 2.7.3 =
 * Bug fix in callback handler.
 * Tested up to Woocommerce 5.8.0
 
