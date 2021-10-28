@@ -10,7 +10,6 @@ add_action('admin_post_rzp_direct_transfer', 'razorpayDirectTransfer');
 add_action('admin_post_rzp_reverse_transfer', 'razorpayReverseTransfer');
 add_action('admin_post_rzp_settlement_change', 'razorpaySettlementUpdate');
 add_action('admin_post_rzp_payment_transfer', 'razorpayPaymentTransfer');
-add_action('admin_post_rzp_add_linked_accounts', 'razorpayAddLinkedAccounts');
 
 add_action( 'check_route_enable_status', 'razorpayRouteModule',0 );
 do_action('check_route_enable_status');
@@ -53,9 +52,6 @@ function rzpAddPluginPage()
 
     add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
         'Razorpay Route woocommerce', 'administrator','razorpayPaymentsView', 'razorpayPaymentsView' );
-
-    add_submenu_page( esc_attr__( '', 'textdomain' ), esc_html__( 'Razorpay Route woocommerce', 'textdomain' ),
-        'Razorpay Route woocommerce', 'administrator','razorpayRouteAccounts', 'razorpayRouteAccounts' );
 
 }
 
@@ -100,12 +96,6 @@ class RZP_Route extends WP_List_Table
             </div>';
         $hide = "jQuery('.overlay').hide()";
 
-        $linkedAccounts = $this->fetchLinkedAccounts();
-        $accountsDropDown = '';
-        foreach ($linkedAccounts as $account){
-            $accountsDropDown .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
-        }
-
         $directTransferModal = '<div class="overlay">
             <div class="modal" id="transferModal" >
                 <div class="modal-dialog">
@@ -127,8 +117,7 @@ class RZP_Route extends WP_List_Table
                             </div></div>
                             <div class="form-group"><label>Linked Account Number</label>
                             <div class="InputField ">
-                                <select name="drct_trf_account"  class="form-control">
-                                        <option value="">Select</option>'. $accountsDropDown .'</select>
+                                <input type="text" name="drct_trf_account" class="form-control" placeholder="Linked account number">
                             </div>
                             </div>
                             <div>
@@ -219,6 +208,7 @@ class RZP_Route extends WP_List_Table
         $transferPage = $this->getItems($perPage);
         $count = count($transferPage);
 
+        $transferPages = array();
         for ($i = 0; $i < $count; $i++) {
             if ($i >= $offset && $i < $offset + $perPage) {
                 $transferPages[] = $transferPage[$i];
@@ -268,7 +258,7 @@ class RZP_Route extends WP_List_Table
                     'recipient' => $transfer['recipient'],
                     'amount' => '<span class="rzp-currency">₹</span> ' . (int)round($transfer['amount'] / 100),
                     'created_at' => date("d F Y h:i A", strtotime('+5 hour +30 minutes', $transfer['created_at'])),
-                    'transfer_status' => ucwords($transfer['status']),
+                    'transfer_status' => (empty($transfer['status'])) ? '' : ucwords($transfer['status']),
                     'settlement_status' => (empty($transfer['settlement_status'])) ? 'Not Applicable' : ucwords($transfer['settlement_status']),
                     'settlement_id' => (!empty($transfer['recipient_settlement_id'])) ? '<a href="?page=razorpaySettlementTransfers&id=' . $transfer['recipient_settlement_id'] . '">' . $transfer['recipient_settlement_id'] . '</a>' : '--',
 
@@ -335,25 +325,29 @@ class RZP_Route extends WP_List_Table
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Transfer Status</div>
-                            <div class="col-sm-8 panel-value"><span class="text-info">'. ucwords($transferDetail['status']) .'</span></div>
+                            <div class="col-sm-8 panel-value"><span class="text-info">';
+            if(!isset($transferDetail['status'])){ echo ''; }else{ echo ucwords($transferDetail['status']); }
+            echo '</span>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-sm-4 panel-label">Settlement Status</div>
                             <div class="col-sm-8 panel-value">';
-
-            if ($transferDetail['settlement_status'] == 'on_hold' && $transferDetail['on_hold_until'] != '') {
-                echo '<span class="text-warning trf-status">Scheduled for ' . date("d M Y", $transferDetail['on_hold_until']) . '</span>';
-                echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
-            } elseif ($transferDetail['settlement_status'] == 'on_hold' && $transferDetail['on_hold_until'] == '') {
-                echo '<span class="text-danger trf-status">On Hold</span>';
-                echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
-            } elseif ($transferDetail['settlement_status'] == 'pending') {
-                echo '<span class="text-success trf-status">Pending</span>';
-                echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
-            } elseif ($transferDetail['settlement_status'] == ''){
-                echo '<span>Not Applicable</span>';
-            } else {
-                echo '<span>' . ucwords($transferDetail['settlement_status']) . '</span>';
+            if(isset($transferDetail['settlement_status'])) {
+                if ($transferDetail['settlement_status'] == 'on_hold' && $transferDetail['on_hold_until'] != '') {
+                    echo '<span class="text-warning trf-status">Scheduled for ' . date("d M Y", $transferDetail['on_hold_until']) . '</span>';
+                    echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
+                } elseif ($transferDetail['settlement_status'] == 'on_hold' && $transferDetail['on_hold_until'] == '') {
+                    echo '<span class="text-danger trf-status">On Hold</span>';
+                    echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
+                } elseif ($transferDetail['settlement_status'] == 'pending') {
+                    echo '<span class="text-success trf-status">Pending</span>';
+                    echo '<span><a href="javascript:void(0);" onclick="' . $showSetl . '" >Change</a></span>';
+                } elseif ($transferDetail['settlement_status'] == '') {
+                    echo '<span>Not Applicable</span>';
+                } else {
+                    echo '<span>' . ucwords($transferDetail['settlement_status']) . '</span>';
+                }
             }
 
             echo '</div>
@@ -502,8 +496,6 @@ class RZP_Route extends WP_List_Table
                 href="?page=razorpayRoutePayments">Payments</a>
             <a <?php if ($_GET['page'] == "razorpayRouteReversals") { ?> class="active" <?php } ?>
                 href="?page=razorpayRouteReversals">Reversals</a>
-            <a <?php if ($_GET['page'] == "razorpayRouteAccounts") { ?> class="active" <?php } ?>
-                href="?page=razorpayRouteAccounts">Accounts</a>
 
         </header>
         <?php
@@ -540,6 +532,7 @@ class RZP_Route extends WP_List_Table
 
         $reversalPage = $this->getReversalItems($perPage);
         $count = count($reversalPage);
+        $reversalPages = array();
 
         for ($i = 0; $i < $count; $i++) {
             if ($i >= $offset && $i < $offset + $perPage) {
@@ -645,6 +638,7 @@ class RZP_Route extends WP_List_Table
 
         $paymentPage = $this->getPaymentItems($perPage, $accId);
         $count = count($paymentPage);
+        $paymentPages = array();
 
         for ($i = 0; $i < $count; $i++) {
             if ($i >= $offset && $i < $offset + $perPage) {
@@ -891,12 +885,6 @@ class RZP_Route extends WP_List_Table
 
             </div>';
 
-            $linkedAccounts = $this->fetchLinkedAccounts();
-            $accountsDropDown = '';
-            foreach ($linkedAccounts as $account){
-                $accountsDropDown .= '<option value="'.$account->la_number.'">'.$account->la_name.' - '.$account->la_number.'</option>';
-            }
-
             $paymentTransferModal = '<div class="overlay">
                 <div class="modal" id="paymentTransferModal" >
                     <div class="modal-dialog">
@@ -920,8 +908,7 @@ class RZP_Route extends WP_List_Table
                                 </div>
                                 <div class="form-group"><label>Linked Account Number</label>
                                 <div class="InputField ">
-                                    <select name="pay_trf_account" id="pay_trf_account" class="form-control">
-                                        <option value="">Select</option>'. $accountsDropDown .'</select>
+                                    <input type="text" name="pay_trf_account" class="form-control" placeholder="Linked account number">
                                 </div>
                                 </div>
                                 <div class="form-group"><label>Settlement schedule</label>
@@ -998,146 +985,6 @@ class RZP_Route extends WP_List_Table
         echo  $directTransferBtn;
     }
 
-    function  rzpRouteAccounts(){
-        echo '<div>
-            <div class="wrap route-container">';
-
-        $this->routeHeader();
-
-        $show = "jQuery('.overlay').show()";
-        $hide = "jQuery('.overlay').hide()";
-
-        echo '<button class="btn btn-primary float-right" onclick="' . $show . '">Add Account</button>';
-
-        $this->prepareAccountItems();
-
-        echo '<form method="get">
-            <input type="hidden" name="page" value="razorpay_route_accounts">';
-        $this->display();
-
-        echo '</form></div>
-            </div>';
-
-        $addAccountModal = '<div class="overlay">
-            <div class="modal" id="transferModal" >
-                <div class="modal-dialog">
-                    <!-- Modal content-->
-                    <div class="modal-content">
-                        <div class="modal-header">
-                        <h4 class="modal-title">Add Linked Accounts</h4>
-                            <button type="button" class="close" data-dismiss="modal" onclick="' . $hide . '">&times;</button>
-
-                        </div>
-                        <div class="modal-body">
-                        <form method="POST" action="' . esc_url(admin_url('admin-post.php')) . '">
-                            <div class="form-group">
-                                <label class="">Linked Account Name</label>
-                                <div class="InputField ">
-                                <input name="rzp_account_name" type="text" autocomplete="off" class="form-control" placeholder="Enter Name">
-                                </div>
-                            </div>
-                            <div class="form-group"><label>Linked Account Number</label>
-                                <div class="InputField ">
-                                    <input type="text" name="rzp_account_number" class="form-control" placeholder="Linked account number">
-                                </div>
-                            </div>
-                            <div>
-                            <button type="submit" onclick="' . $hide . '" name="add_accounts" class="btn btn-primary">Create</button>
-                            <input type="hidden" name="action" value="rzp_add_linked_accounts">
-                            </div>
-                            </form>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-            </div>
-        <script type="text/javascript">
-            jQuery("' . '.overlay' . '").on("' . 'click' . '", function(e) {
-              if (e.target !== this) {
-                return;
-              }
-              jQuery("' . '.overlay' . '").hide();
-            });
-        </script>';
-        echo $addAccountModal;
-    }
-
-    function prepareAccountItems(){
-        $perPage = 20;
-        $currentPage = $this->get_pagenum();
-
-        if (1 < $currentPage) {
-            $offset = $perPage * ($currentPage - 1);
-        } else {
-            $offset = 0;
-        }
-
-        $accountsPage = $this->getAccountItems($perPage, $offset);
-        $count = count($this->fetchLinkedAccounts());
-
-        $columns = $this->getAccountsColumns();
-        $hidden = array();
-        $sortable = array();
-        $this->_column_headers = array($columns, $hidden, $sortable);
-
-        $this->items = $accountsPage;
-
-        // Set the pagination
-        $this->set_pagination_args(array(
-            'total_items' => $count,
-            'per_page' => $perPage,
-            'total_pages' => ceil($count / $perPage)
-        ));
-    }
-
-    function getAccountItems($limit,$offset)
-    {
-        $items = array();
-
-        try {
-            global $wpdb;
-            $table = $wpdb->prefix . "razorpay_accounts";
-            $linkedAccounts = $wpdb->get_results("SELECT la_name, la_number from $table LIMIT $offset, $limit");
-
-        } catch (Exception $e) {
-            $message = $e->getMessage();
-
-            wp_die('<div class="error notice">
-                    <p>RAZORPAY ERROR: Accounts fetch failed with the following message: ' . $message . '</p>
-                 </div>');
-        }
-        if ($linkedAccounts) {
-            foreach ($linkedAccounts as $account) {
-
-                $items[] = array(
-
-                    'la_name' => ucwords($account->la_name),
-                    'la_number' => $account->la_number,
-
-                );
-            }
-        }
-        return $items;
-    }
-
-    function getAccountsColumns()
-    {
-
-        $columns = array(
-            'la_name' => __('Linked Account Name'),
-            'la_number' => __('Linked Account Number'),
-        );
-
-        return $columns;
-    }
-
-    function  fetchLinkedAccounts(){
-        global $wpdb;
-        $table = $wpdb->prefix . "razorpay_accounts";
-        return $linkedAccounts = $wpdb->get_results("SELECT la_name, la_number from $table ");
-    }
-
 }
 
 function razorpayRouteWoocommerce()
@@ -1169,11 +1016,6 @@ function razorpaySettlementTransfers(){
 function razorpayPaymentsView(){
     $rzpRoute = new RZP_Route();
     $rzpRoute->rzpPaymentDetails();
-}
-
-function razorpayRouteAccounts(){
-    $rzpRoute = new RZP_Route();
-    $rzpRoute->rzpRouteAccounts();
 }
 
 function adminEnqueueScriptsFunc()
@@ -1383,11 +1225,4 @@ function razorpayPaymentTransfer()
     $routeAction = new RZP_Route_Action();
 
     $routeAction->createPaymentTransfer();
-}
-
-function razorpayAddLinkedAccounts()
-{
-    $routeAction = new RZP_Route_Action();
-
-    $routeAction->addLinkedAccount();
 }

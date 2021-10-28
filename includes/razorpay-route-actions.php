@@ -134,43 +134,6 @@ class RZP_Route_Action
         wp_redirect($pageUrl);
     }
 
-    function addLinkedAccount()
-    {
-
-        $laNumber = sanitize_text_field($_POST['rzp_account_number']);
-        $laName = sanitize_text_field($_POST['rzp_account_name']);
-        $pageUrl = admin_url('admin.php?page=razorpayRouteAccounts');
-        try {
-            global $wpdb;
-            $tableName = $wpdb->prefix . "razorpay_accounts";
-            $charset_collate = $wpdb->get_charset_collate();
-            $sql = "CREATE TABLE IF NOT EXISTS $tableName (
-                          id int(11) NOT NULL AUTO_INCREMENT,
-                          la_name tinytext NOT NULL,
-                          la_number varchar(50) NOT NULL,
-                          PRIMARY KEY  id (id)
-                        ) $charset_collate";
-
-            $wpdb->query($sql);
-
-            $insert = "INSERT INTO $tableName (la_name, la_number)
-            SELECT * FROM (SELECT '$laName', '$laNumber') AS tmp
-            WHERE NOT EXISTS (
-                            SELECT la_number FROM $tableName WHERE la_number = '$laNumber'
-            ) LIMIT 1";
-
-            $wpdb->query($insert);
-
-        } catch (Exception $e) {
-            $message = $e->getMessage();
-
-            wp_die('<div class="error notice">
-                    <p>RAZORPAY ERROR: Add accounts failed with the following message: ' . $message . '</p>
-                 </div>');
-        }
-        wp_redirect($pageUrl);
-    }
-
     function getOrderTransferData($orderId){
         $order = wc_get_order($orderId);
 
@@ -302,16 +265,19 @@ class RZP_Route_Action
     }
 
     public static function addRouteModuleFormFields($defaultFormFields){
-        $routeEnableFields = array(
-            'route_enable' => array(
-                'title' => __('Route Module'),
-                'type' => 'checkbox',
-                'label' => __('Enable route module?'),
-                'description' =>  "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>",
-                'default' => 'no'
-            )
-        );
-        $defaultFormFields = array_merge($defaultFormFields, $routeEnableFields);
+        if( get_woocommerce_currency() == "INR") {
+
+            $routeEnableFields = array(
+                'route_enable' => array(
+                    'title' => __('Route Module'),
+                    'type' => 'checkbox',
+                    'label' => __('Enable route module?'),
+                    'description' => "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>",
+                    'default' => 'no'
+                )
+            );
+            $defaultFormFields = array_merge($defaultFormFields, $routeEnableFields);
+        }
 
         return $defaultFormFields;
     }
