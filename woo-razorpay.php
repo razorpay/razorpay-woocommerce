@@ -951,7 +951,7 @@ EOT;
             $order = false;
 
             $post_type = 'shop_order';
-            $post_password = $_GET['order_key'];
+            $post_password = sanitize_text_field($_GET['order_key']);
 
             $postIds = $wpdb->get_col( $wpdb->prepare("SELECT ID FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
 
