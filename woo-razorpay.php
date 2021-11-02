@@ -505,9 +505,15 @@ function woocommerce_razorpay_init()
          * Returns redirect URL post payment processing
          * @return string redirect URL
          */
-        private function getRedirectUrl()
+        private function getRedirectUrl($orderId)
         {
-            return add_query_arg( 'wc-api', $this->id, trailingslashit( get_home_url() ) );
+            $order = wc_get_order($orderId);
+
+            $query = [
+                'wc-api' => $this->id,
+                'order_key' => $order->get_order_key(),
+            ];
+            return add_query_arg($query, trailingslashit( get_home_url()));
         }
 
         /**
@@ -571,9 +577,9 @@ function woocommerce_razorpay_init()
         {
             global $woocommerce;
 
-            $callbackUrl = $this->getRedirectUrl();
-
             $orderId = $order->get_order_number();
+
+            $callbackUrl = $this->getRedirectUrl($orderId);
 
             $sessionKey = $this->getOrderSessionKey($orderId);
             $razorpayOrderId = get_transient($sessionKey);
@@ -793,7 +799,10 @@ function woocommerce_razorpay_init()
         {
             $data["_"] = $this->getVersionMetaInfo($data);
 
-            $redirectUrl = $this->getRedirectUrl();
+            $wooOrderId = $data['notes']['woocommerce_order_id'];
+
+            $redirectUrl = $this->getRedirectUrl($wooOrderId);
+
             $data['cancel_url'] = wc_get_checkout_url();
 
             $api = new Api($this->getSetting('key_id'),"");
@@ -899,8 +908,6 @@ EOT;
 
             $order = wc_get_order($order_id);
 
-            set_transient(self::SESSION_KEY, $order_id, 3600);
-
             $orderKey = $this->getOrderKey($order);
 
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
@@ -939,10 +946,20 @@ EOT;
         function check_razorpay_response()
         {
             global $woocommerce;
+            global $wpdb;
 
-            $orderId = get_transient(self::SESSION_KEY);
+            $order = false;
 
-            $order = wc_get_order($orderId);
+            $post_type = 'shop_order';
+            $post_password = $_GET['order_key'];
+
+            $postIds = $wpdb->get_col( $wpdb->prepare("SELECT ID FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+
+            if(count($postIds) > 0)
+            {
+                $orderId = $postIds[0];
+                $order = wc_get_order($orderId);
+            }
 
             if($order === false)
             {
