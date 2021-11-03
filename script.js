@@ -2,6 +2,8 @@
   var data = razorpay_wc_checkout_vars;
   if(data === 'checkoutForm') {
     document.getElementById("checkoutForm").submit();
+  } else if(data === 'routeAnalyticsForm'){
+    document.getElementById("routeAnalyticsForm").submit();
   } else {
     var setDisabled = function(id, state) {
       if (typeof state === 'undefined') {

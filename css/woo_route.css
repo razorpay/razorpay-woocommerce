@@ -1,0 +1,193 @@
+.wrap {
+    font-family: Helvetica;
+}
+.rzp-container {
+    border: 1px solid #dfe5e7;
+    margin-top: 30px;
+    background-color: #f0f3f4;
+    margin-left: 5px !important;
+}
+.rzp-dashicons {
+    margin-top: 3px;
+}
+.text {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    font-weight: 600;
+    width: 48%;
+}
+.panel-heading {
+    line-height: 74px;
+    vertical-align: middle;
+    font-size: 18px;
+    padding: 0 20px;
+    border-bottom: 1px solid #fff;
+}
+.Button {
+    background-color: #fff;
+    padding: 5px 11px;
+    line-height: 16px;
+    outline: none;
+    transition: .15s,.3s border;
+    vertical-align: middle;
+    font-size: 13px;
+    color: #528ff0;
+    border: 1px solid #528ff0;
+    border-radius: 3px;
+}
+.content-header a:hover{
+    text-decoration: none;
+}
+.panel-body {
+    margin: 10px 0;
+}
+.panel-body-left .row{
+    padding: 5px;
+    font-size: 14px;
+}
+.button-items-detail{
+    margin: 10px 0;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 3px;
+    font-size: 14px;
+}
+.panel-label{
+    color: #8991ae;
+}
+.panel-value{
+    color: #58666e;
+}
+
+button:hover {
+    opacity:1;
+}
+
+.overlay, .rev_trf_overlay, .trf_settlement_overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(128,128,128,0.5);
+    display: none;
+}
+
+.modal {
+    position: relative;
+    display: block;
+    height: 365px;
+    width: 325px;
+    margin: 70px auto;
+    border-radius: 5px;
+    background-color: white;
+}
+.modal-content {
+    border: 0;
+}
+.modal-header {
+    padding: 24px 22px 0;
+    border-bottom: 0;
+}
+.modal-title {
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1em;
+    margin: 0;
+}
+.btn-default {
+    color: #58666e;
+    background-color: #fafafa;
+    border-color: #58666e;
+    font-size: 14px;
+    padding: 6px 12px;
+    font-weight: 400;
+}
+.btn-primary {
+    background-color: #528ff0;
+    border-color: #3b80ee;
+}
+.rzp-currency {
+    font-weight: normal;
+    color: inherit;
+    opacity: 0.7;
+    white-space: nowrap;
+    font-size: 100%;
+}
+p:empty:before {
+    display: none;
+}
+
+.route-container header {
+    line-height: 50px;
+    border: 1px solid #e2e8ea;
+    position: relative;
+    background-color: #e2e8ea;
+    padding: 0 12px 0 24px;
+    margin-bottom: 20px;
+}
+.route-container header a {
+    color: #555;
+    border-bottom: 3px solid transparent;
+    display: inline-block;
+    margin: 0 16px;
+    font-weight: bold;
+    position: relative;
+    bottom: -1px;
+}
+.route-container header a:hover { text-decoration: none; }
+
+.route-container header > a:first-child {
+    margin-left: 0;
+}
+.route-container header a.active {
+    color: #528ff0;
+    border-color: #528ff0;
+}
+
+.trf_settlement_label {
+    margin-left: 5px !important;
+    width: 100px !important;
+}
+
+.rzp_transfer_custom_field input{
+    margin-right: 5px !important;
+}
+.rzp_transfer_custom_field input[type=text], .rzp_transfer_custom_field input[type=number]{
+    width: 220px !important;
+}
+.rzp_transfer_custom_field .remove_field{ float: right;}
+.rzp_transfer_custom_field .add_field_button{ float: right;}
+
+.pay_search_label{ float: left;position: relative; left: 704px;font-size: 15px;}
+.input-group { position: relative; display: table; }
+.input-group .input-group-addon {
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1;
+    color: #555;
+    text-align: center;
+    background-color: #eee;
+    border: 1px solid #cfdadd;
+    border-radius: 2px;
+    width: 1%;
+    vertical-align: middle;
+    display: table-cell;
+}
+
+.modal .btn{ width: 100%; }
+
+#revTransferModal{ height: 270px !important; }
+#paymentTransferModal{ height: 540px !important; width: 350px !important; }
+.RadioButton{ margin: 12px auto; }
+span.trf-status{ margin-right: 10px; }
+.panel-heading strong{ margin-left: 10px;}
+.panel-value button{ margin-left: 10px !important;}
+.btn-default:hover{ background-color: #dee5e7}
+.rzp_transfer_from_field li{ float: left}
+.rzp_transfer_from_field li label{ width: 330px;}
+.rzp_transfer_from_field .woocommerce-help-tip{ right: 146px;}
+.post-type-shop_order .wp-list-table .check-column { width: 15px !important; }

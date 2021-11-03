@@ -18,12 +18,15 @@ if ( ! defined( 'ABSPATH' ) )
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
+require_once __DIR__.'/includes/razorpay-route.php';
+require_once __DIR__ .'/includes/razorpay-route-actions.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
+add_filter('route_module_setting_fields', array( "RZP_Route_Action", "addRouteModuleFormFields" ));
 
 function woocommerce_razorpay_init()
 {
@@ -62,6 +65,7 @@ function woocommerce_razorpay_init()
             'enable_webhook',
             'webhook_events',
             'webhook_secret',
+            'route_enable',
         );
 
         public $form_fields = array();
@@ -252,7 +256,10 @@ function woocommerce_razorpay_init()
                     'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', $this->id),
                     'default' => ''
                 ),
+
             );
+            /* adds route enable form fields to the defaultFormFields  */
+            $defaultFormFields = apply_filters( 'route_module_setting_fields', $defaultFormFields );
 
             foreach ($defaultFormFields as $key => $value)
             {
@@ -277,9 +284,9 @@ function woocommerce_razorpay_init()
             if($key_id == null || $key_secret == null)
             {
                 ?>
-                    <div class="notice error is-dismissible" >
-                     <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
-                    </div>
+                <div class="notice error is-dismissible" >
+                    <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
+                </div>
                 <?php
 
                 error_log('Key Id and Key Secret are required.');
@@ -307,9 +314,9 @@ function woocommerce_razorpay_init()
                 $this->update_option( 'enable_webhook', 'no' );
 
                 ?>
-                    <div class="notice error is-dismissible" >
-                     <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
-                    </div>
+                <div class="notice error is-dismissible" >
+                    <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
+                </div>
                 <?php
 
                 error_log('Could not enable webhook for localhost');
@@ -329,9 +336,9 @@ function woocommerce_razorpay_init()
                 if(empty($eventsSubscribe) === true)
                 {
                     ?>
-                        <div class="notice error is-dismissible" >
-                         <p><b><?php _e( 'At least one webhook event needs to be subscribed to enable webhook.'); ?><b></p>
-                        </div>
+                    <div class="notice error is-dismissible" >
+                        <p><b><?php _e( 'At least one webhook event needs to be subscribed to enable webhook.'); ?><b></p>
+                    </div>
                     <?php
 
                     error_log('At least one webhook event needs to be subscribed to enable webhook.');
@@ -342,9 +349,9 @@ function woocommerce_razorpay_init()
                 if(empty($secret) === true)
                 {
                     ?>
-                        <div class="notice error is-dismissible" >
-                         <p><b><?php _e( 'Webhook secret field can`t be empty.' ); ?><b></p>
-                        </div>
+                    <div class="notice error is-dismissible" >
+                        <p><b><?php _e( 'Webhook secret field can`t be empty.' ); ?><b></p>
+                    </div>
                     <?php
 
                     error_log('Webhook secret field can`t be empty.');
@@ -474,8 +481,8 @@ function woocommerce_razorpay_init()
                     return $razorpayOrderId;
                 }
             }
-            // Order doesn't exist or verification failed
-            // So try creating one
+                // Order doesn't exist or verification failed
+                // So try creating one
             catch (Exception $e)
             {
                 $create = true;
@@ -487,13 +494,13 @@ function woocommerce_razorpay_init()
                 {
                     return $this->createRazorpayOrderId($orderId, $sessionKey);
                 }
-                // For the bad request errors, it's safe to show the message to the customer.
+                    // For the bad request errors, it's safe to show the message to the customer.
                 catch (Errors\BadRequestError $e)
                 {
                     return $e;
                 }
-                // For any other exceptions, we make sure that the error message
-                // does not propagate to the front-end.
+                    // For any other exceptions, we make sure that the error message
+                    // does not propagate to the front-end.
                 catch (Exception $e)
                 {
                     return new Exception("Payment failed");
@@ -592,7 +599,7 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                     self::WC_ORDER_ID => $orderId
+                    self::WC_ORDER_ID => $orderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
@@ -735,21 +742,34 @@ function woocommerce_razorpay_init()
                 ),
             );
 
+            if($this->getSetting('route_enable') == 'yes')
+            {
+                $razorpayRoute = new RZP_Route_Action();
+                $orderTransferArr = $razorpayRoute->getOrderTransferData($orderId);
+
+                if(isset($orderTransferArr) && !empty($orderTransferArr)){
+
+                    $transferData = array(
+                        'transfers' => $orderTransferArr
+                    );
+                    $data = array_merge($data,$transferData);
+                }
+            }
+
             return $data;
         }
 
-
-        private function enqueueCheckoutScripts($data)
+        public function enqueueCheckoutScripts($data)
         {
-            if($data === 'checkoutForm')
+            if($data === 'checkoutForm' || $data === 'routeAnalyticsForm')
             {
                 wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
-                null, null);
+                    null, null);
             }
             else
             {
                 wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
-                array('razorpay_checkout'));
+                    array('razorpay_checkout'));
 
                 wp_register_script('razorpay_checkout',
                     'https://checkout.razorpay.com/v1/checkout.js',
@@ -880,8 +900,8 @@ EOT;
             try
             {
                 $refund = $client->payment
-                                ->fetch( $paymentId )
-                                ->refund( $data );
+                    ->fetch( $paymentId )
+                    ->refund( $data );
 
                 $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
                 /**
@@ -1093,6 +1113,12 @@ EOT;
                 $order->payment_complete($razorpayPaymentId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
+                if($this->getSetting('route_enable') == 'yes')
+                {
+                    $razorpayRoute = new RZP_Route_Action();
+                    $razorpayRoute->transferFromPayment($orderId, $razorpayPaymentId); // creates transfers from payment
+                }
+
                 if($virtualAccountId != null)
                 {
                     $order->add_order_note("Virtual Account Id: $virtualAccountId");
@@ -1185,6 +1211,7 @@ EOT;
                 );
             }
         }
+
     }
 
     /**
@@ -1200,14 +1227,14 @@ EOT;
 
     /**
      * Creating the settings link from the plugins page
-    **/
+     **/
     function razorpay_woo_plugin_links($links)
     {
         $pluginLinks = array(
-                        'settings' => '<a href="'. esc_url(admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay')) .'">Settings</a>',
-                        'docs'     => '<a href="https://razorpay.com/docs/payment-gateway/ecommerce-plugins/woocommerce/woocommerce-pg/">Docs</a>',
-                        'support'  => '<a href="https://razorpay.com/contact/">Support</a>'
-                    );
+            'settings' => '<a href="'. esc_url(admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay')) .'">Settings</a>',
+            'docs'     => '<a href="https://razorpay.com/docs/payment-gateway/ecommerce-plugins/woocommerce/woocommerce-pg/">Docs</a>',
+            'support'  => '<a href="https://razorpay.com/contact/">Support</a>'
+        );
 
         $links = array_merge($links, $pluginLinks);
 
