@@ -16,19 +16,20 @@ do_action('check_route_enable_status');
 
 function razorpayRouteModule(){
 
-    $settingsFields = get_option('woocommerce_razorpay_settings');
-    $routeSettingField = $settingsFields['route_enable'];
+    if(isset(get_option('woocommerce_razorpay_settings')['route_enable'])){
+        $routeSettingField = get_option('woocommerce_razorpay_settings')['route_enable'];
 
-    if($routeSettingField == 'yes')
-    {
-        add_action('admin_menu',  'rzpAddPluginPage');
-        add_action('admin_enqueue_scripts', 'adminEnqueueScriptsFunc', 0);
+        if($routeSettingField == 'yes')
+        {
+            add_action('admin_menu',  'rzpAddPluginPage');
+            add_action('admin_enqueue_scripts', 'adminEnqueueScriptsFunc', 0);
 
-        add_filter( 'woocommerce_product_data_tabs', 'transferDataTab', 90 , 1 );
-        add_action( 'woocommerce_product_data_panels', 'productTransferDataFields' );
-        add_action( 'woocommerce_process_product_meta', 'woocommerce_process_transfer_meta_fields_save' );
-        add_action( 'add_meta_boxes', 'paymentTransferMetaBox' );
+            add_filter( 'woocommerce_product_data_tabs', 'transferDataTab', 90 , 1 );
+            add_action( 'woocommerce_product_data_panels', 'productTransferDataFields' );
+            add_action( 'woocommerce_process_product_meta', 'woocommerce_process_transfer_meta_fields_save' );
+            add_action( 'add_meta_boxes', 'paymentTransferMetaBox' );
 
+        }
     }
 }
 
