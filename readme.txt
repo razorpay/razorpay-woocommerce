@@ -43,6 +43,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 = 2.8.0 =
 * Added Route module to split payments and transfer funds to Linked accounts.
+* Tested up to Woocommerce 5.8.0
 
 = 2.7.3 =
 * Bug fix in callback handler.
