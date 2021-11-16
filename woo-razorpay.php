@@ -586,7 +586,9 @@ function woocommerce_razorpay_init()
 
             $orderId = $order->get_order_number();
 
-            $callbackUrl = $this->getRedirectUrl($orderId);
+            $wcOrderId = $order->get_id();
+
+            $callbackUrl = $this->getRedirectUrl($wcOrderId);
 
             $sessionKey = $this->getOrderSessionKey($orderId);
             $razorpayOrderId = get_transient($sessionKey);
@@ -599,7 +601,8 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    self::WC_ORDER_ID => $orderId
+                    self::WC_ORDER_ID => $orderId,
+                    self::WC_ORDER_NUMBER => $wcOrderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
@@ -819,7 +822,7 @@ function woocommerce_razorpay_init()
         {
             $data["_"] = $this->getVersionMetaInfo($data);
 
-            $wooOrderId = $data['notes']['woocommerce_order_id'];
+            $wooOrderId = $data['notes']['woocommerce_order_number'];
 
             $redirectUrl = $this->getRedirectUrl($wooOrderId);
 
