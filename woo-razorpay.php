@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.8.0
- * Stable tag: 2.8.0
+ * Version: 2.8.1
+ * Stable tag: 2.8.1
  * Author: Team Razorpay
- * WC tested up to: 5.8.0
+ * WC tested up to: 5.9.0
  * Author URI: https://razorpay.com
 */
 
@@ -586,7 +586,9 @@ function woocommerce_razorpay_init()
 
             $orderId = $order->get_order_number();
 
-            $callbackUrl = $this->getRedirectUrl($orderId);
+            $wcOrderId = $order->get_id();
+
+            $callbackUrl = $this->getRedirectUrl($wcOrderId);
 
             $sessionKey = $this->getOrderSessionKey($orderId);
             $razorpayOrderId = get_transient($sessionKey);
@@ -599,7 +601,8 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    self::WC_ORDER_ID => $orderId
+                    self::WC_ORDER_ID => $orderId,
+                    self::WC_ORDER_NUMBER => $wcOrderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
@@ -819,7 +822,7 @@ function woocommerce_razorpay_init()
         {
             $data["_"] = $this->getVersionMetaInfo($data);
 
-            $wooOrderId = $data['notes']['woocommerce_order_id'];
+            $wooOrderId = $data['notes']['woocommerce_order_number'];
 
             $redirectUrl = $this->getRedirectUrl($wooOrderId);
 
@@ -1116,7 +1119,10 @@ EOT;
                 if($this->getSetting('route_enable') == 'yes')
                 {
                     $razorpayRoute = new RZP_Route_Action();
-                    $razorpayRoute->transferFromPayment($orderId, $razorpayPaymentId); // creates transfers from payment
+
+                    $wcOrderId = $order->get_id();
+
+                    $razorpayRoute->transferFromPayment($wcOrderId, $razorpayPaymentId); // creates transfers from payment
                 }
 
                 if($virtualAccountId != null)
