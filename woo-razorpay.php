@@ -261,6 +261,8 @@ function woocommerce_razorpay_init()
             /* adds route enable form fields to the defaultFormFields  */
             $defaultFormFields = apply_filters( 'route_module_setting_fields', $defaultFormFields );
 
+            do_action_ref_array( 'setup_extra_setting_fields', array( &$defaultFormFields ) );
+
             foreach ($defaultFormFields as $key => $value)
             {
                 if (in_array($key, $this->visibleSettings, true))
