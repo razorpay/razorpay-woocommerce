@@ -512,7 +512,7 @@ class RZP_Route extends WP_List_Table
         $this->prepareReversalItems();
 
         echo '<form method="get">
-            <input type="hidden" name="page" value="razorpay_route_reversals">';
+            <input type="hidden" name="page" value="razorpayRouteReversals">';
 
         $this->display();
 
@@ -614,7 +614,7 @@ class RZP_Route extends WP_List_Table
         $this->preparePaymentItems();
 
         echo '<form method="get">
-            <input type="hidden" name="page" value="razorpay_route_payments">';
+            <input type="hidden" name="page" value="razorpayRoutePayments">';
         echo '<p class="pay_search_label">Search here for payments of linked account</p>';
         $this->search_box('search', 'search_id');
         $this->display();

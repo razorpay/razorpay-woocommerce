@@ -28,13 +28,17 @@ class RZP_Webhook
     const SUBSCRIPTION_CANCELLED    = 'subscription.cancelled';
     const REFUNDED_CREATED          = 'refund.created';
     const VIRTUAL_ACCOUNT_CREDITED  = 'virtual_account.credited';
+    const SUBSCRIPTION_PAUSED       = 'subscription.paused';
+    const SUBSCRIPTION_RESUMED      = 'subscription.resumed';
 
     protected $eventsArray = [
-        self::PAYMENT_AUTHORIZED, 
-        self::VIRTUAL_ACCOUNT_CREDITED, 
-        self::REFUNDED_CREATED, 
-        self::PAYMENT_FAILED, 
-        self::SUBSCRIPTION_CANCELLED
+        self::PAYMENT_AUTHORIZED,
+        self::VIRTUAL_ACCOUNT_CREDITED,
+        self::REFUNDED_CREATED,
+        self::PAYMENT_FAILED,
+        self::SUBSCRIPTION_CANCELLED,
+        self::SUBSCRIPTION_PAUSED,
+        self::SUBSCRIPTION_RESUMED
     ];
 
     public function __construct()
@@ -81,7 +85,7 @@ class RZP_Webhook
             {
                 return;
             }
-            
+
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true)
             {
                 $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
@@ -129,6 +133,12 @@ class RZP_Webhook
                     case self::REFUNDED_CREATED:
                         return $this->refundedCreated($data);
 
+                    case self::SUBSCRIPTION_PAUSED:
+                        return $this->subscriptionPaused($data);
+
+                    case self::SUBSCRIPTION_RESUMED:
+                        return $this->subscriptionResumed($data);
+
                     default:
                         return;
                 }
@@ -154,6 +164,23 @@ class RZP_Webhook
         return;
     }
 
+    /**
+     * Does nothing for the main payments flow currently
+     * @param array $data Webook Data
+     */
+    protected function subscriptionPaused(array $data)
+    {
+        return;
+    }
+
+    /**
+     * Does nothing for the main payments flow currently
+     * @param array $data Webook Data
+     */
+    protected function subscriptionResumed(array $data)
+    {
+        return;
+    }
 
     /**
      * Handling the payment authorized webhook
@@ -161,7 +188,7 @@ class RZP_Webhook
      * @param array $data Webook Data
      */
     protected function paymentAuthorized(array $data)
-    {   
+    {
         // We don't process subscription/invoice payments here
         if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
         {
@@ -349,9 +376,9 @@ class RZP_Webhook
      * Returns boolean false incase not proper webhook data
      */
     protected function shouldConsumeWebhook($data)
-    { 
-        if ((isset($data['event']) === true) and 
-            (in_array($data['event'], $this->eventsArray) === true) and 
+    {
+        if ((isset($data['event']) === true) and
+            (in_array($data['event'], $this->eventsArray) === true) and
             isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
         {
             return true;

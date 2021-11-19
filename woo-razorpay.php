@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.8.1
- * Stable tag: 2.8.1
+ * Version: 2.8.2
+ * Stable tag: 2.8.2
  * Author: Team Razorpay
  * WC tested up to: 5.9.0
  * Author URI: https://razorpay.com
@@ -260,6 +260,8 @@ function woocommerce_razorpay_init()
             );
             /* adds route enable form fields to the defaultFormFields  */
             $defaultFormFields = apply_filters( 'route_module_setting_fields', $defaultFormFields );
+
+            do_action_ref_array( 'setup_extra_setting_fields', array( &$defaultFormFields ) );
 
             foreach ($defaultFormFields as $key => $value)
             {
