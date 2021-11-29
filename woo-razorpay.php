@@ -26,7 +26,6 @@ use Razorpay\Api\Errors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
-add_filter('route_module_setting_fields', array( "RZP_Route_Action", "addRouteModuleFormFields" ));
 
 function woocommerce_razorpay_init()
 {
@@ -258,8 +257,6 @@ function woocommerce_razorpay_init()
                 ),
 
             );
-            /* adds route enable form fields to the defaultFormFields  */
-            $defaultFormFields = apply_filters( 'route_module_setting_fields', $defaultFormFields );
 
             do_action_ref_array( 'setup_extra_setting_fields', array( &$defaultFormFields ) );
 
