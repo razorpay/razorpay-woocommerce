@@ -1177,7 +1177,7 @@ function renderPaymentTransferMetaBox() {
     $transfersData = $api->request->request("GET", $url);
 
     if(!empty($transfersData['items'])) {
-        echo '<p><b>NOTE: </b>When refunding a payment that has transfers, create reverse transfer from here and then refund the payment to the customer</p>';
+        echo '<p><b>NOTE: </b>When refunding a payment that has transfers, create reversal from here and then refund the payment to the customer</p>';
 
         echo '<table class="wp-list-table widefat fixed striped table-view-list wp_list_test_links">
         <thead>
