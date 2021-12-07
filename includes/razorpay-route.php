@@ -6,6 +6,7 @@ require_once __DIR__ .'/../razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 
+add_action('setup_extra_setting_fields', 'addRouteModuleSettingFields');
 add_action('admin_post_rzp_direct_transfer', 'razorpayDirectTransfer');
 add_action('admin_post_rzp_reverse_transfer', 'razorpayReverseTransfer');
 add_action('admin_post_rzp_settlement_change', 'razorpaySettlementUpdate');
@@ -13,6 +14,22 @@ add_action('admin_post_rzp_payment_transfer', 'razorpayPaymentTransfer');
 
 add_action( 'check_route_enable_status', 'razorpayRouteModule',0 );
 do_action('check_route_enable_status');
+
+function addRouteModuleSettingFields(&$defaultFormFields){
+    if( get_woocommerce_currency() == "INR") {
+
+        $routeEnableFields = array(
+            'route_enable' => array(
+                'title' => __('Route Module'),
+                'type' => 'checkbox',
+                'label' => __('Enable route module?'),
+                'description' => "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>",
+                'default' => 'no'
+            )
+        );
+        $defaultFormFields = array_merge($defaultFormFields, $routeEnableFields);
+    }
+}
 
 function razorpayRouteModule(){
 
@@ -1160,6 +1177,8 @@ function renderPaymentTransferMetaBox() {
     $transfersData = $api->request->request("GET", $url);
 
     if(!empty($transfersData['items'])) {
+        echo '<p><b>NOTE: </b>When refunding a payment that has transfers, create reversal from here and then refund the payment to the customer</p>';
+
         echo '<table class="wp-list-table widefat fixed striped table-view-list wp_list_test_links">
         <thead>
             <tr>

@@ -264,22 +264,4 @@ class RZP_Route_Action
 
     }
 
-    public static function addRouteModuleFormFields($defaultFormFields){
-        if( get_woocommerce_currency() == "INR") {
-
-            $routeEnableFields = array(
-                'route_enable' => array(
-                    'title' => __('Route Module'),
-                    'type' => 'checkbox',
-                    'label' => __('Enable route module?'),
-                    'description' => "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>",
-                    'default' => 'no'
-                )
-            );
-            $defaultFormFields = array_merge($defaultFormFields, $routeEnableFields);
-        }
-
-        return $defaultFormFields;
-    }
-
 }
