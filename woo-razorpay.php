@@ -177,7 +177,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
             }
 
-            add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'misha_thank_you_title'), 20, 2 );
+            add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'rzpThankYouMessage'), 20, 2 );
         }
 
         public function init_form_fields()
@@ -1068,7 +1068,7 @@ EOT;
             $api->utility->verifyPaymentSignature($attributes);
         }
 
-        public function misha_thank_you_title( $thank_you_title, $order )
+        public function rzpThankYouMessage( $thank_you_title, $order )
         {
             return self::DEFAULT_SUCCESS_MESSAGE;
         }
