@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 2.8.3
- * Stable tag: 2.8.3
+ * Version: 2.8.4
+ * Stable tag: 2.8.4
  * Author: Team Razorpay
  * WC tested up to: 5.9.0
  * Author URI: https://razorpay.com
@@ -176,6 +176,8 @@ function woocommerce_razorpay_init()
                 add_action('woocommerce_update_options_payment_gateways', $cb);
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
             }
+
+            add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'rzpThankYouMessage'), 20, 2 );
         }
 
         public function init_form_fields()
@@ -1066,6 +1068,11 @@ EOT;
             $api->utility->verifyPaymentSignature($attributes);
         }
 
+        public function rzpThankYouMessage( $thank_you_title, $order )
+        {
+            return self::DEFAULT_SUCCESS_MESSAGE;
+        }
+
         protected function getErrorMessage($orderId)
         {
             // We don't have a proper order id
@@ -1109,9 +1116,6 @@ EOT;
 
             if (($success === true) and ($order->needs_payment() === true))
             {
-                $this->msg['message'] = $this->getCustomOrdercreationMessage() . "&nbsp; Order Id: $orderId";
-                $this->msg['class'] = 'success';
-
                 $order->payment_complete($razorpayPaymentId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
