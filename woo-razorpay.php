@@ -685,6 +685,8 @@ function woocommerce_razorpay_init()
 
             set_transient($sessionKey, $razorpayOrderId, 3600);
 
+            $woocommerce->session->set($sessionKey, $razorpayOrderId);
+
             //update it in order comments
             $order = wc_get_order($orderId);
 
@@ -1063,7 +1065,18 @@ EOT;
             );
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            $attributes[self::RAZORPAY_ORDER_ID] = get_transient($sessionKey);
+
+            //Check the transient data for razorpay order id, if it's not available then look into session data.
+            if(get_transient($sessionKey))
+            {
+                $razorpayOrderId = get_transient($sessionKey);
+            }
+            else
+            {
+                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            }
+
+            $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId?? '';
 
             $api->utility->verifyPaymentSignature($attributes);
         }
