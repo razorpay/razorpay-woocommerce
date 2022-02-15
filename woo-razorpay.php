@@ -124,12 +124,12 @@ function woocommerce_razorpay_init()
             return $this->get_option($key);
         }
 
-        protected function getCustomOrdercreationMessage()
+        public function getCustomOrdercreationMessage($thank_you_title, $order)
         {
             $message =  $this->getSetting('order_success_message');
             if (isset($message) === false)
             {
-                $message = STATIC::DEFAULT_SUCCESS_MESSAGE;
+                $message = static::DEFAULT_SUCCESS_MESSAGE;
             }
             return $message;
         }
@@ -177,7 +177,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
             }
 
-            add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'rzpThankYouMessage'), 20, 2 );
+            add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
         }
 
         public function init_form_fields()
