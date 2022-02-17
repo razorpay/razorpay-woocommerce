@@ -168,20 +168,6 @@ function getItemResponse1cc($package, $id, $vendorId, $orderId)
         }
     }
 
-    foreach ($package[0]['contents'] as $itemId => $values) {
-        $items[] = array(
-            'key'               => $itemId,
-            'name'              => $values['data']->get_name(),
-            'quantity'          => $values['quantity'],
-            'product_id'        => $values['product_id'],
-            'variation_id'      => $values['variation_id'],
-            'line_subtotal'     => $values['line_subtotal'],
-            'line_subtotal_tax' => $values['line_subtotal_tax'],
-            'line_total'        => $values['line_total'],
-            'line_tax'          => $values['line_tax'],
-        );
-    }
-
     $shippingResponse = prepareRatesResponse1cc($package, $vendorId, $orderId);
 
     $isServiceable = count($shippingResponse) > 0 ? true : false;

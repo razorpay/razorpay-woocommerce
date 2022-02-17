@@ -59,7 +59,7 @@ function getCouponList($request)
         'meta_query'     => array(
             array(
                 'key'     => 'discount_type',
-                'value'   => array( 'fixed_cart', 'percent', 'fixed_product' ),
+                'value'   => array('fixed_cart', 'percent', 'fixed_product'),
                 'compare' => 'IN',
             ),
         ),
@@ -208,81 +208,66 @@ function getCouponList($request)
                 }
             }
 
-        // Check for smart coupon plugin
-        if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php'))
-        {
-          initCustomerSessionAndCart();
-          // Cleanup cart.
-          WC()->cart->empty_cart();
-          create1ccCart($orderId);
-          $smartCoupon = new Wt_Smart_Coupon_Public(" ", " ");
+            // Check for smart coupon plugin
+            if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
+                initCustomerSessionAndCart();
+                // Cleanup cart.
+                WC()->cart->empty_cart();
+                create1ccCart($orderId);
+                $smartCoupon = new Wt_Smart_Coupon_Public(" ", " ");
 
-          // Quantity of matching Products
-          $minMatchingProductQty = get_post_meta($coupon->get_id(), '_wt_min_matching_product_qty', true);
-          $maxMatchingProductQty = get_post_meta($coupon->get_id(), '_wt_max_matching_product_qty', true);
+                // Quantity of matching Products
+                $minMatchingProductQty = get_post_meta($coupon->get_id(), '_wt_min_matching_product_qty', true);
+                $maxMatchingProductQty = get_post_meta($coupon->get_id(), '_wt_max_matching_product_qty', true);
 
-          if ($minMatchingProductQty > 0 || $maxMatchingProductQty > 0)
-          {
-            $quantityMatchingProduct = $smartCoupon->get_quantity_of_matching_product($coupon);
-            if ($minMatchingProductQty > 0 && $quantityMatchingProduct < $minMatchingProductQty)
-            {
-              continue;
+                if ($minMatchingProductQty > 0 || $maxMatchingProductQty > 0) {
+                    $quantityMatchingProduct = $smartCoupon->get_quantity_of_matching_product($coupon);
+                    if ($minMatchingProductQty > 0 && $quantityMatchingProduct < $minMatchingProductQty) {
+                        continue;
+                    }
+                    if ($maxMatchingProductQty > 0 && $quantityMatchingProduct > $maxMatchingProductQty) {
+                        continue;
+                    }
+                }
+
+                // Subtotal of matching products
+                $minMatchingProductSubtotal = get_post_meta($coupon->get_id(), '_wt_min_matching_product_subtotal', true);
+                $maxMatchingProductSubtotal = get_post_meta($coupon->get_id(), '_wt_max_matching_product_subtotal', true);
+
+                if ($minMatchingProductSubtotal !== 0 || $maxMatchingProductSubtotal !== 0) {
+                    $subtotalMatchingProduct = $smartCoupon->get_sub_total_of_matching_products($coupon);
+                    if ($minMatchingProductSubtotal > 0 && $subtotalMatchingProduct < $minMatchingProductSubtotal) {
+                        continue;
+                    }
+                    if ($maxMatchingProductSubtotal > 0 && $subtotalMatchingProduct > $maxMatchingProductSubtotal) {
+                        continue;
+                    }
+                }
+
+                // User role restriction
+                $userRoles = get_post_meta($coupon->get_id(), '_wt_sc_user_roles', true);
+                if ('' != $userRoles && !is_array($userRoles)) {
+                    $userRoles = explode(',', $userRoles);
+                } else {
+                    $userRoles = array();
+                }
+
+                if (sizeof($userRoles) > 0) {
+                    if (empty($email) === false) {
+                        $user = get_user_by('email', $email);
+                        $role = !empty($user) ? $user->roles : [];
+
+                        if (!array_intersect($userRoles, $role)) {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                }
             }
-            if ($maxMatchingProductQty > 0 && $quantityMatchingProduct > $maxMatchingProductQty)
-            {
-              continue;
-            }
-          }
 
-          // Subtotal of matching products
-          $minMatchingProductSubtotal = get_post_meta($coupon->get_id(), '_wt_min_matching_product_subtotal', true);
-          $maxMatchingProductSubtotal = get_post_meta($coupon->get_id(), '_wt_max_matching_product_subtotal', true);
-
-          if ($minMatchingProductSubtotal !== 0 || $maxMatchingProductSubtotal !== 0)
-          {
-            $subtotalMatchingProduct = $smartCoupon->get_sub_total_of_matching_products($coupon);
-            if ($minMatchingProductSubtotal > 0 && $subtotalMatchingProduct < $minMatchingProductSubtotal)
-            {
-              continue;
-            }
-            if ($maxMatchingProductSubtotal > 0 && $subtotalMatchingProduct > $maxMatchingProductSubtotal)
-            {
-              continue;
-            }
-          }
-
-          // User role restriction
-          $userRoles = get_post_meta($coupon->get_id(), '_wt_sc_user_roles',true);
-          if (''!= $userRoles && ! is_array( $userRoles))
-          {
-            $userRoles = explode(',',$userRoles);
-          }
-          else
-          {
-            $userRoles = array();
-          }
-
-          if (sizeof($userRoles) > 0)
-          {
-            if (empty($email) === false)
-            {
-              $user = get_user_by('email', $email);
-              $role = !empty($user)? $user->roles : [];
-
-              if (!array_intersect($userRoles, $role))
-              {
-                continue;
-              }
-            }
-            else
-            {
-              continue;
-            }
-          }
+            $couponData['promotions'][] = transformCouponResponse($coupon);
         }
-
-        $couponData['promotions'][] = transformCouponResponse($coupon);
-      }
     }
 
     $logObj['response']    = $couponData;
