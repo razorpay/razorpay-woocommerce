@@ -1452,7 +1452,7 @@ EOT;
         public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
         {
             $logObj = array();
-            rzpLogInfo("update1ccOrderWC orderId: $orderId , wcOrderId: $wcOrderId, razorpayPaymentId: $razorpayPaymentId");
+            rzpLogInfo("update1ccOrderWC wcOrderId: $wcOrderId, razorpayPaymentId: $razorpayPaymentId");
 
             //To avoid the symultanious update from callback and webhook
             set_transient('wc_order_under_process_'.$wcOrderId, true, 300);
@@ -1513,7 +1513,7 @@ EOT;
                         $isStoreShippingEnabled = isset( $shippingOptions['enable_store_shipping'] ) ? $shippingOptions['enable_store_shipping'] : 'yes';
                     }
 
-                    if ($wcfmmpStoreShippingEnabled == 'yes')
+                    if ($isStoreShippingEnabled == 'yes')
                     {
                         foreach ($shippingData as $key => $value) 
                         {

@@ -211,7 +211,7 @@ function getCouponList($request)
         // Check for smart coupon plugin
         if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php'))
         {
-          check_prerequisites();
+          initCustomerSessionAndCart();
           // Cleanup cart.
           WC()->cart->empty_cart();
           create1ccCart($orderId);

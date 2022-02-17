@@ -5,7 +5,6 @@ namespace Razorpay\Api;
 class Api
 {
     protected static $baseUrl = 'https://api.razorpay.com/v1/';
-    // protected static $baseUrl = 'https://omega-api.stage.razorpay.in/v1/';
 
     protected static $key = null;
 
