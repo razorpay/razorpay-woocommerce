@@ -179,7 +179,7 @@ function getItemResponse1cc($package, $id, $vendorId, $orderId)
         'country'      => $package[0]['destination']['country'],
         'serviceable'  => $isServiceable,
         'cod'          => $isServiceable === false ? false : $shippingResponse['cod'],
-        'shipping_fee' => $shippingResponse['shipping_fee'] ?? 0,
+        'shipping_fee' => isset($shippingResponse['shipping_fee']) ? ($shippingResponse['shipping_fee'] + $shippingResponse['shipping_fee_tax']) : 0,
         // hardcode as null as wc does not provide support
         'cod_fee'      => null,
     );
@@ -225,6 +225,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId)
     array_multisort($price, SORT_ASC, $response);
     foreach ($response as $key => $row) {
         $response['shipping_fee'] += isset($response[$key]['price']) ? $response[$key]['price'] : 0;
+        $response['shipping_fee_tax'] += !empty($response[$key]['taxes']) ? convertToPaisa(array_sum($response[$key]['taxes'])) : 0;
         $response['cod'] = isset($response[0]['cod']) ? $response[0]['cod'] : false;
     }
 
@@ -316,7 +317,10 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId)
  */
 function convertToPaisa($price)
 {
-    return (int) $price * 100;
+    if (is_string($price)) {
+        $price = (int) $price;
+    }
+    return $price * 100;
 }
 
 /**
