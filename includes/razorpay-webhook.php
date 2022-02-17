@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__.'/../woo-razorpay.php';
-require_once __DIR__.'/../razorpay-sdk/Razorpay.php';
+require_once __DIR__ . '/../woo-razorpay.php';
+require_once __DIR__ . '/../razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -23,13 +23,13 @@ class RZP_Webhook
     /**
      * Event constants
      */
-    const PAYMENT_AUTHORIZED        = 'payment.authorized';
-    const PAYMENT_FAILED            = 'payment.failed';
-    const SUBSCRIPTION_CANCELLED    = 'subscription.cancelled';
-    const REFUNDED_CREATED          = 'refund.created';
-    const VIRTUAL_ACCOUNT_CREDITED  = 'virtual_account.credited';
-    const SUBSCRIPTION_PAUSED       = 'subscription.paused';
-    const SUBSCRIPTION_RESUMED      = 'subscription.resumed';
+    const PAYMENT_AUTHORIZED       = 'payment.authorized';
+    const PAYMENT_FAILED           = 'payment.failed';
+    const SUBSCRIPTION_CANCELLED   = 'subscription.cancelled';
+    const REFUNDED_CREATED         = 'refund.created';
+    const VIRTUAL_ACCOUNT_CREDITED = 'virtual_account.credited';
+    const SUBSCRIPTION_PAUSED      = 'subscription.paused';
+    const SUBSCRIPTION_RESUMED     = 'subscription.resumed';
 
     protected $eventsArray = [
         self::PAYMENT_AUTHORIZED,
@@ -38,7 +38,7 @@ class RZP_Webhook
         self::PAYMENT_FAILED,
         self::SUBSCRIPTION_CANCELLED,
         self::SUBSCRIPTION_PAUSED,
-        self::SUBSCRIPTION_RESUMED
+        self::SUBSCRIPTION_RESUMED,
     ];
 
     public function __construct()
@@ -70,54 +70,50 @@ class RZP_Webhook
 
         $data = json_decode($post, true);
 
-        if (json_last_error() !== 0)
-        {
+        if (json_last_error() !== 0) {
             return;
         }
 
         $enabled = $this->razorpay->getSetting('enable_webhook');
 
         if (($enabled === 'yes') and
-            (empty($data['event']) === false))
-        {
+            (empty($data['event']) === false)) {
             // Skip the webhook if not the valid data and event
-            if ($this->shouldConsumeWebhook($data) === false)
-            {
+            if ($this->shouldConsumeWebhook($data) === false) {
                 return;
             }
 
-            if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true)
-            {
+            if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
                 $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
 
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
-                if (empty($razorpayWebhookSecret) === true)
-                {
+                if (empty($razorpayWebhookSecret) === true) {
                     return;
                 }
 
                 try
                 {
                     $this->api->utility->verifyWebhookSignature($post,
-                                                                $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'],
-                                                                $razorpayWebhookSecret);
-                }
-                catch (Errors\SignatureVerificationError $e)
-                {
+                        $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'],
+                        $razorpayWebhookSecret);
+                } catch (Errors\SignatureVerificationError $e) {
                     $log = array(
-                        'message'   => $e->getMessage(),
-                        'data'      => $data,
-                        'event'     => 'razorpay.wc.signature.verify_failed'
+                        'message' => $e->getMessage(),
+                        'data'    => $data,
+                        'event'   => 'razorpay.wc.signature.verify_failed',
                     );
 
                     error_log(json_encode($log));
                     return;
                 }
 
-                switch ($data['event'])
-                {
+                $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+
+                rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
+
+                switch ($data['event']) {
                     case self::PAYMENT_AUTHORIZED:
                         return $this->paymentAuthorized($data);
 
@@ -190,8 +186,7 @@ class RZP_Webhook
     protected function paymentAuthorized(array $data)
     {
         // We don't process subscription/invoice payments here
-        if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
-        {
+        if (isset($data['payload']['payment']['entity']['invoice_id']) === true) {
             return;
         }
 
@@ -200,11 +195,27 @@ class RZP_Webhook
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
+        rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for payment authorized event");
+
         $order = wc_get_order($orderId);
 
+        //To give the priority to callback script to compleate the execution fist adding this locking.
+        $transientData = get_transient('webhook_trigger_count_for_' . $orderId);
+
+        if (empty($transientData) || $transientData == 1) {
+            rzpLogInfo("Woocommerce orderId: $orderId with transientData: $transientData webhook halted for 60 sec");
+
+            sleep(60);
+        }
+
+        $triggerCount = !empty($transientData) ? ($transientData + 1) : 1;
+
+        set_transient('webhook_trigger_count_for_' . $orderId, $triggerCount, 180);
+
         // If it is already marked as paid, ignore the event
-        if ($order->needs_payment() === false)
-        {
+        if ($order->needs_payment() === false) {
+            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited");
+
             return;
         }
 
@@ -214,16 +225,13 @@ class RZP_Webhook
 
         $amount = $this->getOrderAmountAsInteger($order);
 
-        $success = false;
+        $success      = false;
         $errorMessage = 'The payment has failed.';
 
-        if ($payment['status'] === 'captured')
-        {
+        if ($payment['status'] === 'captured') {
             $success = true;
-        }
-        else if (($payment['status'] === 'authorized') and
-                 ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE))
-        {
+        } else if (($payment['status'] === 'authorized') and
+            ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE)) {
             //
             // If the payment is only authorized, we capture it
             // If the merchant has enabled auto capture
@@ -233,16 +241,14 @@ class RZP_Webhook
                 $payment->capture(array('amount' => $amount));
 
                 $success = true;
-            }
-            catch (Exception $e)
-            {
+            } catch (Exception $e) {
                 //
                 // Capture will fail if the payment is already captured
                 //
                 $log = array(
-                    'message'         => $e->getMessage(),
-                    'payment_id'      => $razorpayPaymentId,
-                    'event'           => $data['event']
+                    'message'    => $e->getMessage(),
+                    'payment_id' => $razorpayPaymentId,
+                    'event'      => $data['event'],
                 );
 
                 error_log(json_encode($log));
@@ -252,14 +258,16 @@ class RZP_Webhook
                 //
                 $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
-                if ($payment['status'] === 'captured')
-                {
+                if ($payment['status'] === 'captured') {
                     $success = true;
                 }
             }
         }
 
         $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
+        rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the update order function");
+
+        rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the updateOrder function");
 
         // Graceful exit since payment is now processed.
         exit;
@@ -273,8 +281,7 @@ class RZP_Webhook
     protected function virtualAccountCredited(array $data)
     {
         // We don't process subscription/invoice payments here
-        if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
-        {
+        if (isset($data['payload']['payment']['entity']['invoice_id']) === true) {
             return;
         }
 
@@ -286,8 +293,7 @@ class RZP_Webhook
         $order = wc_get_order($orderId);
 
         // If it is already marked as paid, ignore the event
-        if ($order->needs_payment() === false)
-        {
+        if ($order->needs_payment() === false) {
             return;
         }
 
@@ -299,16 +305,13 @@ class RZP_Webhook
 
         $amount = $this->getOrderAmountAsInteger($order);
 
-        $success = false;
+        $success      = false;
         $errorMessage = 'The payment has failed.';
 
-        if ($payment['status'] === 'captured' and $amountPaid === $amount)
-        {
+        if ($payment['status'] === 'captured' and $amountPaid === $amount) {
             $success = true;
-        }
-        else if (($payment['status'] === 'authorized') and $amountPaid === $amount and
-                 ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE))
-        {
+        } else if (($payment['status'] === 'authorized') and $amountPaid === $amount and
+            ($this->razorpay->getSetting('payment_action') === WC_Razorpay::CAPTURE)) {
             //
             // If the payment is only authorized, we capture it
             // If the merchant has enabled auto capture
@@ -318,16 +321,14 @@ class RZP_Webhook
                 $payment->capture(array('amount' => $amount));
 
                 $success = true;
-            }
-            catch (Exception $e)
-            {
+            } catch (Exception $e) {
                 //
                 // Capture will fail if the payment is already captured
                 //
                 $log = array(
-                    'message'         => $e->getMessage(),
-                    'payment_id'      => $razorpayPaymentId,
-                    'event'           => $data['event']
+                    'message'    => $e->getMessage(),
+                    'payment_id' => $razorpayPaymentId,
+                    'event'      => $data['event'],
                 );
 
                 error_log(json_encode($log));
@@ -337,8 +338,7 @@ class RZP_Webhook
                 //
                 $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
-                if ($payment['status'] === 'captured')
-                {
+                if ($payment['status'] === 'captured') {
                     $success = true;
                 }
             }
@@ -355,13 +355,11 @@ class RZP_Webhook
         try
         {
             $payment = $this->api->payment->fetch($razorpayPaymentId);
-        }
-        catch (Exception $e)
-        {
+        } catch (Exception $e) {
             $log = array(
-                'message'         => $e->getMessage(),
-                'payment_id'      => $razorpayPaymentId,
-                'event'           => $data['event']
+                'message'    => $e->getMessage(),
+                'payment_id' => $razorpayPaymentId,
+                'event'      => $data['event'],
             );
 
             error_log(json_encode($log));
@@ -379,8 +377,7 @@ class RZP_Webhook
     {
         if ((isset($data['event']) === true) and
             (in_array($data['event'], $this->eventsArray) === true) and
-            isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true)
-        {
+            isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true) {
             return true;
         }
 
@@ -394,8 +391,7 @@ class RZP_Webhook
      */
     public function getOrderAmountAsInteger($order)
     {
-        if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>='))
-        {
+        if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>=')) {
             return (int) round($order->get_total() * 100);
         }
 
@@ -411,14 +407,12 @@ class RZP_Webhook
     public function refundedCreated(array $data)
     {
         // We don't process subscription/invoice payments here
-        if (isset($data['payload']['payment']['entity']['invoice_id']) === true)
-        {
+        if (isset($data['payload']['payment']['entity']['invoice_id']) === true) {
             return;
         }
 
         //Avoid to recreate refund, If already refund saved and initiated from woocommerce website.
-        if (isset($data['payload']['refund']['entity']['notes']['refund_from_website']) === true)
-        {
+        if (isset($data['payload']['refund']['entity']['notes']['refund_from_website']) === true) {
             return;
         }
 
@@ -436,25 +430,22 @@ class RZP_Webhook
         $order = wc_get_order($orderId);
 
         // If it is already marked as unpaid, ignore the event
-        if ($order->needs_payment() === true)
-        {
+        if ($order->needs_payment() === true) {
             return;
         }
 
         // If it's something else such as a WC_Order_Refund, we don't want that.
-        if( ! is_a( $order, 'WC_Order') )
-        {
+        if (!is_a($order, 'WC_Order')) {
             $log = array(
-                'Error' =>  'Provided ID is not a WC Order',
+                'Error' => 'Provided ID is not a WC Order',
             );
 
             error_log(json_encode($log));
         }
 
-        if( 'refunded' == $order->get_status() )
-        {
+        if ('refunded' == $order->get_status()) {
             $log = array(
-                'Error' =>  'Order has been already refunded for Order Id -'. $orderId,
+                'Error' => 'Order has been already refunded for Order Id -' . $orderId,
             );
 
             error_log(json_encode($log));
@@ -466,27 +457,25 @@ class RZP_Webhook
 
         try
         {
-            wc_create_refund( array(
+            wc_create_refund(array(
                 'amount'         => $refundAmount,
                 'reason'         => $refundReason,
                 'order_id'       => $orderId,
                 'refund_id'      => $refundId,
                 'line_items'     => array(),
-                'refund_payment' => false
+                'refund_payment' => false,
             ));
 
-            $order->add_order_note( __( 'Refund Id: ' . $refundId, 'woocommerce' ) );
+            $order->add_order_note(__('Refund Id: ' . $refundId, 'woocommerce'));
 
-        }
-        catch (Exception $e)
-        {
+        } catch (Exception $e) {
             //
             // Capture will fail if the payment is already captured
             //
             $log = array(
-                'message' => $e->getMessage(),
+                'message'    => $e->getMessage(),
                 'payment_id' => $razorpayPaymentId,
-                'event' => $data['event']
+                'event'      => $data['event'],
             );
 
             error_log(json_encode($log));

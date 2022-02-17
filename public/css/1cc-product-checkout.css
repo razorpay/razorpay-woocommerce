@@ -1,0 +1,79 @@
+#btn-1cc {
+  display: block !important;
+  width: 100%;
+}
+#btn-1cc-mini-cart {
+  display: block !important;
+  width: 100%;
+}
+#btn-1cc-pdp {
+  margin-left: 5px;
+}
+#rzp-spinner-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0);
+  visibility: hidden;
+  opacity: 0;
+}
+#rzp-spinner-backdrop.show {
+  visibility: visible;
+  opacity: 0.4;
+}
+#rzp-spinner {
+  visibility: hidden;
+  opacity: 0;
+  /* positioning and centering */
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  margin: auto;
+  z-index: 10000;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+#rzp-spinner.show {
+  visibility: visible;
+  opacity: 1;
+}
+@keyframes rotate {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+#loading-indicator {
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  border: 4px solid;
+  border-color: rgb(59, 124, 245) transparent rgb(59, 124, 245) rgb(59, 124, 245) !important;
+  animation: 1s linear 0s infinite normal none running rotate;
+  margin-top: 2px;
+  box-sizing: content-box;
+}
+#icon {
+  position: absolute;
+}
+#rzp-logo{
+  width: auto;
+  height: 80px !important;
+}
+@media (max-device-height: 768px), (max-device-width: 768px) {
+  #loading-indicator {
+    width: 45px;
+    height: 45px;
+  }
+  #rzp-logo {
+    height: 45px !important;
+  }
+}

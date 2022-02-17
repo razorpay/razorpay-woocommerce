@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
-Tested up to: 5.8.2
-Stable tag: 2.8.5
+Tested up to: 5.8
+Stable tag: 3.0.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -41,8 +41,8 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
-= 2.8.5 =
-* Bug fix for session storage.
+= 3.0.0 =
+* Added Magic Checkout feature.
 
 = 2.8.4 =
 * Bug fix for guest checkout thank you message in order summary page.
