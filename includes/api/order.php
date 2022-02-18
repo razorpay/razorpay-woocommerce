@@ -178,6 +178,28 @@ function createWcOrder(WP_REST_Request $request)
         $response['redirect']            = true;
         $response['one_click_checkout']  = true;
 
+        if ($response['enable_fb_analytics'] === true) {
+            //Customer cart related data for FB analytics.
+            $customer_cart['value']        = (string) WC()->cart->subtotal;
+            $customer_cart['content_type'] = 'product';
+            $customer_cart['currency']     = 'INR';
+
+            $x = 0;
+            // Loop over $cart items
+            foreach (WC()->cart->get_cart() as $cart_item) {
+
+                $customer_cart['contents'][$x]['id']         = (string) $cart_item['product_id'];
+                $customer_cart['contents'][$x]['name']       = $cart_item['data']->get_title();
+                $customer_cart['contents'][$x]['quantity']   = (string) $cart_item['quantity'];
+                $customer_cart['contents'][$x]['value']      = (string) ($cart_item['line_subtotal'] + $cart_item['line_subtotal_tax']) / $cart_item['quantity'];
+                $customer_cart['contents'][$x]['variant_id'] = (string) $cart_item['variation_id'];
+
+                $x++;
+            }
+
+            $response['customer_cart'] = $customer_cart ?? '';
+        }
+
         if (empty(get_option('woocommerce_razorpay_settings')['enable_1cc_cod_intelligence']) === true
             || get_option('woocommerce_razorpay_settings')['enable_1cc_cod_intelligence'] != 'yes') {
             $response['force_cod'] = true;
