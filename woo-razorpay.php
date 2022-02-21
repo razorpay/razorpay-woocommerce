@@ -1262,7 +1262,7 @@ EOT;
                 if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                 {
                     $api = $this->getRazorpayApiInstance();
-                    $sessionKey = $this->getOrderSessionKey($wcOrderId);
+                    $sessionKey = $this->getOrderSessionKey($orderId);
                     $razorpayOrderId = get_transient($sessionKey);
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
@@ -1564,6 +1564,8 @@ EOT;
                         // set an non existing Shipping method rate ID will mark the order as completed instead of processing status
                         // $item->set_method_id( "flat_rate:1" );
                         $item->set_total( $razorpayData['shipping_fee']/100 );
+
+                        $order->add_item( $item );
                         
                         $item->save();
                     }

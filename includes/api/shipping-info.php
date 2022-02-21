@@ -225,7 +225,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId)
     array_multisort($price, SORT_ASC, $response);
     foreach ($response as $key => $row) {
         $response['shipping_fee'] += isset($response[$key]['price']) ? $response[$key]['price'] : 0;
-        $response['shipping_fee_tax'] += !empty($response[$key]['taxes']) ? convertToPaisa(array_sum($response[$key]['taxes'])) : 0;
+        $response['shipping_fee_tax'] += !empty($response[$key]['taxes']) ? 0 : 0; //By default tax is considered as zero.
         $response['cod'] = isset($response[0]['cod']) ? $response[0]['cod'] : false;
     }
 
