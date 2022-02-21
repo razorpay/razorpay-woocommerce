@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
-Tested up to: 5.8.2
-Stable tag: 2.8.5
+Tested up to: 5.9
+Stable tag: 2.8.6
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,10 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 2.8.6 =
+* Bug fix for not reflecting an updated order success message.
+* Tested upto Wordpress 5.9
 
 = 2.8.5 =
 * Bug fix for session storage.
