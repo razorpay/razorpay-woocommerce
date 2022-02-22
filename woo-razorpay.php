@@ -6,7 +6,7 @@
  * Version: 3.0.0
  * Stable tag: 3.0.0
  * Author: Team Razorpay
- * WC tested up to: 6.1.0
+ * WC tested up to: 6.2.0
  * Author URI: https://razorpay.com
 */
 
@@ -860,6 +860,8 @@ function woocommerce_razorpay_init()
             $razorpayOrderId = $razorpayOrder['id'];
 
             set_transient($sessionKey, $razorpayOrderId, 3600);
+            $woocommerce->session->set($sessionKey, $razorpayOrderId);
+
             rzpLogInfo('For order session key ' . $sessionKey);
             //update it in order comments
             $order = wc_get_order($orderId);
@@ -1309,7 +1311,17 @@ EOT;
             );
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            $attributes[self::RAZORPAY_ORDER_ID] = get_transient($sessionKey);
+            //Check the transient data for razorpay order id, if it's not available then look into session data.
+            if(get_transient($sessionKey))
+            {
+                $razorpayOrderId = get_transient($sessionKey);
+            }
+            else
+            {
+                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            }
+
+            $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId?? '';
             rzpLogInfo("verifySignature attr");
             rzpLogInfo(json_encode($attributes));
             $api->utility->verifyPaymentSignature($attributes);
