@@ -1283,9 +1283,6 @@ EOT;
 
             if (($success === true) and ($order->needs_payment() === true))
             {
-                $this->msg['message'] = $this->getCustomOrdercreationMessage() . "&nbsp; Order Id: $orderId";
-                $this->msg['class'] = 'success';
-
                 try
                 {
                     $wcOrderId = $order->get_id();
