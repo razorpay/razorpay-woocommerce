@@ -119,3 +119,111 @@ function initCustomerSessionAndCart()
         WC()->cart->get_cart();
     }
 }
+
+add_action('setup_extra_setting_fields', 'addMagicCheckoutSettingFields');
+
+function addMagicCheckoutSettingFields(&$defaultFormFields)
+{
+    $magicCheckoutConfigFields = array(
+
+        'enable_1cc'                    => array(
+            'title'       => __('Activate Magic Checkout'),
+            'type'        => 'checkbox',
+            'description' => "",
+            'label'       => __('Activate Magic Checkout'),
+            'default'     => 'no',
+        ),
+        'enable_1cc_test_mode'          => array(
+            'title'       => __('Activate test mode'),
+            'type'        => 'checkbox',
+            'description' => 'When test mode is active, only logged-in admin users will see the Razorpay Magic Checkout button',
+            'label'       => __('Activate test mode for Magic Checkout'),
+            'default'     => 'no',
+        ),
+        'enable_1cc_pdp_checkout'       => array(
+            'title'       => __('Activate Buy Now Button'),
+            'type'        => 'checkbox',
+            'description' => 'By enabling the Buy Now button, user will be able to see the Razorpay Magic Checkout button on Product display page. ',
+            'label'       => __('Activate Buy Now for Magic Checkout'),
+            'default'     => 'yes',
+        ),
+        'enable_1cc_mini_cart_checkout' => array(
+            'title'       => __('Activate Mini Cart Checkout'),
+            'type'        => 'checkbox',
+            'description' => 'By enabling the Mini Cart checkout button, user will be able to see the Razorpay Magic Checkout on click of checkout button. ',
+            'label'       => __('Activate Mini Cart for Magic Checkout'),
+            'default'     => 'yes',
+        ),
+        '1cc_min_cart_amount'           => array(
+            'title'             => __('Set minimum cart amount (INR)'),
+            'type'              => 'number',
+            'description'       => 'Enter a minimum cart amount required to place an order via Magic Checkout.',
+            'default'           => 0,
+            'css'               => 'width: 120px;',
+            'custom_attributes' => array(
+                'min'  => 0,
+                'step' => 1,
+            ),
+        ),
+        'enable_1cc_mandatory_login'    => array(
+            'title'       => __('Activate Mandatory Login'),
+            'type'        => 'checkbox',
+            'description' => "",
+            'label'       => __('Activate Mandatory Login for Magic Checkout'),
+            'default'     => 'no',
+        ),
+        'enable_1cc_cod_intelligence'   => array(
+            'title'       => __('Activate COD Intelligence'),
+            'type'        => 'checkbox',
+            'description' => "By enabling this you allow Magic Checkout to decide which customer sees the COD option based on past shopping history",
+            'label'       => __('Activate Magic Checkout COD Intelligence'),
+            'default'     => 'no',
+        ),
+        '1cc_min_COD_slab_amount'       => array(
+            'title'             => __('Set minimum amount (INR) for COD'),
+            'type'              => 'number',
+            'description'       => 'Enter a minimum amount required to place an order via COD (if enabled)',
+            'default'           => 0,
+            'css'               => 'width: 120px;',
+            'custom_attributes' => array(
+                'min'  => 0,
+                'step' => 1,
+            ),
+        ),
+        '1cc_max_COD_slab_amount'       => array(
+            'title'             => __('Set maximum amount (INR) for COD'),
+            'type'              => 'number',
+            'description'       => 'Enter a maximum amount allowed to place an order via COD (if enabled)',
+            'default'           => 0,
+            'css'               => 'width: 120px;',
+            'custom_attributes' => array(
+                'min'  => 0,
+                'step' => 1,
+            ),
+        ),
+        'enable_1cc_ga_analytics'       => array(
+            'title'       => __('Activate Google Analytics'),
+            'type'        => 'checkbox',
+            'description' => "To track orders using Google Analytics",
+            'label'       => __('Activate Magic Checkout Google Analytics'),
+            'default'     => 'no',
+        ),
+        'enable_1cc_fb_analytics'       => array(
+            'title'       => __('Activate Facebook Analytics'),
+            'type'        => 'checkbox',
+            'description' => "To track orders using Facebook Pixel",
+            'label'       => __('Activate Magic Checkout Facebook Analytics'),
+            'default'     => 'no',
+        ),
+        'enable_1cc_debug_mode'         => array(
+            'title'       => __('Activate debug mode'),
+            'type'        => 'checkbox',
+            'description' => 'When debug mode is active, API logs and errors are collected and stored in your Woocommerce dashboard. It is recommended to keep this activated.',
+            'label'       => __('Enable debug mode for Magic Checkout'),
+            'default'     => 'yes',
+        ),
+    );
+
+    $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);
+
+}
