@@ -23,26 +23,18 @@ window.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  jQuery(document.body).on('wc_fragments_refreshed', function(event) {
-    var btnMini = document.getElementById('btn-1cc-mini-cart');
-    if (btnMini !== null) {
-      btnMini.addEventListener('click', openRzpCheckout);
-    }
-  });
-  
-  jQuery(document.body).on('wc_fragments_loaded', function(event) {
-    var btnMini = document.getElementById('btn-1cc-mini-cart');
-    if (btnMini !== null) {
-      btnMini.addEventListener('click', openRzpCheckout);
-    }
-  });
+  function addEventListenerToMinicart(wcEvent) {
+    jQuery(document.body).on(wcEvent, function(event) {
+      var btnMini = document.getElementById('btn-1cc-mini-cart');
+      if (btnMini !== null) {
+        btnMini.addEventListener('click', openRzpCheckout);
+      }
+    });
+  }
 
-  jQuery(document.body).on('added_to_cart', function(event) {
-    var btnMini = document.getElementById('btn-1cc-mini-cart');
-    if (btnMini !== null) {
-      btnMini.addEventListener('click', openRzpCheckout);
-    }
-  });
+  addEventListenerToMinicart('wc_fragments_refreshed');
+  addEventListenerToMinicart('wc_fragments_loaded');
+  addEventListenerToMinicart('added_to_cart');
 
   if (btnPdp != null) {
     btnPdp.onclick = function() {
