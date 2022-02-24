@@ -1039,12 +1039,12 @@ function razorpayPaymentsView(){
 function adminEnqueueScriptsFunc()
 {
     //$name, $src, $dependencies, $version, $in_footer
-    wp_enqueue_script( 'route-script', plugin_dir_url(dirname(__FILE__)) . 'js/woo_route.js', array( 'jquery' ), null, true );
-    wp_enqueue_script( 'bootstrap-script', plugin_dir_url(dirname(__FILE__)) . 'js/bootstrap.min.js', array( 'jquery' ), null, true );
+    wp_enqueue_script( 'route-script', plugin_dir_url(dirname(__FILE__)) . 'public/js/woo_route.js', array( 'jquery' ), null, true );
+    wp_enqueue_script( 'bootstrap-script', plugin_dir_url(dirname(__FILE__)) . 'public/js/bootstrap.min.js', array( 'jquery' ), null, true );
 
-    wp_register_style('bootstrap-css', plugin_dir_url(dirname(__FILE__))  . 'css/bootstrap.min.css',
+    wp_register_style('bootstrap-css', plugin_dir_url(dirname(__FILE__))  . 'public/css/bootstrap.min.css',
         null, null);
-    wp_register_style('woo_route-css', plugin_dir_url(dirname(__FILE__))  . 'css/woo_route.css',
+    wp_register_style('woo_route-css', plugin_dir_url(dirname(__FILE__))  . 'public/css/woo_route.css',
         null, null);
     wp_enqueue_style('bootstrap-css');
     wp_enqueue_style('woo_route-css');
