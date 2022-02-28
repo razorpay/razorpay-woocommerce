@@ -1879,6 +1879,9 @@ function disable_coupon_field_on_cart($enabled)
     if ( is_cart()) {
         $enabled = false;
     }
+    if ( is_checkout() ) {
+        $enabled = false;
+    }
     return $enabled;
 }
 
