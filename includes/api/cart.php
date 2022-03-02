@@ -34,7 +34,7 @@ function create1ccCart($orderId)
                 }
             }
 
-            $woocommerce->cart->add_to_cart($productId, $quantity, $variationId, [], $customData);
+            $woocommerce->cart->add_to_cart($productId, $quantity, $variationId, $variationAttributes, $customData);
 
         }
 
