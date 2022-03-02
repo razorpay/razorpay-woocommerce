@@ -67,6 +67,15 @@ function getCouponList($request)
         'posts_per_page' => -1, // By default WP_Query will return only 10 posts, to avoid that we need to pass -1
     );
 
+    //check woo-discount-rule plugin disabling the coupons
+    $discountOptions = get_option('woo-discount-config-v2', []);
+    if (!empty($discountOptions)) {
+        $isCouponEnabled = $discountOptions['disable_coupon_when_rule_applied'];
+        if ($isCouponEnabled == 'disable_coupon') {
+            $args = array();
+        }
+    }
+
     $coupons = new WP_Query($args);
 
     $couponData['promotions'] = array();

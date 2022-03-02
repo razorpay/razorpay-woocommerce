@@ -59,6 +59,21 @@ function applyCouponOnCart(WP_REST_Request $request)
         return new WP_REST_Response($response, 400);
     }
 
+    //check woo-discount-rule plugin disabling the coupons
+    $discountOptions = get_option('woo-discount-config-v2', []);
+    if (!empty($discountOptions)) {
+        $isCouponEnabled = $discountOptions['disable_coupon_when_rule_applied'];
+        if ($isCouponEnabled == 'disable_coupon') {
+            $response["failure_reason"] = "Coupon feature disabled";
+            $response["failure_code"]   = "INVALID_COUPON";
+            $logObj["response"]         = $response;
+
+            rzpLogError(json_encode($logObj));
+
+            return new WP_REST_Response($response, 400);
+        }
+    }
+
     if (empty($coupon->get_email_restrictions()) === false) {
         if ($email == "") {
             $response["failure_reason"] = "User email is required";
