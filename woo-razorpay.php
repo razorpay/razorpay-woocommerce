@@ -1504,6 +1504,7 @@ EOT;
 
             //update payment method title
             $order->set_payment_method($payment_method);
+            $order->set_payment_method_title($this->title);
             $order->save();
 
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
