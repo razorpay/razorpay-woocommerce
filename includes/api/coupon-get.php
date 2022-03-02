@@ -68,16 +68,13 @@ function getCouponList($request)
     );
 
     //check woo-discount-rule plugin disabling the coupons
-    $discountOptions = get_option( 'woo-discount-config-v2', []);
-    if (!empty($discountOptions))
-    {
+    $discountOptions = get_option('woo-discount-config-v2', []);
+    if (!empty($discountOptions)) {
         $isCouponEnabled = $discountOptions['disable_coupon_when_rule_applied'];
-        if ($isCouponEnabled == 'disable_coupon')
-        {
-          $args = array();
+        if ($isCouponEnabled == 'disable_coupon') {
+            $args = array();
         }
     }
-    
 
     $coupons = new WP_Query($args);
 
