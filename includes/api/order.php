@@ -68,7 +68,7 @@ function createWcOrder(WP_REST_Request $request)
             }
         }
 
-        WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variation_id, $variations);
+        WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variation_id, $variations_arr);
     }
 
     // check if cart is empty
