@@ -19,9 +19,8 @@ function create1ccCart($orderId)
 
     if ($order && $order->get_item_count() > 0) {
         foreach ($order->get_items() as $item_id => $item) {
-            $productId = $item->get_product_id();
-            // TODO: what if the product has multiple levels of variants?
-            $variationId = (int) $item->get_variation_id();
+            $productId   = $item->get_product_id();
+            $variationId = $item->get_variation_id();
             $quantity    = $item->get_quantity();
 
             $customData['item_id'] = $item_id;
@@ -34,7 +33,7 @@ function create1ccCart($orderId)
                     $variationAttributes[$attribute_taxonomy] = $value;
                 }
             }
-            
+
             $woocommerce->cart->add_to_cart($productId, $quantity, $variationId, [], $customData);
 
         }
