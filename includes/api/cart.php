@@ -17,6 +17,7 @@ function create1ccCart($orderId)
     } catch (\Exception $e) {
     }
 
+    $variationAttributes = [];
     if ($order && $order->get_item_count() > 0) {
         foreach ($order->get_items() as $item_id => $item) {
             $productId   = $item->get_product_id();
