@@ -298,7 +298,13 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId)
         return false;
     }
 
+    //product and product catgaroy restriction for smart COD plugin
+    if (class_exists('Wc_Smart_Cod')) {
+        return productRestriction();
+    }
+
     if (isset($availablePaymentMethods['cod'])) {
+
         $shipping_method_ids_cod = $availablePaymentMethods['cod']->enable_for_methods;
 
         foreach ($shipping_method_ids_cod as $shipping_method_id) {
@@ -315,6 +321,65 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId)
         }
     }
     return false;
+}
+
+/**
+ * product and product catgaroy restriction for smart COD plugin
+ *
+ * @returns bool
+ */
+function productRestriction()
+{
+    $items    = WC()->cart->get_cart();
+    $products = [];
+    $restrictCount = 0;
+    foreach ($items as $key => $item) {
+        $id = isset($item['variation_id']) && $item['variation_id'] !== 0 ? $item['variation_id'] : $item['product_id'];
+        array_push($products, $id);
+    }
+
+    $restriction = get_option('woocommerce_cod_settings');
+    $productCount = WC()->cart->cart_contents_count;
+
+    foreach ($products as $product_id) {
+        if (in_array($product_id, array_values($restriction['product_restriction']))) {
+            if ($restriction['product_restriction_mode'] === 'one_product') {
+                return false;
+            } else {
+                $restrictCount++;
+            }
+        }
+    }
+
+    if ($restriction['product_restriction_mode'] === 'all_products' && $restrictCount === $productCount) {
+        return false;
+    }
+
+    // product category based restiction
+    $restrictCatCount = 0;
+    foreach ($products as $product_id) {
+        $product = wc_get_product($product_id);
+        $type    = $product->get_type();
+        if ($type === 'variation') {
+            $product = wc_get_product($product->get_parent_id());
+        }
+        $categoryIds = $product->get_category_ids();
+
+        if (array_intersect($categoryIds, $restriction['category_restriction'])) {
+            if ($restriction['category_restriction_mode'] === 'one_product') {
+                return false;
+            } else {
+                $restrictCatCount++;
+            }
+        }
+    }
+
+    if ($restriction['category_restriction_mode'] === 'all_products') {
+        if ($restrictCatCount === $productCount) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
