@@ -1784,8 +1784,6 @@ function enqueueScriptsFor1cc()
     wp_enqueue_script('btn_1cc_checkout');
 }
 
-add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
-
 //To add 1CC button on cart page.
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 
@@ -1894,7 +1892,7 @@ function disable_coupon_field_on_cart($enabled)
 
 if(is1ccEnabled())
 {
-    add_filter( 'woocommerce_coupons_enabled', 'disable_coupon_field_on_cart' );
+    add_filter('woocommerce_coupons_enabled', 'disable_coupon_field_on_cart');
+    add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
+    add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
-
-add_filter('woocommerce_order_needs_shipping_address', '__return_true');
