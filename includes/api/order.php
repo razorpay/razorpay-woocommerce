@@ -91,6 +91,10 @@ function createWcOrder(WP_REST_Request $request)
     if ($orderIdFromHash == null) {
         $checkout = WC()->checkout();
         $orderId  = $checkout->create_order(array());
+
+        if (is_wp_error($orderId)) {
+            $checkout_error = $orderId->get_error_message();
+        }
     } else {
         $existingOrder = wc_get_order($orderIdFromHash);
         $existingOrder->calculate_totals();
@@ -99,6 +103,10 @@ function createWcOrder(WP_REST_Request $request)
             $woocommerce->session->__unset(RZP_1CC_CART_HASH . $cartHash);
             $checkout = WC()->checkout();
             $orderId  = $checkout->create_order(array());
+
+            if (is_wp_error($orderId)) {
+                $checkout_error = $orderId->get_error_message();
+            }
         } else {
             $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
         }
@@ -106,18 +114,19 @@ function createWcOrder(WP_REST_Request $request)
 
     $order = wc_get_order($orderId);
 
-    //To remove by default shipping method added on order.
-    $items = (array) $order->get_items('shipping');
-
-    if (sizeof($items) > 0) {
-        // Loop through shipping items
-        foreach ($items as $item_id => $item) {
-            $order->remove_item($item_id);
-        }
-    }
-
-    $order->calculate_totals();
     if ($order) {
+        //To remove by default shipping method added on order.
+        $items = (array) $order->get_items('shipping');
+
+        if (sizeof($items) > 0) {
+            // Loop through shipping items
+            foreach ($items as $item_id => $item) {
+                $order->remove_item($item_id);
+            }
+        }
+
+        $order->calculate_totals();
+
         update_post_meta($orderId, 'is_magic_checkout_order', 'yes');
 
         $minCartAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_min_cart_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_min_cart_amount'] : 0;
@@ -215,7 +224,7 @@ function createWcOrder(WP_REST_Request $request)
         return new WP_REST_Response($response, 200);
     } else {
         $response['status']  = false;
-        $response['message'] = 'Unable to create woocommerce order';
+        $response['message'] = $checkout_error;
         $response['code']    = 'WOOCOMMERCE_ORDER_CREATION_FAILED';
 
         $logObj['response']    = $response;
