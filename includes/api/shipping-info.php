@@ -330,19 +330,26 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId)
  */
 function productRestriction()
 {
-    $items    = WC()->cart->get_cart();
-    $products = [];
+    $items         = WC()->cart->get_cart();
+    $products      = [];
     $restrictCount = 0;
     foreach ($items as $key => $item) {
         $id = isset($item['variation_id']) && $item['variation_id'] !== 0 ? $item['variation_id'] : $item['product_id'];
         array_push($products, $id);
     }
 
-    $restriction = get_option('woocommerce_cod_settings');
+    $restriction  = get_option('woocommerce_cod_settings');
     $productCount = WC()->cart->cart_contents_count;
+    $productVal   = [];
+
+    if (empty($restriction['product_restriction'])) {
+        $productVal[0] = $restriction['product_restriction'];
+    } else {
+        $productVal = $restriction['product_restriction'];
+    }
 
     foreach ($products as $product_id) {
-        if (in_array($product_id, array_values($restriction['product_restriction']))) {
+        if (in_array($product_id, $productVal)) {
             if ($restriction['product_restriction_mode'] === 'one_product') {
                 return false;
             } else {
@@ -357,15 +364,23 @@ function productRestriction()
 
     // product category based restiction
     $restrictCatCount = 0;
+    $productCat       = [];
     foreach ($products as $product_id) {
         $product = wc_get_product($product_id);
         $type    = $product->get_type();
         if ($type === 'variation') {
             $product = wc_get_product($product->get_parent_id());
         }
-        $categoryIds = $product->get_category_ids();
 
-        if (array_intersect($categoryIds, $restriction['category_restriction'])) {
+        $categoryIds = $product->get_category_ids();
+        
+        if (empty($restriction['category_restriction'])) {
+            $productCat[0] = $restriction['category_restriction'];
+        } else {
+            $productCat = $restriction['category_restriction'];
+        }
+
+        if (array_intersect($categoryIds, $productCat)) {
             if ($restriction['category_restriction_mode'] === 'one_product') {
                 return false;
             } else {
