@@ -451,9 +451,9 @@ function smartCodRestriction($addresses)
     }
 
     // shipping zone based restriction
-    if(!empty($restriction['shipping_zone_restrictions'])){
-        $items                  = WC()->cart->get_cart();
-        $package                = WC()->cart->get_shipping_packages();
+    if (!empty($restriction['shipping_zone_restrictions'])) {
+        $items                = WC()->cart->get_cart();
+        $package              = WC()->cart->get_shipping_packages();
         $customerShippingZone = WC_Shipping_Zones::get_zone_matching_package($package[0]);
         if (in_array($customerShippingZone->get_id(), $restriction['shipping_zone_restrictions'])) {
             return false;
