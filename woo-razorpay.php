@@ -1100,6 +1100,8 @@ EOT;
                 // TODO: Add test mode condition
                 if (is1ccEnabled())
                 {
+                    rzpLogInfo("Order details not found for the orderId: $orderId");
+
                     wp_redirect(wc_get_cart_url());
                     exit;
                 }
@@ -1111,6 +1113,8 @@ EOT;
             // redirect user to success page
             if ($order->needs_payment() === false)
             {
+                rzpLogInfo("Order payment is already done for the orderId: $orderId");
+
                 $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
                 if ($cartHash != false)
@@ -1291,9 +1295,13 @@ EOT;
 
                     if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                     {
+                        rzpLogInfo("Order details update initiated step 1 for the orderId: $wcOrderId");
+
                         //To verify whether the 1cc update order function already under execution or not
                         if(get_transient('wc_order_under_process_'.$wcOrderId) === false)
                         {
+                            rzpLogInfo("Order details update initiated step 2 for the orderId: $wcOrderId");
+
                             $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId);
                         }
 
@@ -1401,6 +1409,9 @@ EOT;
                 // TODO: Test if individual use coupon fails by hardcoding here
                 $isApplied = $order->apply_coupon($couponKey);
                 $order->save();
+
+                rzpLogInfo("Coupon details updated for orderId: $wcOrderId");
+
             }
 
             //Apply shipping charges to woo-order
@@ -1584,6 +1595,8 @@ EOT;
 
                     $this->updateUserAddressInfo('billing_', $shippingAddress, $shippingStateCode, $order);
                 }
+
+                rzpLogInfo("Customer address details updated");
 
                 $order->save();
             }
