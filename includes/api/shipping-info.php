@@ -300,7 +300,7 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
 
     //product and product catgaroy restriction for smart COD plugin
     if (class_exists('Wc_Smart_Cod')) {
-        return smartCodRestriction($address);
+        return smartCodRestriction($address, $order);
     }
 
     if (isset($availablePaymentMethods['cod'])) {
@@ -328,9 +328,11 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
  *
  * @returns bool
  */
-function smartCodRestriction($addresses)
+function smartCodRestriction($addresses, $order)
 {
     $restriction = get_option('woocommerce_cod_settings');
+
+    $items = WC()->cart->get_cart();
 
     $products      = [];
     $restrictCount = 0;
@@ -361,6 +363,7 @@ function smartCodRestriction($addresses)
     if ($restriction['product_restriction_mode'] === 'all_products' && $restrictCount === $productCount) {
         return false;
     }
+
 
     // product category based restiction
     $restrictCatCount = 0;
@@ -399,12 +402,14 @@ function smartCodRestriction($addresses)
     $postals         = explode(',', trim($restriction['restrict_postals']));
     $postals         = array_map('trim', $postals);
     $customerZipcode = $addresses['zipcode'];
+
     foreach ($postals as $p) {
         if (!$p) {
             continue;
         }
         $prepare = explode('...', $p);
         $count   = count($prepare);
+        
         if ($count === 1) {
             // single
             if ($prepare[0] === $customerZipcode) {
@@ -417,12 +422,14 @@ function smartCodRestriction($addresses)
             }
 
             if ($customerZipcode >= $prepare[0] && $customerZipcode <= $prepare[1]) {
-                return $enable ? true : false;
+                return false;
             }
         } else {
             continue;
         }
     }
+   
+
 
     // country based restriction
     if (!empty($restriction['country_restrictions'])) {
@@ -432,7 +439,8 @@ function smartCodRestriction($addresses)
     }
 
     // state based restriction
-    $state = $addresses['country'] . '_' . $addresses['state_code'];
+    $stateCode = normalizeWcStateCode($params['state_code']);
+    $state     = $addresses['country'] . '_' . $stateCode;
     if (!empty($restriction['state_restrictions'])) {
         if (in_array($state, $restriction['state_restrictions'])) {
             return false;
@@ -456,6 +464,35 @@ function smartCodRestriction($addresses)
         $package              = WC()->cart->get_shipping_packages();
         $customerShippingZone = WC_Shipping_Zones::get_zone_matching_package($package[0]);
         if (in_array($customerShippingZone->get_id(), $restriction['shipping_zone_restrictions'])) {
+            return false;
+        }
+    }
+
+    // user role restriction
+    $user = get_user_by('id', $order->get_user_id());
+    $role = !empty($user) ? $user->roles : [];
+    if (!empty($restriction['user_role_restriction']) && !empty($role)) {
+        if (array_intersect($restriction['user_role_restriction'], $role)) {
+            return false;
+        }
+    }
+
+    // shipping class restriction
+    if (!empty($restriction['shipping_class_restriction'])) {
+        $restrictClassCount = 0;
+        foreach ($products as $product_id) {
+            $product         = wc_get_product($product_id);
+            $shippingClassId = $product->get_shipping_class_id();
+            if (in_array($shippingClassId, $restriction['shipping_class_restriction'])) {
+                if ($restriction['shipping_class_restriction_mode'] === 'one_product') {
+                    return false;
+                } else {
+                    $restrictClassCount++;
+                }
+            }
+        }
+
+        if ($restriction['shipping_class_restriction_mode'] === 'all_products' && $restrictClassCount === $productCount) {
             return false;
         }
     }
