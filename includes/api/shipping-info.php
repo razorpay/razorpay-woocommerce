@@ -330,7 +330,10 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
  */
 function smartCodRestriction($addresses, $order)
 {
-    $restriction = get_option('woocommerce_cod_settings');
+    $restriction         = get_option('woocommerce_cod_settings');
+    $restrictionSettings = json_decode($restriction['restriction_settings']);
+    // print_R($restrictionSettings->city_restrictions);
+    // die;
 
     $items = WC()->cart->get_cart();
 
@@ -351,21 +354,36 @@ function smartCodRestriction($addresses, $order)
     }
 
     foreach ($products as $product_id) {
-        if (in_array($product_id, $productVal)) {
-            if ($restriction['product_restriction_mode'] === 'one_product') {
-                return false;
-            } else {
-                $restrictCount++;
+        if ($restrictionSettings->product_restriction === 0) {
+            if (in_array($product_id, $productVal)) {
+                if ($restriction['product_restriction_mode'] === 'one_product') {
+                    return false;
+                } else {
+                    $restrictCount++;
+                }
             }
+        } else {
+            if (!in_array($product_id, $productVal)) {
+                if ($restriction['product_restriction_mode'] === 'all_products') {
+                    return false;
+                } else {
+                    $restrictCount++;
+                }
+            }
+        }
+
+    }
+    if ($restrictionSettings->product_restriction === 0) {
+        if ($restriction['product_restriction_mode'] === 'all_products' && $restrictCount === $productCount) {
+            return false;
+        }
+    } else {
+        if ($restriction['product_restriction_mode'] === 'one_product' && $restrictCount === $productCount) {
+            return false;
         }
     }
 
-    if ($restriction['product_restriction_mode'] === 'all_products' && $restrictCount === $productCount) {
-        return false;
-    }
-
-
-    // product category based restiction
+    // product category based restriction
     $restrictCatCount = 0;
     $productCat       = [];
     foreach ($products as $product_id) {
@@ -382,18 +400,31 @@ function smartCodRestriction($addresses, $order)
         } else {
             $productCat = $restriction['category_restriction'];
         }
-
-        if (array_intersect($categoryIds, $productCat)) {
-            if ($restriction['category_restriction_mode'] === 'one_product') {
-                return false;
-            } else {
-                $restrictCatCount++;
+        if ($restrictionSettings->category_restriction === 0) {
+            if (array_intersect($categoryIds, $productCat)) {
+                if ($restriction['category_restriction_mode'] === 'one_product') {
+                    return false;
+                } else {
+                    $restrictCatCount++;
+                }
+            }
+        } else {
+            if (!array_intersect($categoryIds, $productCat)) {
+                if ($restriction['category_restriction_mode'] === 'all_product') {
+                    return false;
+                } else {
+                    $restrictCatCount++;
+                }
             }
         }
     }
 
-    if ($restriction['category_restriction_mode'] === 'all_products') {
-        if ($restrictCatCount === $productCount) {
+    if ($restrictionSettings->category_restriction === 0) {
+        if ($restriction['category_restriction_mode'] === 'all_products' && $restrictCatCount === $productCount) {
+            return false;
+        }
+    } else {
+        if ($restriction['category_restriction_mode'] === 'one_product' && $restrictCatCount === $productCount) {
             return false;
         }
     }
@@ -409,12 +440,17 @@ function smartCodRestriction($addresses, $order)
         }
         $prepare = explode('...', $p);
         $count   = count($prepare);
-        
+
         if ($count === 1) {
             // single
             if ($prepare[0] === $customerZipcode) {
-                return false;
+                if ($restrictionSettings->restrict_postals === 0) {
+                    return false;
+                } else {
+                    $flag = 1;
+                }
             }
+
         } elseif ($count === 2) {
             // range
             if (!is_numeric($prepare[0]) || !is_numeric($prepare[1]) || !is_numeric($customerZipcode)) {
@@ -422,29 +458,48 @@ function smartCodRestriction($addresses, $order)
             }
 
             if ($customerZipcode >= $prepare[0] && $customerZipcode <= $prepare[1]) {
-                return false;
+                if ($restrictionSettings->restrict_postals === 0) {
+                    return false;
+                } else {
+                    $flag = 1;
+                }
             }
         } else {
             continue;
         }
     }
-   
 
+    if ($restrictionSettings->restrict_postals === 1 && $flag !== 1) {
+        return false;
+    }
 
     // country based restriction
     if (!empty($restriction['country_restrictions'])) {
-        if (in_array($addresses['country'], $restriction['country_restrictions'])) {
-            return false;
+        if ($restrictionSettings->country_restrictions === 0) {
+            if (in_array($addresses['country'], $restriction['country_restrictions'])) {
+                return false;
+            }
+        } else {
+            if (!in_array($addresses['country'], $restriction['country_restrictions'])) {
+                return false;
+            }
         }
     }
 
     // state based restriction
-    $stateCode = normalizeWcStateCode($params['state_code']);
+    $stateCode = normalizeWcStateCode($addresses['state_code']);
     $state     = $addresses['country'] . '_' . $stateCode;
     if (!empty($restriction['state_restrictions'])) {
-        if (in_array($state, $restriction['state_restrictions'])) {
-            return false;
+        if ($restrictionSettings->state_restrictions === 0) {
+            if (in_array($state, $restriction['state_restrictions'])) {
+                return false;
+            }
+        } else {
+            if (!in_array($state, $restriction['state_restrictions'])) {
+                return false;
+            }
         }
+
     }
 
     // city based restriction
@@ -452,10 +507,16 @@ function smartCodRestriction($addresses, $order)
         $cityRes         = explode(',', trim($restriction['city_restrictions']));
         $restrict        = array_map('trim', $cityRes);
         $cityRestriction = array_map('strtolower', $restrict);
-        if (in_array($addresses['city'], $cityRestriction)) {
-
-            return false;
+        if ($restrictionSettings->city_restrictions === 0) {
+            if (in_array($addresses['city'], $cityRestriction)) {
+                return false;
+            }
+        } else {
+            if (!in_array($addresses['city'], $cityRestriction)) {
+                return false;
+            }
         }
+
     }
 
     // shipping zone based restriction
@@ -463,18 +524,32 @@ function smartCodRestriction($addresses, $order)
         $items                = WC()->cart->get_cart();
         $package              = WC()->cart->get_shipping_packages();
         $customerShippingZone = WC_Shipping_Zones::get_zone_matching_package($package[0]);
-        if (in_array($customerShippingZone->get_id(), $restriction['shipping_zone_restrictions'])) {
-            return false;
+        if ($restrictionSettings->shipping_zone_restrictions === 0) {
+            if (in_array($customerShippingZone->get_id(), $restriction['shipping_zone_restrictions'])) {
+                return false;
+            }
+        } else {
+            if (!in_array($customerShippingZone->get_id(), $restriction['shipping_zone_restrictions'])) {
+                return false;
+            }
         }
+
     }
 
     // user role restriction
     $user = get_user_by('id', $order->get_user_id());
     $role = !empty($user) ? $user->roles : [];
     if (!empty($restriction['user_role_restriction']) && !empty($role)) {
-        if (array_intersect($restriction['user_role_restriction'], $role)) {
-            return false;
+        if ($restrictionSettings->user_role_restriction === 0) {
+            if (array_intersect($restriction['user_role_restriction'], $role)) {
+                return false;
+            }
+        } else {
+            if (!array_intersect($restriction['user_role_restriction'], $role)) {
+                return false;
+            }
         }
+
     }
 
     // shipping class restriction
@@ -483,18 +558,36 @@ function smartCodRestriction($addresses, $order)
         foreach ($products as $product_id) {
             $product         = wc_get_product($product_id);
             $shippingClassId = $product->get_shipping_class_id();
-            if (in_array($shippingClassId, $restriction['shipping_class_restriction'])) {
-                if ($restriction['shipping_class_restriction_mode'] === 'one_product') {
-                    return false;
-                } else {
-                    $restrictClassCount++;
+            if ($restrictionSettings->shipping_class_restriction === 0) {
+                if (in_array($shippingClassId, $restriction['shipping_class_restriction'])) {
+                    if ($restriction['shipping_class_restriction_mode'] === 'one_product') {
+                        return false;
+                    } else {
+                        $restrictClassCount++;
+                    }
                 }
+            } else {
+                if (!in_array($shippingClassId, $restriction['shipping_class_restriction'])) {
+                    if ($restriction['shipping_class_restriction_mode'] === 'all_products') {
+                        return false;
+                    } else {
+                        $restrictClassCount++;
+                    }
+                }
+            }
+
+        }
+
+        if ($restrictionSettings->shipping_class_restriction === 0) {
+            if ($restriction['shipping_class_restriction_mode'] === 'all_products' && $restrictClassCount === $productCount) {
+                return false;
+            }
+        } else {
+            if ($restriction['shipping_class_restriction_mode'] === 'one_product' && $restrictClassCount === $productCount) {
+                return false;
             }
         }
 
-        if ($restriction['shipping_class_restriction_mode'] === 'all_products' && $restrictClassCount === $productCount) {
-            return false;
-        }
     }
 
     return true;
