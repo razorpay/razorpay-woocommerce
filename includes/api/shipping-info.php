@@ -332,9 +332,7 @@ function smartCodRestriction($addresses, $order)
 {
     $restriction         = get_option('woocommerce_cod_settings');
     $restrictionSettings = json_decode($restriction['restriction_settings']);
-    // print_R($restrictionSettings->city_restrictions);
-    // die;
-
+    
     $items = WC()->cart->get_cart();
 
     $products      = [];
