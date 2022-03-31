@@ -1880,12 +1880,12 @@ function disable_coupon_field_on_cart($enabled)
     if (isTestModeEnabled()) {
         $current_user = wp_get_current_user();
         if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-            if (is_cart() || is_checkout()) {
+            if (is_cart()) {
                 $enabled = false;
             }
         }
     } else {
-        if (is_cart() || is_checkout()) {
+        if (is_cart()) {
             $enabled = false;
         }
     }
