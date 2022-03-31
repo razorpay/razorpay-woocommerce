@@ -1873,26 +1873,8 @@ function addAdminSettingsAlertScript()
 
 add_action('admin_enqueue_scripts', 'addAdminSettingsAlertScript');
 
-function disable_coupon_field_on_cart($enabled)
-{
-    if (isTestModeEnabled()) {
-        $current_user = wp_get_current_user();
-        if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-            if (is_cart() || is_checkout()) {
-                $enabled = false;
-            }
-        }
-    } else {
-        if (is_cart() || is_checkout()) {
-            $enabled = false;
-        }
-    }
-    return $enabled;
-}
-
 if(is1ccEnabled())
 {
-    add_filter('woocommerce_coupons_enabled', 'disable_coupon_field_on_cart');
     add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
