@@ -50,7 +50,7 @@ function calculateShipping1cc(WP_REST_Request $request)
         }
 
         if ($customerResponse) {
-            $response[] = shippingCalculatePackages1cc($address['id'], $orderId);
+            $response[] = shippingCalculatePackages1cc($address['id'], $orderId, $address);
         } else {
             $response['failure_reason'] = 'Set customer shipping information failed';
             $response['failure_code']   = 'VALIDATION_ERROR';
@@ -106,7 +106,7 @@ function shippingUpdateCustomerInformation1cc($params)
  *
  * @return mixed
  */
-function shippingCalculatePackages1cc($id, $orderId)
+function shippingCalculatePackages1cc($id, $orderId, $address)
 {
     // Get packages for the cart.
     $packages = WC()->cart->get_shipping_packages();
@@ -143,7 +143,7 @@ function shippingCalculatePackages1cc($id, $orderId)
     }
     $calculatedPackages = wc()->shipping()->calculate_shipping($packages);
 
-    return getItemResponse1cc($calculatedPackages, $id, $vendorId, $orderId);
+    return getItemResponse1cc($calculatedPackages, $id, $vendorId, $orderId, $address);
 }
 
 /**
@@ -152,7 +152,7 @@ function shippingCalculatePackages1cc($id, $orderId)
  * @param array $package WooCommerce shipping packages.
  * @return array
  */
-function getItemResponse1cc($package, $id, $vendorId, $orderId)
+function getItemResponse1cc($package, $id, $vendorId, $orderId, $address)
 {
 
     // Add product names and quantities.
@@ -168,7 +168,7 @@ function getItemResponse1cc($package, $id, $vendorId, $orderId)
         }
     }
 
-    $shippingResponse = prepareRatesResponse1cc($package, $vendorId, $orderId);
+    $shippingResponse = prepareRatesResponse1cc($package, $vendorId, $orderId, $address);
 
     $isServiceable = count($shippingResponse) > 0 ? true : false;
     // TODO: also return 'state'?
@@ -191,7 +191,7 @@ function getItemResponse1cc($package, $id, $vendorId, $orderId)
  * @param array $package Shipping package complete with rates from WooCommerce.
  * @return array
  */
-function prepareRatesResponse1cc($package, $vendorId, $orderId)
+function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
 {
 
     $response = array();
@@ -200,14 +200,14 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId)
         foreach ($vendorId as $id) {
             $rates = $package[$id]['rates'];
             foreach ($rates as $rate) {
-                $response[] = getRateResponse1cc($rate, $id, $orderId);
+                $response[] = getRateResponse1cc($rate, $id, $orderId, $address);
             }
         }
     }
 
     $rates = $package[0]['rates'];
     foreach ($rates as $val) {
-        $response[] = getRateResponse1cc($val, "", $orderId);
+        $response[] = getRateResponse1cc($val, "", $orderId, $address);
     }
 
     if (empty($response) === true) {
@@ -245,7 +245,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId)
  * @return array
  */
 
-function getRateResponse1cc($rate, $vendorId, $orderId)
+function getRateResponse1cc($rate, $vendorId, $orderId, $address)
 {
 
     return array_merge(
@@ -260,7 +260,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId)
             'method_id'     => getRateProp1cc($rate, 'method_id'),
             'meta_data'     => getRateMetaData1cc($rate),
             'vendor_id'     => $vendorId,
-            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId),
+            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId, $address),
         ),
         getStoreCurrencyResponse1cc()
     );
@@ -271,7 +271,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId)
  *
  * @returns bool
  */
-function getCodShippingInfo1cc($instanceId, $methodId, $orderId)
+function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
 {
 
     global $woocommerce;
@@ -300,7 +300,7 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId)
 
     //product and product catgaroy restriction for smart COD plugin
     if (class_exists('Wc_Smart_Cod')) {
-        return productRestriction();
+        return smartCodRestriction($address, $order);
     }
 
     if (isset($availablePaymentMethods['cod'])) {
@@ -328,9 +328,13 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId)
  *
  * @returns bool
  */
-function productRestriction()
+function smartCodRestriction($addresses, $order)
 {
-    $items         = WC()->cart->get_cart();
+    $restriction         = get_option('woocommerce_cod_settings');
+    $restrictionSettings = json_decode($restriction['restriction_settings']);
+    
+    $items = WC()->cart->get_cart();
+
     $products      = [];
     $restrictCount = 0;
     foreach ($items as $key => $item) {
@@ -338,7 +342,6 @@ function productRestriction()
         array_push($products, $id);
     }
 
-    $restriction  = get_option('woocommerce_cod_settings');
     $productCount = WC()->cart->cart_contents_count;
     $productVal   = [];
 
@@ -349,20 +352,36 @@ function productRestriction()
     }
 
     foreach ($products as $product_id) {
-        if (in_array($product_id, $productVal)) {
-            if ($restriction['product_restriction_mode'] === 'one_product') {
-                return false;
-            } else {
-                $restrictCount++;
+        if ($restrictionSettings->product_restriction === 0) {
+            if (in_array($product_id, $productVal)) {
+                if ($restriction['product_restriction_mode'] === 'one_product') {
+                    return false;
+                } else {
+                    $restrictCount++;
+                }
             }
+        } else {
+            if (!in_array($product_id, $productVal)) {
+                if ($restriction['product_restriction_mode'] === 'all_products') {
+                    return false;
+                } else {
+                    $restrictCount++;
+                }
+            }
+        }
+
+    }
+    if ($restrictionSettings->product_restriction === 0) {
+        if ($restriction['product_restriction_mode'] === 'all_products' && $restrictCount === $productCount) {
+            return false;
+        }
+    } else {
+        if ($restriction['product_restriction_mode'] === 'one_product' && $restrictCount === $productCount) {
+            return false;
         }
     }
 
-    if ($restriction['product_restriction_mode'] === 'all_products' && $restrictCount === $productCount) {
-        return false;
-    }
-
-    // product category based restiction
+    // product category based restriction
     $restrictCatCount = 0;
     $productCat       = [];
     foreach ($products as $product_id) {
@@ -373,27 +392,202 @@ function productRestriction()
         }
 
         $categoryIds = $product->get_category_ids();
-        
+
         if (empty($restriction['category_restriction'])) {
             $productCat[0] = $restriction['category_restriction'];
         } else {
             $productCat = $restriction['category_restriction'];
         }
-
-        if (array_intersect($categoryIds, $productCat)) {
-            if ($restriction['category_restriction_mode'] === 'one_product') {
-                return false;
-            } else {
-                $restrictCatCount++;
+        if ($restrictionSettings->category_restriction === 0) {
+            if (array_intersect($categoryIds, $productCat)) {
+                if ($restriction['category_restriction_mode'] === 'one_product') {
+                    return false;
+                } else {
+                    $restrictCatCount++;
+                }
+            }
+        } else {
+            if (!array_intersect($categoryIds, $productCat)) {
+                if ($restriction['category_restriction_mode'] === 'all_product') {
+                    return false;
+                } else {
+                    $restrictCatCount++;
+                }
             }
         }
     }
 
-    if ($restriction['category_restriction_mode'] === 'all_products') {
-        if ($restrictCatCount === $productCount) {
+    if ($restrictionSettings->category_restriction === 0) {
+        if ($restriction['category_restriction_mode'] === 'all_products' && $restrictCatCount === $productCount) {
+            return false;
+        }
+    } else {
+        if ($restriction['category_restriction_mode'] === 'one_product' && $restrictCatCount === $productCount) {
             return false;
         }
     }
+
+    // zip code restriction
+    $postals         = explode(',', trim($restriction['restrict_postals']));
+    $postals         = array_map('trim', $postals);
+    $customerZipcode = $addresses['zipcode'];
+
+    foreach ($postals as $p) {
+        if (!$p) {
+            continue;
+        }
+        $prepare = explode('...', $p);
+        $count   = count($prepare);
+
+        if ($count === 1) {
+            // single
+            if ($prepare[0] === $customerZipcode) {
+                if ($restrictionSettings->restrict_postals === 0) {
+                    return false;
+                } else {
+                    $flag = 1;
+                }
+            }
+
+        } elseif ($count === 2) {
+            // range
+            if (!is_numeric($prepare[0]) || !is_numeric($prepare[1]) || !is_numeric($customerZipcode)) {
+                continue;
+            }
+
+            if ($customerZipcode >= $prepare[0] && $customerZipcode <= $prepare[1]) {
+                if ($restrictionSettings->restrict_postals === 0) {
+                    return false;
+                } else {
+                    $flag = 1;
+                }
+            }
+        } else {
+            continue;
+        }
+    }
+
+    if ($restrictionSettings->restrict_postals === 1 && $flag !== 1) {
+        return false;
+    }
+
+    // country based restriction
+    if (!empty($restriction['country_restrictions'])) {
+        if ($restrictionSettings->country_restrictions === 0) {
+            if (in_array($addresses['country'], $restriction['country_restrictions'])) {
+                return false;
+            }
+        } else {
+            if (!in_array($addresses['country'], $restriction['country_restrictions'])) {
+                return false;
+            }
+        }
+    }
+
+    // state based restriction
+    $stateCode = normalizeWcStateCode($addresses['state_code']);
+    $state     = $addresses['country'] . '_' . $stateCode;
+    if (!empty($restriction['state_restrictions'])) {
+        if ($restrictionSettings->state_restrictions === 0) {
+            if (in_array($state, $restriction['state_restrictions'])) {
+                return false;
+            }
+        } else {
+            if (!in_array($state, $restriction['state_restrictions'])) {
+                return false;
+            }
+        }
+
+    }
+
+    // city based restriction
+    if (!empty($restriction['city_restrictions'])) {
+        $cityRes         = explode(',', trim($restriction['city_restrictions']));
+        $restrict        = array_map('trim', $cityRes);
+        $cityRestriction = array_map('strtolower', $restrict);
+        if ($restrictionSettings->city_restrictions === 0) {
+            if (in_array($addresses['city'], $cityRestriction)) {
+                return false;
+            }
+        } else {
+            if (!in_array($addresses['city'], $cityRestriction)) {
+                return false;
+            }
+        }
+
+    }
+
+    // shipping zone based restriction
+    if (!empty($restriction['shipping_zone_restrictions'])) {
+        $items                = WC()->cart->get_cart();
+        $package              = WC()->cart->get_shipping_packages();
+        $customerShippingZone = WC_Shipping_Zones::get_zone_matching_package($package[0]);
+        if ($restrictionSettings->shipping_zone_restrictions === 0) {
+            if (in_array($customerShippingZone->get_id(), $restriction['shipping_zone_restrictions'])) {
+                return false;
+            }
+        } else {
+            if (!in_array($customerShippingZone->get_id(), $restriction['shipping_zone_restrictions'])) {
+                return false;
+            }
+        }
+
+    }
+
+    // user role restriction
+    $user = get_user_by('id', $order->get_user_id());
+    $role = !empty($user) ? $user->roles : [];
+    if (!empty($restriction['user_role_restriction']) && !empty($role)) {
+        if ($restrictionSettings->user_role_restriction === 0) {
+            if (array_intersect($restriction['user_role_restriction'], $role)) {
+                return false;
+            }
+        } else {
+            if (!array_intersect($restriction['user_role_restriction'], $role)) {
+                return false;
+            }
+        }
+
+    }
+
+    // shipping class restriction
+    if (!empty($restriction['shipping_class_restriction'])) {
+        $restrictClassCount = 0;
+        foreach ($products as $product_id) {
+            $product         = wc_get_product($product_id);
+            $shippingClassId = $product->get_shipping_class_id();
+            if ($restrictionSettings->shipping_class_restriction === 0) {
+                if (in_array($shippingClassId, $restriction['shipping_class_restriction'])) {
+                    if ($restriction['shipping_class_restriction_mode'] === 'one_product') {
+                        return false;
+                    } else {
+                        $restrictClassCount++;
+                    }
+                }
+            } else {
+                if (!in_array($shippingClassId, $restriction['shipping_class_restriction'])) {
+                    if ($restriction['shipping_class_restriction_mode'] === 'all_products') {
+                        return false;
+                    } else {
+                        $restrictClassCount++;
+                    }
+                }
+            }
+
+        }
+
+        if ($restrictionSettings->shipping_class_restriction === 0) {
+            if ($restriction['shipping_class_restriction_mode'] === 'all_products' && $restrictClassCount === $productCount) {
+                return false;
+            }
+        } else {
+            if ($restriction['shipping_class_restriction_mode'] === 'one_product' && $restrictClassCount === $productCount) {
+                return false;
+            }
+        }
+
+    }
+
     return true;
 }
 
