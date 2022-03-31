@@ -1490,6 +1490,7 @@ EOT;
 
             // set default payment method
             $payment_method = $this->id;
+            $payment_method_title = $this->title;
 
             // To verify the payment method for particular payment id.
             $razorpayPyamentData = $api->payment->fetch($razorpayPaymentId);
@@ -1500,11 +1501,12 @@ EOT;
             {
                 $codKey = $razorpayData['cod_fee']/100;
                 $payment_method = 'cod';
+                $payment_method_title = 'Cash on delivery';
             }
 
             //update payment method title
             $order->set_payment_method($payment_method);
-            $order->set_payment_method_title($this->title);
+            $order->set_payment_method_title($payment_method_title);
             $order->save();
 
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
