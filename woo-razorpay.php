@@ -528,13 +528,15 @@ function woocommerce_razorpay_init()
         public function createOrGetRazorpayOrderId($orderId, $is1ccCheckout = 'no')
         {
             global $woocommerce;
-            rzpLogInfo("createOrGetRazorpayOrderId $orderId");
+            rzpLogInfo("createOrGetRazorpayOrderId $orderId and is1ccCheckout is set to $is1ccCheckout");
 
             $create = false;
 
             if($is1ccCheckout == 'no')
             {
                 update_post_meta( $orderId, 'is_magic_checkout_order', 'no' );
+
+                rzpLogInfo("Called createOrGetRazorpayOrderId with params orderId $orderId and is_magic_checkout_order is set to no");
             }
 
             $sessionKey = $this->getOrderSessionKey($orderId);
@@ -847,9 +849,12 @@ function woocommerce_razorpay_init()
                 }
             }
 
+            rzpLogInfo("Called getOrderCreationData with params orderId $orderId and is1ccOrder is set to $is1ccOrder");
+
             if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
             {
                 $data = $this->orderArg1CC($data, $order);
+                rzpLogInfo("Called getOrderCreationData with params orderId $orderId and adding line_items_total");
             }
 
             return $data;
@@ -1100,6 +1105,8 @@ EOT;
                 // TODO: Add test mode condition
                 if (is1ccEnabled())
                 {
+                    rzpLogInfo("Order details not found for the orderId: $orderId");
+
                     wp_redirect(wc_get_cart_url());
                     exit;
                 }
@@ -1111,6 +1118,8 @@ EOT;
             // redirect user to success page
             if ($order->needs_payment() === false)
             {
+                rzpLogInfo("Order payment is already done for the orderId: $orderId");
+
                 $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
                 if ($cartHash != false)
@@ -1289,11 +1298,17 @@ EOT;
 
                     $is1ccOrder = get_post_meta( $wcOrderId, 'is_magic_checkout_order', true );
 
+                    rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
+
                     if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                     {
+                        rzpLogInfo("Order details update initiated step 1 for the orderId: $wcOrderId");
+
                         //To verify whether the 1cc update order function already under execution or not
                         if(get_transient('wc_order_under_process_'.$wcOrderId) === false)
                         {
+                            rzpLogInfo("Order details update initiated step 2 for the orderId: $wcOrderId");
+
                             $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId);
                         }
 
@@ -1401,6 +1416,9 @@ EOT;
                 // TODO: Test if individual use coupon fails by hardcoding here
                 $isApplied = $order->apply_coupon($couponKey);
                 $order->save();
+
+                rzpLogInfo("Coupon details updated for orderId: $wcOrderId");
+
             }
 
             //Apply shipping charges to woo-order
@@ -1536,6 +1554,9 @@ EOT;
         //To update customer address info to wc order.
         public function updateOrderAddress($razorpayData, $order)
         {
+            rzpLogInfo("updateOrderAddress function called");
+            $receipt = $razorpayData['receipt'];
+
             if (isset($razorpayData['customer_details']['shipping_address']))
             {
                 $shippingAddressKey = $razorpayData['customer_details']['shipping_address'];
@@ -1559,6 +1580,7 @@ EOT;
                 $order->set_shipping_state($shippingStateCode);
 
                 $this->updateUserAddressInfo('shipping_', $shippingAddress, $shippingStateCode, $order);
+                rzpLogInfo('shipping details for receipt id: '.$receipt .' is '. json_encode($shippingAddress));
 
                 if (empty($razorpayData['customer_details']['billing_address']) == false)
                 {
@@ -1578,6 +1600,7 @@ EOT;
                     $order->set_billing_state($billingStateCode);
 
                     $this->updateUserAddressInfo('billing_', $billingAddress, $billingStateCode, $order);
+                    rzpLogInfo('billing details for receipt id: '.$receipt .' is '. json_encode($billingAddress));
                 }
                 else
                 {
@@ -1586,6 +1609,8 @@ EOT;
 
                     $this->updateUserAddressInfo('billing_', $shippingAddress, $shippingStateCode, $order);
                 }
+
+                rzpLogInfo("updateOrderAddress function executed");
 
                 $order->save();
             }
