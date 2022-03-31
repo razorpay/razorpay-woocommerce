@@ -528,13 +528,15 @@ function woocommerce_razorpay_init()
         public function createOrGetRazorpayOrderId($orderId, $is1ccCheckout = 'no')
         {
             global $woocommerce;
-            rzpLogInfo("createOrGetRazorpayOrderId $orderId");
+            rzpLogInfo("createOrGetRazorpayOrderId $orderId and is1ccCheckout is set to $is1ccCheckout");
 
             $create = false;
 
             if($is1ccCheckout == 'no')
             {
                 update_post_meta( $orderId, 'is_magic_checkout_order', 'no' );
+
+                rzpLogInfo("Called createOrGetRazorpayOrderId with params orderId $orderId and is_magic_checkout_order is set to no");
             }
 
             $sessionKey = $this->getOrderSessionKey($orderId);
@@ -847,9 +849,12 @@ function woocommerce_razorpay_init()
                 }
             }
 
+            rzpLogInfo("Called getOrderCreationData with params orderId $orderId and is1ccOrder is set to $is1ccOrder");
+
             if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
             {
                 $data = $this->orderArg1CC($data, $order);
+                rzpLogInfo("Called getOrderCreationData with params orderId $orderId and adding line_items_total");
             }
 
             return $data;
@@ -1293,6 +1298,8 @@ EOT;
 
                     $is1ccOrder = get_post_meta( $wcOrderId, 'is_magic_checkout_order', true );
 
+                    rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
+
                     if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                     {
                         rzpLogInfo("Order details update initiated step 1 for the orderId: $wcOrderId");
@@ -1545,6 +1552,9 @@ EOT;
         //To update customer address info to wc order.
         public function updateOrderAddress($razorpayData, $order)
         {
+            rzpLogInfo("updateOrderAddress function called");
+            $receipt = $razorpayData['receipt'];
+
             if (isset($razorpayData['customer_details']['shipping_address']))
             {
                 $shippingAddressKey = $razorpayData['customer_details']['shipping_address'];
@@ -1568,6 +1578,7 @@ EOT;
                 $order->set_shipping_state($shippingStateCode);
 
                 $this->updateUserAddressInfo('shipping_', $shippingAddress, $shippingStateCode, $order);
+                rzpLogInfo('shipping details for receipt id: '.$receipt .' is '. json_encode($shippingAddress));
 
                 if (empty($razorpayData['customer_details']['billing_address']) == false)
                 {
@@ -1587,6 +1598,7 @@ EOT;
                     $order->set_billing_state($billingStateCode);
 
                     $this->updateUserAddressInfo('billing_', $billingAddress, $billingStateCode, $order);
+                    rzpLogInfo('billing details for receipt id: '.$receipt .' is '. json_encode($billingAddress));
                 }
                 else
                 {
@@ -1596,7 +1608,7 @@ EOT;
                     $this->updateUserAddressInfo('billing_', $shippingAddress, $shippingStateCode, $order);
                 }
 
-                rzpLogInfo("Customer address details updated");
+                rzpLogInfo("updateOrderAddress function executed");
 
                 $order->save();
             }
