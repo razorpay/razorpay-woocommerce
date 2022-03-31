@@ -1501,7 +1501,7 @@ EOT;
             {
                 $codKey = $razorpayData['cod_fee']/100;
                 $payment_method = 'cod';
-                $payment_method_title = 'cash on delivery';
+                $payment_method_title = 'Cash on delivery';
             }
 
             //update payment method title
