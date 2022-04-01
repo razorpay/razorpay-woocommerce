@@ -150,7 +150,7 @@ function woocommerce_razorpay_init()
             $is1ccAvailable = false;
 
             try {
-              $api = new Api($this->getSetting('key_id'), '');
+              $api = $this->getRazorpayApiInstance();
               $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
 
               if (!empty($merchantPreferences['features']['one_click_checkout'])) {
