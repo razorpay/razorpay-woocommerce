@@ -22,7 +22,11 @@ $productData = wp_json_encode(['id' => $product->get_id(), 'quantity' => 1]);
 </div>
 
 <script type="">
-  var quantity = document.getElementsByClassName("qty")[0].value;
+  let i = 0;
+  while (typeof quantity === 'undefined') {
+    var quantity = document.getElementsByClassName("qty")[i].value;
+    i++;
+  }
 
   var btnPdp = document.getElementById('btn-1cc-pdp');
 
@@ -30,7 +34,11 @@ $productData = wp_json_encode(['id' => $product->get_id(), 'quantity' => 1]);
 
   jQuery('.qty').on('change',function(e)
   {
-      var quantity = document.getElementsByClassName("qty")[0].value;
+      let i = 0;
+      while (typeof quantity === 'undefined') {
+        var quantity = document.getElementsByClassName("qty")[i].value;
+        i++;
+      }
       btnPdp.setAttribute('quantity', quantity);
 
       if(quantity <= 0)

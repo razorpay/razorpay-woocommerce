@@ -126,6 +126,17 @@ function createWcOrder(WP_REST_Request $request)
     $order = wc_get_order($orderId);
 
     if ($order) {
+
+        // To remove coupon added on order.
+        $coupons = $order->get_used_coupons();
+        if(!empty($coupons)){
+            foreach($coupons as $coupon){
+                $order->remove_coupon($coupon);
+            }
+            $couponCode = $coupons[0];
+        }
+        
+
         //To remove by default shipping method added on order.
         $items = (array) $order->get_items('shipping');
 
