@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.1.0
- * Stable tag: 3.1.0
+ * Version: 3.2.0
+ * Stable tag: 3.2.0
  * Author: Team Razorpay
- * WC tested up to: 6.2.1
+ * WC tested up to: 6.2.2
  * Author URI: https://razorpay.com
 */
 
@@ -150,8 +150,8 @@ function woocommerce_razorpay_init()
             $is1ccAvailable = false;
 
             try {
-              $api = new Api($this->getSetting('key_id'), '');
-              $merchantPreferences = $api->request->request('GET', 'preferences');
+              $api = $this->getRazorpayApiInstance();
+              $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
 
               if (!empty($merchantPreferences['features']['one_click_checkout'])) {
                 $is1ccAvailable = true;
