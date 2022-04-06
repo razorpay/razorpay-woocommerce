@@ -149,18 +149,28 @@ function woocommerce_razorpay_init()
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
 
-            try {
-              $api = $this->getRazorpayApiInstance();
-              $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
+            //Check whether the get_current_screen function exists because it is loaded only after 'admin_init' hook.
+            if (function_exists('get_current_screen'))
+            {
+                $current_screen = get_current_screen();
 
-              if (!empty($merchantPreferences['features']['one_click_checkout'])) {
-                $is1ccAvailable = true;
-              }
+                //Load preference API call only in woocommerce admin settings page.
+                if($current_screen->id == 'woocommerce_page_wc-settings')
+                {
+                    try {
 
-            } catch (\Exception $e) {
-              rzpLogError($e->getMessage());
+                      $api = $this->getRazorpayApiInstance();
+                      $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
+
+                      if (!empty($merchantPreferences['features']['one_click_checkout'])) {
+                        $is1ccAvailable = true;
+                      }
+
+                    } catch (\Exception $e) {
+                      rzpLogError($e->getMessage());
+                    }
+                }
             }
-
 
             if ($is1ccAvailable) {
               $this->visibleSettings = array_merge($this->visibleSettings, array(
