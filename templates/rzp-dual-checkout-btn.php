@@ -1,7 +1,7 @@
 <style type="text/css">
 #btn-1cc {
     margin-bottom: 11px !important;
-    background-image: linear-gradient(to right, #2853FF, #1E4C9C) !important;
+    background-image: linear-gradient(to right, #005BF2, #1E4C9C) !important;
 }
 </style>
 <div>
