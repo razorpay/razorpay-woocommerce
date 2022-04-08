@@ -267,34 +267,6 @@ function woocommerce_razorpay_init()
                     'description' =>  __('Message to be displayed after a successful order', $this->id),
                     'default' =>  __(STATIC::DEFAULT_SUCCESS_MESSAGE, $this->id),
                 ),
-                'enable_webhook' => array(
-                    'title' => __('Enable Webhook', $this->id),
-                    'type' => 'checkbox',
-                    'description' =>  "<span>$webhookUrl</span><br/><br/>Instructions and guide to <a href='https://github.com/razorpay/razorpay-woocommerce/wiki/Razorpay-Woocommerce-Webhooks'>Razorpay webhooks</a>",
-                    'label' => __('Enable Razorpay Webhook', $this->id),
-                    'default' => 'no'
-                ),
-                'webhook_events' => array(
-                    'title'       => __('Webhook Events', $this->id),
-                    'type'        => 'multiselect',
-                    'description' =>  "",
-                    'class'       => 'wc-enhanced-select',
-                    'default'     => '',
-                    'options'     => array(
-                        RZP_Webhook::PAYMENT_AUTHORIZED        => 'payment.authorized',
-                        RZP_Webhook::REFUNDED_CREATED          => 'refund.created',
-                        RZP_Webhook::VIRTUAL_ACCOUNT_CREDITED  => 'virtual_account.credited',
-                    ),
-                    'custom_attributes' => array(
-                        'data-placeholder' => __( 'Select Webhook Events', 'woocommerce' ),
-                    ),
-                ),
-                'webhook_secret' => array(
-                    'title' => __('Webhook Secret', $this->id),
-                    'type' => 'text',
-                    'description' => __('Webhook secret is used for webhook signature verification. This has to match the one added <a href="https://dashboard.razorpay.com/#/app/webhooks">here</a>', $this->id),
-                    'default' => ''
-                ),
             );
 
             do_action_ref_array( 'setup_extra_setting_fields', array( &$defaultFormFields ) );
@@ -315,9 +287,22 @@ function woocommerce_razorpay_init()
 
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
-            $enabled     = $this->getSetting('enable_webhook');
-            $secret      = $this->getSetting('webhook_secret');
+            $enabled     = 'yes';
+            $secret      =  bin2hex(openssl_random_pseudo_bytes(4));
 
+            $getWebhookFlag =  get_option('webhook_enable_flag');
+            
+            $TimeNow = new DateTime('now');
+            $time =  $TimeNow->getTimestamp();
+
+            if(empty($getWebhookFlag)){
+
+                add_option('webhook_enable_flag', $time);
+            }
+            else
+            {
+                update_option('webhook_enable_flag', $time);
+            }
             //validating the key id and key secret set properly or not.
             if($key_id == null || $key_secret == null)
             {
@@ -333,7 +318,10 @@ function woocommerce_razorpay_init()
 
             $eventsSubscribe = $this->getSetting('webhook_events');
 
-            $prepareEventsData = [];
+            $prepareEventsData = [
+                'payment.authorized' => true,
+                'refund.created' => true
+                ];
 
             if(empty($eventsSubscribe) == false)
             {
@@ -370,31 +358,6 @@ function woocommerce_razorpay_init()
             }
             else
             {
-                //validating event is not empty
-                if(empty($eventsSubscribe) === true)
-                {
-                    ?>
-                    <div class="notice error is-dismissible" >
-                        <p><b><?php _e( 'At least one webhook event needs to be subscribed to enable webhook.'); ?><b></p>
-                    </div>
-                    <?php
-
-                    error_log('At least one webhook event needs to be subscribed to enable webhook.');
-                    return;
-                }
-
-                //validating webhook secret is not empty
-                if(empty($secret) === true)
-                {
-                    ?>
-                    <div class="notice error is-dismissible" >
-                        <p><b><?php _e( 'Webhook secret field can`t be empty.' ); ?><b></p>
-                    </div>
-                    <?php
-
-                    error_log('Webhook secret field can`t be empty.');
-                    return;
-                }
 
                 $data = [
                     'url'    => $webhookUrl,
@@ -610,6 +573,26 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($orderId)
         {
+            $getWebhookFlag =  get_option('webhook_enable_flag');
+
+           if(!empty($getWebhookFlag)){
+
+                $webhookTime = new DateTime(date('Y-m-d H:i:s', $getWebhookFlag));
+                $current  = new DateTime('now');
+                $currentTime = $current->format('Y-m-d H:i:s');
+                
+                $getCurrentTime = new DateTime($currentTime);
+            
+                $interval = $webhookTime->diff($getCurrentTime); 
+            
+                $hours = ($interval->days * 24) + $interval->h;
+                
+            
+                if($hours >= 24){
+                   
+                    $this->autoEnableWebhook(); 
+                }
+           }
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
