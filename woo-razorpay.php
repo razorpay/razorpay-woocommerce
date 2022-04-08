@@ -1820,14 +1820,20 @@ function addCheckoutButton()
 
   if (isRazorpayPluginEnabled() && is1ccEnabled() )
   {
+    //TODO add flag for dual magic chekout option
+    $dualCheckout = true;
+    if ($dualCheckout){
+        $tempTest = RZP_PATH . 'templates/rzp-dual-checkout-btn.php';
+    } else {
+        $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
+    }
+
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-        $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
         load_template( $tempTest, false, array() );
       }
     } else {
-      $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
   }
