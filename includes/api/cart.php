@@ -11,11 +11,6 @@ function create1ccCart($orderId)
     global $woocommerce;
 
     $order = wc_get_order($orderId);
-    try {
-        rzpLogInfo('# order count');
-        rzpLogInfo($order->get_item_count());
-    } catch (\Exception $e) {
-    }
 
     $variationAttributes = [];
     if ($order && $order->get_item_count() > 0) {
