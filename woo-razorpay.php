@@ -1186,7 +1186,7 @@ EOT;
                     $razorpayOrderId = get_transient($sessionKey);
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
-                    $this->updateOrderAddress($razorpayData['items'][0], $order);
+                    $this->updateOrderAddress($razorpayData, $order);
                 }
 
                 $this->handleErrorCase($order);
