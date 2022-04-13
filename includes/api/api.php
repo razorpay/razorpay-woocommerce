@@ -222,6 +222,27 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'       => __('Enable debug mode for Magic Checkout'),
             'default'     => 'yes',
         ),
+        'enable_dual_checkout_oncart'   => array(
+            'title'       => __('Activate Dual checkout on cart'),
+            'type'        => 'checkbox',
+            'description' => "To track orders using Google Analytics",
+            'label'       => __('Activate Dual checkout on cart'),
+            'default'     => 'yes',
+        ),
+        'enable_dual_checkout_onpdp'    => array(
+            'title'       => __('Activate Dual checkout on Buynow'),
+            'type'        => 'checkbox',
+            'description' => "To track orders using Facebook Pixel",
+            'label'       => __('Activate Dual checkout on Buynow'),
+            'default'     => 'yes',
+        ),
+        'enable_dual_checkout_minicart' => array(
+            'title'       => __('Activate Dual checkout on minicart'),
+            'type'        => 'checkbox',
+            'description' => 'When debug mode is active, API logs and errors are collected and stored in your Woocommerce dashboard. It is recommended to keep this activated.',
+            'label'       => __('Activate Dual checkout on minicart'),
+            'default'     => 'yes',
+        ),
     );
 
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);

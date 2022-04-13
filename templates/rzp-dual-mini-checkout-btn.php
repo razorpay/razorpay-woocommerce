@@ -1,19 +1,27 @@
 <style type="text/css">
-#btn-1cc {
+#btn-1cc-mini-dual {
     margin-bottom: 11px !important;
     background-image: linear-gradient(to right, #005BF2, #1E4C9C) !important;
-    color: white;
+    display: block !important;
+    width: 100%;
 }
 </style>
 <div>
-  <button
-    id="btn-1cc"
-    class="rzp-dual-checkout-button checkout-button button alt wc-forward"
-    type="button"
-    >CHECKOUT WITH MAGIC
-  </button>
+    <button
+      id="btn-1cc-mini-dual"
+      class="button checkout wc-forward"
+      type="button"
+      >CHECKOUTS WITH MAGIC
+    </button>
 </div>
-
+<div>
+    <button
+      id="btn-1cc-mini-cart"
+      class="button checkout wc-forward"
+      type="button"
+      >CHECKOUT
+    </button>
+</div>
 <div id="rzp-spinner-backdrop"></div>
 <div id="rzp-spinner">
   <div id="loading-indicator"></div>

@@ -148,6 +148,7 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
+            $isDualCheckoutEnabled = true;
 
             try {
               $api = $this->getRazorpayApiInstance();
@@ -156,6 +157,9 @@ function woocommerce_razorpay_init()
               if (!empty($merchantPreferences['features']['one_click_checkout'])) {
                 $is1ccAvailable = true;
               }
+              //  if (!empty($merchantPreferences['features']['dual_checkout'])) {
+              //   $isDualCheckoutEnabled = true;
+              // }
 
             } catch (\Exception $e) {
               rzpLogError($e->getMessage());
@@ -177,7 +181,17 @@ function woocommerce_razorpay_init()
                 '1cc_min_COD_slab_amount',
                 '1cc_max_COD_slab_amount',
               ));
+
             }
+
+             if ($isDualCheckoutEnabled) {
+              $this->visibleSettings = array_merge($this->visibleSettings, array(
+                'enable_dual_checkout_oncart',
+                'enable_dual_checkout_onpdp',
+                'enable_dual_checkout_minicart',
+              ));
+            }
+
 
             $this->init_form_fields();
             $this->init_settings();
@@ -1820,9 +1834,7 @@ function addCheckoutButton()
 
   if (isRazorpayPluginEnabled() && is1ccEnabled() )
   {
-    //TODO add flag for dual magic chekout option
-    $dualCheckout = true;
-    if ($dualCheckout){
+    if (isDualCartCheckoutEnabled()){
         $tempTest = RZP_PATH . 'templates/rzp-dual-checkout-btn.php';
     } else {
         $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
@@ -1861,14 +1873,18 @@ function addMiniCheckoutButton()
 {
     add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
 
+    if (isDualMiniCartCheckoutEnabled()){
+        $tempTest = RZP_PATH . 'templates/rzp-dual-mini-checkout-btn.php';
+    } else {
+        $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
+    }
+
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-        $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
         load_template( $tempTest, false, array() );
       }
     } else {
-      $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
   
@@ -1884,14 +1900,18 @@ function addPdpCheckoutButton()
 {
     add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
 
+    if (isDualPdpCheckoutEnabled()){
+        $tempTest = RZP_PATH . 'templates/rzp-pdp-dual-checkout-btn.php';
+    } else {
+        $tempTest = RZP_PATH . 'templates/rzp-pdp-checkout-btn.php';
+    }
+
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-        $tempTest = RZP_PATH . 'templates/rzp-pdp-checkout-btn.php';
         load_template( $tempTest, false, array() );
       }
     } else {
-      $tempTest = RZP_PATH . 'templates/rzp-pdp-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
 }
