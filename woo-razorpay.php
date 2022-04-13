@@ -157,17 +157,21 @@ function woocommerce_razorpay_init()
                 //Load preference API call only in woocommerce admin settings page.
                 if($current_screen->id == 'woocommerce_page_wc-settings')
                 {
-                    try {
+                    if(!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
+                    {
+                        try {
 
-                      $api = $this->getRazorpayApiInstance();
-                      $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
+                          $api = $this->getRazorpayApiInstance();
+                          $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
 
-                      if (!empty($merchantPreferences['features']['one_click_checkout'])) {
-                        $is1ccAvailable = true;
-                      }
+                          if (!empty($merchantPreferences['features']['one_click_checkout'])) {
+                            $is1ccAvailable = true;
+                          }
 
-                    } catch (\Exception $e) {
-                      rzpLogError($e->getMessage());
+                        } catch (\Exception $e) {
+                          rzpLogError($e->getMessage());
+                        }
+
                     }
                 }
             }
