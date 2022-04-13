@@ -149,15 +149,15 @@ function woocommerce_razorpay_init()
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
 
-            //Check whether the get_current_screen function exists because it is loaded only after 'admin_init' hook.
+            // Check whether the get_current_screen function exists because it is loaded only after 'admin_init' hook.
             if (function_exists('get_current_screen'))
             {
                 $current_screen = get_current_screen();
 
-                //Load preference API call only in woocommerce admin settings page.
-                if($current_screen->id == 'woocommerce_page_wc-settings')
+                // Load preference API call only in woocommerce admin settings page.
+                if ($current_screen->id == 'woocommerce_page_wc-settings')
                 {
-                    if(!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
+                    if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                     {
                         try {
 
