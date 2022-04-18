@@ -300,10 +300,11 @@ function woocommerce_razorpay_init()
             
             $getWebhookFlag =  get_option('webhook_enable_flag');
             
-            $TimeNow = new DateTime('now');
-            $time =  $TimeNow->getTimestamp();
+            $timeNow = new DateTime('now');
+            $time =  $timeNow->getTimestamp();
 
-            if(empty($getWebhookFlag)){
+            if(empty($getWebhookFlag))
+            {
 
                 add_option('webhook_enable_flag', $time);
             }
@@ -595,10 +596,9 @@ function woocommerce_razorpay_init()
                 $getCurrentTime = new DateTime($currentTime);
             
                 $interval = $webhookTime->diff($getCurrentTime); 
-            
+        
                 $hours = ($interval->days * 24) + $interval->h;
                 
-            
                 if($hours >= 24){
                    
                     $this->autoEnableWebhook(); 
