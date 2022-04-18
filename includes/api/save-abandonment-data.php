@@ -331,6 +331,28 @@ function updateUserDetails($userId, $cartInfo, $currentTime, $cookie)
     );
 }
 
+//Insert abandonment data into cart history
+function saveUserDetails($userId, $cartInfo, $time, $cookie)
+{
+    global $woocommerce;
+    global $wpdb;
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+    $wpdb->query(
+        $wpdb->prepare(
+            'INSERT INTO `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite`( user_id, abandoned_cart_info, abandoned_cart_time, cart_ignored, recovered_cart, user_type, session_id ) VALUES ( %s, %s, %s, %s, %s, %s, %s )',
+            $userId,
+            $cartInfo,
+            $time,
+            0,
+            0,
+            'GUEST',
+            $cookie
+        )
+    );
+
+    return $wpdb->insert_id;
+}
+
 //Get record by userid and session
 function getAbandonedRecord($userId, $cookie)
 {
