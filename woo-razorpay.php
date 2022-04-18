@@ -1547,6 +1547,12 @@ EOT;
                 $order->save();
             }
 
+            //For abandon cart Lite recovery plugin recovery function
+            if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
+            {
+                $this->updateRecoverCartInfo($wcOrderId);
+            }
+
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
         }
@@ -1645,6 +1651,67 @@ EOT;
             }
 
             update_user_meta($order->get_user_id(), $addressKeyPrefix . 'state', $stateValue);
+        }
+
+        // Update Abandonment cart plugin table for recovered cart.
+        protected function updateRecoverCartInfo($wcOrderId)
+        {
+            global $woocommerce;
+            global $wpdb;
+
+            $userId = get_post_meta($wcOrderId, '_customer_user', true);
+            $currentTime  = current_time('timestamp'); // phpcs:ignore
+            $cutOffTime  = get_option('ac_lite_cart_abandoned_time');
+
+            if (isset($cut_off_time))
+            {
+                $cartCutOffTime = intval($cutOffTime) * 60;
+            } 
+            else
+            {
+                $cartCutOffTime = 60 * 60;
+            }
+
+            $compareTime = $currentTime - $cutOffTime;
+            if($userId > 0)
+            {
+                $userType = 'REGISTERED';
+            }
+            else
+            {
+                $userType = 'GUEST';
+                $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+            }
+            
+            $results = $wpdb->get_results( // phpcs:ignore
+                $wpdb->prepare(
+                    'SELECT * FROM `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` WHERE user_id = %s AND cart_ignored = %s AND recovered_cart = %s AND user_type = %s',
+                    $userId,
+                    0,
+                    0,
+                    $userType
+                )
+            );
+
+            if(count($results) > 0)
+            {
+                if(isset($results[0]->abandoned_cart_time) && $compareTime > $results[0]->abandoned_cart_time)
+                {
+                     wcal_common::wcal_set_cart_session('abandoned_cart_id_lite', $results[0]->id);
+                }
+            }
+
+            $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
+
+            add_post_meta($wcOrderId, 'abandoned_id', $abandonedOrderId);
+            $wpdb->query( // phpcS:ignore
+            $wpdb->prepare(
+                'UPDATE `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` SET recovered_cart = %s, cart_ignored = %s WHERE id = %s',
+                    $wcOrderId,
+                    '1',
+                    $abandonedOrderId
+                )
+            );
         }
 
         protected function handleErrorCase(& $order)
