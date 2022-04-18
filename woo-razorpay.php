@@ -57,6 +57,13 @@ function woocommerce_razorpay_init()
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
         const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
 
+        protected $supportedWebhookEvents         = array(
+
+            'payment.authorized' => true,
+            'refund.created' => true
+
+        );
+
         protected $visibleSettings = array(
             'enabled',
             'title',
@@ -281,15 +288,16 @@ function woocommerce_razorpay_init()
         }
 
         public function autoEnableWebhook()
-        {
+        {   
+           
             $webhookExist = false;
             $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
-            $enabled     = 'yes';
-            $secret      =  bin2hex(openssl_random_pseudo_bytes(4));
-
+            $enabled     = true;
+            $secret      =   bin2hex(openssl_random_pseudo_bytes(4));
+            
             $getWebhookFlag =  get_option('webhook_enable_flag');
             
             $TimeNow = new DateTime('now');
@@ -316,21 +324,10 @@ function woocommerce_razorpay_init()
                 return;
             }
 
-            $eventsSubscribe = $this->getSetting('webhook_events');
+           // $eventsSubscribe = $this->getSetting('webhook_events');
 
-            $prepareEventsData = [
-                'payment.authorized' => true,
-                'refund.created' => true
-                ];
-
-            if(empty($eventsSubscribe) == false)
-            {
-                foreach ($eventsSubscribe as $value)
-                {
-                    $prepareEventsData[$value] = true;
-                }
-            }
-
+           
+            
             $domain = parse_url($webhookUrl, PHP_URL_HOST);
 
             $domain_ip = gethostbyname($domain);
@@ -349,39 +346,53 @@ function woocommerce_razorpay_init()
                 return;
             }
 
-            if($enabled === 'no')
-            {
-                $data = [
-                    'url'    => $webhookUrl,
-                    'active' => false,
-                ];
-            }
-            else
-            {
+            $defaultWebhookEvents = array(
 
-                $data = [
-                    'url'    => $webhookUrl,
-                    'active' => $enabled == 'yes' ? true: false,
-                    'events' => $prepareEventsData,
-                    'secret' => $secret,
-                ];
-
-            }
-
+                'payment.authorized' => true,
+                'refund.created' => true
+    
+            );
+           
             $webhook = $this->webhookAPI("GET", "webhooks");
 
+            $data = [
+                'url'    => $webhookUrl,
+                'active' => $enabled,
+                'events' => $defaultWebhookEvents,
+                'secret' => $secret,
+            ];
+            
             if(count($webhook) > 0)
             {
                 foreach ($webhook['items'] as $key => $value)
                 {
                     if($value['url'] === $webhookUrl)
                     {
+                        $newEvents = [];
+                        foreach($value['events'] as $evntkey => $evntval)
+                        {
+                           
+                            if($evntval == 1)
+                            {
+                                 $newEvents[$evntkey] =  $evntval;
+                            }
+                            
+                        }
+                       
+                        $eventsdata = array_intersect($this->supportedWebhookEvents, $newEvents);
+                       
+                        $data = [
+                            'url'    => $webhookUrl,
+                            'active' => $enabled,
+                            'events' => $eventsdata,
+                            'secret' => $secret,
+                        ];
                         $webhookExist  = true;
                         $webhookId     = $value['id'];
                     }
                 }
             }
-
+           
             if($webhookExist)
             {
                 $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
