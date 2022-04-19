@@ -62,6 +62,10 @@ function getCouponList($request)
                 'value'   => array('fixed_cart', 'percent', 'fixed_product'),
                 'compare' => 'IN',
             ),
+            array(
+                'key'     => 'coupon_generated_by',
+                'compare' => 'NOT EXISTS',
+            ),
         ),
         'fields'         => 'ids',
         'posts_per_page' => -1, // By default WP_Query will return only 10 posts, to avoid that we need to pass -1
