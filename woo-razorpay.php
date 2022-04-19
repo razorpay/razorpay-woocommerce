@@ -1262,7 +1262,7 @@ EOT;
             {
                 $message = 'An error occured while processing this payment';
             }
-            if (isset($_POST['error']) === true)
+            if (isset($_POST['error']) === true && is_array($_POST['error']))
             {
                 $error = $_POST['error'];
 
