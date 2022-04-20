@@ -95,10 +95,10 @@ function createWcOrder(WP_REST_Request $request)
         if (is_wp_error($orderId)) {
             $checkout_error = $orderId->get_error_message();
         }
-        //Keep order in trash status untill customer info available
+        //Keep order in draft status untill customer info available
         wp_update_post(array(
             'ID'          => $orderId,
-            'post_status' => 'trash',
+            'post_status' => 'draft',
         ));
 
     } else {
@@ -113,10 +113,10 @@ function createWcOrder(WP_REST_Request $request)
             if (is_wp_error($orderId)) {
                 $checkout_error = $orderId->get_error_message();
             }
-            //Keep order in trash status untill customer info available
+            //Keep order in draft status untill customer info available
             wp_update_post(array(
                 'ID'          => $orderId,
-                'post_status' => 'trash',
+                'post_status' => 'draft',
             ));
         } else {
             $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
