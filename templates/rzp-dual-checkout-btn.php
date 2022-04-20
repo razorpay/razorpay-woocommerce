@@ -10,7 +10,7 @@
     id="btn-1cc"
     class="rzp-dual-checkout-button checkout-button button alt wc-forward"
     type="button"
-    >CHECKOUT WITH MAGIC
+    >CHECKOUT WITH RAZORPAY MAGIC
   </button>
 </div>
 

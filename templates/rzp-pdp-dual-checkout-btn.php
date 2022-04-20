@@ -16,7 +16,7 @@ $productData = wp_json_encode(['id' => $product->get_id(), 'quantity' => 1]);
   type="button"
   product_id="<?php echo esc_attr($product->get_id()); ?>"
   pdp_checkout="<?php echo true; ?>"
-  >CHECKOUTS WITH MAGIC
+  >CHECKOUT WITH RAZORPAY MAGIC
 </button>
 
 <div id="rzp-spinner-backdrop"></div>

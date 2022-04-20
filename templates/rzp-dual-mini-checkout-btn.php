@@ -11,7 +11,7 @@
       id="btn-1cc-mini-dual"
       class="button checkout wc-forward"
       type="button"
-      >CHECKOUTS WITH MAGIC
+      >CHECKOUT WITH RAZORPAY MAGIC
     </button>
 </div>
 <div>
