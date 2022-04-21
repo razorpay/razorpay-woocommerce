@@ -58,7 +58,7 @@ function applyCouponOnCart(WP_REST_Request $request)
 
         return new WP_REST_Response($response, 400);
     }
-    
+
     //check woo-discount-rule plugin disabling the coupons
     if (is_plugin_active('woo-discount-rules/woo-discount-rules.php')) {
         $discountOptions = get_option('woo-discount-config-v2', []);

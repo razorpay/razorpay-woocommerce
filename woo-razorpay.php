@@ -174,7 +174,6 @@ function woocommerce_razorpay_init()
               $this->visibleSettings = array_merge($this->visibleSettings, array(
                 'enable_1cc',
                 'enable_1cc_mandatory_login',
-                'enable_1cc_cod_intelligence',
                 'enable_1cc_test_mode',
                 'enable_1cc_debug_mode',
                 'enable_1cc_pdp_checkout',
