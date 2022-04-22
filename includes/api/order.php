@@ -129,13 +129,12 @@ function createWcOrder(WP_REST_Request $request)
 
         // To remove coupon added on order.
         $coupons = $order->get_used_coupons();
-        if(!empty($coupons)){
-            foreach($coupons as $coupon){
+        if (!empty($coupons)) {
+            foreach ($coupons as $coupon) {
                 $order->remove_coupon($coupon);
             }
             $couponCode = $coupons[0];
         }
-        
 
         //To remove by default shipping method added on order.
         $items = (array) $order->get_items('shipping');
@@ -229,11 +228,6 @@ function createWcOrder(WP_REST_Request $request)
             }
 
             $response['customer_cart'] = $customer_cart ?? '';
-        }
-
-        if (empty(get_option('woocommerce_razorpay_settings')['enable_1cc_cod_intelligence']) === true
-            || get_option('woocommerce_razorpay_settings')['enable_1cc_cod_intelligence'] != 'yes') {
-            $response['force_cod'] = true;
         }
 
         $woocommerce->session->set(RZP_1CC_CART_HASH . $cartHash, $orderId);
