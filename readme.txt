@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.9
-Stable tag: 3.2.0
+Stable tag: 3.3.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,16 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 3.3.0 =
+* Magic checkout COD intelligence config moved from wooc dashboard to razorpay dashboard.
+
+= 3.2.2 =
+* Bug fix in admin config page for magic checkout
+
+= 3.2.1 =
+* Fix the latency issue.
+* Bug fix in coupon fetch API.
 
 = 3.2.0 =
 * Version bump to 3.2.0

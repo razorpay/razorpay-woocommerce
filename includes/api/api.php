@@ -172,13 +172,6 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'       => __('Activate Mandatory Login for Magic Checkout'),
             'default'     => 'no',
         ),
-        'enable_1cc_cod_intelligence'   => array(
-            'title'       => __('Activate COD Intelligence'),
-            'type'        => 'checkbox',
-            'description' => "By enabling this you allow Magic Checkout to decide which customer sees the COD option based on past shopping history",
-            'label'       => __('Activate Magic Checkout COD Intelligence'),
-            'default'     => 'no',
-        ),
         '1cc_min_COD_slab_amount'       => array(
             'title'             => __('Set minimum amount (INR) for COD'),
             'type'              => 'number',
