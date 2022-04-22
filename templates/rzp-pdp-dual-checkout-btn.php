@@ -3,15 +3,15 @@ global $product;
 $productData = wp_json_encode(['id' => $product->get_id(), 'quantity' => 1]);
 ?>
 <style type="text/css">
-#btn-1cc-pdp-dual {
+#btn-1cc-pdp {
     background-image: linear-gradient(to right, #005BF2, #1E4C9C) !important;
     margin-left: 5px;
-    margin-bottom: 12px;
     color: white;
+    margin-top: 12px;
 </style>
 
 <button
-  id="btn-1cc-pdp-dual"
+  id="btn-1cc-pdp"
   class="button alt single_add_to_cart_button"
   type="button"
   product_id="<?php echo esc_attr($product->get_id()); ?>"

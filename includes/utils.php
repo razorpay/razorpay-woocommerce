@@ -71,8 +71,8 @@ function isMiniCartCheckoutEnabled()
 function isDualMiniCartCheckoutEnabled()
 {
     return (
-        empty(get_option('woocommerce_razorpay_settings')['enable_1cc_mini_cart_checkout']) === false
-        && 'yes' == get_option('woocommerce_razorpay_settings')['enable_1cc_mini_cart_checkout']
+        empty(get_option('woocommerce_razorpay_settings')['enable_dual_checkout_minicart']) === false
+        && 'yes' == get_option('woocommerce_razorpay_settings')['enable_dual_checkout_minicart']
     );
 }
 

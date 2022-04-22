@@ -1860,8 +1860,10 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
 {
     add_action( 'woocommerce_widget_shopping_cart_buttons', function()
     {
-        // Removing Buttons
-        remove_action( 'woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20 );
+        if(isDualMiniCartCheckoutEnabled() === false){
+            // Removing Buttons
+            remove_action( 'woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20 );
+        }
 
         add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
 

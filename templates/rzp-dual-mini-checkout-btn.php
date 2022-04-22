@@ -1,5 +1,5 @@
 <style type="text/css">
-#btn-1cc-mini-dual {
+#btn-1cc-mini-cart {
     margin-bottom: 11px !important;
     background-image: linear-gradient(to right, #005BF2, #1E4C9C) !important;
     display: block !important;
@@ -8,18 +8,10 @@
 </style>
 <div>
     <button
-      id="btn-1cc-mini-dual"
-      class="button checkout wc-forward"
-      type="button"
-      >CHECKOUT WITH RAZORPAY MAGIC
-    </button>
-</div>
-<div>
-    <button
       id="btn-1cc-mini-cart"
       class="button checkout wc-forward"
       type="button"
-      >CHECKOUT
+      >CHECKOUT WITH RAZORPAY MAGIC
     </button>
 </div>
 <div id="rzp-spinner-backdrop"></div>
