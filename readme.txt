@@ -279,11 +279,11 @@ Yes, please see https://github.com/razorpay/razorpay-woocommerce/wiki/Webhooks f
 Please get multi-currency enabled for your account. Once you have it enabled, you can install any plugin
 version higher than 2.0.0, which comes with native multi-currency support.
 
-= How do I exclude Draft orders from woocommerce analytics report =
+= How can I exclude Draft orders from woocommerce analytics reports? =
 
-Please follow the bellow setps:
-1. Click on Analytics settings menu.
-2. Go to Exclude statuses section and select the checkbox for Draft under unregistered statuses section.
+Please follow the below steps:
+1. Click on the ‘Analytics’ settings in the WooCommerce dashboard menu.
+2. Go to the ‘Excluded statuses’ section and select the checkbox for ‘Draft’ orders under the ‘Unregistered statuses’ section.
 
 == Support ==
 
