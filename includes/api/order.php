@@ -117,7 +117,7 @@ function createWcOrder(WP_REST_Request $request)
     if ($order) {
 
         // To remove coupon added on order.
-        $coupons = $order->get_used_coupons();
+        $coupons = $order->get_coupon_codes();
         if (!empty($coupons)) {
             foreach ($coupons as $coupon) {
                 $order->remove_coupon($coupon);
