@@ -1103,10 +1103,8 @@ EOT;
             {
                 $orderId = $postIds[0];
 
-                wp_update_post(array(
-                    'ID'          => $orderId,
-                    'post_status' => 'wc-pending',
-                ));
+                updateOrderStatus($orderId, 'wc-pending');
+
                 $order = wc_get_order($orderId);
                 rzpLogInfo("get_transient in check_razorpay_response: orderId $orderId");
             }
