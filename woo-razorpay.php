@@ -72,9 +72,6 @@ function woocommerce_razorpay_init()
             'key_secret',
             'payment_action',
             'order_success_message',
-            'enable_webhook',
-            'webhook_events',
-            'webhook_secret',
             'route_enable',
         );
 
@@ -296,7 +293,8 @@ function woocommerce_razorpay_init()
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
-            $secret      =   bin2hex(openssl_random_pseudo_bytes(4));
+            $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
+            $secret = substr(str_shuffle($alphanumericString), 0, 20);
             
             $getWebhookFlag =  get_option('webhook_enable_flag');
             
@@ -325,10 +323,7 @@ function woocommerce_razorpay_init()
                 return;
             }
 
-           // $eventsSubscribe = $this->getSetting('webhook_events');
-
            
-            
             $domain = parse_url($webhookUrl, PHP_URL_HOST);
 
             $domain_ip = gethostbyname($domain);
@@ -588,18 +583,8 @@ function woocommerce_razorpay_init()
             $getWebhookFlag =  get_option('webhook_enable_flag');
 
            if(!empty($getWebhookFlag)){
-
-                $webhookTime = new DateTime(date('Y-m-d H:i:s', $getWebhookFlag));
-                $current  = new DateTime('now');
-                $currentTime = $current->format('Y-m-d H:i:s');
-                
-                $getCurrentTime = new DateTime($currentTime);
-            
-                $interval = $webhookTime->diff($getCurrentTime); 
-        
-                $hours = ($interval->days * 24) + $interval->h;
-                
-                if($hours >= 24){
+               
+                if($getWebhookFlag + 86400 < time()){
                    
                     $this->autoEnableWebhook(); 
                 }
