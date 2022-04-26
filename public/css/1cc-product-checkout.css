@@ -1,13 +1,6 @@
-#btn-1cc {
-  display: block !important;
-  width: 100%;
-}
 #btn-1cc-mini-cart {
   display: block !important;
   width: 100%;
-}
-#btn-1cc-pdp {
-  margin-left: 5px;
 }
 #rzp-spinner-backdrop {
   position: fixed;
@@ -77,3 +70,70 @@
     height: 45px !important;
   }
 }
+.button-1cc-wrapper {
+  display: flex;
+  font-size: 11px;
+  align-items: center;
+  justify-content: center;
+}
+.button-1cc-text {
+  padding-left: 5px;
+  color: #fff !important;
+}
+.btn-1cc-container {
+  background-image: linear-gradient(to right, #005BF2, #1E4C9C) !important;
+  margin-left: 5px;
+  color: white;
+  margin-top: 12px;
+  border-radius: 4px !important;
+  font-weight: bold;
+  margin: 0px;
+  }
+.rzp-btn-icon {
+  display: flex;
+  justify-content: center;
+  padding: 5px 0px 10px
+}
+.btn-1cc-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+#btn-1cc-pdp {
+  display: flex;
+  align-items: center;
+  margin-left: 5px;
+}
+#btn-1cc-pdp:before {
+  content: '' !important;
+}
+#btn-1cc-pdp:after {
+  content: '' !important;
+}
+#btn-1cc:after {
+  content: '' !important;
+}
+#btn-1cc {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

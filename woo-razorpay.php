@@ -1886,7 +1886,7 @@ function addMiniCheckoutButton()
     if (isDualMiniCartCheckoutEnabled()){
         $tempTest = RZP_PATH . 'templates/rzp-dual-mini-checkout-btn.php';
     } else {
-        $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
+        $tempTest = RZP_PATH . 'templates/rzp-dual-mini-checkout-btn.php';
     }
 
     if (isTestModeEnabled()) {
