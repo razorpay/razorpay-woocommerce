@@ -1666,21 +1666,25 @@ EOT;
             if (isset($cut_off_time))
             {
                 $cartCutOffTime = intval($cutOffTime) * 60;
+                add_post_meta(363, 'test', 'yes');
             } 
             else
             {
                 $cartCutOffTime = 60 * 60;
+                add_post_meta(363, 'test', 'no');
             }
 
             $compareTime = $currentTime - $cutOffTime;
             if($userId > 0)
             {
                 $userType = 'REGISTERED';
+                add_post_meta(363, 'user', $userType);
             }
             else
             {
                 $userType = 'GUEST';
                 $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+                 add_post_meta(363, 'user', $userType);
             }
             
             $results = $wpdb->get_results( // phpcs:ignore
@@ -1692,6 +1696,7 @@ EOT;
                     $userType
                 )
             );
+            add_post_meta(363, 'result', $results);
 
             if(count($results) > 0)
             {
@@ -1846,7 +1851,7 @@ function razorpay_webhook_init()
 }
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
-define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout.js');
+define('RZP_CHECKOUTJS_URL', 'https://betacdn.np.razorpay.in/checkout/builds/branch-builds/1cc/kinsta-test-wc/v1/checkout.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
 

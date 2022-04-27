@@ -55,39 +55,34 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         //save abandonment data
         $result = saveWooCartAbandonmentRecoveryData($razorpayData);
 
-        return new WP_REST_Response($result['response'],  $result['status_code']);
+        return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
     // check Abondonment cart lite plugin active or not
-    if (is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php' ) && empty($razorpayData['customer_details']['email']) == false) 
-    {
+    if (is_plugin_active('woocommerce-abandoned-cart/woocommerce-ac.php') && empty($razorpayData['customer_details']['email']) == false) {
         //To verify whether the email id is already exist on WordPress
-        if (email_exists($razorpayData['customer_details']['email']))
-        {
-            $response['status'] = false;
+        if (email_exists($razorpayData['customer_details']['email'])) {
+            $response['status']  = false;
             $response['message'] = 'For Register user we can not insert data';
-            $statusCode = 400;
-            return new WP_REST_Response( $response, $statusCode);
+            $statusCode          = 400;
+            return new WP_REST_Response($response, $statusCode);
         }
 
-        // Save Abondonment data for Abondonment cart lite 
-       $result = saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId);
+        // Save Abondonment data for Abondonment cart lite
+        $result = saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId);
 
-       return new WP_REST_Response($result['response'],  $result['status_code']);
-    }
-    else
-    {
-        $response['status'] = false;
+        return new WP_REST_Response($result['response'], $result['status_code']);
+    } else {
+        $response['status']  = false;
         $response['message'] = 'Failed to insert data';
-        $statusCode = 400;
+        $statusCode          = 400;
 
-        $logObj['response'] = $response;
+        $logObj['response']    = $response;
         $logObj['status_code'] = $statusCode;
         rzpLogInfo(json_encode($logObj));
     }
-    
 
-    return new WP_REST_Response( $response, $statusCode);  
+    return new WP_REST_Response($response, $statusCode);
 }
 
 //Save abandonment data for woocommerce Abondonment cart lite plugin
@@ -96,56 +91,49 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
     global $woocommerce;
     global $wpdb;
     $billingFirstName = $razorpayData['customer_details']['billing_address']['name'] ?? '';
-    $billingLastName = " ";
-    $billingZipcode = $razorpayData['customer_details']['billing_address']['zipcode'] ?? '';
+    $billingLastName  = " ";
+    $billingZipcode   = $razorpayData['customer_details']['billing_address']['zipcode'] ?? '';
     $shippingZipcode  = $razorpayData['customer_details']['shipping_address']['zipcode'] ?? '';
 
-    $shippingCharges = WC()->cart->shipping_total;
+    $shippingCharges = $razorpayData['shipping_fee'] / 100;
+    $email           = $razorpayData['customer_details']['email']
 
     // Insert record in abandoned cart table for the guest user.
-    $userId = saveGuestUserDetails($billingFirstName, $billingLastName, $razorpayData['customer_details']['email'],$billingZipcode, $shippingZipcode, $shippingCharges);
+    $userId = saveGuestUserDetails($billingFirstName, $billingLastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges);
 
     wcal_common::wcal_set_cart_session('user_id', $userId);
-    
-    $currentTime = current_time( 'timestamp' ); // phpcs:ignore
 
-    $results =  checkUserIdExist($userId);
+    $currentTime = current_time('timestamp'); // phpcs:ignore
+
+    $results = checkUserIdExist($userId);
 
     $cart = array();
 
     $cart['cart'] = WC()->session->cart;
 
-    if (count($results) === 0)
-    {
+    if (count($results) === 0) {
         $getCookie = WC()->session->get_session_cookie();
 
         $cartInfo = wp_json_encode($cart);
-        $results =  checkRecordBySession($getCookie[0]);
+        $recResults  = checkRecordBySession($getCookie[0]);
 
-        if (get_post_meta($wcOrderId, 'abandoned_user_id', true) == '')
-        {
-            add_post_meta( $wcOrderId, 'abandoned_user_id', $userId); }
-        else
-        {
-            update_post_meta( $wcOrderId, 'abandoned_user_id', $userId );
+        if (get_post_meta($wcOrderId, 'abandoned_user_id', true) == '') {
+            add_post_meta($wcOrderId, 'abandoned_user_id', $userId);} else {
+            update_post_meta($wcOrderId, 'abandoned_user_id', $userId);
         }
-        
-        if (count($results) === 0)
-        {
+
+        if (count($recResults) === 0) {
             $abandoned_cart_id = saveUserDetails($userId, $cartInfo, $currentTime, $getCookie[0]);
 
             wcal_common::wcal_set_cart_session('abandoned_cart_id_lite', $abandoned_cart_id);
 
             insertCartInfo($userId, $cartInfo);
-        } 
-        else 
-        {
+        } else {
             updateUserDetails($userId, $cartInfo, $currentTime, $getCookie[0]);
 
             $get_abandoned_record = getAbandonedRecord($userId, $getCookie[0]);
 
-            if (count($get_abandoned_record) > 0) 
-            {
+            if (count($get_abandoned_record) > 0) {
                 $abandoned_cart_id = $get_abandoned_record[0]->id;
                 wcal_common::wcal_set_cart_session('abandoned_cart_id_lite', $abandoned_cart_id);
             }
@@ -154,14 +142,14 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
         }
     }
 
-    $response['status'] = true;
-    $response['message'] = 'Data successfully inserted for cart abandonment recovery lite';
-    $statusCode = 200;
-    $logObj['response'] = $response;
+    $response['status']    = true;
+    $response['message']   = 'Data successfully inserted for cart abandonment recovery lite';
+    $statusCode            = 200;
+    $logObj['response']    = $response;
     $logObj['status_code'] = $statusCode;
     rzpLogInfo(json_encode($logObj));
 
-    return $logObj ;
+    return $logObj;
 }
 
 //Save abandonment data for woocommerce cart abandonment recovery plugin
@@ -169,16 +157,13 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
 {
     global $woocommerce;
     global $wpdb;
-    $products = WC()->cart->get_cart();
+    $products    = WC()->cart->get_cart();
     $currentTime = current_time('Y-m-d H:i:s');
 
-    if (isset($razorpayData['shipping_fee']))
-    {
-        $cartTotal = $razorpayData['amount'] /100 - $razorpayData['shipping_fee'] /100;
-    }
-    else
-    {
-        $cartTotal = $razorpayData['amount'] /100;
+    if (isset($razorpayData['shipping_fee'])) {
+        $cartTotal = $razorpayData['amount'] / 100 - $razorpayData['shipping_fee'] / 100;
+    } else {
+        $cartTotal = $razorpayData['amount'] / 100;
     }
 
     $otherFields = array(
@@ -199,11 +184,11 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
         'wcf_order_comments'      => "",
         'wcf_first_name'          => $razorpayData['customer_details']['shipping_address']['name'] ?? '',
         'wcf_last_name'           => "",
-        'wcf_phone_number'        => $razorpayData['customer_details']['shipping_address']['contact'] ?? '', 'wcf_location'            => $razorpayData['customer_details']['shipping_address']['country'] ?? '',
+        'wcf_phone_number'        => $razorpayData['customer_details']['shipping_address']['contact'] ?? '', 'wcf_location' => $razorpayData['customer_details']['shipping_address']['country'] ?? '',
     );
-    
+
     $checkoutDetails = array(
-        'email'         => $razorpayData['customer_details']['email']?? $customerEmail,
+        'email'         => $razorpayData['customer_details']['email'] ?? $customerEmail,
         'cart_contents' => serialize($products),
         'cart_total'    => sanitize_text_field($cartTotal),
         'time'          => $currentTime,
@@ -211,42 +196,35 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
         'checkout_id'   => wc_get_page_id('cart'),
     );
 
-    $sessionId  = WC()->session->get('wcf_session_id');
-    
-    $cartAbandonmentTable = $wpdb->prefix ."cartflows_ca_cart_abandonment";
+    $sessionId = WC()->session->get('wcf_session_id');
+
+    $cartAbandonmentTable = $wpdb->prefix . "cartflows_ca_cart_abandonment";
 
     $logObj['checkoutDetails'] = $checkoutDetails;
 
-    if (empty($checkoutDetails) == false)
-    {
+    if (empty($checkoutDetails) == false) {
         $result = $wpdb->get_row(
-        $wpdb->prepare('SELECT * FROM `' . $cartAbandonmentTable . '` WHERE session_id = %s and order_status IN (%s, %s)', $sessionId, 'normal', 'abandoned' ) // phpcs:ignore
-         );
-        
-        if (isset($result))
-        {
+            $wpdb->prepare('SELECT * FROM `' . $cartAbandonmentTable . '` WHERE session_id = %s and order_status IN (%s, %s)', $sessionId, 'normal', 'abandoned') // phpcs:ignore
+        );
+
+        if (isset($result)) {
             $wpdb->update(
                 $cartAbandonmentTable,
                 $checkoutDetails,
                 array('session_id' => $sessionId)
             );
-      if($wpdb->last_error) 
-            { 
-                $response['status'] = false;
+            if ($wpdb->last_error) {
+                $response['status']  = false;
                 $response['message'] = $wpdb->last_error;
-                $statusCode = 400;
-            } 
-            else 
-            { 
-                $response['status'] = true;
+                $statusCode          = 400;
+            } else {
+                $response['status']  = true;
                 $response['message'] = 'Data successfully updated for wooCommerce cart abandonment recovery';
-                $statusCode = 200;
+                $statusCode          = 200;
             }
-           
-        }
-        else
-        {
-            $sessionId = md5(uniqid(wp_rand(), true));
+
+        } else {
+            $sessionId                     = md5(uniqid(wp_rand(), true));
             $checkoutDetails['session_id'] = sanitize_text_field($sessionId);
 
             // Inserting row into Database.
@@ -255,29 +233,26 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
                 $checkoutDetails
             );
 
-            if($wpdb->last_error) 
-            { 
-                $response['status'] = false;
+            if ($wpdb->last_error) {
+                $response['status']  = false;
                 $response['message'] = $wpdb->last_error;
-                $statusCode = 400;
-            } 
-            else 
-            { 
+                $statusCode          = 400;
+            } else {
                 // Storing session_id in WooCommerce session.
-                WC()->session->set('wcf_session_id', $sessionId); $response['status'] = true;
+                WC()->session->set('wcf_session_id', $sessionId);
+                $response['status']  = true;
                 $response['message'] = 'Data successfully inserted for wooCommerce cart abandonment recovery';
-                $statusCode = 200;
+                $statusCode          = 200;
             }
         }
 
-        $logObj['response'] = $response;
+        $logObj['response']    = $response;
         $logObj['status_code'] = $statusCode;
         rzpLogInfo(json_encode($logObj));
     }
 
     return $logObj;
 }
-
 
 //Insert abandonment data into guest user history
 function saveGuestUserDetails($firstName, $lastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges)
@@ -359,7 +334,7 @@ function getAbandonedRecord($userId, $cookie)
     global $woocommerce;
     global $wpdb;
     $get_abandoned_record = $wpdb->get_results( // phpcS:ignore
-    $wpdb->prepare(
+        $wpdb->prepare(
             'SELECT * FROM `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` WHERE user_id = %d AND cart_ignored = %s AND session_id = %s',
             $userId,
             0,
@@ -405,4 +380,3 @@ function checkRecordBySession($cookie)
 
     return $results;
 }
-
