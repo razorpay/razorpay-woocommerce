@@ -1,5 +1,5 @@
 
-<div>
+<div class="rzp-magic-wrapper">
   <button
     id="btn-1cc"
     class="rzp-dual-checkout-button checkout-button button alt wc-forward btn-1cc-container"
