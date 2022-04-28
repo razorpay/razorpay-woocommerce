@@ -9,7 +9,7 @@
     <path d="M5.14321 4.72412L4.47803 7.1758L8.28423 4.71034L5.7951 14.0119L8.32281 14.0142L11.9999 0.275635L5.14321 4.72412Z" fill="#F4F6FE"/>
     <path d="M1.04646 10.1036L0 14.0138H5.18124C5.18124 14.0138 7.3005 6.06116 7.30109 6.05884C7.2991 6.06011 1.04646 10.1036 1.04646 10.1036Z" fill="#F4F6FE"/>
     </svg>
-    <span class="button-1cc-text">CHECKOUT WITH MAGIC</span>
+    <span class="button-1cc-text">CHECKOUT WITH RAZORPAY MAGIC</span>
   </div>
   </button>
     <div class="rzp-btn-icon">

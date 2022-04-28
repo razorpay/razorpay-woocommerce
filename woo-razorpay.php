@@ -164,7 +164,7 @@ function woocommerce_razorpay_init()
                       if (!empty($merchantPreferences['features']['one_click_checkout'])) {
                         $is1ccAvailable = true;
                       }
-                      // if (!empty($merchantPreferences['features']['1CC_dual_checkout'])) {
+                      // if (!empty($merchantPreferences['features']['one_cc_dual_checkout'])) {
                       //   $isDualCheckoutEnabled = true;
                       // }
 
