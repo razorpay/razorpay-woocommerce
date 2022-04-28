@@ -80,7 +80,7 @@ function rzp1ccInitRestApi()
 
     // save abandoned cart data
     register_rest_route(
-        RZP_1CC_ROUTES_BASE . '/',
+        RZP_1CC_ROUTES_BASE,
         'abandoned-cart',
         array(
             'methods'             => 'POST',
