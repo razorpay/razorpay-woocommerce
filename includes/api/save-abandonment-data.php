@@ -54,7 +54,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     rzpLogInfo('Woocommerce order id:');
     rzpLogInfo(json_encode($wcOrderId));
 
-    // check woocommerce cart abandonment recovery plugin is activated or not
+    //check woocommerce cart abandonment recovery plugin is activated or not
     if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
 
         //save abandonment data
@@ -63,7 +63,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
-    // check Abondonment cart lite plugin active or not
+    //check Abondonment cart lite plugin active or not
     if (is_plugin_active('woocommerce-abandoned-cart/woocommerce-ac.php') && empty($razorpayData['customer_details']['email']) == false) {
         //To verify whether the email id is already exist on WordPress
         if (email_exists($razorpayData['customer_details']['email'])) {
@@ -101,7 +101,7 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
     $shippingZipcode  = $razorpayData['customer_details']['shipping_address']['zipcode'] ?? '';
 
     $shippingCharges = $razorpayData['shipping_fee'] / 100;
-    $email           = $razorpayData['customer_details']['email']
+    $email           = $razorpayData['customer_details']['email'];
 
     // Insert record in abandoned cart table for the guest user.
     $userId = saveGuestUserDetails($billingFirstName, $billingLastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges);
@@ -119,8 +119,8 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
     if (count($results) === 0) {
         $getCookie = WC()->session->get_session_cookie();
 
-        $cartInfo = wp_json_encode($cart);
-        $recResults  = checkRecordBySession($getCookie[0]);
+        $cartInfo   = wp_json_encode($cart);
+        $recResults = checkRecordBySession($getCookie[0]);
 
         if (get_post_meta($wcOrderId, 'abandoned_user_id', true) == '') {
             add_post_meta($wcOrderId, 'abandoned_user_id', $userId);} else {
