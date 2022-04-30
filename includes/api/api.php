@@ -80,7 +80,7 @@ function rzp1ccInitRestApi()
 
     // save abandoned cart data
     register_rest_route(
-        RZP_1CC_ROUTES_BASE . '/',
+        RZP_1CC_ROUTES_BASE,
         'abandoned-cart',
         array(
             'methods'             => 'POST',
@@ -170,13 +170,6 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'type'        => 'checkbox',
             'description' => "",
             'label'       => __('Activate Mandatory Login for Magic Checkout'),
-            'default'     => 'no',
-        ),
-        'enable_1cc_cod_intelligence'   => array(
-            'title'       => __('Activate COD Intelligence'),
-            'type'        => 'checkbox',
-            'description' => "By enabling this you allow Magic Checkout to decide which customer sees the COD option based on past shopping history",
-            'label'       => __('Activate Magic Checkout COD Intelligence'),
             'default'     => 'no',
         ),
         '1cc_min_COD_slab_amount'       => array(

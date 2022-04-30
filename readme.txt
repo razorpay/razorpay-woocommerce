@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.9
-Stable tag: 3.2.0
+Stable tag: 3.4.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,19 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 3.4.0 =
+* Bug fix for magic checkout blank orders.
+
+= 3.3.0 =
+* Magic checkout COD intelligence config moved from wooc dashboard to razorpay dashboard.
+
+= 3.2.2 =
+* Bug fix in admin config page for magic checkout
+
+= 3.2.1 =
+* Fix the latency issue.
+* Bug fix in coupon fetch API.
 
 = 3.2.0 =
 * Version bump to 3.2.0
@@ -265,6 +278,12 @@ Yes, please see https://github.com/razorpay/razorpay-woocommerce/wiki/Webhooks f
 
 Please get multi-currency enabled for your account. Once you have it enabled, you can install any plugin
 version higher than 2.0.0, which comes with native multi-currency support.
+
+= How can I exclude Draft orders from woocommerce analytics reports? =
+
+Please follow the below steps:
+1. Click on the ‘Analytics’ settings in the WooCommerce dashboard menu.
+2. Go to the ‘Excluded statuses’ section and select the checkbox for ‘Draft’ orders under the ‘Unregistered statuses’ section.
 
 == Support ==
 

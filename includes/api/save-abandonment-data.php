@@ -35,6 +35,11 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     if (isset($razorpayData['receipt'])) {
         $wcOrderId = $razorpayData['receipt'];
 
+        if (isset($razorpayData['customer_details']['shipping_address'])) {
+            //Update the order status to wc-pending as we have the customer address info at this point.
+            updateOrderStatus($wcOrderId, 'wc-pending');
+
+        }
         $order = wc_get_order($wcOrderId);
     }
 

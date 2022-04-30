@@ -95,6 +95,8 @@ function createWcOrder(WP_REST_Request $request)
         if (is_wp_error($orderId)) {
             $checkout_error = $orderId->get_error_message();
         }
+        //Keep order in draft status untill customer info available
+        updateOrderStatus($orderId, 'draft');
     } else {
         $existingOrder = wc_get_order($orderIdFromHash);
         $existingOrder->calculate_totals();
@@ -107,6 +109,8 @@ function createWcOrder(WP_REST_Request $request)
             if (is_wp_error($orderId)) {
                 $checkout_error = $orderId->get_error_message();
             }
+            //Keep order in draft status untill customer info available
+            updateOrderStatus($orderId, 'draft');
         } else {
             $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
         }
@@ -117,14 +121,13 @@ function createWcOrder(WP_REST_Request $request)
     if ($order) {
 
         // To remove coupon added on order.
-        $coupons = $order->get_used_coupons();
-        if(!empty($coupons)){
-            foreach($coupons as $coupon){
+        $coupons = $order->get_coupon_codes();
+        if (!empty($coupons)) {
+            foreach ($coupons as $coupon) {
                 $order->remove_coupon($coupon);
             }
             $couponCode = $coupons[0];
         }
-        
 
         //To remove by default shipping method added on order.
         $items = (array) $order->get_items('shipping');
@@ -220,11 +223,6 @@ function createWcOrder(WP_REST_Request $request)
             $response['customer_cart'] = $customer_cart ?? '';
         }
 
-        if (empty(get_option('woocommerce_razorpay_settings')['enable_1cc_cod_intelligence']) === true
-            || get_option('woocommerce_razorpay_settings')['enable_1cc_cod_intelligence'] != 'yes') {
-            $response['force_cod'] = true;
-        }
-
         $woocommerce->session->set(RZP_1CC_CART_HASH . $cartHash, $orderId);
         set_transient(RZP_1CC_CART_HASH . $orderId, $cartHash, 3600);
         set_transient($razorpay::SESSION_KEY, $orderId, 3600);
@@ -244,4 +242,13 @@ function createWcOrder(WP_REST_Request $request)
 
         return new WP_REST_Response($response, 400);
     }
+}
+
+//Update order status according to the steps.
+function updateOrderStatus($orderId, $orderStatus)
+{
+    wp_update_post(array(
+        'ID'          => $orderId,
+        'post_status' => $orderStatus,
+    ));
 }

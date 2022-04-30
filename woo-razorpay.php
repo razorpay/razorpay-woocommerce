@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.2.0
- * Stable tag: 3.2.0
+ * Version: 3.4.0
+ * Stable tag: 3.4.0
  * Author: Team Razorpay
  * WC tested up to: 6.2.2
  * Author URI: https://razorpay.com
@@ -148,25 +148,32 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
+            
+            // Load preference API call only for administrative interface page.
+            if (is_admin())
+            {
+                if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
+                {
+                    try {
 
-            try {
-              $api = $this->getRazorpayApiInstance();
-              $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
+                      $api = $this->getRazorpayApiInstance();
+                      $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
 
-              if (!empty($merchantPreferences['features']['one_click_checkout'])) {
-                $is1ccAvailable = true;
-              }
+                      if (!empty($merchantPreferences['features']['one_click_checkout'])) {
+                        $is1ccAvailable = true;
+                      }
 
-            } catch (\Exception $e) {
-              rzpLogError($e->getMessage());
+                    } catch (\Exception $e) {
+                      rzpLogError($e->getMessage());
+                    }
+
+                }
             }
-
 
             if ($is1ccAvailable) {
               $this->visibleSettings = array_merge($this->visibleSettings, array(
                 'enable_1cc',
                 'enable_1cc_mandatory_login',
-                'enable_1cc_cod_intelligence',
                 'enable_1cc_test_mode',
                 'enable_1cc_debug_mode',
                 'enable_1cc_pdp_checkout',
@@ -1095,6 +1102,9 @@ EOT;
             if (count($postIds) > 0)
             {
                 $orderId = $postIds[0];
+
+                updateOrderStatus($orderId, 'wc-pending');
+
                 $order = wc_get_order($orderId);
                 rzpLogInfo("get_transient in check_razorpay_response: orderId $orderId");
             }
@@ -1181,7 +1191,7 @@ EOT;
                     $razorpayOrderId = get_transient($sessionKey);
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
-                    $this->updateOrderAddress($razorpayData['items'][0], $order);
+                    $this->updateOrderAddress($razorpayData, $order);
                 }
 
                 $this->handleErrorCase($order);
@@ -1254,7 +1264,7 @@ EOT;
             {
                 $message = 'An error occured while processing this payment';
             }
-            if (isset($_POST['error']) === true)
+            if (isset($_POST['error']) === true && is_array($_POST['error']))
             {
                 $error = $_POST['error'];
 
