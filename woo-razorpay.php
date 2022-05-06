@@ -295,13 +295,11 @@ function woocommerce_razorpay_init()
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
             
             $getWebhookFlag =  get_option('webhook_enable_flag');
-            
             $timeNow = new DateTime('now');
             $time =  $timeNow->getTimestamp();
 
-            if(empty($getWebhookFlag))
+            if (empty($getWebhookFlag))
             {
-
                 add_option('webhook_enable_flag', $time);
             }
             else
@@ -354,16 +352,16 @@ function woocommerce_razorpay_init()
                 'secret' => $secret,
             ];
             
-            if(count($webhook) > 0)
+            if (count($webhook) > 0)
             { 
                 foreach ($webhook['items'] as $key => $value)
                 { 
-                    if($value['url'] === $webhookUrl)
+                    if ($value['url'] === $webhookUrl)
                     { 
                         $newEvents = [];
-                        foreach($value['events'] as $evntkey => $evntval)
+                        foreach ($value['events'] as $evntkey => $evntval)
                         {
-                            if(($evntval == 1) and  (in_array($evntkey, $this->supportedWebhookEvents) === true))
+                            if (($evntval == 1) and  (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
                                  $newEvents[$evntkey] =  true;
                             }
@@ -380,7 +378,7 @@ function woocommerce_razorpay_init()
                     }
                 }
             }    
-            if($webhookExist)
+            if ($webhookExist)
             {
                 $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
             }
@@ -573,10 +571,10 @@ function woocommerce_razorpay_init()
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
 
-           if(!empty($getWebhookFlag)){
-               
-                if($getWebhookFlag + 86400 < time()){
-                   
+           if (!empty($getWebhookFlag))
+           {
+                if ($getWebhookFlag + 86400 < time())
+                {
                     $this->autoEnableWebhook(); 
                 }
            }
