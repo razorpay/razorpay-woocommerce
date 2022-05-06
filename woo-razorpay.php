@@ -62,6 +62,11 @@ function woocommerce_razorpay_init()
             'refund.created'
         );
 
+        protected $defaultWebhookEvents = array(
+            'payment.authorized' => true,
+            'refund.created' => true
+        );
+
         protected $visibleSettings = array(
             'enabled',
             'title',
@@ -338,17 +343,12 @@ function woocommerce_razorpay_init()
                 return;
             }
 
-            $defaultWebhookEvents = array(
-                'payment.authorized' => true,
-                'refund.created' => true
-            );
-           
             $webhook = $this->webhookAPI("GET", "webhooks");
 
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
-                'events' => $defaultWebhookEvents,
+                'events' => $this->defaultWebhookEvents,
                 'secret' => $secret,
             ];
             
@@ -363,14 +363,14 @@ function woocommerce_razorpay_init()
                         {
                             if (($evntval == 1) and  (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
-                                 $newEvents[$evntkey] =  true;
+                                 $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
                         
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
-                            'events' => $newEvents,
+                            'events' => $this->defaultWebhookEvents,
                             'secret' => $secret,
                         ];
                         $webhookExist  = true;
