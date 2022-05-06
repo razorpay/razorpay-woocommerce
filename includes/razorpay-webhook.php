@@ -220,11 +220,11 @@ class RZP_Webhook
         set_transient('webhook_trigger_count_for_' . $orderId, $triggerCount, 180);
 
         // If it is already marked as paid, ignore the event
-            if ($order->needs_payment() === false) {
-                rzpLogInfo("Woocommerce orderId: $orderId webhook process exited");
+        if ($order->needs_payment() === false) {
+            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited");
 
-                return;
-            }
+            return;
+        }
 
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
