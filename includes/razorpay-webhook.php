@@ -199,6 +199,13 @@ class RZP_Webhook
 
         $order = wc_get_order($orderId);
 
+        if(!empty($orderId))
+        {   
+          if($this->checkIsObject($order) == false)
+          {  
+                return;
+          }
+        }
         //To give the priority to callback script to compleate the execution fist adding this locking.
         $transientData = get_transient('webhook_trigger_count_for_' . $orderId);
 
@@ -213,13 +220,11 @@ class RZP_Webhook
         set_transient('webhook_trigger_count_for_' . $orderId, $triggerCount, 180);
 
         // If it is already marked as paid, ignore the event
-        if(is_object($order) && method_exists($order, 'needs_payment')){
             if ($order->needs_payment() === false) {
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process exited");
 
                 return;
             }
-        }   
 
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
@@ -294,6 +299,13 @@ class RZP_Webhook
 
         $order = wc_get_order($orderId);
 
+        if(!empty($orderId))
+        {   
+          if($this->checkIsObject($order) == false)
+          {  
+                return;
+          }
+        }
         // If it is already marked as paid, ignore the event
         if ($order->needs_payment() === false) {
             return;
@@ -430,7 +442,14 @@ class RZP_Webhook
         $orderId = $payment['notes']['woocommerce_order_number'];
 
         $order = wc_get_order($orderId);
-
+        if(!empty($orderId))
+        {   
+          if($this->checkIsObject($order) == false)
+          {  
+                return;
+          }
+        }
+        
         // If it is already marked as unpaid, ignore the event
         if ($order->needs_payment() === true) {
             return;
@@ -486,5 +505,16 @@ class RZP_Webhook
 
         // Graceful exit since payment is now refunded.
         exit();
+    }
+
+    public function checkIsObject($order)
+    {
+
+        if(!is_object($order))
+        {
+            rzpLogInfo("Woocommerce order Object does not exist");
+            return false;
+        }
+        return true;
     }
 }
