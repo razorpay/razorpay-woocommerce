@@ -59,7 +59,8 @@ function woocommerce_razorpay_init()
 
         protected $supportedWebhookEvents = array(
             'payment.authorized',
-            'refund.created'
+            'refund.created',
+            'virtual_account.credited'
         );
 
         protected $defaultWebhookEvents = array(
@@ -299,8 +300,7 @@ function woocommerce_razorpay_init()
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
             
             $getWebhookFlag =  get_option('webhook_enable_flag');
-            $timeNow = new DateTime('now');
-            $time =  $timeNow->getTimestamp();
+            $time = time();
 
             if (empty($getWebhookFlag))
             {
