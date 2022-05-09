@@ -289,7 +289,6 @@ function woocommerce_razorpay_init()
 
         public function autoEnableWebhook()
         {   
-           
             $webhookExist = false;
             $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
@@ -358,10 +357,10 @@ function woocommerce_razorpay_init()
                 { 
                     if ($value['url'] === $webhookUrl)
                     { 
-                        $newEvents = [];
                         foreach ($value['events'] as $evntkey => $evntval)
                         {
-                            if (($evntval == 1) and  (in_array($evntkey, $this->supportedWebhookEvents) === true))
+                            if (($evntval == 1) and  
+                                (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
                                  $this->defaultWebhookEvents[$evntkey] =  true;
                             }
