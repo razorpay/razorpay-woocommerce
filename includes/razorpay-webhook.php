@@ -197,8 +197,10 @@ class RZP_Webhook
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for payment authorized event");
 
-        $order = wc_get_order($orderId);
-
+        if(!empty($orderId))
+        {   
+          $order =  $this->checkIsObject($orderId);
+        }
         //To give the priority to callback script to compleate the execution fist adding this locking.
         $transientData = get_transient('webhook_trigger_count_for_' . $orderId);
 
@@ -290,8 +292,10 @@ class RZP_Webhook
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
-        $order = wc_get_order($orderId);
-
+        if(!empty($orderId))
+        {   
+          $order =  $this->checkIsObject($orderId);
+        }
         // If it is already marked as paid, ignore the event
         if ($order->needs_payment() === false) {
             return;
@@ -427,8 +431,11 @@ class RZP_Webhook
         //
         $orderId = $payment['notes']['woocommerce_order_number'];
 
-        $order = wc_get_order($orderId);
-
+        if(!empty($orderId))
+        {   
+          $order =  $this->checkIsObject($orderId);
+        }
+        
         // If it is already marked as unpaid, ignore the event
         if ($order->needs_payment() === true) {
             return;
@@ -484,5 +491,19 @@ class RZP_Webhook
 
         // Graceful exit since payment is now refunded.
         exit();
+    }
+
+    public function checkIsObject($orderId)
+    {
+        $order = wc_get_order($orderId);
+        if(is_object($order))
+        {
+            return wc_get_order($orderId);
+        }
+        else
+        {
+            rzpLogInfo("Woocommerce order Object does not exist");
+            exit();
+        }
     }
 }
