@@ -503,7 +503,7 @@ class RZP_Webhook
         else
         {
             rzpLogInfo("Woocommerce order Object does not exist");
-            return;
+            exit();
         }
     }
 }
