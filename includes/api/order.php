@@ -113,6 +113,10 @@ function createWcOrder(WP_REST_Request $request)
             updateOrderStatus($orderId, 'draft');
         } else {
             $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
+
+            //To get the applied coupon details from cart object.
+            $coupons = WC()->cart->get_coupons();
+            $couponCode = !empty($coupons)? array_key_first($coupons): null;
         }
     }
 
