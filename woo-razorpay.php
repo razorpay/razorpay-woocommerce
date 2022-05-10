@@ -341,9 +341,22 @@ function woocommerce_razorpay_init()
                 error_log('Could not enable webhook for localhost');
                 return;
             }
+            $skip = 0;
+            $count = 10;
+            $webhookItems= [];
 
-            $webhook = $this->webhookAPI("GET", "webhooks");
-
+            do {
+                $webhook = $this->webhookAPI("GET", "webhooks?count=".$count."&skip=".$skip);
+                $skip += 10;
+                if ($webhook['count'] > 0)
+                {
+                    foreach ($webhook['items'] as $key => $value)
+                    {
+                        $webhookItems[] = $value;
+                    }
+                }  
+            } while ( $webhook['count'] >= 1);
+            
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
@@ -351,10 +364,10 @@ function woocommerce_razorpay_init()
                 'secret' => $secret,
             ];
             
-            if (count($webhook) > 0)
+            if (count($webhookItems) > 0)
             { 
-                foreach ($webhook['items'] as $key => $value)
-                { 
+                foreach ($webhookItems as $key => $value)
+                {
                     if ($value['url'] === $webhookUrl)
                     { 
                         foreach ($value['events'] as $evntkey => $evntval)
