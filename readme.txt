@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.9
-Stable tag: 3.4.2
+Stable tag: 3.5.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -41,7 +41,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
-= 3.4.2 =
+= 3.5.0 =
 * Feature Auto Enable webhook.
 * Tested up to Woocommerce 6.4.1
 
