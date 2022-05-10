@@ -122,6 +122,7 @@ window.addEventListener('DOMContentLoaded', function() {
       }
     },
     showSpinner: function(state) {
+      jQuery(document.body).trigger('wc_fragment_refresh');
       if (rzpSpinnerBackdrop == null) {
         rzpSpinnerBackdrop = document.getElementById('rzp-spinner-backdrop');
       }
