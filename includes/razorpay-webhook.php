@@ -214,13 +214,21 @@ class RZP_Webhook
 
         set_transient('webhook_trigger_count_for_' . $orderId, $triggerCount, 180);
 
+        $orderStatus  = $order->get_status();
+        rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
+
         // If it is already marked as paid, ignore the event
-        if ($order->needs_payment() === false) {
-            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited");
+        if ($orderStatus != 'draft' && $order->needs_payment() === false) {
+            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :". $order->needs_payment());
 
             return;
         }
-
+        
+        if($orderStatus == 'draft')
+        {
+            updateOrderStatus($orderId, 'wc-pending');
+        }
+        
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);

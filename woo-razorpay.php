@@ -1280,7 +1280,7 @@ EOT;
 
             rzpLogInfo("updateOrder orderId: $orderId , errorMessage: $errorMessage, razorpayPaymentId: $razorpayPaymentId , success: $success");
 
-            if (($success === true) and ($order->needs_payment() === true))
+            if ($success === true)
             {
                 try
                 {
