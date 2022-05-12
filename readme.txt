@@ -46,6 +46,8 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 = 3.5.0 =
 * Feature Auto Enable webhook.
+* Bug fix for magic checkout mini cart refresh.
+* Bug fix for smart coupon auto apply coupon in magic checkout.
 * Tested up to Woocommerce 6.4.1
 
 = 3.4.1 =
