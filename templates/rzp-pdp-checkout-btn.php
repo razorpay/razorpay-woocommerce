@@ -34,10 +34,10 @@ $productData = wp_json_encode(['id' => $product->get_id(), 'quantity' => 1]);
 
   jQuery('.qty').on('change',function(e)
   {
-      let i = 0;
+      let x = 0;
       while (typeof quantity === 'undefined') {
-        var quantity = document.getElementsByClassName("qty")[i].value;
-        i++;
+        var quantity = document.getElementsByClassName("qty")[x].value;
+        x++;
       }
       btnPdp.setAttribute('quantity', quantity);
 
