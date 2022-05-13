@@ -472,13 +472,14 @@ function smartCodRestriction($addresses, $order)
     }
 
     // country based restriction
+    $country = strtoupper($addresses['country']);
     if (!empty($restriction['country_restrictions'])) {
         if ($restrictionSettings->country_restrictions === 0) {
-            if (in_array($addresses['country'], $restriction['country_restrictions'])) {
+            if (in_array($country, $restriction['country_restrictions'])) {
                 return false;
             }
         } else {
-            if (!in_array($addresses['country'], $restriction['country_restrictions'])) {
+            if (!in_array($country, $restriction['country_restrictions'])) {
                 return false;
             }
         }
@@ -486,7 +487,7 @@ function smartCodRestriction($addresses, $order)
 
     // state based restriction
     $stateCode = normalizeWcStateCode($addresses['state_code']);
-    $state     = $addresses['country'] . '_' . $stateCode;
+    $state     = $country . '_' . $stateCode;
     if (!empty($restriction['state_restrictions'])) {
         if ($restrictionSettings->state_restrictions === 0) {
             if (in_array($state, $restriction['state_restrictions'])) {
