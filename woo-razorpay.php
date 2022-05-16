@@ -59,6 +59,7 @@ function woocommerce_razorpay_init()
 
         protected $supportedWebhookEvents = array(
             'payment.authorized',
+            'payment.pending',
             'refund.created',
             'virtual_account.credited'
         );
