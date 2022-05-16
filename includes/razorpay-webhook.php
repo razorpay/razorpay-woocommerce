@@ -25,6 +25,7 @@ class RZP_Webhook
      */
     const PAYMENT_AUTHORIZED       = 'payment.authorized';
     const PAYMENT_FAILED           = 'payment.failed';
+    const PAYMENT_PENDING          = 'payment.pending';
     const SUBSCRIPTION_CANCELLED   = 'subscription.cancelled';
     const REFUNDED_CREATED         = 'refund.created';
     const VIRTUAL_ACCOUNT_CREDITED = 'virtual_account.credited';
@@ -36,6 +37,7 @@ class RZP_Webhook
         self::VIRTUAL_ACCOUNT_CREDITED,
         self::REFUNDED_CREATED,
         self::PAYMENT_FAILED,
+        self::PAYMENT_PENDING,
         self::SUBSCRIPTION_CANCELLED,
         self::SUBSCRIPTION_PAUSED,
         self::SUBSCRIPTION_RESUMED,
@@ -122,6 +124,9 @@ class RZP_Webhook
 
                     case self::PAYMENT_FAILED:
                         return $this->paymentFailed($data);
+
+                    case self::PAYMENT_PENDING:
+                        return $this->paymentPending($data);
 
                     case self::SUBSCRIPTION_CANCELLED:
                         return $this->subscriptionCancelled($data);
@@ -278,6 +283,79 @@ class RZP_Webhook
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the update order function");
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the updateOrder function");
+
+        // Graceful exit since payment is now processed.
+        exit;
+    }
+
+    /**
+     * Handling the payment pending webhook to handle COD orders
+     *
+     * @param array $data Webook Data
+     */
+    protected function paymentPending(array $data)
+    {
+        // We don't process subscription/invoice payments here
+        if (isset($data['payload']['payment']['entity']['invoice_id']) === true) {
+            return;
+        }
+
+        if (isset($data['payload']['payment']['entity']['method']) != 'cod' ) {
+            return;
+        }
+
+        //
+        // Order entity should be sent as part of the webhook payload
+        //
+        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+
+        rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for COD method payment pending event");
+
+        if(!empty($orderId))
+        {   
+          $order =  $this->checkIsObject($orderId);
+        }
+        //To give the priority to callback script to compleate the execution fist adding this locking.
+        $transientData = get_transient('webhook_trigger_count_for_' . $orderId);
+
+        if (empty($transientData) || $transientData == 1) {
+            rzpLogInfo("Woocommerce orderId: $orderId with transientData: $transientData webhook halted for 60 sec");
+
+            sleep(60);
+        }
+
+        $triggerCount = !empty($transientData) ? ($transientData + 1) : 1;
+
+        set_transient('webhook_trigger_count_for_' . $orderId, $triggerCount, 180);
+
+        $orderStatus  = $order->get_status();
+        rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
+
+        // If it is already marked as paid, ignore the event
+        if ($orderStatus != 'draft' && $order->needs_payment() === false) {
+            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :". $order->needs_payment());
+
+            return;
+        }
+        
+        if($orderStatus == 'draft')
+        {
+            updateOrderStatus($orderId, 'wc-pending');
+        }
+        
+        $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
+
+        $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+        $success      = false;
+        $errorMessage = 'The payment has failed.';
+
+        if ($payment['status'] === 'pending' && $data['payload']['payment']['entity']['method'] == 'cod' && !empty($razorpayPaymentId)) {
+            $success = true;
+
+            $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
+            rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the update order function for COD");
+        }
 
         // Graceful exit since payment is now processed.
         exit;
