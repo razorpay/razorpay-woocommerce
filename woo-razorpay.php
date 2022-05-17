@@ -524,8 +524,6 @@ function woocommerce_razorpay_init()
             {
                 $razorpayOrderId = get_transient($sessionKey);
                 rzpLogInfo("razorpayOrderId $razorpayOrderId | sessionKey $sessionKey");
-                rzpLogInfo("verifying amt");
-                rzpLogInfo($this->verifyOrderAmount($razorpayOrderId, $orderId));
                 // If we don't have an Order
                 // or the if the order is present in transient but doesn't match what we have saved
                 if (($razorpayOrderId === false) or
