@@ -123,6 +123,8 @@ function createWcOrder(WP_REST_Request $request)
     $order = wc_get_order($orderId);
 
     if ($order) {
+        //Pixel PRO UTM data
+        wooSaveCheckoutFields($orderId, $params);
 
         // To remove coupon added on order.
         $coupons = $order->get_coupon_codes();
@@ -255,4 +257,19 @@ function updateOrderStatus($orderId, $orderStatus)
         'ID'          => $orderId,
         'post_status' => $orderStatus,
     ));
+}
+
+function wooSaveCheckoutFields($orderId, $params)
+{
+        $pysData = [];
+        $cookieData = $params['cookies'];
+        $browserTime = $params['dateTime'];
+        $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
+        $pysData['pys_source'] = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
+
+        $pysData['pys_utm'] = "utm_source:".$cookieData['pys_utm_source']."|utm_medium:".$cookieData['pys_utm_medium']."|utm_campaign:".$cookieData['pys_utm_campaign']."|utm_term:".$cookieData['pys_utm_term']."|utm_content:".$cookieData['pys_utm_content'];
+        $pysData['pys_browser_time'] = $browserTime[0]."|".$browserTime[1]."|".$browserTime[2];
+
+        update_post_meta($orderId,"pys_enrich_data",$pysData);
+        
 }

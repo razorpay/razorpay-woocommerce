@@ -1796,6 +1796,7 @@ function enqueueScriptsFor1cc()
       'nonce' => wp_create_nonce("wp_rest"),
       'siteurl' => $siteurl,
       'blogname' => get_bloginfo('name'),
+      'cookies' => $_COOKIE,
     ) );
     wp_enqueue_script('btn_1cc_checkout');
 }
