@@ -1070,22 +1070,26 @@ EOT;
             global $wpdb;
 
             $order = false;
-            rzpLogInfo("Called check_razorpay_response");
 
             $post_type = 'shop_order';
 
             $post_password = sanitize_text_field($_GET['order_key']);
 
-            $postIds = $wpdb->get_col( $wpdb->prepare("SELECT ID FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+            rzpLogInfo("Called check_razorpay_response: $post_password");
 
-            if (count($postIds) > 0)
+            $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+
+            if (count($postData[0]) > 0)
             {
-                $orderId = $postIds[0];
+                $orderId = $postData[0]->ID;
 
-                updateOrderStatus($orderId, 'wc-pending');
+                if($postData[0]->post_status == 'draft')
+                {
+                    updateOrderStatus($orderId, 'wc-pending');
+                }
 
                 $order = wc_get_order($orderId);
-                rzpLogInfo("get_transient in check_razorpay_response: orderId $orderId");
+                rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
             }
 
             // TODO: Handle redirect
