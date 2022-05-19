@@ -115,8 +115,8 @@ function createWcOrder(WP_REST_Request $request)
             $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
 
             //To get the applied coupon details from cart object.
-            $coupons = WC()->cart->get_coupons();
-            $couponCode = !empty($coupons)? array_key_first($coupons): null;
+            $coupons    = WC()->cart->get_coupons();
+            $couponCode = !empty($coupons) ? array_key_first($coupons) : null;
         }
     }
 
@@ -261,15 +261,15 @@ function updateOrderStatus($orderId, $orderStatus)
 
 function wooSaveCheckoutFields($orderId, $params)
 {
-        $pysData = [];
-        $cookieData = $params['cookies'];
-        $browserTime = $params['dateTime'];
-        $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
-        $pysData['pys_source'] = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
+    $pysData                = [];
+    $cookieData             = $params['cookies'];
+    $browserTime            = $params['dateTime'];
+    $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
+    $pysData['pys_source']  = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
 
-        $pysData['pys_utm'] = "utm_source:".$cookieData['pys_utm_source']."|utm_medium:".$cookieData['pys_utm_medium']."|utm_campaign:".$cookieData['pys_utm_campaign']."|utm_term:".$cookieData['pys_utm_term']."|utm_content:".$cookieData['pys_utm_content'];
-        $pysData['pys_browser_time'] = $browserTime[0]."|".$browserTime[1]."|".$browserTime[2];
+    $pysData['pys_utm']          = "utm_source:" . $cookieData['pys_utm_source'] . "|utm_medium:" . $cookieData['pys_utm_medium'] . "|utm_campaign:" . $cookieData['pys_utm_campaign'] . "|utm_term:" . $cookieData['pys_utm_term'] . "|utm_content:" . $cookieData['pys_utm_content'];
+    $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
 
-        update_post_meta($orderId,"pys_enrich_data",$pysData);
-        
+    update_post_meta($orderId, "pys_enrich_data", $pysData);
+
 }
