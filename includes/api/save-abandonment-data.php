@@ -90,7 +90,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $data = base64_encode($dataParam);
         $event = 'track';
 
-        $logObj['klaviyoData'] = $dataParam;
+        $logObj['klaviyoData'] = $eventData;
         //calling kalviyo plugin public api 
         $url = "https://a.klaviyo.com/api/" .$event.'?data='.$data;
         file_get_contents($url);
