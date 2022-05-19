@@ -63,36 +63,35 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
-    if(is_plugin_active('klaviyo/klaviyo.php') && empty($razorpayData['customer_details']['email']) == false)
-    {
+    if (is_plugin_active('klaviyo/klaviyo.php') && empty($razorpayData['customer_details']['email']) == false) {
         WC()->cart->empty_cart();
         $cart1cc = create1ccCart($wcOrderId);
 
         $cart = WC()->cart;
         //Insert data for tracking started checkout.
-        $eventData = wck_build_cart_data( $cart );
-        if ( empty($eventData['$extra']['Items']) ) { 
+        $eventData = wck_build_cart_data($cart);
+        if (empty($eventData['$extra']['Items'])) {
             $response['status']  = false;
             $response['message'] = 'cart item not exist in kalviyo';
             $statusCode          = 400;
             return new WP_REST_Response($response, $statusCode);
-         }
+        }
         $eventData['$service'] = 'woocommerce';
         unset($eventData['Tags']);
         unset($eventData['Quantity']);
         $email = $customerEmail;
 
         //Get token from kalviyo plugin
-        $klaviyoApi =  WooCommerceKlaviyo::instance();
-        $token = $klaviyoApi->options->get_klaviyo_option( 'klaviyo_public_api_key' );
-        $eventObject = ['token'=>$token,'event'=>'$started_checkout','customer_properties'=>array('$email'=>$email),'properties'=>$eventData];
-        $dataParam = json_encode($eventObject);
-        $data = base64_encode($dataParam);
-        $event = 'track';
+        $klaviyoApi  = WooCommerceKlaviyo::instance();
+        $token       = $klaviyoApi->options->get_klaviyo_option('klaviyo_public_api_key');
+        $eventObject = ['token' => $token, 'event' => '$started_checkout', 'customer_properties' => array('$email' => $email), 'properties' => $eventData];
+        $dataParam   = json_encode($eventObject);
+        $data        = base64_encode($dataParam);
+        $event       = 'track';
 
         $logObj['klaviyoData'] = $eventData;
-        //calling kalviyo plugin public api 
-        $url = "https://a.klaviyo.com/api/" .$event.'?data='.$data;
+        //calling kalviyo plugin public api
+        $url = "https://a.klaviyo.com/api/" . $event . '?data=' . $data;
         file_get_contents($url);
     }
 
