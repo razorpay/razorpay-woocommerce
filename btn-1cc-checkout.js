@@ -156,7 +156,7 @@ window.addEventListener('DOMContentLoaded', function() {
       rzp1cc.setDisabled('btn-1cc', false);
       rzp1cc.setDisabled('btn-1cc-mini-cart', false);
       rzp1cc.setDisabled('btn-1cc-pdp', false);
-    }
+    },
     getBrowserTime: function() {
       var dateTime = [];
       var date = new Date(),

@@ -123,8 +123,11 @@ function createWcOrder(WP_REST_Request $request)
     $order = wc_get_order($orderId);
 
     if ($order) {
-        //Pixel PRO UTM data
-        wooSaveCheckoutFields($orderId, $params);
+
+        if (is_plugin_active('pixelyoursite-pro/pixelyoursite-pro.php')) {
+            //Pixel PRO UTM data
+            wooSaveCheckoutFields($orderId, $params);
+        }
 
         // To remove coupon added on order.
         $coupons = $order->get_coupon_codes();
@@ -271,5 +274,4 @@ function wooSaveCheckoutFields($orderId, $params)
     $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
 
     update_post_meta($orderId, "pys_enrich_data", $pysData);
-
 }
