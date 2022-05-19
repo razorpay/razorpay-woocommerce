@@ -68,6 +68,30 @@ function isMiniCartCheckoutEnabled()
     );
 }
 
+function isDualMiniCartCheckoutEnabled()
+{
+    return (
+        empty(get_option('woocommerce_razorpay_settings')['enable_dual_checkout_minicart']) === false
+        && 'yes' == get_option('woocommerce_razorpay_settings')['enable_dual_checkout_minicart']
+    );
+}
+
+function isDualPdpCheckoutEnabled()
+{
+    return (
+        empty(get_option('woocommerce_razorpay_settings')['enable_dual_checkout_onpdp']) === false
+        && 'yes' == get_option('woocommerce_razorpay_settings')['enable_dual_checkout_onpdp']
+    );
+}
+
+function isDualCartCheckoutEnabled()
+{
+    return (
+        empty(get_option('woocommerce_razorpay_settings')['enable_dual_checkout_oncart']) === false
+        && 'yes' == get_option('woocommerce_razorpay_settings')['enable_dual_checkout_oncart']
+    );
+}
+
 function validateInput($route, $param)
 {
     $failure_reason = null;
