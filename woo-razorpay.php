@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.6.1
- * Stable tag: 3.6.1
+ * Version: 3.7.0
+ * Stable tag: 3.7.0
  * Author: Team Razorpay
  * WC tested up to: 6.4.1
  * Author URI: https://razorpay.com
@@ -1075,22 +1075,26 @@ EOT;
             global $wpdb;
 
             $order = false;
-            rzpLogInfo("Called check_razorpay_response");
 
             $post_type = 'shop_order';
 
             $post_password = sanitize_text_field($_GET['order_key']);
 
-            $postIds = $wpdb->get_col( $wpdb->prepare("SELECT ID FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+            rzpLogInfo("Called check_razorpay_response: $post_password");
 
-            if (count($postIds) > 0)
+            $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+
+            if (count($postData[0]) > 0)
             {
-                $orderId = $postIds[0];
+                $orderId = $postData[0]->ID;
 
-                updateOrderStatus($orderId, 'wc-pending');
+                if($postData[0]->post_status == 'draft')
+                {
+                    updateOrderStatus($orderId, 'wc-pending');
+                }
 
                 $order = wc_get_order($orderId);
-                rzpLogInfo("get_transient in check_razorpay_response: orderId $orderId");
+                rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
             }
 
             // TODO: Handle redirect
@@ -1541,6 +1545,12 @@ EOT;
                 $order->save();
             }
 
+            //For abandon cart Lite recovery plugin recovery function
+            if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
+            {
+                $this->updateRecoverCartInfo($wcOrderId);
+            }
+
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
         }
@@ -1639,6 +1649,67 @@ EOT;
             }
 
             update_user_meta($order->get_user_id(), $addressKeyPrefix . 'state', $stateValue);
+        }
+
+        // Update Abandonment cart plugin table for recovered cart.
+        protected function updateRecoverCartInfo($wcOrderId)
+        {
+            global $woocommerce;
+            global $wpdb;
+
+            $userId = get_post_meta($wcOrderId, '_customer_user', true);
+            $currentTime  = current_time('timestamp'); // phpcs:ignore
+            $cutOffTime  = get_option('ac_lite_cart_abandoned_time');
+
+            if (isset($cut_off_time))
+            {
+                $cartCutOffTime = intval($cutOffTime) * 60;
+            } 
+            else
+            {
+                $cartCutOffTime = 60 * 60;
+            }
+
+            $compareTime = $currentTime - $cutOffTime;
+            if($userId > 0)
+            {
+                $userType = 'REGISTERED';
+            }
+            else
+            {
+                $userType = 'GUEST';
+                $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+            }
+            
+            $results = $wpdb->get_results( // phpcs:ignore
+                $wpdb->prepare(
+                    'SELECT * FROM `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` WHERE user_id = %s AND cart_ignored = %s AND recovered_cart = %s AND user_type = %s',
+                    $userId,
+                    0,
+                    0,
+                    $userType
+                )
+            );
+
+            if(count($results) > 0)
+            {
+                if(isset($results[0]->abandoned_cart_time) && $compareTime > $results[0]->abandoned_cart_time)
+                {
+                     wcal_common::wcal_set_cart_session('abandoned_cart_id_lite', $results[0]->id);
+                }
+            }
+
+            $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
+
+            add_post_meta($wcOrderId, 'abandoned_id', $abandonedOrderId);
+            $wpdb->query( // phpcS:ignore
+            $wpdb->prepare(
+                'UPDATE `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` SET recovered_cart = %s, cart_ignored = %s WHERE id = %s',
+                    $wcOrderId,
+                    '1',
+                    $abandonedOrderId
+                )
+            );
         }
 
         protected function handleErrorCase(& $order)
