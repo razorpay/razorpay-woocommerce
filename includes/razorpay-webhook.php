@@ -76,10 +76,9 @@ class RZP_Webhook
             return;
         }
 
-        $enabled = $this->razorpay->getSetting('enable_webhook');
-
-        if (($enabled === 'yes') and
-            (empty($data['event']) === false)) {
+      
+       
+        if (empty($data['event']) === false) {
             // Skip the webhook if not the valid data and event
             if ($this->shouldConsumeWebhook($data) === false) {
                 return;

@@ -338,7 +338,6 @@ function woocommerce_razorpay_init()
 
             if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
             {
-                $this->update_option( 'enable_webhook', 'no' );
 
                 ?>
                 <div class="notice error is-dismissible" >
