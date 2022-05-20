@@ -61,7 +61,10 @@ function woocommerce_razorpay_init()
             'payment.authorized',
             'payment.pending',
             'refund.created',
-            'virtual_account.credited'
+            'virtual_account.credited',
+            'subscription.cancelled',
+            'subscription.paused',
+            'subscription.resumed'
         );
 
         protected $defaultWebhookEvents = array(
@@ -157,7 +160,7 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
-            
+
             // Load preference API call only for administrative interface page.
             if (is_admin())
             {
@@ -297,7 +300,7 @@ function woocommerce_razorpay_init()
         }
 
         public function autoEnableWebhook()
-        {   
+        {
             $webhookExist = false;
             $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
@@ -306,7 +309,7 @@ function woocommerce_razorpay_init()
             $enabled     = true;
             $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
-            
+
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
 
@@ -331,7 +334,7 @@ function woocommerce_razorpay_init()
                 return;
             }
 
-           
+
             $domain = parse_url($webhookUrl, PHP_URL_HOST);
 
             $domain_ip = gethostbyname($domain);
@@ -362,31 +365,31 @@ function woocommerce_razorpay_init()
                     {
                         $webhookItems[] = $value;
                     }
-                }  
+                }
             } while ( $webhook['count'] >= 1);
-            
+
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
                 'events' => $this->defaultWebhookEvents,
                 'secret' => $secret,
             ];
-            
+
             if (count($webhookItems) > 0)
-            { 
+            {
                 foreach ($webhookItems as $key => $value)
                 {
                     if ($value['url'] === $webhookUrl)
-                    { 
+                    {
                         foreach ($value['events'] as $evntkey => $evntval)
                         {
-                            if (($evntval == 1) and  
+                            if (($evntval == 1) and
                                 (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
                                  $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
-                        
+
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
@@ -397,7 +400,7 @@ function woocommerce_razorpay_init()
                         $webhookId     = $value['id'];
                     }
                 }
-            }    
+            }
             if ($webhookExist)
             {
                 $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
@@ -593,7 +596,7 @@ function woocommerce_razorpay_init()
            {
                 if ($getWebhookFlag + 86400 < time())
                 {
-                    $this->autoEnableWebhook(); 
+                    $this->autoEnableWebhook();
                 }
            }
             rzpLogInfo("getRazorpayPaymentParams $orderId");
@@ -1439,7 +1442,7 @@ EOT;
 
                     if ($isStoreShippingEnabled == 'yes')
                     {
-                        foreach ($shippingData as $key => $value) 
+                        foreach ($shippingData as $key => $value)
                         {
                             $item = new WC_Order_Item_Shipping();
                             //$item->set_method_id($test[$key]['rate_id']);
@@ -1468,13 +1471,13 @@ EOT;
                                     wc_update_order_item_meta( $itemId, $itemkey, $itemval);
                                 }
                             }
-                            
+
                         }
                     }
                     else
                     {
                         $item = new WC_Order_Item_Shipping();
-                       
+
                         // if shipping charges zero
                         if ($razorpayData['shipping_fee'] == 0)
                         {
@@ -1490,12 +1493,12 @@ EOT;
                         $item->set_total( $razorpayData['shipping_fee']/100 );
 
                         $order->add_item( $item );
-                        
+
                         $item->save();
                     }
                     // Calculate totals and save
                     $order->calculate_totals();
-                    
+
                 }
             }
 
@@ -1629,7 +1632,7 @@ EOT;
             return $zone;
         }
 
-       
+
 
 
         // Update user billing and shipping information
@@ -1659,7 +1662,7 @@ EOT;
             if (isset($cut_off_time))
             {
                 $cartCutOffTime = intval($cutOffTime) * 60;
-            } 
+            }
             else
             {
                 $cartCutOffTime = 60 * 60;
@@ -1675,7 +1678,7 @@ EOT;
                 $userType = 'GUEST';
                 $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
             }
-            
+
             $results = $wpdb->get_results( // phpcs:ignore
                 $wpdb->prepare(
                     'SELECT * FROM `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` WHERE user_id = %s AND cart_ignored = %s AND recovered_cart = %s AND user_type = %s',
@@ -1782,7 +1785,7 @@ EOT;
                 'SELECT * FROM `' . $wpdb->prefix . 'wcfm_marketplace_orders` WHERE vendor_id = %d AND order_id = %d',
                 $vendorId,
                 $orderId
-            ) 
+            )
         );
 
         if (count($commission) > 0)
@@ -1925,7 +1928,7 @@ function addMiniCheckoutButton()
       $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
-  
+
 }
 
 //To add 1CC button on product page.
