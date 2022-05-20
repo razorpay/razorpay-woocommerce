@@ -76,18 +76,15 @@ class RZP_Webhook
             return;
         }
 
-        $enabled = $this->razorpay->getSetting('enable_webhook');
-
-        if (($enabled === 'yes') and
-            (empty($data['event']) === false)) {
+      
+       
+        if (empty($data['event']) === false) {
             // Skip the webhook if not the valid data and event
             if ($this->shouldConsumeWebhook($data) === false) {
                 return;
             }
-
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
-                $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
-
+                $razorpayWebhookSecret = get_option('rzp_webhook_secret');
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //

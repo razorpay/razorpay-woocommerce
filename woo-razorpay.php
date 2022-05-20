@@ -306,7 +306,7 @@ function woocommerce_razorpay_init()
             $enabled     = true;
             $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
-            
+            update_option('rzp_webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
 
@@ -338,7 +338,6 @@ function woocommerce_razorpay_init()
 
             if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
             {
-                $this->update_option( 'enable_webhook', 'no' );
 
                 ?>
                 <div class="notice error is-dismissible" >
@@ -588,13 +587,18 @@ function woocommerce_razorpay_init()
         protected function getRazorpayPaymentParams($orderId)
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
-
+            $time = time();
            if (!empty($getWebhookFlag))
            {
                 if ($getWebhookFlag + 86400 < time())
                 {
                     $this->autoEnableWebhook(); 
                 }
+           }
+           else
+           {
+                update_option('webhook_enable_flag', $time);
+                $this->autoEnableWebhook(); 
            }
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
