@@ -597,7 +597,7 @@ function woocommerce_razorpay_init()
            }
            else
            {
-                add_option('webhook_enable_flag', $time);
+                update_option('webhook_enable_flag', $time);
                 $this->autoEnableWebhook(); 
            }
             rzpLogInfo("getRazorpayPaymentParams $orderId");
