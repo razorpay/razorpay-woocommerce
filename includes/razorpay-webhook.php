@@ -200,7 +200,7 @@ class RZP_Webhook
         rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for payment authorized event");
 
         if(!empty($orderId))
-        {   
+        {
           $order =  $this->checkIsObject($orderId);
         }
         //To give the priority to callback script to compleate the execution fist adding this locking.
@@ -225,12 +225,12 @@ class RZP_Webhook
 
             return;
         }
-        
+
         if($orderStatus == 'draft')
         {
             updateOrderStatus($orderId, 'wc-pending');
         }
-        
+
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
@@ -309,7 +309,7 @@ class RZP_Webhook
         rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for COD method payment pending event");
 
         if(!empty($orderId))
-        {   
+        {
           $order =  $this->checkIsObject($orderId);
         }
         //To give the priority to callback script to compleate the execution fist adding this locking.
@@ -334,12 +334,12 @@ class RZP_Webhook
 
             return;
         }
-        
+
         if($orderStatus == 'draft')
         {
             updateOrderStatus($orderId, 'wc-pending');
         }
-        
+
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
@@ -376,7 +376,7 @@ class RZP_Webhook
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
         if(!empty($orderId))
-        {   
+        {
           $order =  $this->checkIsObject($orderId);
         }
         // If it is already marked as paid, ignore the event
@@ -464,7 +464,7 @@ class RZP_Webhook
     {
         if ((isset($data['event']) === true) and
             (in_array($data['event'], $this->eventsArray) === true) and
-            isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true) {
+            (isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true or isset($data['payload']['subscription']['entity']['notes']['woocommerce_order_id']) === true)) {
             return true;
         }
 
@@ -515,10 +515,10 @@ class RZP_Webhook
         $orderId = $payment['notes']['woocommerce_order_number'];
 
         if(!empty($orderId))
-        {   
+        {
           $order =  $this->checkIsObject($orderId);
         }
-        
+
         // If it is already marked as unpaid, ignore the event
         if ($order->needs_payment() === true) {
             return;
