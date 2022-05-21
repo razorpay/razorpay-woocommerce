@@ -1086,7 +1086,9 @@ EOT;
 
             $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
 
-            if (count($postData[0]) > 0)
+            $arrayPost = json_decode(json_encode($postData), true);
+
+            if (!empty($arrayPost) && count($arrayPost[0]) > 0)
             {
                 $orderId = $postData[0]->ID;
 
