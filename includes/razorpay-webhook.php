@@ -77,8 +77,13 @@ class RZP_Webhook
         }
 
         if (empty($data['event']) === false) {
+
+            $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+
             // Skip the webhook if not the valid data and event
             if ($this->shouldConsumeWebhook($data) === false) {
+                rzpLogInfo("Woocommerce orderId: $orderId webhook process exited in shouldConsumeWebhook function");
+
                 return;
             }
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
@@ -93,6 +98,8 @@ class RZP_Webhook
                     }
                     else
                     {
+                        rzpLogInfo("Woocommerce orderId: $orderId webhook process exited due to secret not available");
+
                         return;
                     } 
                 }
@@ -110,11 +117,11 @@ class RZP_Webhook
                         'event'   => 'razorpay.wc.signature.verify_failed',
                     );
 
+                    rzpLogError(json_encode($log));
+
                     error_log(json_encode($log));
                     return;
                 }
-
-                $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
 
