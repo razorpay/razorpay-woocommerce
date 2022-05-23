@@ -91,6 +91,7 @@ class RZP_Webhook
         if (empty($data['event']) === false) {
 
             $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+
             $razorpayOrderId = $data['payload']['payment']['entity']['order_id'];
 
             // Skip the webhook if not the valid data and event
@@ -109,13 +110,14 @@ class RZP_Webhook
                     $razorpayWebhookSecret = get_option('rzp_webhook_secret');
                     if (empty($razorpayWebhookSecret) === false) {
                         $this->razorpay->update_option('webhook_secret', $razorpayWebhookSecret);
-                    } else {
+                    }
+                    else
+                    {
                         rzpLogInfo("Woocommerce orderId: $orderId webhook process exited due to secret not available");
 
                         return;
                     }
                 }
-                
                 
                 try
                 {
@@ -135,6 +137,7 @@ class RZP_Webhook
                     return;
                 }
 
+<<<<<<< HEAD
                 $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
                 if ($rzpWebhookNotifiedAt === '')
                 {
@@ -152,6 +155,8 @@ class RZP_Webhook
 
                 error_log("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
 
+=======
+>>>>>>> 8976825 (Added logs in webhook script)
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
 
                 switch ($data['event']) {
