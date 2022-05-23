@@ -2,8 +2,13 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
+<<<<<<< HEAD
 Tested up to: 6.1.1
 Stable tag: 4.3.5
+=======
+Tested up to: 5.9
+Stable tag: 3.7.2
+>>>>>>> b5dfd68 (version bump)
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
