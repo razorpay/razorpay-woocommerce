@@ -76,22 +76,35 @@ class RZP_Webhook
             return;
         }
 
-      
-       
         if (empty($data['event']) === false) {
+
+            $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+
             // Skip the webhook if not the valid data and event
             if ($this->shouldConsumeWebhook($data) === false) {
+                rzpLogInfo("Woocommerce orderId: $orderId webhook process exited in shouldConsumeWebhook function");
+
                 return;
             }
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
-                $razorpayWebhookSecret = get_option('rzp_webhook_secret');
+                $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
-                if (empty($razorpayWebhookSecret) === true) {
-                    return;
-                }
+                if (empty($razorpayWebhookSecret) === true ) {
+                    $razorpayWebhookSecret =  get_option('rzp_webhook_secret');
+                    if (empty($razorpayWebhookSecret) === false){
+                        $this->razorpay->update_option('webhook_secret', $razorpayWebhookSecret);
+                    }
+                    else
+                    {
+                        rzpLogInfo("Woocommerce orderId: $orderId webhook process exited due to secret not available");
 
+                        return;
+                    } 
+                }
+                
+                
                 try
                 {
                     $this->api->utility->verifyWebhookSignature($post,
@@ -104,11 +117,11 @@ class RZP_Webhook
                         'event'   => 'razorpay.wc.signature.verify_failed',
                     );
 
+                    rzpLogError(json_encode($log));
+
                     error_log(json_encode($log));
                     return;
                 }
-
-                $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
 

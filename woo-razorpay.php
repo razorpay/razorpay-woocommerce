@@ -309,7 +309,8 @@ function woocommerce_razorpay_init()
             $enabled     = true;
             $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
-            update_option('rzp_webhook_secret', $secret);
+
+            $this->update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
 
@@ -591,7 +592,7 @@ function woocommerce_razorpay_init()
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
-           if (!empty($getWebhookFlag))
+           if (empty($getWebhookFlag) == false)
            {
                 if ($getWebhookFlag + 86400 < time())
                 {
