@@ -760,6 +760,8 @@ function woocommerce_razorpay_init()
             $razorpayOrderId = $razorpayOrder['id'];
 
             set_transient($sessionKey, $razorpayOrderId, 3600);
+
+            // By default woocommerce session TTL is 48 hours.
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
 
             rzpLogInfo('For order session key ' . $sessionKey);
