@@ -124,9 +124,15 @@ function createWcOrder(WP_REST_Request $request)
 
     if ($order) {
 
+        // Pixel your site PRO UTM data
         if (is_plugin_active('pixelyoursite-pro/pixelyoursite-pro.php')) {
-            //Pixel PRO UTM data
-            wooSaveCheckoutFields($orderId, $params);
+
+            $pysData = get_option('pys_core');
+
+            // Store UTM data only if config enabled.
+            if ($pysData['woo_enabled_save_data_to_orders'] == true) {
+                wooSaveCheckoutUTMFields($orderId, $params);
+            }
         }
 
         // To remove coupon added on order.
@@ -262,7 +268,7 @@ function updateOrderStatus($orderId, $orderStatus)
     ));
 }
 
-function wooSaveCheckoutFields($orderId, $params)
+function wooSaveCheckoutUTMFields($orderId, $params)
 {
     $pysData                = [];
     $cookieData             = $params['cookies'];
