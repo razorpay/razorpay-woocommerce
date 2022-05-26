@@ -7,8 +7,12 @@ Tested up to: 6.1.1
 Stable tag: 4.3.5
 =======
 Tested up to: 5.9
+<<<<<<< HEAD
 Stable tag: 3.7.2
 >>>>>>> b5dfd68 (version bump)
+=======
+Stable tag: 3.8.0
+>>>>>>> 750ea2b (Added version bump to 3.8.0)
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -46,6 +50,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+<<<<<<< HEAD
 = 4.3.5 =
 * Fixed, multiple webhook API calls.
 * Added, subscription.charged webhook event.
@@ -135,6 +140,8 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Bug fix webhook
 * Added meta info to magic checkout.
 
+=======
+>>>>>>> 750ea2b (Added version bump to 3.8.0)
 = 3.8.0 =
 * Added support for Pixel your site pro plugin in magic checkout.
 * Bug fix to handle the transient data.
