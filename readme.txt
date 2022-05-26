@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.9
-Stable tag: 3.6.1
+Stable tag: 3.7.2
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -41,8 +41,17 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
-= 3.6.1 =
-* Bug fix in order creation.
+= 3.7.2 =
+* Bug fix for webhook.
+
+= 3.7.1 =
+* Bug fix for auto webhook.
+* Added supported subscription webhook events
+
+= 3.7.0 =
+* Magic Checkout support for Klaviyo plugin.
+* Bug fix for warning message on place order and callback script.
+* Bug fix in smart cod support in magic checkout.
 
 = 3.6.0 =
 * New webhook event i.e payment.pending has been added to handle the magic checkout COD orders

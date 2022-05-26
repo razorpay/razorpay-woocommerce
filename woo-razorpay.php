@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.6.1
- * Stable tag: 3.6.1
+ * Version: 3.7.2
+ * Stable tag: 3.7.2
  * Author: Team Razorpay
  * WC tested up to: 6.4.1
  * Author URI: https://razorpay.com
@@ -61,7 +61,10 @@ function woocommerce_razorpay_init()
             'payment.authorized',
             'payment.pending',
             'refund.created',
-            'virtual_account.credited'
+            'virtual_account.credited',
+            'subscription.cancelled',
+            'subscription.paused',
+            'subscription.resumed'
         );
 
         protected $defaultWebhookEvents = array(
@@ -157,7 +160,7 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
-            
+
             // Load preference API call only for administrative interface page.
             if (is_admin())
             {
@@ -297,7 +300,7 @@ function woocommerce_razorpay_init()
         }
 
         public function autoEnableWebhook()
-        {   
+        {
             $webhookExist = false;
             $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
@@ -306,7 +309,8 @@ function woocommerce_razorpay_init()
             $enabled     = true;
             $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
-            
+
+            $this->update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
 
@@ -331,14 +335,13 @@ function woocommerce_razorpay_init()
                 return;
             }
 
-           
+
             $domain = parse_url($webhookUrl, PHP_URL_HOST);
 
             $domain_ip = gethostbyname($domain);
 
             if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
             {
-                $this->update_option( 'enable_webhook', 'no' );
 
                 ?>
                 <div class="notice error is-dismissible" >
@@ -362,31 +365,31 @@ function woocommerce_razorpay_init()
                     {
                         $webhookItems[] = $value;
                     }
-                }  
+                }
             } while ( $webhook['count'] >= 1);
-            
+
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
                 'events' => $this->defaultWebhookEvents,
                 'secret' => $secret,
             ];
-            
+
             if (count($webhookItems) > 0)
-            { 
+            {
                 foreach ($webhookItems as $key => $value)
                 {
                     if ($value['url'] === $webhookUrl)
-                    { 
+                    {
                         foreach ($value['events'] as $evntkey => $evntval)
                         {
-                            if (($evntval == 1) and  
+                            if (($evntval == 1) and
                                 (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
                                  $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
-                        
+
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
@@ -397,7 +400,7 @@ function woocommerce_razorpay_init()
                         $webhookId     = $value['id'];
                     }
                 }
-            }    
+            }
             if ($webhookExist)
             {
                 $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
@@ -588,13 +591,18 @@ function woocommerce_razorpay_init()
         protected function getRazorpayPaymentParams($orderId)
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
-
-           if (!empty($getWebhookFlag))
+            $time = time();
+           if (empty($getWebhookFlag) == false)
            {
                 if ($getWebhookFlag + 86400 < time())
                 {
-                    $this->autoEnableWebhook(); 
+                    $this->autoEnableWebhook();
                 }
+           }
+           else
+           {
+                update_option('webhook_enable_flag', $time);
+                $this->autoEnableWebhook(); 
            }
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
@@ -1093,22 +1101,28 @@ EOT;
             global $wpdb;
 
             $order = false;
-            rzpLogInfo("Called check_razorpay_response");
 
             $post_type = 'shop_order';
 
             $post_password = sanitize_text_field($_GET['order_key']);
 
-            $postIds = $wpdb->get_col( $wpdb->prepare("SELECT ID FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+            rzpLogInfo("Called check_razorpay_response: $post_password");
 
-            if (count($postIds) > 0)
+            $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+
+            $arrayPost = json_decode(json_encode($postData), true);
+
+            if (!empty($arrayPost) && count($arrayPost[0]) > 0)
             {
-                $orderId = $postIds[0];
+                $orderId = $postData[0]->ID;
 
-                updateOrderStatus($orderId, 'wc-pending');
+                if($postData[0]->post_status == 'draft')
+                {
+                    updateOrderStatus($orderId, 'wc-pending');
+                }
 
                 $order = wc_get_order($orderId);
-                rzpLogInfo("get_transient in check_razorpay_response: orderId $orderId");
+                rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
             }
 
             // TODO: Handle redirect
@@ -1458,7 +1472,7 @@ EOT;
 
                     if ($isStoreShippingEnabled == 'yes')
                     {
-                        foreach ($shippingData as $key => $value) 
+                        foreach ($shippingData as $key => $value)
                         {
                             $item = new WC_Order_Item_Shipping();
                             //$item->set_method_id($test[$key]['rate_id']);
@@ -1487,13 +1501,13 @@ EOT;
                                     wc_update_order_item_meta( $itemId, $itemkey, $itemval);
                                 }
                             }
-                            
+
                         }
                     }
                     else
                     {
                         $item = new WC_Order_Item_Shipping();
-                       
+
                         // if shipping charges zero
                         if ($razorpayData['shipping_fee'] == 0)
                         {
@@ -1509,12 +1523,12 @@ EOT;
                         $item->set_total( $razorpayData['shipping_fee']/100 );
 
                         $order->add_item( $item );
-                        
+
                         $item->save();
                     }
                     // Calculate totals and save
                     $order->calculate_totals();
-                    
+
                 }
             }
 
@@ -1557,6 +1571,12 @@ EOT;
                 $order->add_item($itemFee);
                 $order->calculate_totals();
                 $order->save();
+            }
+
+            //For abandon cart Lite recovery plugin recovery function
+            if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
+            {
+                $this->updateRecoverCartInfo($wcOrderId);
             }
 
             $note = __('Order placed through Razorpay Magic Checkout');
@@ -1642,7 +1662,7 @@ EOT;
             return $zone;
         }
 
-       
+
 
 
         // Update user billing and shipping information
@@ -1657,6 +1677,67 @@ EOT;
             }
 
             update_user_meta($order->get_user_id(), $addressKeyPrefix . 'state', $stateValue);
+        }
+
+        // Update Abandonment cart plugin table for recovered cart.
+        protected function updateRecoverCartInfo($wcOrderId)
+        {
+            global $woocommerce;
+            global $wpdb;
+
+            $userId = get_post_meta($wcOrderId, '_customer_user', true);
+            $currentTime  = current_time('timestamp'); // phpcs:ignore
+            $cutOffTime  = get_option('ac_lite_cart_abandoned_time');
+
+            if (isset($cut_off_time))
+            {
+                $cartCutOffTime = intval($cutOffTime) * 60;
+            }
+            else
+            {
+                $cartCutOffTime = 60 * 60;
+            }
+
+            $compareTime = $currentTime - $cutOffTime;
+            if($userId > 0)
+            {
+                $userType = 'REGISTERED';
+            }
+            else
+            {
+                $userType = 'GUEST';
+                $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+            }
+
+            $results = $wpdb->get_results( // phpcs:ignore
+                $wpdb->prepare(
+                    'SELECT * FROM `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` WHERE user_id = %s AND cart_ignored = %s AND recovered_cart = %s AND user_type = %s',
+                    $userId,
+                    0,
+                    0,
+                    $userType
+                )
+            );
+
+            if(count($results) > 0)
+            {
+                if(isset($results[0]->abandoned_cart_time) && $compareTime > $results[0]->abandoned_cart_time)
+                {
+                     wcal_common::wcal_set_cart_session('abandoned_cart_id_lite', $results[0]->id);
+                }
+            }
+
+            $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
+
+            add_post_meta($wcOrderId, 'abandoned_id', $abandonedOrderId);
+            $wpdb->query( // phpcS:ignore
+            $wpdb->prepare(
+                'UPDATE `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` SET recovered_cart = %s, cart_ignored = %s WHERE id = %s',
+                    $wcOrderId,
+                    '1',
+                    $abandonedOrderId
+                )
+            );
         }
 
         protected function handleErrorCase(& $order)
@@ -1734,7 +1815,7 @@ EOT;
                 'SELECT * FROM `' . $wpdb->prefix . 'wcfm_marketplace_orders` WHERE vendor_id = %d AND order_id = %d',
                 $vendorId,
                 $orderId
-            ) 
+            )
         );
 
         if (count($commission) > 0)
@@ -1877,7 +1958,7 @@ function addMiniCheckoutButton()
       $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
-  
+
 }
 
 //To add 1CC button on product page.
