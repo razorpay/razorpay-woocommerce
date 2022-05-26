@@ -759,7 +759,10 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $razorpayOrder['id'];
 
-            set_transient($sessionKey, $razorpayOrderId, 3600);
+            // Storing the razorpay order id in transient for 5 hours time.
+            set_transient($sessionKey, $razorpayOrderId, 18000);
+
+            // By default woocommerce session TTL is 48 hours.
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
 
             rzpLogInfo('For order session key ' . $sessionKey);
@@ -1181,7 +1184,17 @@ EOT;
                 {
                     $api = $this->getRazorpayApiInstance();
                     $sessionKey = $this->getOrderSessionKey($orderId);
-                    $razorpayOrderId = get_transient($sessionKey);
+
+                    //Check the transient data for razorpay order id, if it's not available then look into session data.
+                    if(get_transient($sessionKey))
+                    {
+                        $razorpayOrderId = get_transient($sessionKey);
+                    }
+                    else
+                    {
+                        $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                    }
+
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
                     $this->updateOrderAddress($razorpayData, $order);
@@ -1382,6 +1395,8 @@ EOT;
 
         public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
         {
+            global $woocommerce;
+
             $logObj = array();
             rzpLogInfo("update1ccOrderWC wcOrderId: $wcOrderId, razorpayPaymentId: $razorpayPaymentId");
 
@@ -1390,7 +1405,17 @@ EOT;
 
             $api = $this->getRazorpayApiInstance();
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
-            $razorpayOrderId = get_transient($sessionKey);
+
+            //Check the transient data for razorpay order id, if it's not available then look into session data.
+            if(get_transient($sessionKey))
+            {
+                $razorpayOrderId = get_transient($sessionKey);
+            }
+            else
+            {
+                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            }
+
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
             $this->updateOrderAddress($razorpayData, $order);
