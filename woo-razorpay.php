@@ -759,7 +759,8 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $razorpayOrder['id'];
 
-            set_transient($sessionKey, $razorpayOrderId, 3600);
+            // Storing the razorpay order id in transient for 5 hours time.
+            set_transient($sessionKey, $razorpayOrderId, 18000);
 
             // By default woocommerce session TTL is 48 hours.
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
