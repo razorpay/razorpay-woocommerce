@@ -207,6 +207,8 @@ function createWcOrder(WP_REST_Request $request)
             $response['prefill']['contact'] = $contact ? $contact : '';
         }
 
+        $response["_"] = $razorpay->getVersionMetaInfo($response);
+
         $response['prefill']['coupon_code'] = $couponCode;
 
         $response['mandatory_login'] = get_option('woocommerce_razorpay_settings')['enable_1cc_mandatory_login'] === 'yes' ? true : false;
