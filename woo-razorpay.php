@@ -1786,7 +1786,7 @@ EOT;
          * @param $data
          * @return array
          */
-        protected function getVersionMetaInfo($data)
+        public function getVersionMetaInfo($data)
         {
             if (isset($data['subscription_id']) && isset($data['recurring'])) {
                 $pluginRoot = WP_PLUGIN_DIR . '/razorpay-subscriptions-for-woocommerce';
