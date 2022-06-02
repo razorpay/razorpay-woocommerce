@@ -211,7 +211,7 @@ function createWcOrder(WP_REST_Request $request)
 
         $response['prefill']['coupon_code'] = $couponCode;
 
-        $response['mandatory_login'] = get_option('woocommerce_razorpay_settings')['enable_1cc_mandatory_login'] === 'yes' ? true : false;
+        $response['mandatory_login'] = false; // Removed the mandatory login option from admin config so sending bydefault false.
 
         $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
         $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
