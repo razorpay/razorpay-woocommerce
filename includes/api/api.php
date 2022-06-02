@@ -215,6 +215,16 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'       => __('Enable debug mode for Magic Checkout'),
             'default'     => 'yes',
         ),
+        '1cc_account_creation' => array(
+            'title' => __('Allow customers to create store Account'),
+            'type' => 'select',
+            'description' =>  __('Allow customers to create store Account'),
+            'default' => 'No',
+            'options' => array(
+                'NO' => 'NO',
+                'MANDATORY'   => 'Mandatory'
+            )
+        ),
     );
 
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);
