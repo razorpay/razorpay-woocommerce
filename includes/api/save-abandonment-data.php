@@ -189,7 +189,7 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
         }
     }
 
-    //hapyy
+    
 
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for cart abandonment recovery lite';
