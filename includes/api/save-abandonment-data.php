@@ -122,6 +122,16 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     return new WP_REST_Response($response, $statusCode);
 }
 
+
+//Check CartBounty plugin is activated or not 
+if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
+
+    //save abandonment data
+    $result = saveCartBountyData($razorpayData);
+
+    return new WP_REST_Response($result['response'], $result['status_code']);
+}
+
 //Save abandonment data for woocommerce Abondonment cart lite plugin
 function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
 {
@@ -178,6 +188,8 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
             insertCartInfo($userId, $cartInfo);
         }
     }
+
+    //hapyy
 
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for cart abandonment recovery lite';
@@ -290,6 +302,175 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
 
     return $logObj;
 }
+
+
+//Save cart abandonment data for CartBounty plugin
+function saveCartBountyData($razorpayData){ 
+    global $wpdb;
+    $products        = WC()->cart->get_cart();
+    $name            = $razorpayData['customer_details']['billing_address']['name'] ?? '';
+    $surname         = " ";
+    $email           = $razorpayData['customer_details']['email'];
+    $phone           = $razorpayData['customer_details']['shipping_address']['contact'];
+    $cart_table      = $wpdb->prefix ."cartbounty";
+    $cart            = read_cart_CB($razorpayData['receipt']);
+  
+    
+    $location = array(
+      'country' 	=> $razorpayData['customer_details']['shipping_address']['country'] ?? '',
+      'city' 		=> $razorpayData['customer_details']['shipping_address']['city'] ?? '',
+      'postcode' 	=> $razorpayData['customer_details']['shipping_address']['zipcode'] ?? ''
+  );
+  
+  $other_fields = array(
+      'cartbounty_billing_company' 		=> '',
+      'cartbounty_billing_address_1'    => $razorpayData['customer_details']['billing_address']['line1'] ?? '',
+      'cartbounty_billing_address_2' 	=> $razorpayData['customer_details']['billing_address']['line2'] ?? '',
+      'cartbounty_billing_state' 		=> $razorpayData['customer_details']['billing_address']['state'] ?? '',
+      'cartbounty_shipping_first_name' 	=> $razorpayData['customer_details']['billing_address']['name'] ?? '',
+      'cartbounty_shipping_last_name'   => '',
+      'cartbounty_shipping_company' 	=> '',
+      'cartbounty_shipping_country' 	=> $razorpayData['customer_details']['shipping_address']['country'] ?? '',
+      'cartbounty_shipping_address_1'   => $razorpayData['customer_details']['shipping_address']['line1'] ?? '',
+      'cartbounty_shipping_address_2'   => $razorpayData['customer_details']['shipping_address']['line2'] ?? '',
+      'cartbounty_shipping_city' 		=> $razorpayData['customer_details']['shipping_address']['city'] ?? '',
+      'cartbounty_shipping_state' 		=> $razorpayData['customer_details']['shipping_address']['state'] ?? '',
+      'cartbounty_shipping_postcode' 	=> $razorpayData['customer_details']['shipping_address']['zipcode'] ?? '',
+      'cartbounty_order_comments' 	    => '',
+      'cartbounty_create_account' 	    => '',
+      'cartbounty_ship_elsewhere' 		=> ''
+  );
+  
+  $user_data = array(
+      'name'			=> $name,
+      'surname'		    => $surname,
+      'email'			=> $email,
+      'phone'			=> $phone,
+      'location'		=> $location,
+      'other_fields'	=> $other_fields
+  );
+   
+    $wpdb->query(
+      $wpdb->prepare(
+          "INSERT INTO $cart_table
+          ( name, surname, email, phone, location, cart_contents, cart_total, currency, time, session_id, other_fields)
+          VALUES ( %s, %s, %s, %s, %s, %s, %0.2f, %s, %s, %s, %s)",
+          array(
+              'name'			=> sanitize_text_field( $user_data['name'] ),
+              'surname'		    => sanitize_text_field( $user_data['surname'] ),
+              'email'			=> sanitize_email( $user_data['email'] ),
+              'phone'			=> filter_var( $user_data['phone'], FILTER_SANITIZE_NUMBER_INT),
+              'location'		=> sanitize_text_field( serialize( $user_data['location'] ) ),
+              'products'		=> serialize($cart['product_array']),
+              'total'			=> sanitize_text_field( $cart['cart_total'] ),
+              'currency'		=> sanitize_text_field( $cart['cart_currency'] ),
+              'time'			=> sanitize_text_field($cart['current_time']),
+              'session_id'	    => sanitize_text_field($cart['session_id']),
+              'other_fields'	=> sanitize_text_field(serialize($user_data['other_fields']))
+          )
+      )
+  );
+  
+  increase_recoverable_cart_count_CB();
+  
+  }
+  
+  //CartBounty function to keep track of number of recoverable carts
+  function increase_recoverable_cart_count_CB(){
+      if(!WC()->session){ //If session does not exist, exit function 
+          return;
+      }
+      if(WC()->session->get('cartbounty_recoverable_count_increased') || WC()->session->get('cartbounty_from_link')){//Exit function in case we already have run this once or user has returned form a recovery link
+          return;
+      }
+      update_option('cartbounty_recoverable_cart_count', get_option('cartbounty_recoverable_cart_count') + 1);
+      WC()->session->set('cartbounty_recoverable_count_increased', 1);
+  
+      if(WC()->session->get('cartbounty_ghost_count_increased')){ //In case we previously increased ghost cart count, we must now reduce it as it has been turned to recoverable
+          $this->decrease_ghost_cart_count( 1 );
+      }
+  }
+  
+  //CartBounty plugin function for retrieving the cart data
+  function read_cart_CB($wcOrderId){
+  
+      WC()->cart->empty_cart();
+      $cart1cc = create1ccCart($wcOrderId);
+  
+      $cart = WC()->cart;
+      print_r($cart);
+  
+      if( !WC()->cart ){ //Exit if Woocommerce cart has not been initialized
+          return;
+      }
+  
+      //Retrieving cart total value and currency
+      $cart_total = WC()->cart->total;
+      $cart_currency = get_woocommerce_currency();
+      $current_time = current_time( 'mysql', false ); //Retrieving current time
+      $session_id = WC()->session->get( 'cartbounty_session_id' ); //Check if the session is already set
+      
+      if( empty( $session_id ) ){ //If session value does not exist - set one now
+          $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
+      }
+  
+      if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
+          $session_id = WC()->session->get( 'cartbounty_session_id' );
+      }
+  
+      //Retrieving cart
+      $products = WC()->cart->get_cart_contents();
+      $product_array = array();
+              
+      foreach( $products as $key => $product ){
+          $item = wc_get_product( $product['data']->get_id() );
+          $product_title = $item->get_title();
+          $product_quantity = $product['quantity'];
+          $product_variation_price = '';
+          $product_tax = '';
+  
+          if( isset( $product['line_total'] ) ){
+              $product_variation_price = $product['line_total'];
+          }
+  
+          if( isset( $product['line_tax'] ) ){ //If we have taxes, add them to the price
+              $product_tax = $product['line_tax'];
+          }
+          
+          // Handling product variations
+          if( $product['variation_id'] ){ //If user has chosen a variation
+              $single_variation = new WC_Product_Variation( $product['variation_id'] );
+      
+              //Handling variable product title output with attributes
+              $product_attributes = $this->attribute_slug_to_title( $single_variation->get_variation_attributes() );
+              $product_variation_id = $product['variation_id'];
+  
+          }else{
+              $product_attributes = false;
+              $product_variation_id = '';
+          }
+  
+          $product_data = array(
+              'product_title' => $product_title . $product_attributes,
+              'quantity' => $product_quantity,
+              'product_id' => $product['product_id'],
+              'product_variation_id' => $product_variation_id,
+              'product_variation_price' => $product_variation_price,
+              'product_tax' => $product_tax
+          );
+  
+          $product_array[] = $product_data;
+      }
+  
+      return $results_array = array(
+          'cart_total' 	=> $cart_total,
+          'cart_currency' => $cart_currency,
+          'current_time' 	=> $current_time,
+          'session_id' 	=> $session_id,
+          'product_array' => $product_array
+      );
+  }
+  
 
 //Insert abandonment data into guest user history
 function saveGuestUserDetails($firstName, $lastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges)
