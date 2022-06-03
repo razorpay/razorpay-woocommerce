@@ -518,21 +518,6 @@ function woocommerce_razorpay_init()
             rzpLogInfo("createOrGetRazorpayOrderId $orderId and is1ccCheckout is set to $is1ccCheckout");
 
             $create = false;
-            $getWebhookFlag =  get_option('webhook_enable_flag');
-            $time = time();
-
-            if (empty($getWebhookFlag) == false)
-            {
-                    if ($getWebhookFlag + 86400 < time())
-                    {
-                        $this->autoEnableWebhook();
-                    }
-            }
-            else
-            {
-                    update_option('webhook_enable_flag', $time);
-                    $this->autoEnableWebhook(); 
-            }
 
             if($is1ccCheckout == 'no')
             {
@@ -747,6 +732,22 @@ function woocommerce_razorpay_init()
         protected function createRazorpayOrderId($orderId, $sessionKey)
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
+
+            $getWebhookFlag =  get_option('webhook_enable_flag');
+            $time = time();
+
+            if (empty($getWebhookFlag) == false)
+            {
+                    if ($getWebhookFlag + 86400 < time())
+                    {
+                        $this->autoEnableWebhook();
+                    }
+            }
+            else
+            {
+                    update_option('webhook_enable_flag', $time);
+                    $this->autoEnableWebhook(); 
+            }
             // Calls the helper function to create order data
             global $woocommerce;
 
