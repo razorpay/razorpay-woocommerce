@@ -42,7 +42,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         }
         $order = wc_get_order($wcOrderId);
     }
-    print_r($razorpayData);
+    
     $razorpay->newUserAccount($razorpayData, $order);
     $razorpay->UpdateOrderAddress($razorpayData, $order);
 

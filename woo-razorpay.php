@@ -1728,35 +1728,32 @@ EOT;
             }
         }
 
-            /**
-              * Retrieve a Shipping Zone by it's ID.
-              *
-              * @param int $zone_id Shipping Zone ID.
-              * @return WC_Shipping_Zone|WP_Error
-              */
-              // TODO: can't we directly return the statement?
-            protected function getShippingZone($zoneId)
-            {
-                $zone = WC_Shipping_Zones::get_zone_by('zone_id', $zoneId);
+        /**
+          * Retrieve a Shipping Zone by it's ID.
+          *
+          * @param int $zone_id Shipping Zone ID.
+          * @return WC_Shipping_Zone|WP_Error
+          */
+          // TODO: can't we directly return the statement?
+        protected function getShippingZone($zoneId)
+        {
+            $zone = WC_Shipping_Zones::get_zone_by('zone_id', $zoneId);
 
-                return $zone;
+            return $zone;
+        }
+
+        // Update user billing and shipping information
+        protected function updateUserAddressInfo($addressKeyPrefix, $addressValue, $stateValue, $order)
+        {
+            foreach ($addressValue as $key => $value)
+            {
+                $metaKey = $addressKeyPrefix;
+                $metaKey .= $key;
+
+                update_user_meta($order->get_user_id(), $metaKey, $value);
             }
 
-
-
-
-            // Update user billing and shipping information
-            protected function updateUserAddressInfo($addressKeyPrefix, $addressValue, $stateValue, $order)
-            {
-                foreach ($addressValue as $key => $value)
-                {
-                    $metaKey = $addressKeyPrefix;
-                    $metaKey .= $key;
-
-                    update_user_meta($order->get_user_id(), $metaKey, $value);
-                }
-
-                update_user_meta($order->get_user_id(), $addressKeyPrefix . 'state', $stateValue);
+            update_user_meta($order->get_user_id(), $addressKeyPrefix . 'state', $stateValue);
         }
 
         // Update Abandonment cart plugin table for recovered cart.
@@ -1952,8 +1949,7 @@ function razorpay_webhook_init()
 }
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
-//define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout.js');
-define('RZP_CHECKOUTJS_URL', 'https://betacdn.np.razorpay.in/checkout/builds/branch-builds/feat/magic_branding/v1/checkout.js');
+define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
 
