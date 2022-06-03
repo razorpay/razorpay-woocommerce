@@ -307,8 +307,7 @@ function woocommerce_razorpay_init()
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
-            $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
-            $secret = substr(str_shuffle($alphanumericString), 0, 20);
+            $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
             $this->update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
@@ -366,8 +365,8 @@ function woocommerce_razorpay_init()
                         $webhookItems[] = $value;
                     }
                 }
-            } while ( $webhook['count'] >= 1);
-
+            } while ( $webhook['count'] === $count);
+            
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
@@ -386,10 +385,10 @@ function woocommerce_razorpay_init()
                             if (($evntval == 1) and
                                 (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
-                                 $this->defaultWebhookEvents[$evntkey] =  true;
+                                $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
-
+                     
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
@@ -412,6 +411,13 @@ function woocommerce_razorpay_init()
 
         }
 
+        public function generateSecret()
+        {
+            $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
+            $secret = substr(str_shuffle($alphanumericString), 0, 20);
+
+            return $secret;
+        }
         // showing notice : status of 1cc active / inactive message in admin dashboard
         function addAdminCheckoutSettingsAlert() {
             $enable_1cc  = $this->getSetting('enable_1cc');
@@ -590,20 +596,7 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($orderId)
         {
-            $getWebhookFlag =  get_option('webhook_enable_flag');
-            $time = time();
-           if (empty($getWebhookFlag) == false)
-           {
-                if ($getWebhookFlag + 86400 < time())
-                {
-                    $this->autoEnableWebhook();
-                }
-           }
-           else
-           {
-                update_option('webhook_enable_flag', $time);
-                $this->autoEnableWebhook(); 
-           }
+            
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
@@ -740,6 +733,8 @@ function woocommerce_razorpay_init()
         protected function createRazorpayOrderId($orderId, $sessionKey)
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
+
+            
             // Calls the helper function to create order data
             global $woocommerce;
 
@@ -755,6 +750,22 @@ function woocommerce_razorpay_init()
             catch (Exception $e)
             {
                 return $e;
+            }
+
+            $getWebhookFlag =  get_option('webhook_enable_flag');
+            $time = time();
+
+            if (empty($getWebhookFlag) == false)
+            {
+                    if ($getWebhookFlag + 86400 < time())
+                    {
+                        $this->autoEnableWebhook();
+                    }
+            }
+            else
+            {
+                    update_option('webhook_enable_flag', $time);
+                    $this->autoEnableWebhook(); 
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
