@@ -122,7 +122,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     return new WP_REST_Response($response, $statusCode);
 }
 
-
 //Check CartBounty plugin is activated or not 
 if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
 
@@ -302,7 +301,6 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
 
     return $logObj;
 }
-
 
 //Save cart abandonment data for CartBounty plugin
 function saveCartBountyData($razorpayData){ 
