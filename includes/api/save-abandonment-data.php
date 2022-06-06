@@ -63,6 +63,14 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
+    //Check CartBounty plugin is activated or not 
+    if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
+        
+        $result = saveCartBountyData($razorpayData); //save abandonment data
+
+        return new WP_REST_Response($result['response'], $result['status_code']);
+    }
+
     if (is_plugin_active('klaviyo/klaviyo.php') && empty($razorpayData['customer_details']['email']) == false) {
         WC()->cart->empty_cart();
         $cart1cc = create1ccCart($wcOrderId);
@@ -120,12 +128,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     }
 
     return new WP_REST_Response($response, $statusCode);
-}
-
-//Check CartBounty plugin is activated or not 
-if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
-    $result = saveCartBountyData($razorpayData); //save abandonment data
-    return new WP_REST_Response($result['response'], $result['status_code']);
 }
 
 //Save abandonment data for woocommerce Abondonment cart lite plugin
