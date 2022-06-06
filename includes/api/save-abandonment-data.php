@@ -124,10 +124,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
 //Check CartBounty plugin is activated or not 
 if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
-
-    //save abandonment data
-    $result = saveCartBountyData($razorpayData);
-
+    $result = saveCartBountyData($razorpayData); //save abandonment data
     return new WP_REST_Response($result['response'], $result['status_code']);
 }
 
@@ -140,9 +137,8 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
     $billingLastName  = " ";
     $billingZipcode   = $razorpayData['customer_details']['billing_address']['zipcode'] ?? '';
     $shippingZipcode  = $razorpayData['customer_details']['shipping_address']['zipcode'] ?? '';
-
-    $shippingCharges = $razorpayData['shipping_fee'] / 100;
-    $email           = $razorpayData['customer_details']['email'];
+    $shippingCharges  = $razorpayData['shipping_fee'] / 100;
+    $email            = $razorpayData['customer_details']['email'];
 
     // Insert record in abandoned cart table for the guest user.
     $userId = saveGuestUserDetails($billingFirstName, $billingLastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges);
@@ -391,22 +387,18 @@ function saveCartBountyData($razorpayData){
   
   //CartBounty plugin function for retrieving the cart data
   function read_cart_CB($wcOrderId){
-  
       WC()->cart->empty_cart();
       $cart1cc = create1ccCart($wcOrderId);
-  
       $cart = WC()->cart;
-      print_r($cart);
   
       if( !WC()->cart ){ //Exit if Woocommerce cart has not been initialized
           return;
       }
   
-      //Retrieving cart total value and currency
-      $cart_total = WC()->cart->total;
+      $cart_total    = WC()->cart->total;//Retrieving cart total value and currency
       $cart_currency = get_woocommerce_currency();
-      $current_time = current_time( 'mysql', false ); //Retrieving current time
-      $session_id = WC()->session->get( 'cartbounty_session_id' ); //Check if the session is already set
+      $current_time  = current_time( 'mysql', false ); //Retrieving current time
+      $session_id    = WC()->session->get( 'cartbounty_session_id' ); //Check if the session is already set
       
       if( empty( $session_id ) ){ //If session value does not exist - set one now
           $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
@@ -417,15 +409,15 @@ function saveCartBountyData($razorpayData){
       }
   
       //Retrieving cart
-      $products = WC()->cart->get_cart_contents();
+      $products      = WC()->cart->get_cart_contents();
       $product_array = array();
               
       foreach( $products as $key => $product ){
-          $item = wc_get_product( $product['data']->get_id() );
-          $product_title = $item->get_title();
-          $product_quantity = $product['quantity'];
+          $item                    = wc_get_product( $product['data']->get_id() );
+          $product_title           = $item->get_title();
+          $product_quantity        = $product['quantity'];
           $product_variation_price = '';
-          $product_tax = '';
+          $product_tax             = '';
   
           if( isset( $product['line_total'] ) ){
               $product_variation_price = $product['line_total'];
@@ -442,30 +434,29 @@ function saveCartBountyData($razorpayData){
               //Handling variable product title output with attributes
               $product_attributes = $this->attribute_slug_to_title( $single_variation->get_variation_attributes() );
               $product_variation_id = $product['variation_id'];
-  
           }else{
               $product_attributes = false;
               $product_variation_id = '';
           }
   
           $product_data = array(
-              'product_title' => $product_title . $product_attributes,
-              'quantity' => $product_quantity,
-              'product_id' => $product['product_id'],
-              'product_variation_id' => $product_variation_id,
+              'product_title'           => $product_title . $product_attributes,
+              'quantity'                => $product_quantity,
+              'product_id'              => $product['product_id'],
+              'product_variation_id'    => $product_variation_id,
               'product_variation_price' => $product_variation_price,
-              'product_tax' => $product_tax
+              'product_tax'             => $product_tax
           );
   
           $product_array[] = $product_data;
       }
   
       return $results_array = array(
-          'cart_total' 	=> $cart_total,
-          'cart_currency' => $cart_currency,
+          'cart_total'   	=> $cart_total,
+          'cart_currency'   => $cart_currency,
           'current_time' 	=> $current_time,
-          'session_id' 	=> $session_id,
-          'product_array' => $product_array
+          'session_id'  	=> $session_id,
+          'product_array'   => $product_array
       );
   }
   
