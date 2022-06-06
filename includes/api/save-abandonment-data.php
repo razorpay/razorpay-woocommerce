@@ -460,7 +460,6 @@ function saveCartBountyData($razorpayData){
       );
   }
   
-
 //Insert abandonment data into guest user history
 function saveGuestUserDetails($firstName, $lastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges)
 {
