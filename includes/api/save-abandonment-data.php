@@ -65,7 +65,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     //Check CartBounty plugin is activated or not 
     if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
-        
+
         $result = saveCartBountyData($razorpayData); //save abandonment data
 
         return new WP_REST_Response($result['response'], $result['status_code']);
@@ -368,8 +368,15 @@ function saveCartBountyData($razorpayData){
   );
   
   increase_recoverable_cart_count_CB();
-  
-  }
+  set_cartbounty_session($cart['session_id']);
+}
+
+//CartBounty function to set session_id
+  function set_cartbounty_session($session_id){
+     if(!WC()->session->get('cartbounty_session_id')){ //In case browser session is not set, we make sure it gets set
+           WC()->session->set('cartbounty_session_id', $session_id); //Storing session_id in WooCommerce session
+     }
+}
   
   //CartBounty function to keep track of number of recoverable carts
   function increase_recoverable_cart_count_CB(){
