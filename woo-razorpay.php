@@ -665,7 +665,7 @@ function woocommerce_razorpay_init()
 
             return array(
                 'key'          => $this->getSetting('key_id'),
-                'name'         => get_bloginfo('name'),
+                'name'         => html_entity_decode(get_bloginfo('name'), ENT_QUOTES),
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
