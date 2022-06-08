@@ -602,7 +602,7 @@ function woocommerce_razorpay_init()
            else
            {
                 update_option('webhook_enable_flag', $time);
-                $this->autoEnableWebhook(); 
+                $this->autoEnableWebhook();
            }
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
@@ -2019,3 +2019,44 @@ if(is1ccEnabled())
     add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
+
+// instrumentation
+
+// plugin activation hook
+register_activation_hook(__FILE__, 'razorpayPluginActivated');
+
+function razorpayPluginActivated()
+{
+    $data = [
+        'page_url'           => $_SERVER['HTTP_REFERER'],
+        'event_timestamp'    => time(),
+        'unique_id'          => $_SERVER['HTTP_HOST'],
+        'redirect_to_page'   => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
+        'Plugin_type'        => 'e-commerce',
+        'rzp_plugin_version' => WOOCOMMERCE_VERSION
+    ];
+//    var_dump($data);die;
+}
+
+// plugin deactivated hook
+register_deactivation_hook(__FILE__, 'razorpayPluginDeactivated');
+
+function razorpayPluginDeactivated()
+{
+    $paymentSettings = get_option('woocommerce_razorpay_settings');
+
+    $api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
+
+    $orderCount = $api->request->request('GET', 'orders')['count'];
+    $isTransactingUser = ($orderCount > 0) ? true : false;
+
+    $data = [
+        'page_url'            => $_SERVER['HTTP_REFERER'],
+        'event_timestamp'     => time(),
+        'unique_id'           => $_SERVER['HTTP_HOST'],
+        'is_transacting_user' => $isTransactingUser,
+        'rzp_plugin_version'  => WOOCOMMERCE_VERSION
+    ];
+//    var_dump($data);die;
+}
+
