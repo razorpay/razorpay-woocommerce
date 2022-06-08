@@ -1440,6 +1440,9 @@ EOT;
             //Apply coupon to woo-order
             if (empty($couponKey) === false)
             {
+                // Remove the same coupon, if already being added to order.
+                $order->remove_coupon($couponKey);
+
                 //TODO: Convert all razorpay amount in paise to rupees
                 $discount_total = $razorpayData['promotions'][0]['value']/100;
 
@@ -1463,6 +1466,18 @@ EOT;
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
             {
+
+                //To remove by default shipping method added on order.
+                $existingItems = (array) $order->get_items('shipping');
+                rzpLogInfo("Shipping details updated for orderId: $wcOrderId is".json_encode($existingItems));
+
+                if (sizeof($existingItems) != 0) {
+                    // Loop through shipping items
+                    foreach ($existingItems as $existingItemId) {
+                        $order->remove_item($existingItemId);
+                    }
+                }
+
                 // Get a new instance of the WC_Order_Item_Shipping Object
                 $item = new WC_Order_Item_Shipping();
 
