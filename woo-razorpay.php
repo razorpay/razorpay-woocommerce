@@ -1099,21 +1099,45 @@ EOT;
 
             rzpLogInfo("Called check_razorpay_response: $post_password");
 
-            $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
-
-            $arrayPost = json_decode(json_encode($postData), true);
-
-            if (!empty($arrayPost) && count($arrayPost[0]) > 0)
+            if(version_compare(WOOCOMMERCE_VERSION, '4.3.2', '='))
             {
-                $orderId = $postData[0]->ID;
+                $postData = $wpdb->get_results( "select post_id, meta_key from $wpdb->postmeta where meta_value = '$post_password'", ARRAY_A );
 
-                if($postData[0]->post_status == 'draft')
+                $arrayPost = json_decode(json_encode($postData), true);
+                
+                if (!empty($arrayPost) && count($arrayPost[0]) > 0)
                 {
-                    updateOrderStatus($orderId, 'wc-pending');
-                }
+                    $orderId = $postData[0]['post_id'];
 
-                $order = wc_get_order($orderId);
-                rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
+                    $post_status = get_post_status($orderId);
+
+                    if($post_status == 'draft')
+                    {
+                        updateOrderStatus($orderId, 'wc-pending');
+                    }
+
+                    $order = wc_get_order($orderId);
+                    rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
+                }
+            }
+            else
+            {
+                $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
+
+                $arrayPost = json_decode(json_encode($postData), true);
+
+                if (!empty($arrayPost) && count($arrayPost[0]) > 0)
+                {
+                    $orderId = $postData[0]->ID;
+
+                    if($postData[0]->post_status == 'draft')
+                    {
+                        updateOrderStatus($orderId, 'wc-pending');
+                    }
+
+                    $order = wc_get_order($orderId);
+                    rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
+                }
             }
 
             // TODO: Handle redirect
