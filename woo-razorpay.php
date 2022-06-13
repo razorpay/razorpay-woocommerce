@@ -172,11 +172,9 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
-
             $isAccCreationAvailable = false;
+            $isDualCheckoutEnabled = false;
 
-            $isDualCheckoutEnabled = true;
-            
             // Load preference API call only for administrative interface page.
             if (is_admin())
             {
@@ -190,12 +188,13 @@ function woocommerce_razorpay_init()
                       if (!empty($merchantPreferences['features']['one_click_checkout'])) {
                         $is1ccAvailable = true;
                       }
-                      // if (!empty($merchantPreferences['features']['one_cc_dual_checkout'])) {
-                      //   $isDualCheckoutEnabled = true;
-                      // }
 
                       if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
                         $isAccCreationAvailable = true;
+                      }
+
+                      if (!empty($merchantPreferences['features']['one_cc_dual_checkout'])) {
+                        $isDualCheckoutEnabled = true;
                       }
 
                     } catch (\Exception $e) {
@@ -226,12 +225,12 @@ function woocommerce_razorpay_init()
               }
 
               if ($isDualCheckoutEnabled) {
-                  $this->visibleSettings = array_merge($this->visibleSettings, array(
-                    'enable_dual_checkout_oncart',
-                    'enable_dual_checkout_onpdp',
-                    'enable_dual_checkout_minicart',
-                  ));
-                }
+              $this->visibleSettings = array_merge($this->visibleSettings, array(
+                'enable_dual_checkout_oncart',
+                'enable_dual_checkout_onpdp',
+                'enable_dual_checkout_minicart',
+              ));
+
 
             }
 
@@ -397,7 +396,6 @@ function woocommerce_razorpay_init()
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
-
             $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
             $this->update_option('webhook_secret', $secret);
@@ -857,7 +855,6 @@ function woocommerce_razorpay_init()
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
-
             if (empty($getWebhookFlag) == false)
             {
                 if ($getWebhookFlag + 86400 < time())
@@ -1484,7 +1481,7 @@ EOT;
 
             if (!empty($arrayPost) and
                 $arrayPost != null)
-
+            {
                 $orderId = $postMetaData->post_id;
 
                 if ($postData->post_status === 'draft')
@@ -2577,14 +2574,14 @@ function addCheckoutButton()
 {
   add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
 
-  if (isRazorpayPluginEnabled() && is1ccEnabled() )
-  {
     if (isDualCartCheckoutEnabled()){
         $tempTest = RZP_PATH . 'templates/rzp-dual-checkout-btn.php';
     } else {
         $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
     }
 
+  if (isRazorpayPluginEnabled() && is1ccEnabled() )
+  {
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
@@ -2606,12 +2603,14 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
 
     add_action( 'woocommerce_widget_shopping_cart_buttons', function()
     {
+        // Removing Buttons
         if(isDualMiniCartCheckoutEnabled() === false){
             // Removing Buttons
             remove_action( 'woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20 );
         }
 
         add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
+
         add_action( 'woocommerce_widget_shopping_cart_buttons', 'addMiniCheckoutButton', 20 );
 
     }, 1 );
@@ -2662,18 +2661,14 @@ function addPdpCheckoutButton()
 {
     add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
 
-    if (isDualPdpCheckoutEnabled()){
-        $tempTest = RZP_PATH . 'templates/rzp-pdp-dual-checkout-btn.php';
-    } else {
-        $tempTest = RZP_PATH . 'templates/rzp-pdp-checkout-btn.php';
-    }
-
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
+        $tempTest = RZP_PATH . 'templates/rzp-pdp-checkout-btn.php';
         load_template( $tempTest, false, array() );
       }
     } else {
+      $tempTest = RZP_PATH . 'templates/rzp-pdp-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
 }
@@ -2715,7 +2710,6 @@ if(is1ccEnabled())
 // instrumentation
 
 // plugin activation hook
-<<<<<<< HEAD
 function razorpayPluginActivated()
 {
     $paymentSettings = get_option('woocommerce_razorpay_settings');
@@ -2802,42 +2796,3 @@ function cartbounty_alter_automation_button( $button ){
 if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
     add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
 }
-=======
-register_activation_hook(__FILE__, 'razorpayPluginActivated');
-
-function razorpayPluginActivated()
-{
-    $data = [
-        'page_url'           => $_SERVER['HTTP_REFERER'],
-        'event_timestamp'    => time(),
-        'unique_id'          => $_SERVER['HTTP_HOST'],
-        'redirect_to_page'   => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
-        'Plugin_type'        => 'e-commerce',
-        'rzp_plugin_version' => WOOCOMMERCE_VERSION
-    ];
-//    var_dump($data);die;
-}
-
-// plugin deactivated hook
-register_deactivation_hook(__FILE__, 'razorpayPluginDeactivated');
-
-function razorpayPluginDeactivated()
-{
-    $paymentSettings = get_option('woocommerce_razorpay_settings');
-
-    $api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
-
-    $orderCount = $api->request->request('GET', 'orders')['count'];
-    $isTransactingUser = ($orderCount > 0) ? true : false;
-
-    $data = [
-        'page_url'            => $_SERVER['HTTP_REFERER'],
-        'event_timestamp'     => time(),
-        'unique_id'           => $_SERVER['HTTP_HOST'],
-        'is_transacting_user' => $isTransactingUser,
-        'rzp_plugin_version'  => WOOCOMMERCE_VERSION
-    ];
-//    var_dump($data);die;
-}
-
->>>>>>> e572457 (activate and deactivate plugin from plugin settings page)
