@@ -2763,6 +2763,7 @@ function razorpayPluginUpgraded()
 
     $trackObject  = new TrackPluginInstrumentation($paymentSettings['key_id'], $paymentSettings['key_secret']);
 
+<<<<<<< HEAD
     $upgradeProperties = [
         'page_url'            => $_SERVER['HTTP_REFERER'],
         'prev_version'        => get_option('rzp_woocommerce_current_version'),
@@ -2795,4 +2796,33 @@ function cartbounty_alter_automation_button( $button ){
 
 if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
     add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+=======
+    $orderCount = $api->request->request('GET', 'orders')['count'];
+    $isTransactingUser = ($orderCount > 0) ? true : false;
+
+    $data = [
+        'Plugin_name'         => get_plugin_data(__FILE__)['Name'],
+        'rzp_plugin_version'  => get_plugin_data(__FILE__)['Version'],
+        'event'               => 'plugin.deactivate',
+        'event_timestamp'     => time(),
+        'page_url'            => $_SERVER['HTTP_REFERER'],
+        'unique_id'           => $_SERVER['HTTP_HOST'],
+        'is_transacting_user' => $isTransactingUser
+    ];
+}
+
+// plugin upgrade hook
+function razorpayPluginUpgraded()
+{
+    $data = [
+        'Plugin_name'        => get_plugin_data(__FILE__)['Name'],
+        'rzp_plugin_version' => get_plugin_data(__FILE__)['Version'],
+        'event'              => 'plugin.upgrade',
+        'event_timestamp'    => time(),
+        'page_url'           => $_SERVER['HTTP_REFERER'],
+        'unique_id'          => $_SERVER['HTTP_HOST'],
+        'prev_version'       => get_option('rzp_woocommerce_current_version'),
+        'new_version'        => get_plugin_data(__FILE__)['Version'],
+    ];
+>>>>>>> fac960c (plugin version and name added)
 }
