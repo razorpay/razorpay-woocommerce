@@ -2030,18 +2030,27 @@ if(is1ccEnabled())
 // plugin activation hook
 function razorpayPluginActivated()
 {
+    $existingVersion = get_option('rzp_woocommerce_current_version');
+
+    if(isset($existingVersion)){
+        update_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+    }
+    else{
+        add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+    }
+
     $data = [
-        'page_url'           => $_SERVER['HTTP_REFERER'],
+        'Plugin_name'        => get_plugin_data(__FILE__)['Name'],
+        'rzp_plugin_version' => get_plugin_data(__FILE__)['Version'],
+        'event'              => 'plugin.activate',
         'event_timestamp'    => time(),
+        'page_url'           => $_SERVER['HTTP_REFERER'],
         'unique_id'          => $_SERVER['HTTP_HOST'],
-        'redirect_to_page'   => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
-        'Plugin_type'        => 'e-commerce',
-        'rzp_plugin_version' => WOOCOMMERCE_VERSION
+        'redirect_to_page'   => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']
     ];
-//    var_dump($data);die;
 }
 
-// plugin deactivated hook
+// plugin deactivation hook
 function razorpayPluginDeactivated()
 {
     $paymentSettings = get_option('woocommerce_razorpay_settings');
@@ -2052,24 +2061,27 @@ function razorpayPluginDeactivated()
     $isTransactingUser = ($orderCount > 0) ? true : false;
 
     $data = [
-        'page_url'            => $_SERVER['HTTP_REFERER'],
+        'Plugin_name'         => get_plugin_data(__FILE__)['Name'],
+        'rzp_plugin_version'  => get_plugin_data(__FILE__)['Version'],
+        'event'               => 'plugin.deactivate',
         'event_timestamp'     => time(),
+        'page_url'            => $_SERVER['HTTP_REFERER'],
         'unique_id'           => $_SERVER['HTTP_HOST'],
-        'is_transacting_user' => $isTransactingUser,
-        'rzp_plugin_version'  => WOOCOMMERCE_VERSION
+        'is_transacting_user' => $isTransactingUser
     ];
-//    var_dump($data);die;
 }
 
-// plugin upgrade
+// plugin upgrade hook
 function razorpayPluginUpgraded()
 {
     $data = [
-        'page_url'           => $_SERVER['HTTP_REFERER'],
+        'Plugin_name'        => get_plugin_data(__FILE__)['Name'],
+        'rzp_plugin_version' => get_plugin_data(__FILE__)['Version'],
+        'event'              => 'plugin.upgrade',
         'event_timestamp'    => time(),
+        'page_url'           => $_SERVER['HTTP_REFERER'],
         'unique_id'          => $_SERVER['HTTP_HOST'],
-        'prev_version'       => WOOCOMMERCE_VERSION,
-        'new_version'        => '',
+        'prev_version'       => get_option('rzp_woocommerce_current_version'),
+        'new_version'        => get_plugin_data(__FILE__)['Version'],
     ];
-    //    var_dump($data);die;
 }
