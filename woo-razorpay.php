@@ -30,6 +30,11 @@ use Razorpay\Api\Errors;
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
 
+//instrumentation hooks
+add_action('activated_plugin', 'razorpayPluginActivated', 10, 2 );
+add_action('deactivated_plugin', 'razorpayPluginDeactivated', 10, 2 );
+add_action('upgrader_process_complete', 'razorpayPluginUpgraded', 10, 2);
+
 function woocommerce_razorpay_init()
 {
     if (!class_exists('WC_Payment_Gateway'))
@@ -2023,8 +2028,6 @@ if(is1ccEnabled())
 // instrumentation
 
 // plugin activation hook
-register_activation_hook(__FILE__, 'razorpayPluginActivated');
-
 function razorpayPluginActivated()
 {
     $data = [
@@ -2039,8 +2042,6 @@ function razorpayPluginActivated()
 }
 
 // plugin deactivated hook
-register_deactivation_hook(__FILE__, 'razorpayPluginDeactivated');
-
 function razorpayPluginDeactivated()
 {
     $paymentSettings = get_option('woocommerce_razorpay_settings');
@@ -2060,3 +2061,15 @@ function razorpayPluginDeactivated()
 //    var_dump($data);die;
 }
 
+// plugin upgrade
+function razorpayPluginUpgraded()
+{
+    $data = [
+        'page_url'           => $_SERVER['HTTP_REFERER'],
+        'event_timestamp'    => time(),
+        'unique_id'          => $_SERVER['HTTP_HOST'],
+        'prev_version'       => WOOCOMMERCE_VERSION,
+        'new_version'        => '',
+    ];
+    //    var_dump($data);die;
+}
