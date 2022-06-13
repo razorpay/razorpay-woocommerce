@@ -63,7 +63,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
-    //Check CartBounty plugin is activated or not 
+    //Check CartBounty plugin is activated or not
     if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
 
         $result = saveCartBountyData($razorpayData); //save abandonment data
@@ -186,7 +186,7 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
         }
     }
 
-    
+
 
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for cart abandonment recovery lite';
@@ -300,24 +300,36 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
     return $logObj;
 }
 
+
+// ___________________ CARTBOUNTY PLUGIN FUNCTIONS _______________________________________________________________________________
+
 //Save cart abandonment data for CartBounty plugin
-function saveCartBountyData($razorpayData){ 
+function saveCartBountyData($razorpayData){
     global $wpdb;
     $products        = WC()->cart->get_cart();
+    
+    $ghost           = false;
     $name            = $razorpayData['customer_details']['billing_address']['name'] ?? '';
     $surname         = " ";
     $email           = $razorpayData['customer_details']['email'];
     $phone           = $razorpayData['customer_details']['shipping_address']['contact'];
     $cart_table      = $wpdb->prefix ."cartbounty";
     $cart            = read_cart_CB($razorpayData['receipt']);
-  
     
+    
+    print_r("This is the cart's session ID".$cart['session_id']);
+
+    if(empty( $cart['product_array'] )){
+        clear_cart_data($razorpayData['receipt']);
+        return;
+    }
+   
     $location = array(
       'country' 	=> $razorpayData['customer_details']['shipping_address']['country'] ?? '',
       'city' 		=> $razorpayData['customer_details']['shipping_address']['city'] ?? '',
       'postcode' 	=> $razorpayData['customer_details']['shipping_address']['zipcode'] ?? ''
   );
-  
+
   $other_fields = array(
       'cartbounty_billing_company' 		=> '',
       'cartbounty_billing_address_1'    => $razorpayData['customer_details']['billing_address']['line1'] ?? '',
@@ -336,7 +348,7 @@ function saveCartBountyData($razorpayData){
       'cartbounty_create_account' 	    => '',
       'cartbounty_ship_elsewhere' 		=> ''
   );
-  
+
   $user_data = array(
       'name'			=> $name,
       'surname'		    => $surname,
@@ -345,42 +357,353 @@ function saveCartBountyData($razorpayData){
       'location'		=> $location,
       'other_fields'	=> $other_fields
   );
-   
-    $wpdb->query(
-      $wpdb->prepare(
-          "INSERT INTO $cart_table
-          ( name, surname, email, phone, location, cart_contents, cart_total, currency, time, session_id, other_fields)
-          VALUES ( %s, %s, %s, %s, %s, %s, %0.2f, %s, %s, %s, %s)",
-          array(
-              'name'			=> sanitize_text_field( $user_data['name'] ),
-              'surname'		    => sanitize_text_field( $user_data['surname'] ),
-              'email'			=> sanitize_email( $user_data['email'] ),
-              'phone'			=> filter_var( $user_data['phone'], FILTER_SANITIZE_NUMBER_INT),
-              'location'		=> sanitize_text_field( serialize( $user_data['location'] ) ),
-              'products'		=> serialize($cart['product_array']),
-              'total'			=> sanitize_text_field( $cart['cart_total'] ),
-              'currency'		=> sanitize_text_field( $cart['cart_currency'] ),
-              'time'			=> sanitize_text_field($cart['current_time']),
-              'session_id'	    => sanitize_text_field($cart['session_id']),
-              'other_fields'	=> sanitize_text_field(serialize($user_data['other_fields']))
-          )
-      )
-  );
+    
+
+  print_r(" \nNew TEST ");
+  print_r(WC()->session);
+  $session_id = WC()->session->get_customer_id();
   
-  increase_recoverable_cart_count_CB();
-  set_cartbounty_session($cart['session_id']);
+  if(is_user_logged_in()){
+    $session_id=get_current_user_id();
+  }else{
+      $session_id = WC()->session->get( 'cartbounty_session_id' );
+
+  if( empty( $session_id ) ){ //If session value does not exist - set one now
+    $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
 }
 
-//CartBounty function to set session_id
+if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
+    $session_id = WC()->session->get( 'cartbounty_session_id' );
+}
+  }
+  
+
+  
+  print_r("\nBefore checking " .$session_id);
+  $cart_saved      = cart_saved($session_id);
+
+
+  
+  if($cart_saved ){ //If cart has already been saved
+    print_r("\nSame session ID exists " . $session_id);
+   }else{
+    print_r("\nSame session ID does not exist " . $session_id."\n");
+   }
+
+
+
+
+  $updated_rows = $wpdb->query(
+    $wpdb->prepare(
+        "UPDATE $cart_table
+        SET name = %s,
+        surname = %s,
+        email = %s,
+        phone = %s,
+        location = %s,
+        other_fields = '$other_fields'
+        WHERE session_id = %s",
+        sanitize_text_field( $user_data['name'] ),
+        sanitize_text_field( $user_data['surname'] ),
+        sanitize_email( $user_data['email'] ),
+        filter_var( $user_data['phone'], FILTER_SANITIZE_NUMBER_INT),
+        sanitize_text_field( serialize( $user_data['location'] ) ),
+        $session_id
+    )
+);
+
+    delete_duplicate_carts( $cart['session_id'], $updated_rows);
+    increase_recoverable_cart_count();
+    
+    // $wpdb->query(
+    //   $wpdb->prepare(
+    //       "INSERT INTO $cart_table
+    //       ( name, surname, email, phone, location, cart_contents, cart_total, currency, time, session_id, other_fields)
+    //       VALUES ( %s, %s, %s, %s, %s, %s, %0.2f, %s, %s, %s, %s)",
+    //       array(
+    //           'name'			=> sanitize_text_field( $user_data['name'] ),
+    //           'surname'		    => sanitize_text_field( $user_data['surname'] ),
+    //           'email'			=> sanitize_email( $user_data['email'] ),
+    //           'phone'			=> filter_var( $user_data['phone'], FILTER_SANITIZE_NUMBER_INT),
+    //           'location'		=> sanitize_text_field( serialize( $user_data['location'] ) ),
+    //           'products'		=> serialize($cart['product_array']),
+    //           'total'			=> sanitize_text_field( $cart['cart_total'] ),
+    //           'currency'		=> sanitize_text_field( $cart['cart_currency'] ),
+    //           'time'			=> sanitize_text_field($cart['current_time']),
+    //           'session_id'	    => sanitize_text_field($cart['session_id']),
+    //           'other_fields'	=> sanitize_text_field(serialize($user_data['other_fields']))
+    //       )
+    //   )
+//   );
+
+//   increase_recoverable_cart_count_CB();
+//   set_cartbounty_session($cart['session_id']);
+
+}
+
+//Delete Duplicate carts CartBounty plugin
+function delete_duplicate_carts( $session_id, $duplicate_count ){
+    global $wpdb;
+    $cart_table = $wpdb->prefix . 'cartbounty';
+
+    if($duplicate_count){ //If we have updated at least one row
+        if($duplicate_count > 1){ //Checking if we have updated more than a single row to know if there were duplicates
+            
+            $where_sentence = get_where_sentence('ghost');
+            //First delete all duplicate ghost carts
+            $deleted_duplicate_ghost_carts = $wpdb->query(
+                $wpdb->prepare(
+                    "DELETE FROM $cart_table
+                    WHERE session_id = %s
+                    $where_sentence",
+                    $session_id
+                )
+            );
+
+            $limit = $duplicate_count - $deleted_duplicate_ghost_carts - 1;
+            if($limit < 1){
+                $limit = 0;
+            }
+
+            $wpdb->query( //Leaving one cart remaining that can be identified
+                $wpdb->prepare(
+                    "DELETE FROM $cart_table
+                    WHERE session_id = %s AND
+                    type != %d
+                    ORDER BY id DESC
+                    LIMIT %d",
+                    $session_id,
+                    1,
+                    $limit
+                )
+            );
+        }
+    }
+}
+
+//CartBounty admin function to get_where_sentence
+function get_where_sentence( $cart_status ){
+    $where_sentence = '';
+
+    if($cart_status == 'recoverable'){
+        $where_sentence = "AND (email != '' OR phone != '') AND type != ". get_cart_type('recovered') ." AND type != " . get_cart_type('ordered');
+
+    }elseif($cart_status == 'ghost'){
+        $where_sentence = "AND ((email IS NULL OR email = '') AND (phone IS NULL OR phone = '')) AND type != ". get_cart_type('recovered') ." AND type != " . get_cart_type('ordered');
+
+    }elseif($cart_status == 'recovered'){
+        $where_sentence = "AND type = ". get_cart_type('recovered');
+
+    }elseif(get_option('cartbounty_exclude_ghost_carts')){ //In case Ghost carts have been excluded
+        $where_sentence = "AND (email != '' OR phone != '')";
+    }
+
+    return $where_sentence;
+}
+
+//CartBounty admin function to get Cart type
+function get_cart_type( $status ){
+    if( empty($status) ){
+        return;
+    }
+
+    $type = 0;
+
+    switch ( $status ) {
+        case 'abandoned':
+
+            $type = 0;
+            break;
+
+        case 'recovered':
+
+            $type = 1;
+            break;
+
+        case 'ordered':
+
+            $type = 2;
+            break;
+            
+    }
+    return $type;
+}
+
+
+//CartBounty admin function to clear_cart_data
+function clear_cart_data($wcOrderId){
+    //If a new Order is added from the WooCommerce admin panel, we must check if WooCommerce session is set. Otherwise we would get a Fatal error.
+    if( !isset( WC()->session ) ){
+        return;
+    }
+
+    global $wpdb;
+    $cart_table = $wpdb->prefix .'cartbounty';
+    $cart = read_cart_CB($wcOrderId);
+
+    if( !isset( $cart['session_id'] ) ){
+        return;
+    }
+
+    //Cleaning Cart data
+    $update_result = $wpdb->query(
+        $wpdb->prepare(
+            "UPDATE $cart_table
+            SET cart_contents = '',
+            cart_total = %d,
+            currency = %s,
+            time = %s
+            WHERE session_id = %s AND
+            type = %d",
+            0,
+            sanitize_text_field( $cart['cart_currency'] ),
+            sanitize_text_field( $cart['current_time'] ),
+            $cart['session_id'],
+            0
+        )
+    );
+}
+
+//CartBounty plugin function to get user data
+function get_user_data(){
+    $user_data = array();
+
+    if ( is_user_logged_in() && !isset( $_POST["action"] )){ //If user has signed in and the request is not triggered by checkout fields or Exit Intent
+        $current_user = wp_get_current_user(); //Retrieving users data
+        //Looking if a user has previously made an order. If not, using default WordPress assigned data
+        (isset($current_user->billing_first_name)) ? $name = $current_user->billing_first_name : $name = $current_user->user_firstname; //If/Else shorthand (condition) ? True : False
+        (isset($current_user->billing_last_name)) ? $surname = $current_user->billing_last_name : $surname = $current_user->user_lastname;
+        (isset($current_user->billing_email)) ? $email = $current_user->billing_email : $email = $current_user->user_email;
+        (isset($current_user->billing_phone)) ? $phone = $current_user->billing_phone : $phone = '';
+        (isset($current_user->billing_country)) ? $country = $current_user->billing_country : $country = '';
+        (isset($current_user->billing_city)) ? $city = $current_user->billing_city : $city = '';
+        (isset($current_user->billing_postcode)) ? $postcode = $current_user->billing_postcode : $postcode = '';
+
+        if($country == ''){ //Trying to Geolocate user's country in case it was not found
+            $country = WC_Geolocation::geolocate_ip(); //Getting users country from his IP address
+            $country = $country['country'];
+        }
+
+        $location = array(
+            'country' 	=> $country,
+            'city' 		=> $city,
+            'postcode' 	=> $postcode
+        );
+
+        $user_data = array(
+            'name'			=> $name,
+            'surname'		=> $surname,
+            'email'			=> $email,
+            'phone'			=> $phone,
+            'location'		=> $location,
+            'other_fields'	=> ''
+        );
+
+    }else{ //Checking if we have values coming from the input fields
+        (isset($_POST['cartbounty_name'])) ? $name = $_POST['cartbounty_name'] : $name = ''; //If/Else shorthand (condition) ? True : False
+        (isset($_POST['cartbounty_surname'])) ? $surname = $_POST['cartbounty_surname'] : $surname = '';
+        (isset($_POST['cartbounty_email'])) ? $email = $_POST['cartbounty_email'] : $email = '';
+        (isset($_POST['cartbounty_phone'])) ? $phone = $_POST['cartbounty_phone'] : $phone = '';
+        (isset($_POST['cartbounty_country'])) ? $country = $_POST['cartbounty_country'] : $country = '';
+        (isset($_POST['cartbounty_city']) && $_POST['cartbounty_city'] != '') ? $city = $_POST['cartbounty_city'] : $city = '';
+        (isset($_POST['cartbounty_billing_company'])) ? $company = $_POST['cartbounty_billing_company'] : $company = '';
+        (isset($_POST['cartbounty_billing_address_1'])) ? $address_1 = $_POST['cartbounty_billing_address_1'] : $address_1 = '';
+        (isset($_POST['cartbounty_billing_address_2'])) ? $address_2 = $_POST['cartbounty_billing_address_2'] : $address_2 = '';
+        (isset($_POST['cartbounty_billing_state'])) ? $state = $_POST['cartbounty_billing_state'] : $state = '';
+        (isset($_POST['cartbounty_billing_postcode'])) ? $postcode = $_POST['cartbounty_billing_postcode'] : $postcode = '';
+        (isset($_POST['cartbounty_shipping_first_name'])) ? $shipping_name = $_POST['cartbounty_shipping_first_name'] : $shipping_name = '';
+        (isset($_POST['cartbounty_shipping_last_name'])) ? $shipping_surname = $_POST['cartbounty_shipping_last_name'] : $shipping_surname = '';
+        (isset($_POST['cartbounty_shipping_company'])) ? $shipping_company = $_POST['cartbounty_shipping_company'] : $shipping_company = '';
+        (isset($_POST['cartbounty_shipping_country'])) ? $shipping_country = $_POST['cartbounty_shipping_country'] : $shipping_country = '';
+        (isset($_POST['cartbounty_shipping_address_1'])) ? $shipping_address_1 = $_POST['cartbounty_shipping_address_1'] : $shipping_address_1 = '';
+        (isset($_POST['cartbounty_shipping_address_2'])) ? $shipping_address_2 = $_POST['cartbounty_shipping_address_2'] : $shipping_address_2 = '';
+        (isset($_POST['cartbounty_shipping_city'])) ? $shipping_city = $_POST['cartbounty_shipping_city'] : $shipping_city = '';
+        (isset($_POST['cartbounty_shipping_state'])) ? $shipping_state = $_POST['cartbounty_shipping_state'] : $shipping_state = '';
+        (isset($_POST['cartbounty_shipping_postcode'])) ? $shipping_postcode = $_POST['cartbounty_shipping_postcode'] : $shipping_postcode = '';
+        (isset($_POST['cartbounty_order_comments'])) ? $comments = $_POST['cartbounty_order_comments'] : $comments = '';
+        (isset($_POST['cartbounty_create_account'])) ? $create_account = $_POST['cartbounty_create_account'] : $create_account = '';
+        (isset($_POST['cartbounty_ship_elsewhere'])) ? $ship_elsewhere = $_POST['cartbounty_ship_elsewhere'] : $ship_elsewhere = '';
+        
+        $other_fields = array(
+            'cartbounty_billing_company' 		=> $company,
+            'cartbounty_billing_address_1' 		=> $address_1,
+            'cartbounty_billing_address_2' 		=> $address_2,
+            'cartbounty_billing_state' 			=> $state,
+            'cartbounty_shipping_first_name' 	=> $shipping_name,
+            'cartbounty_shipping_last_name' 	=> $shipping_surname,
+            'cartbounty_shipping_company' 		=> $shipping_company,
+            'cartbounty_shipping_country' 		=> $shipping_country,
+            'cartbounty_shipping_address_1' 	=> $shipping_address_1,
+            'cartbounty_shipping_address_2' 	=> $shipping_address_2,
+            'cartbounty_shipping_city' 			=> $shipping_city,
+            'cartbounty_shipping_state' 		=> $shipping_state,
+            'cartbounty_shipping_postcode' 		=> $shipping_postcode,
+            'cartbounty_order_comments' 		=> $comments,
+            'cartbounty_create_account' 		=> $create_account,
+            'cartbounty_ship_elsewhere' 		=> $ship_elsewhere
+        );
+
+        if($country == ''){ //Trying to Geolocate user's country in case it was not found
+            $country = WC_Geolocation::geolocate_ip(); //Getting users country from his IP address
+            $country = $country['country'];
+        }
+        
+        $location = array(
+            'country' 	=> $country,
+            'city' 		=> $city,
+            'postcode' 	=> $postcode
+        );
+
+        $user_data = array(
+            'name'			=> $name,
+            'surname'		=> $surname,
+            'email'			=> $email,
+            'phone'			=> $phone,
+            'location'		=> $location,
+            'other_fields'	=> $other_fields
+        );
+    }
+
+    return $user_data;
+}
+
+//Function for CartBounty to check whether the cart is saved
+function cart_saved( $session_id ){
+    $saved = false;
+    if( $session_id !== NULL ){
+        global $wpdb;
+        $cart_table = $wpdb->prefix .'cartbounty';
+
+        //Checking if we have this abandoned cart in our database already
+        $result = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT session_id
+					FROM $cart_table
+					WHERE session_id = %s AND
+					type = %d",
+                $session_id,
+                0
+            )
+        );
+
+        if($result){
+            $saved = true;
+        }
+    }
+
+    return $saved;
+}
+
+  // CartBounty function to set session_id
   function set_cartbounty_session($session_id){
      if(!WC()->session->get('cartbounty_session_id')){ //In case browser session is not set, we make sure it gets set
            WC()->session->set('cartbounty_session_id', $session_id); //Storing session_id in WooCommerce session
      }
 }
-  
+
   //CartBounty function to keep track of number of recoverable carts
   function increase_recoverable_cart_count_CB(){
-      if(!WC()->session){ //If session does not exist, exit function 
+      if(!WC()->session){ //If session does not exist, exit function
           return;
       }
       if(WC()->session->get('cartbounty_recoverable_count_increased') || WC()->session->get('cartbounty_from_link')){//Exit function in case we already have run this once or user has returned form a recovery link
@@ -388,58 +711,58 @@ function saveCartBountyData($razorpayData){
       }
       update_option('cartbounty_recoverable_cart_count', get_option('cartbounty_recoverable_cart_count') + 1);
       WC()->session->set('cartbounty_recoverable_count_increased', 1);
-  
+
       if(WC()->session->get('cartbounty_ghost_count_increased')){ //In case we previously increased ghost cart count, we must now reduce it as it has been turned to recoverable
-          $this->decrease_ghost_cart_count( 1 );
+          decrease_ghost_cart_count( 1 );
       }
   }
-  
+
   //CartBounty plugin function for retrieving the cart data
   function read_cart_CB($wcOrderId){
       WC()->cart->empty_cart();
       $cart1cc = create1ccCart($wcOrderId);
       $cart = WC()->cart;
-  
+
       if( !WC()->cart ){ //Exit if Woocommerce cart has not been initialized
           return;
       }
-  
+
       $cart_total    = WC()->cart->total;//Retrieving cart total value and currency
       $cart_currency = get_woocommerce_currency();
       $current_time  = current_time( 'mysql', false ); //Retrieving current time
       $session_id    = WC()->session->get( 'cartbounty_session_id' ); //Check if the session is already set
-      
+
       if( empty( $session_id ) ){ //If session value does not exist - set one now
           $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
       }
-  
+
       if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
           $session_id = WC()->session->get( 'cartbounty_session_id' );
       }
-  
+
       //Retrieving cart
       $products      = WC()->cart->get_cart_contents();
       $product_array = array();
-              
+
       foreach( $products as $key => $product ){
           $item                    = wc_get_product( $product['data']->get_id() );
           $product_title           = $item->get_title();
           $product_quantity        = $product['quantity'];
           $product_variation_price = '';
           $product_tax             = '';
-  
+
           if( isset( $product['line_total'] ) ){
               $product_variation_price = $product['line_total'];
           }
-  
+
           if( isset( $product['line_tax'] ) ){ //If we have taxes, add them to the price
               $product_tax = $product['line_tax'];
           }
-          
+
           // Handling product variations
           if( $product['variation_id'] ){ //If user has chosen a variation
               $single_variation = new WC_Product_Variation( $product['variation_id'] );
-      
+
               //Handling variable product title output with attributes
               $product_attributes = $this->attribute_slug_to_title( $single_variation->get_variation_attributes() );
               $product_variation_id = $product['variation_id'];
@@ -447,7 +770,7 @@ function saveCartBountyData($razorpayData){
               $product_attributes = false;
               $product_variation_id = '';
           }
-  
+
           $product_data = array(
               'product_title'           => $product_title . $product_attributes,
               'quantity'                => $product_quantity,
@@ -456,10 +779,10 @@ function saveCartBountyData($razorpayData){
               'product_variation_price' => $product_variation_price,
               'product_tax'             => $product_tax
           );
-  
+
           $product_array[] = $product_data;
       }
-  
+
       return $results_array = array(
           'cart_total'   	=> $cart_total,
           'cart_currency'   => $cart_currency,
@@ -468,7 +791,11 @@ function saveCartBountyData($razorpayData){
           'product_array'   => $product_array
       );
   }
-  
+
+
+
+ //  _________________________________________ CARTBOUNTY PLUGIN FUNCTIONS END __________________________________________________________
+
 //Insert abandonment data into guest user history
 function saveGuestUserDetails($firstName, $lastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges)
 {
