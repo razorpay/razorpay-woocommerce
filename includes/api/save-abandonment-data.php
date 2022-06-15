@@ -3,6 +3,7 @@
  * For abandon cart recovery related API
  */
 
+
 function saveCartAbandonmentData(WP_REST_Request $request)
 {
     global $woocommerce;
@@ -63,7 +64,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
-    //Check CartBounty plugin is activated or not
+    // Check CartBounty plugin is activated or not
     if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
 
         $result = saveCartBountyData($razorpayData); //save abandonment data
@@ -307,7 +308,6 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
 function saveCartBountyData($razorpayData){
     global $wpdb;
     $products        = WC()->cart->get_cart();
-    
     $ghost           = false;
     $name            = $razorpayData['customer_details']['billing_address']['name'] ?? '';
     $surname         = " ";
@@ -317,12 +317,9 @@ function saveCartBountyData($razorpayData){
     $cart            = read_cart_CB($razorpayData['receipt']);
     
     
-    print_r("This is the cart's session ID".$cart['session_id']);
+    print_r("This is the cart's session ID ".$cart['session_id']);
 
-    if(empty( $cart['product_array'] )){
-        clear_cart_data($razorpayData['receipt']);
-        return;
-    }
+    
    
     $location = array(
       'country' 	=> $razorpayData['customer_details']['shipping_address']['country'] ?? '',
@@ -360,34 +357,91 @@ function saveCartBountyData($razorpayData){
     
 
   print_r(" \nNew TEST ");
-  print_r(WC()->session);
-  $session_id = WC()->session->get_customer_id();
   
-  if(is_user_logged_in()){
-    $session_id=get_current_user_id();
+  $session_id = WC()->session->get_customer_id();
+
+  $order = wc_get_order( $razorpayData['receipt'] );
+  $user = $order->get_user();
+  $user_id = $order->get_user_id();
+  
+if($user_id != 0 or $user_id != null){
+//   if(is_user_logged_in()){
+    $session_id=$user_id;
+    print_r("\nUser logged in , USER ID ".$session_id);
+    print_r("\n");
   }else{
-      $session_id = WC()->session->get( 'cartbounty_session_id' );
 
-  if( empty( $session_id ) ){ //If session value does not exist - set one now
-    $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
-}
+      print_r("\nUser is not logged in , ".$session_id);
+      print_r(get_current_user_id());
+        $session_id = WC()->session->get( 'cartbounty_session_id' );
 
-if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
-    $session_id = WC()->session->get( 'cartbounty_session_id' );
-}
+        if( empty( $session_id ) ){ //If session value does not exist - set one now
+          $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
+         }
+
+       if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
+          $session_id = WC()->session->get( 'cartbounty_session_id' );
+         }
   }
   
 
   
-  print_r("\nBefore checking " .$session_id);
+  print_r("\nBefore checking whether cart is saved " .$session_id);
   $cart_saved      = cart_saved($session_id);
 
 
   
   if($cart_saved ){ //If cart has already been saved
-    print_r("\nSame session ID exists " . $session_id);
+    print_r("\n\nSame session ID exists \n" . $session_id);
    }else{
-    print_r("\nSame session ID does not exist " . $session_id."\n");
+    print_r("\nSame session ID does not exist \n" . $session_id."\n");
+
+    $wpdb->query(
+      $wpdb->prepare(
+          "INSERT INTO $cart_table
+          ( name, surname, email, phone, location, cart_contents, cart_total, currency, time, session_id, other_fields)
+          VALUES ( %s, %s, %s, %s, %s, %s, %0.2f, %s, %s, %s, %s)",
+          array(
+              'name'			=> sanitize_text_field( $user_data['name'] ),
+              'surname'		    => sanitize_text_field( $user_data['surname'] ),
+              'email'			=> sanitize_email( $user_data['email'] ),
+              'phone'			=> filter_var( $user_data['phone'], FILTER_SANITIZE_NUMBER_INT),
+              'location'		=> sanitize_text_field( serialize( $user_data['location'] ) ),
+              'products'		=> serialize($cart['product_array']),
+              'total'			=> sanitize_text_field( $cart['cart_total'] ),
+              'currency'		=> sanitize_text_field( $cart['cart_currency'] ),
+              'time'			=> sanitize_text_field($cart['current_time']),
+              'session_id'	    => sanitize_text_field($cart['session_id']),
+              'other_fields'	=> sanitize_text_field(serialize($user_data['other_fields']))
+          )
+      )
+  );
+
+
+  print_r("\nInserted new entry for guest user\n");
+
+  increase_recoverable_cart_count_CB();
+
+  print_r("\nIncreased recoverable cart count for guest user\n");
+
+
+  set_cartbounty_session($cart['session_id']);
+  
+
+print_r("\nset cart bounty session for guest user\n");
+
+$response['status']  = true;
+$response['message'] = 'Data successfully inserted for CartBounty plugin';
+$statusCode          = 200;
+
+$result['response']=$response;
+$result['status_code']=$statusCode;
+print_r("\nCheckpoint 3\n");
+return $result;
+
+print_r("\nCheckpoint 3\n\n");
+
+
    }
 
 
@@ -412,8 +466,29 @@ if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbou
     )
 );
 
+
+    print_r("\nCheckpoint 1\n");
+
     delete_duplicate_carts( $cart['session_id'], $updated_rows);
-    increase_recoverable_cart_count();
+
+    print_r("\nCheckpoint 2 \n");
+
+    // increase_recoverable_cart_count_CB();
+
+    // print_r("\nCheckpoint 3\n");
+
+    
+    $response['status']  = true;
+    $response['message'] = 'Data successfully inserted for CartBounty plugin';
+    $statusCode          = 200;
+    
+    $result['response']=$response;
+    $result['status_code']=$statusCode;
+    print_r("\nCheckpoint 3\n");
+    return $result;
+
+    print_r("\nCheckpoint 3\n\n");
+
     
     // $wpdb->query(
     //   $wpdb->prepare(
