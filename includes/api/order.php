@@ -274,11 +274,17 @@ function wooSaveCheckoutUTMFields($orderId, $params)
 {
     $pysData                = [];
     $cookieData             = $params['cookies'];
+    $getQuery               = $params['requestData'];
     $browserTime            = $params['dateTime'];
     $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
-    $pysData['pys_source']  = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
+    $pysData['pys_source']  = $params['referrerDomain'] != '' ? $params['referrerDomain'] : "direct";
+    $pysUTMSource           = $cookieData['pys_utm_source'] ?? $getQuery['utm_source'];
+    $pysUTMMedium           = $cookieData['pys_utm_medium'] ?? $getQuery['utm_medium'];
+    $pysUTMCampaign         = $cookieData['pys_utm_campaign'] ?? $getQuery['utm_medium'];
+    $pysUTMTerm             = $cookieData['pys_utm_term'] ?? $getQuery['utm_term'];
+    $pysUTMContent          = $cookieData['pys_utm_content'] ?? $getQuery['utm_content'];
 
-    $pysData['pys_utm']          = "utm_source:" . $cookieData['pys_utm_source'] . "|utm_medium:" . $cookieData['pys_utm_medium'] . "|utm_campaign:" . $cookieData['pys_utm_campaign'] . "|utm_term:" . $cookieData['pys_utm_term'] . "|utm_content:" . $cookieData['pys_utm_content'];
+    $pysData['pys_utm']          = "utm_source:" . $pysUTMSource . "|utm_medium:" . $pysUTMMedium . "|utm_campaign:" . $pysUTMCampaign . "|utm_term:" . $pysUTMTerm . "|utm_content:" . $pysUTMContent;
     $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
 
     update_post_meta($orderId, "pys_enrich_data", $pysData);
