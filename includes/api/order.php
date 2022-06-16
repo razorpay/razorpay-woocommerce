@@ -277,7 +277,11 @@ function wooSaveCheckoutUTMFields($orderId, $params)
     $getQuery               = $params['requestData'];
     $browserTime            = $params['dateTime'];
     $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
-    $pysData['pys_source']  = $params['referrerDomain'] != '' ? $params['referrerDomain'] : "direct";
+    $pysData['pys_source']  = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
+    if($pysData['pys_source'] == 'direct')
+    {
+        $pysData['pys_source']  = $params['referrerDomain'] != '' ? $params['referrerDomain'] : "direct";
+    }
     $pysUTMSource           = $cookieData['pys_utm_source'] ?? $getQuery['utm_source'];
     $pysUTMMedium           = $cookieData['pys_utm_medium'] ?? $getQuery['utm_medium'];
     $pysUTMCampaign         = $cookieData['pys_utm_campaign'] ?? $getQuery['utm_medium'];
