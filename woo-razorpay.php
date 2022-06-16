@@ -23,6 +23,7 @@ require_once __DIR__ .'/includes/razorpay-route-actions.php';
 require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
+require_once __DIR__.'/includes/stylehandler.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -1919,8 +1920,8 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-
-    wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
+    $themeInfo=styleHandler(wp_get_theme()->name);
+    wp_register_style(RZP_1CC_CSS_SCRIPT,$themeInfo, null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
     wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
