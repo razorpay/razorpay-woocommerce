@@ -315,11 +315,6 @@ function saveCartBountyData($razorpayData){
     $phone           = $razorpayData['customer_details']['shipping_address']['contact'];
     $cart_table      = $wpdb->prefix ."cartbounty";
     $cart            = read_cart_CB($razorpayData['receipt']);
-    
-    
-    print_r("This is the cart's session ID ".$cart['session_id']);
-
-    
    
     $location = array(
       'country' 	=> $razorpayData['customer_details']['shipping_address']['country'] ?? '',
@@ -354,18 +349,15 @@ function saveCartBountyData($razorpayData){
       'location'		=> $location,
       'other_fields'	=> $other_fields
   );
-    
 
-  print_r(" \nNew TEST ");
+//   add_filter('cartbounty_pro_landing_url','cartbounty_landing_url'); //Used to change landing page to cart page
   
   $session_id = WC()->session->get_customer_id();
-
-  $order = wc_get_order( $razorpayData['receipt'] );
-  $user = $order->get_user();
-  $user_id = $order->get_user_id();
+  $order      = wc_get_order( $razorpayData['receipt'] );
+  $user       = $order->get_user();
+  $user_id    = $order->get_user_id();
   
-if($user_id != 0 or $user_id != null){
-//   if(is_user_logged_in()){
+if($user_id != 0 or $user_id != null){  //Used to check whether user is logged in
     $session_id=$user_id;
     print_r("\nUser logged in , USER ID ".$session_id);
     print_r("\n");
@@ -384,18 +376,12 @@ if($user_id != 0 or $user_id != null){
          }
   }
   
-
-  
-  print_r("\nBefore checking whether cart is saved " .$session_id);
   $cart_saved      = cart_saved($session_id);
 
-
-  
   if($cart_saved ){ //If cart has already been saved
     print_r("\n\nSame session ID exists \n" . $session_id);
    }else{
-    print_r("\nSame session ID does not exist \n" . $session_id."\n");
-
+    //If the cart has not been saved we need to insert the cart data 
     $wpdb->query(
       $wpdb->prepare(
           "INSERT INTO $cart_table
@@ -425,7 +411,7 @@ if($user_id != 0 or $user_id != null){
   print_r("\nIncreased recoverable cart count for guest user\n");
 
 
-  set_cartbounty_session($cart['session_id']);
+//   set_cartbounty_session($cart['session_id']);
   
 
 print_r("\nset cart bounty session for guest user\n");
@@ -456,7 +442,7 @@ print_r("\nCheckpoint 3\n\n");
         phone = %s,
         location = %s,
         other_fields = '$other_fields'
-        WHERE session_id = %s",
+        WHERE session_id = %s and type=0",
         sanitize_text_field( $user_data['name'] ),
         sanitize_text_field( $user_data['surname'] ),
         sanitize_email( $user_data['email'] ),
@@ -472,10 +458,13 @@ print_r("\nCheckpoint 3\n\n");
     delete_duplicate_carts( $cart['session_id'], $updated_rows);
 
     print_r("\nCheckpoint 2 \n");
+    // set_cartbounty_session($cart['session_id']);
 
-    // increase_recoverable_cart_count_CB();
 
-    // print_r("\nCheckpoint 3\n");
+
+
+    
+    
 
     
     $response['status']  = true;
@@ -487,33 +476,10 @@ print_r("\nCheckpoint 3\n\n");
     print_r("\nCheckpoint 3\n");
     return $result;
 
-    print_r("\nCheckpoint 3\n\n");
+}
 
-    
-    // $wpdb->query(
-    //   $wpdb->prepare(
-    //       "INSERT INTO $cart_table
-    //       ( name, surname, email, phone, location, cart_contents, cart_total, currency, time, session_id, other_fields)
-    //       VALUES ( %s, %s, %s, %s, %s, %s, %0.2f, %s, %s, %s, %s)",
-    //       array(
-    //           'name'			=> sanitize_text_field( $user_data['name'] ),
-    //           'surname'		    => sanitize_text_field( $user_data['surname'] ),
-    //           'email'			=> sanitize_email( $user_data['email'] ),
-    //           'phone'			=> filter_var( $user_data['phone'], FILTER_SANITIZE_NUMBER_INT),
-    //           'location'		=> sanitize_text_field( serialize( $user_data['location'] ) ),
-    //           'products'		=> serialize($cart['product_array']),
-    //           'total'			=> sanitize_text_field( $cart['cart_total'] ),
-    //           'currency'		=> sanitize_text_field( $cart['cart_currency'] ),
-    //           'time'			=> sanitize_text_field($cart['current_time']),
-    //           'session_id'	    => sanitize_text_field($cart['session_id']),
-    //           'other_fields'	=> sanitize_text_field(serialize($user_data['other_fields']))
-    //       )
-    //   )
-//   );
-
-//   increase_recoverable_cart_count_CB();
-//   set_cartbounty_session($cart['session_id']);
-
+function cartbounty_landing_url(){
+    return 'cart';
 }
 
 //Delete Duplicate carts CartBounty plugin
