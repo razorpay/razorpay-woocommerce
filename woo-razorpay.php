@@ -23,6 +23,7 @@ require_once __DIR__ .'/includes/razorpay-route-actions.php';
 require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
+require_once __DIR__.'/includes/plugin-instrumentation.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -30,7 +31,7 @@ use Razorpay\Api\Errors;
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
 
-//instrumentation hooks
+// instrumentation hooks
 add_action('activated_plugin', 'razorpayPluginActivated', 10, 2 );
 add_action('deactivated_plugin', 'razorpayPluginDeactivated', 10, 2 );
 add_action('upgrader_process_complete', 'razorpayPluginUpgraded', 10, 2);
@@ -228,12 +229,14 @@ function woocommerce_razorpay_init()
 
             if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'pluginInstrumentation'));
                 add_action("woocommerce_update_options_payment_gateways_{$this->id}", $cb);
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
             }
             else
             {
+                add_action( "woocommerce_update_options_payment_gateways", array($this, 'pluginInstrumentation'));
                 add_action('woocommerce_update_options_payment_gateways', $cb);
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
@@ -415,6 +418,99 @@ function woocommerce_razorpay_init()
                 $this->webhookAPI('POST', "webhooks/", $data);
             }
 
+        }
+
+        public function pluginInstrumentation()
+        {
+            $trackObject  = new TrackPluginInstrumentation();
+
+            if (empty($_POST['woocommerce_razorpay_key_id']) or
+                empty($_POST['woocommerce_razorpay_key_secret']))
+            {
+                error_log('Key Id and Key Secret are required.');
+                return;
+            }
+
+            try
+            {
+                $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
+                $orderCount = $api->request->request('GET', 'orders')['count'];
+                $isTransactingUser = ($orderCount > 0) ? true : false;
+            }
+            catch (\Razorpay\Api\Errors\Error $e)
+            {
+                ?>
+                <div class="notice error is-dismissible" >
+                    <p><b><?php _e( 'Please check Key Id and Key Secret.'); ?></b></p>
+                </div>
+                <?php
+                error_log('Please check Key Id and Key Secret.');
+                return;
+            }
+            catch (\Exception $e)
+            {
+                ?>
+                <div class="notice error is-dismissible" >
+                    <p><b><?php _e( 'something went wrong'); ?></b></p>
+                </div>
+                <?php
+                error_log($e->getMessage());
+                return;
+            }
+
+            $authProperties = [
+                'Plugin_name'             => get_plugin_data(__FILE__)['Name'],
+                'rzp_plugin_version'      => get_plugin_data(__FILE__)['Version'],
+                'event_timestamp'         => time(),
+                'unique_id'               => $_SERVER['HTTP_HOST'],
+                'is_key_id_populated'     => true,
+                'is_key_secret_populated' => true,
+                'page_url'                => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
+                'auth_successful_status'  => true,
+                'is_plugin_activated'     => (isset($_POST['woocommerce_razorpay_enabled'])) ? true :false
+            ];
+
+            // for enable and disable plugin
+            $pluginStatusProperties = [
+                'Plugin_name'         => get_plugin_data(__FILE__)['Name'],
+                'rzp_plugin_version'  => get_plugin_data(__FILE__)['Version'],
+                'event_timestamp'     => time(),
+                'current_status'      => ($this->getSetting('enabled')==='yes') ? 'enabled' :'disabled',
+                'is_transacting_user' => $isTransactingUser
+            ];
+
+            if (empty($this->getSetting('key_id')) and
+                empty($this->getSetting('key_secret')))
+            {
+                $authProperties['event'] = 'saving.auth.details';
+
+                if(empty($_POST['woocommerce_razorpay_enabled']) === false)
+                {
+                    $pluginStatusProperties['event'] = 'plugin.enabled';
+                }
+            }
+            else
+            {
+                $authProperties['event'] = 'updating.auth.details';
+            }
+
+            $trackObject->rzpTrackSegment($authProperties);
+
+            if ((empty($_POST['woocommerce_razorpay_enabled']) === false) and
+                ($this->getSetting('enabled') === 'no'))
+            {
+                $pluginStatusProperties['event'] = 'plugin.enabled';
+            }
+            elseif ((empty($_POST['woocommerce_razorpay_enabled']) === true) and
+                ($this->getSetting('enabled') === 'yes'))
+            {
+                $pluginStatusProperties['event'] = 'plugin.disabled';
+            }
+
+            if (array_key_exists('event', $pluginStatusProperties))
+            {
+                $trackObject->rzpTrackSegment($pluginStatusProperties);
+            }
         }
 
         // showing notice : status of 1cc active / inactive message in admin dashboard
@@ -2030,16 +2126,20 @@ if(is1ccEnabled())
 // plugin activation hook
 function razorpayPluginActivated()
 {
+    $trackObject  = new TrackPluginInstrumentation();
+
     $existingVersion = get_option('rzp_woocommerce_current_version');
 
-    if(isset($existingVersion)){
+    if(isset($existingVersion))
+    {
         update_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
     }
-    else{
+    else
+    {
         add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
     }
 
-    $data = [
+    $activateProperties = [
         'Plugin_name'        => get_plugin_data(__FILE__)['Name'],
         'rzp_plugin_version' => get_plugin_data(__FILE__)['Version'],
         'event'              => 'plugin.activate',
@@ -2048,11 +2148,15 @@ function razorpayPluginActivated()
         'unique_id'          => $_SERVER['HTTP_HOST'],
         'redirect_to_page'   => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']
     ];
+
+    $trackObject->rzpTrackSegment($activateProperties);
 }
 
 // plugin deactivation hook
 function razorpayPluginDeactivated()
 {
+    $trackObject  = new TrackPluginInstrumentation();
+
     $paymentSettings = get_option('woocommerce_razorpay_settings');
 
     $api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
@@ -2060,7 +2164,7 @@ function razorpayPluginDeactivated()
     $orderCount = $api->request->request('GET', 'orders')['count'];
     $isTransactingUser = ($orderCount > 0) ? true : false;
 
-    $data = [
+    $deactivateProperties = [
         'Plugin_name'         => get_plugin_data(__FILE__)['Name'],
         'rzp_plugin_version'  => get_plugin_data(__FILE__)['Version'],
         'event'               => 'plugin.deactivate',
@@ -2069,12 +2173,16 @@ function razorpayPluginDeactivated()
         'unique_id'           => $_SERVER['HTTP_HOST'],
         'is_transacting_user' => $isTransactingUser
     ];
+
+    $trackObject->rzpTrackSegment($deactivateProperties);
 }
 
 // plugin upgrade hook
 function razorpayPluginUpgraded()
 {
-    $data = [
+    $trackObject  = new TrackPluginInstrumentation();
+
+    $upgradeProperties = [
         'Plugin_name'        => get_plugin_data(__FILE__)['Name'],
         'rzp_plugin_version' => get_plugin_data(__FILE__)['Version'],
         'event'              => 'plugin.upgrade',
@@ -2084,4 +2192,6 @@ function razorpayPluginUpgraded()
         'prev_version'       => get_option('rzp_woocommerce_current_version'),
         'new_version'        => get_plugin_data(__FILE__)['Version'],
     ];
+
+    $trackObject->rzpTrackSegment($upgradeProperties);
 }
