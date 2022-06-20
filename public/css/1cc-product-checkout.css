@@ -7,7 +7,10 @@
   width: 100%;
 }
 #btn-1cc-pdp {
-  margin-left: 5px;
+  position: relative;
+  top: 12px;
+  width: 250px;
+  z-index: 1;
 }
 #rzp-spinner-backdrop {
   position: fixed;
@@ -82,4 +85,12 @@
   #rzp-logo {
     height: 45px !important;
   }
+}
+
+.single_add_to_cart_button.button{
+  z-index: 2 !important;
+}
+
+.quantity{
+  z-index: 2 !important;
 }
