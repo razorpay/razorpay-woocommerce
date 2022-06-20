@@ -757,7 +757,7 @@ function woocommerce_razorpay_init()
 
             if (empty($getWebhookFlag) == false)
             {
-                    if ($getWebhookFlag + 86400 < time())
+                    if ($getWebhookFlag + 43200 < time())
                     {
                         $this->autoEnableWebhook();
                     }
