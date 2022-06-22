@@ -11,7 +11,8 @@
     margin-top: 12px;
   }
   #btn-1cc-pdp {
-    
+    position: relative;
+    top: 10px;
     width: 221px;
 
   }

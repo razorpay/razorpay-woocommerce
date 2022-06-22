@@ -7,6 +7,8 @@
     width: 100%;
   }
   #btn-1cc-pdp {
+    position: relative;
+    top: 10px;
     width: 190px;
   }
   #rzp-spinner-backdrop {

@@ -8,6 +8,8 @@
     margin-top: 10px;
   }
   #btn-1cc-pdp {
+    position: relative;
+    top: 10px;
     width: 383px;
   }
   #rzp-spinner-backdrop {

@@ -12,7 +12,8 @@
  min-width: 100% !important;
   }
   #btn-1cc-pdp {
-    margin-top:15px;
+    position: relative;
+    top:12px;
     width: 200px;
   }
   #rzp-spinner-backdrop {

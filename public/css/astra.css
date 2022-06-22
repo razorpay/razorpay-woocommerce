@@ -7,10 +7,10 @@
     width: 100%;
 }
 #btn-1cc-pdp {
+    position: relative;
+    top: 10px;
     display: block !important;
-    margin-top: 30px;
-    padding-top: 20px;
-    width: 220px
+    width: 220px;
 }
 #rzp-spinner-backdrop {
     position: fixed;

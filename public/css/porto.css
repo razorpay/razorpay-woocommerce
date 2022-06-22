@@ -9,7 +9,8 @@
   #btn-1cc-pdp {    
     display: block !important;
     width: 290px;
-    margin-top: 8px;
+    position: relative;
+    top: 8px;
   }
 
   .single-product form.cart:not(.variations_form){

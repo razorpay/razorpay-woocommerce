@@ -8,8 +8,8 @@
 }
 #btn-1cc-pdp {
     display:block !important;
-    padding-top: 20px;
-    margin-top: 50px;
+    position: relative;
+    top: 11px;
     width: 243px;
 }
 #rzp-spinner-backdrop {
