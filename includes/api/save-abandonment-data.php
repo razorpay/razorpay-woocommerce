@@ -350,8 +350,6 @@ function saveCartBountyData($razorpayData){
       'other_fields'	=> $other_fields
   );
 
-//   add_filter('cartbounty_pro_landing_url','cartbounty_landing_url'); //Used to change landing page to cart page
-  
   $session_id = WC()->session->get_customer_id();
   $order      = wc_get_order( $razorpayData['receipt'] );
   $user       = $order->get_user();
@@ -362,15 +360,10 @@ if($user_id != 0 or $user_id != null){  //Used to check whether user is logged i
     print_r("\nUser logged in , USER ID ".$session_id);
     print_r("\n");
   }else{
-
-      print_r("\nUser is not logged in , ".$session_id);
-      print_r(get_current_user_id());
         $session_id = WC()->session->get( 'cartbounty_session_id' );
-
         if( empty( $session_id ) ){ //If session value does not exist - set one now
           $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
          }
-
        if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
           $session_id = WC()->session->get( 'cartbounty_session_id' );
          }
@@ -403,35 +396,9 @@ if($user_id != 0 or $user_id != null){  //Used to check whether user is logged i
       )
   );
 
-
-  print_r("\nInserted new entry for guest user\n");
-
-  increase_recoverable_cart_count_CB();
-
-  print_r("\nIncreased recoverable cart count for guest user\n");
-
-
-//   set_cartbounty_session($cart['session_id']);
-  
-
-print_r("\nset cart bounty session for guest user\n");
-
-$response['status']  = true;
-$response['message'] = 'Data successfully inserted for CartBounty plugin';
-$statusCode          = 200;
-
-$result['response']=$response;
-$result['status_code']=$statusCode;
-print_r("\nCheckpoint 3\n");
-return $result;
-
-print_r("\nCheckpoint 3\n\n");
-
-
-   }
-
-
-
+   increase_recoverable_cart_count_CB();
+   set_cartbounty_session($cart['session_id']);
+}
 
   $updated_rows = $wpdb->query(
     $wpdb->prepare(
@@ -452,20 +419,18 @@ print_r("\nCheckpoint 3\n\n");
     )
 );
 
-
-    print_r("\nCheckpoint 1\n");
-
     delete_duplicate_carts( $cart['session_id'], $updated_rows);
+    set_cartbounty_session($cart['session_id']);
+    
 
-    print_r("\nCheckpoint 2 \n");
-    // set_cartbounty_session($cart['session_id']);
+    // add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+    
 
-
-
+    //   add_filter('cartbounty_pro_landing_url','cartbounty_landing_url'); //Used to change landing page to cart page
 
     
     
-
+    
     
     $response['status']  = true;
     $response['message'] = 'Data successfully inserted for CartBounty plugin';
@@ -474,12 +439,30 @@ print_r("\nCheckpoint 3\n\n");
     $result['response']=$response;
     $result['status_code']=$statusCode;
     print_r("\nCheckpoint 3\n");
+
+
+   update_post_meta($razorpayData['receipt'],'CBSessionId',$session_id);
+
+
+
     return $result;
 
 }
 
-function cartbounty_landing_url(){
-    return 'cart';
+//Marking a completed order as recovered
+function recoverCartBountyDB($order_id){
+    global $wpdb;
+    $session_id = get_post_meta($order_id,'CBSessionId',true);
+    $cart_table = $wpdb->prefix ."cartbounty";
+
+    $updated_rows = $wpdb->query(
+        $wpdb->prepare(
+            "UPDATE $cart_table
+            SET type = 1
+            WHERE session_id = %s and type=0",
+            $session_id
+        )
+    );
 }
 
 //Delete Duplicate carts CartBounty plugin
@@ -707,6 +690,7 @@ function get_user_data(){
 
     return $user_data;
 }
+
 
 //Function for CartBounty to check whether the cart is saved
 function cart_saved( $session_id ){
