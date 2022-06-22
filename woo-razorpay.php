@@ -24,6 +24,7 @@ require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/stylehandler.php';
+require_once __DIR__.'/includes/api/save-abandonment-data.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -1041,6 +1042,7 @@ EOT;
             rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
 
             $orderKey = $this->getOrderKey($order);
+            
 
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
@@ -1346,7 +1348,7 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-
+                recoverCartBountyDB($orderId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
@@ -1518,7 +1520,7 @@ EOT;
                         }
                         else
                         {
-                             $item->set_method_title($shippingData[0]['name']);
+                             $item->set_method_title($shippingData[0]['name']??"");
                         }
 
                         // set an non existing Shipping method rate ID will mark the order as completed instead of processing status
