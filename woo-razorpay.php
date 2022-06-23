@@ -1099,25 +1099,20 @@ EOT;
 
             rzpLogInfo("Called check_razorpay_response: $post_password");
 
-            // $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
-
-            // if($postData == null)
-            // {
-                $meta_key = '_order_key';
-                $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
-            // }
+            $meta_key = '_order_key';
             
-
+            $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
+            
             $postStatus = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postData->post_id) );
             
             $arrayPost = json_decode(json_encode($postData), true);
-            if (!empty($arrayPost) && $arrayPost != null)
+            if (!empty($arrayPost) and 
+                $arrayPost != null)
             {
-                // $orderId = $postData[0]->ID;
 
                 $orderId = $postData->post_id;
 
-                if($postStatus == 'draft')
+                if($postStatus === 'draft')
                 {
                     updateOrderStatus($orderId, 'wc-pending');
                 }
