@@ -1101,17 +1101,17 @@ EOT;
 
             $meta_key = '_order_key';
             
-            $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
+            $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
             
-            $postStatus = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postData->post_id) );
+            $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
             
-            $arrayPost = json_decode(json_encode($postData), true);
+            $arrayPost = json_decode(json_encode($postMetaData), true);
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                $orderId = $postData->post_id;
+                $orderId = $postMetaData->post_id;
 
-                if($postStatus === 'draft')
+                if($postData === 'draft')
                 {
                     updateOrderStatus($orderId, 'wc-pending');
                 }
