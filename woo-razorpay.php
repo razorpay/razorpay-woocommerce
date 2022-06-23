@@ -1106,10 +1106,9 @@ EOT;
             $postStatus = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postData->post_id) );
             
             $arrayPost = json_decode(json_encode($postData), true);
-            if (!empty($arrayPost) and 
+            if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-
                 $orderId = $postData->post_id;
 
                 if($postStatus === 'draft')
