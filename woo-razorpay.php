@@ -1106,12 +1106,13 @@ EOT;
             $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
             
             $arrayPost = json_decode(json_encode($postMetaData), true);
+            
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
                 $orderId = $postMetaData->post_id;
 
-                if($postData === 'draft')
+                if($postData->post_status === 'draft')
                 {
                     updateOrderStatus($orderId, 'wc-pending');
                 }
