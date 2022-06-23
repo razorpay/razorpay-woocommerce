@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.7.2
- * Stable tag: 3.7.2
+ * Version: 3.8.3
+ * Stable tag: 3.8.3
  * Author: Team Razorpay
  * WC tested up to: 6.4.1
  * Author URI: https://razorpay.com
@@ -307,8 +307,7 @@ function woocommerce_razorpay_init()
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
-            $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
-            $secret = substr(str_shuffle($alphanumericString), 0, 20);
+            $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
             $this->update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
@@ -366,8 +365,8 @@ function woocommerce_razorpay_init()
                         $webhookItems[] = $value;
                     }
                 }
-            } while ( $webhook['count'] >= 1);
-
+            } while ( $webhook['count'] === $count);
+            
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
@@ -386,10 +385,10 @@ function woocommerce_razorpay_init()
                             if (($evntval == 1) and
                                 (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
-                                 $this->defaultWebhookEvents[$evntkey] =  true;
+                                $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
-
+                     
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
@@ -412,6 +411,13 @@ function woocommerce_razorpay_init()
 
         }
 
+        public function generateSecret()
+        {
+            $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
+            $secret = substr(str_shuffle($alphanumericString), 0, 20);
+
+            return $secret;
+        }
         // showing notice : status of 1cc active / inactive message in admin dashboard
         function addAdminCheckoutSettingsAlert() {
             $enable_1cc  = $this->getSetting('enable_1cc');
@@ -590,20 +596,7 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($orderId)
         {
-            $getWebhookFlag =  get_option('webhook_enable_flag');
-            $time = time();
-           if (empty($getWebhookFlag) == false)
-           {
-                if ($getWebhookFlag + 86400 < time())
-                {
-                    $this->autoEnableWebhook();
-                }
-           }
-           else
-           {
-                update_option('webhook_enable_flag', $time);
-                $this->autoEnableWebhook(); 
-           }
+            
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
@@ -672,7 +665,7 @@ function woocommerce_razorpay_init()
 
             return array(
                 'key'          => $this->getSetting('key_id'),
-                'name'         => get_bloginfo('name'),
+                'name'         => html_entity_decode(get_bloginfo('name'), ENT_QUOTES),
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
@@ -740,6 +733,8 @@ function woocommerce_razorpay_init()
         protected function createRazorpayOrderId($orderId, $sessionKey)
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
+
+            
             // Calls the helper function to create order data
             global $woocommerce;
 
@@ -757,9 +752,28 @@ function woocommerce_razorpay_init()
                 return $e;
             }
 
+            $getWebhookFlag =  get_option('webhook_enable_flag');
+            $time = time();
+
+            if (empty($getWebhookFlag) == false)
+            {
+                    if ($getWebhookFlag + 86400 < time())
+                    {
+                        $this->autoEnableWebhook();
+                    }
+            }
+            else
+            {
+                    update_option('webhook_enable_flag', $time);
+                    $this->autoEnableWebhook(); 
+            }
+
             $razorpayOrderId = $razorpayOrder['id'];
 
-            set_transient($sessionKey, $razorpayOrderId, 3600);
+            // Storing the razorpay order id in transient for 5 hours time.
+            set_transient($sessionKey, $razorpayOrderId, 18000);
+
+            // By default woocommerce session TTL is 48 hours.
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
 
             rzpLogInfo('For order session key ' . $sessionKey);
@@ -1204,7 +1218,17 @@ EOT;
                 {
                     $api = $this->getRazorpayApiInstance();
                     $sessionKey = $this->getOrderSessionKey($orderId);
-                    $razorpayOrderId = get_transient($sessionKey);
+
+                    //Check the transient data for razorpay order id, if it's not available then look into session data.
+                    if(get_transient($sessionKey))
+                    {
+                        $razorpayOrderId = get_transient($sessionKey);
+                    }
+                    else
+                    {
+                        $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                    }
+
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
                     $this->updateOrderAddress($razorpayData, $order);
@@ -1405,6 +1429,8 @@ EOT;
 
         public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
         {
+            global $woocommerce;
+
             $logObj = array();
             rzpLogInfo("update1ccOrderWC wcOrderId: $wcOrderId, razorpayPaymentId: $razorpayPaymentId");
 
@@ -1413,7 +1439,17 @@ EOT;
 
             $api = $this->getRazorpayApiInstance();
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
-            $razorpayOrderId = get_transient($sessionKey);
+
+            //Check the transient data for razorpay order id, if it's not available then look into session data.
+            if(get_transient($sessionKey))
+            {
+                $razorpayOrderId = get_transient($sessionKey);
+            }
+            else
+            {
+                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            }
+
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
             $this->updateOrderAddress($razorpayData, $order);
@@ -1427,6 +1463,9 @@ EOT;
             //Apply coupon to woo-order
             if (empty($couponKey) === false)
             {
+                // Remove the same coupon, if already being added to order.
+                $order->remove_coupon($couponKey);
+
                 //TODO: Convert all razorpay amount in paise to rupees
                 $discount_total = $razorpayData['promotions'][0]['value']/100;
 
@@ -1450,6 +1489,18 @@ EOT;
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
             {
+
+                //To remove by default shipping method added on order.
+                $existingItems = (array) $order->get_items('shipping');
+                rzpLogInfo("Shipping details updated for orderId: $wcOrderId is".json_encode($existingItems));
+
+                if (sizeof($existingItems) != 0) {
+                    // Loop through shipping items
+                    foreach ($existingItems as $existingItemId) {
+                        $order->remove_item($existingItemId);
+                    }
+                }
+
                 // Get a new instance of the WC_Order_Item_Shipping Object
                 $item = new WC_Order_Item_Shipping();
 
@@ -1784,7 +1835,7 @@ EOT;
          * @param $data
          * @return array
          */
-        protected function getVersionMetaInfo($data)
+        public function getVersionMetaInfo($data)
         {
             if (isset($data['subscription_id']) && isset($data['recurring'])) {
                 $pluginRoot = WP_PLUGIN_DIR . '/razorpay-subscriptions-for-woocommerce';
@@ -1900,6 +1951,8 @@ function enqueueScriptsFor1cc()
       'nonce' => wp_create_nonce("wp_rest"),
       'siteurl' => $siteurl,
       'blogname' => get_bloginfo('name'),
+      'cookies' => $_COOKIE,
+      'requestData' => $_REQUEST,
     ) );
     wp_enqueue_script('btn_1cc_checkout');
 }

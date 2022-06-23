@@ -8,6 +8,9 @@ window.addEventListener('DOMContentLoaded', function() {
   var pageURL = jQuery(location).attr('href');
   var url = new URL(pageURL);
   var accessToken = new URLSearchParams(url.search).get('wcf_ac_token');
+  var referrerDomain = document.referrer.toString();
+
+  rzp1ccCheckoutData.referrerDomain = referrerDomain;
 
   // event triggered by wc on any cart change
   // as input function is the same, duplicate event listeners are NOT called
@@ -156,6 +159,23 @@ window.addEventListener('DOMContentLoaded', function() {
       rzp1cc.setDisabled('btn-1cc', false);
       rzp1cc.setDisabled('btn-1cc-mini-cart', false);
       rzp1cc.setDisabled('btn-1cc-pdp', false);
+    },
+    getBrowserTime: function() {
+      var dateTime = [];
+      var date = new Date(),
+          days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+          months = ['January', 'February', 'March', 'April', 'May', 'June',
+              'July', 'August', 'September', 'October', 'November', 'December'
+          ],
+          hours = ['00-01', '01-02', '02-03', '03-04', '04-05', '05-06', '06-07', '07-08',
+              '08-09', '09-10', '10-11', '11-12', '12-13', '13-14', '14-15', '15-16', '16-17',
+              '17-18', '18-19', '19-20', '20-21', '21-22', '22-23', '23-24'
+          ];
+      dateTime.push(hours[date.getHours()]);
+      dateTime.push(days[date.getDay()]);
+      dateTime.push(months[date.getMonth()]);
+
+      rzp1ccCheckoutData.dateTime = dateTime;
     }
   }
 
@@ -179,6 +199,8 @@ window.addEventListener('DOMContentLoaded', function() {
     {
       rzp1ccCheckoutData.token = accessToken;
     }
+
+    rzp1cc.getBrowserTime();
     
     var body = rzp1ccCheckoutData;
 

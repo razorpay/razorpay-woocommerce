@@ -278,12 +278,12 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
 
     $availablePaymentMethods = WC()->payment_gateways->payment_gateways();
 
+    $minCODAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_min_COD_slab_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_min_COD_slab_amount'] : 0;
+    $maxCODAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_max_COD_slab_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_max_COD_slab_amount'] : 0;
+
     if (!isset($availablePaymentMethods['cod']) || 'no' == $availablePaymentMethods['cod']->enabled || !(($minCODAmount1cc <= $amount) && ($maxCODAmount1cc <= $amount))) {
         return false;
     }
-
-    $minCODAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_min_COD_slab_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_min_COD_slab_amount'] : 0;
-    $maxCODAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_max_COD_slab_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_max_COD_slab_amount'] : 0;
 
     $order  = wc_get_order($orderId);
     $amount = floatval($order->get_total());
@@ -431,6 +431,7 @@ function smartCodRestriction($addresses, $order)
     $postals         = explode(',', trim($restriction['restrict_postals']));
     $postals         = array_map('trim', $postals);
     $customerZipcode = $addresses['zipcode'];
+    $flag            = 0;
 
     foreach ($postals as $p) {
         if (!$p) {

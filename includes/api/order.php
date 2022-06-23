@@ -115,14 +115,25 @@ function createWcOrder(WP_REST_Request $request)
             $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
 
             //To get the applied coupon details from cart object.
-            $coupons = WC()->cart->get_coupons();
-            $couponCode = !empty($coupons)? array_key_first($coupons): null;
+            $coupons    = WC()->cart->get_coupons();
+            $couponCode = !empty($coupons) ? array_key_first($coupons) : null;
         }
     }
 
     $order = wc_get_order($orderId);
 
     if ($order) {
+
+        // Pixel your site PRO UTM data
+        if (is_plugin_active('pixelyoursite-pro/pixelyoursite-pro.php')) {
+
+            $pysData = get_option('pys_core');
+
+            // Store UTM data only if config enabled.
+            if ($pysData['woo_enabled_save_data_to_orders'] == true) {
+                wooSaveCheckoutUTMFields($orderId, $params);
+            }
+        }
 
         // To remove coupon added on order.
         $coupons = $order->get_coupon_codes();
@@ -196,9 +207,11 @@ function createWcOrder(WP_REST_Request $request)
             $response['prefill']['contact'] = $contact ? $contact : '';
         }
 
+        $response["_"] = $razorpay->getVersionMetaInfo($response);
+
         $response['prefill']['coupon_code'] = $couponCode;
 
-        $response['mandatory_login'] = get_option('woocommerce_razorpay_settings')['enable_1cc_mandatory_login'] === 'yes' ? true : false;
+        $response['mandatory_login'] = false; // Removed the mandatory login option from admin config so sending bydefault false.
 
         $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
         $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
@@ -255,4 +268,28 @@ function updateOrderStatus($orderId, $orderStatus)
         'ID'          => $orderId,
         'post_status' => $orderStatus,
     ));
+}
+
+function wooSaveCheckoutUTMFields($orderId, $params)
+{
+    $pysData                = [];
+    $cookieData             = $params['cookies'];
+    $getQuery               = $params['requestData'];
+    $browserTime            = $params['dateTime'];
+    $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
+    $pysData['pys_source']  = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
+    if($pysData['pys_source'] == 'direct')
+    {
+        $pysData['pys_source']  = $params['referrerDomain'] != '' ? $params['referrerDomain'] : "direct";
+    }
+    $pysUTMSource           = $cookieData['pys_utm_source'] ?? $getQuery['utm_source'];
+    $pysUTMMedium           = $cookieData['pys_utm_medium'] ?? $getQuery['utm_medium'];
+    $pysUTMCampaign         = $cookieData['pys_utm_campaign'] ?? $getQuery['utm_medium'];
+    $pysUTMTerm             = $cookieData['pys_utm_term'] ?? $getQuery['utm_term'];
+    $pysUTMContent          = $cookieData['pys_utm_content'] ?? $getQuery['utm_content'];
+
+    $pysData['pys_utm']          = "utm_source:" . $pysUTMSource . "|utm_medium:" . $pysUTMMedium . "|utm_campaign:" . $pysUTMCampaign . "|utm_term:" . $pysUTMTerm . "|utm_content:" . $pysUTMContent;
+    $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
+
+    update_post_meta($orderId, "pys_enrich_data", $pysData);
 }
