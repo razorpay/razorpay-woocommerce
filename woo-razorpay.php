@@ -2023,3 +2023,10 @@ if(is1ccEnabled())
     add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
+
+//Changes Recovery link URL to Magic cart URL to avoid redirection to checkout page
+function cartbounty_alter_automation_button( $button ){
+    return str_replace("cartbounty=","cartbounty=magic_",$button);
+}
+
+add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
