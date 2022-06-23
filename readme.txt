@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 5.9
-Stable tag: 3.8.3
+Stable tag: 3.9.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,11 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 3.9.0 =
+* Added Cart line item for magic checkout.
+* Bug fix in COD min/max amount restriction for magic checkout.
+* Reduced the auto enable webhook verification time to 12 hours.
 
 = 3.8.3 =
 * Bug fix for UTM data for pixel your site plugin for magic checkout.
