@@ -1112,7 +1112,7 @@ EOT;
             {
                 $orderId = $postMetaData->post_id;
 
-                if($postData->post_status === 'draft')
+                if ($postData->post_status === 'draft')
                 {
                     updateOrderStatus($orderId, 'wc-pending');
                 }
