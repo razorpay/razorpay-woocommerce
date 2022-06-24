@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.9.0
- * Stable tag: 3.9.0
+ * Version: 3.9.1
+ * Stable tag: 3.9.1
  * Author: Team Razorpay
  * WC tested up to: 6.4.1
  * Author URI: https://razorpay.com
@@ -885,11 +885,11 @@ function woocommerce_razorpay_init()
                $data['line_items'][$i]['variant_id'] = $item->get_variation_id();
                $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
                $data['line_items'][$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $productDetails['price']*100;
-               $data['line_items'][$i]['tax_amount'] = (int)$item->get_subtotal_tax()*100;
-               $data['line_items'][$i]['quantity'] = $item->get_quantity();
+               $data['line_items'][$i]['tax_amount'] = 0; // Quick fix to handle the int issue from BE
+               $data['line_items'][$i]['quantity'] = (int)$item->get_quantity();
                $data['line_items'][$i]['name'] = $item->get_name();
                $data['line_items'][$i]['description'] = $item->get_name();
-               $data['line_items'][$i]['weight'] = $productDetails['weight'];
+               $data['line_items'][$i]['weight'] = 0; // Quick fix to handle the int issue from BE
                $productImage = $product->get_image_id()?? null;
                $data['line_items'][$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
                $data['line_items'][$i]['product_url'] = $product->get_permalink();
