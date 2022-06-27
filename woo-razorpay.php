@@ -431,6 +431,17 @@ function woocommerce_razorpay_init()
                 return;
             }
 
+            $existingVersion = get_option('rzp_woocommerce_current_version');
+
+            if(isset($existingVersion))
+            {
+                update_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+            }
+            else
+            {
+                add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+            }
+
             try
             {
                 $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
@@ -2127,17 +2138,6 @@ if(is1ccEnabled())
 function razorpayPluginActivated()
 {
     $trackObject  = new TrackPluginInstrumentation();
-
-    $existingVersion = get_option('rzp_woocommerce_current_version');
-
-    if(isset($existingVersion))
-    {
-        update_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
-    }
-    else
-    {
-        add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
-    }
 
     $activateProperties = [
         'Plugin_name'        => get_plugin_data(__FILE__)['Name'],
