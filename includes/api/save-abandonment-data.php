@@ -64,7 +64,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
-    // Check CartBounty plugin is activated or not
+    //Check CartBounty plugin is activated or not
     if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($customerEmail) == false) {
 
         $result = saveCartBountyData($razorpayData); //save abandonment data
@@ -397,7 +397,7 @@ if($user_id != 0 or $user_id != null){  //Used to check whether user is logged i
   );
 
    increase_recoverable_cart_count_CB();
-   set_cartbounty_session($cart['session_id']);
+   set_cartbounty_session($session_id);
 }
 
   $updated_rows = $wpdb->query(
@@ -419,14 +419,15 @@ if($user_id != 0 or $user_id != null){  //Used to check whether user is logged i
     )
 );
 
-    delete_duplicate_carts( $cart['session_id'], $updated_rows);
-    set_cartbounty_session($cart['session_id']);
+    delete_duplicate_carts( $session_id, $updated_rows);
+    set_cartbounty_session($session_id);
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for CartBounty plugin';
     $statusCode            = 200;
     $result['response']    = $response;
     $result['status_code'] = $statusCode;
-    update_post_meta($razorpayData['receipt'],'CBSessionId',$session_id);
+    update_post_meta($session_id,'FromEmail',"Y");
+    WC()->session->set( 'cartbounty_from_link', true ); 
     rzpLogInfo("After the abandoned cart is saved or updated from the Rzp function");
     rzpLogInfo("Order ID ".$razorpayData['receipt']);
     rzpLogInfo("Session ID ".$session_id);
@@ -434,8 +435,33 @@ if($user_id != 0 or $user_id != null){  //Used to check whether user is logged i
     return $result;
 }
 
+function getSessionID($order_id){
+  $session_id = WC()->session->get_customer_id();
+  $order      = wc_get_order( $order_id );
+  $user       = $order->get_user();
+  $user_id    = $order->get_user_id();
+  
+if($user_id != 0 or $user_id != null){  //Used to check whether user is logged in
+    $session_id=$user_id;
+    print_r("\nUser logged in , USER ID ".$session_id);
+    print_r("\n");
+  }else{
+        $session_id = WC()->session->get( 'cartbounty_session_id' );
+        if( empty( $session_id ) ){ //If session value does not exist - set one now
+          $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
+         }
+       if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
+          $session_id = WC()->session->get( 'cartbounty_session_id' );
+         }
+  }
+
+  return $session_id;
+  
+}
+
 //Marking a completed order as recovered
 function recoverCartBountyDB($order_id){
+    WC()->session->set( 'cartbounty_from_link', true );
     rzpLogInfo("Order ID received ".$order_id);
     global $wpdb;
     $session_id = get_post_meta($order_id,'CBSessionId',true);
@@ -452,6 +478,79 @@ function recoverCartBountyDB($order_id){
     rzpLogInfo("Query is performed,Number of updated rows : ".$updated_rows);
     if($updated_rows===1)rzpLogInfo("Cart is recovered");
 }
+
+
+
+function handle_order( $order_id ){
+    rzpLogInfo("Handle order is called ");
+    if( !isset($order_id) ){ //Exit if Order ID is not present
+        return;
+    }
+
+     $public = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+     $public->update_logged_customer_id(); //In case a user chooses to create an account during checkout process, the session id changes to a new one so we must update it
+     rzpLogInfo("Update logged customer id performed ");
+     
+     if( WC()->session ){ //If session exists
+        rzpLogInfo("If session exists  ");
+    
+        $cart      = read_cart_CB($order_id);
+        $type      = get_cart_type('ordered'); //Default type describing an order has been placed
+        $session_id= getSessionID($order_id);
+        $fromEmail = get_post_meta(getSessionID($order_id),'FromEmail',true);
+
+        if(getSessionID($order_id)!=null){
+            if($fromEmail==="Y"){ //If the user has arrived from CartBounty link
+                rzpLogInfo("CartBounty from link ");
+    
+                $type = get_cart_type('recovered');
+                update_post_meta($session_id,'FromEmail',"N");
+            }
+            update_cart_type(getSessionID($order_id), $type); //Update cart type to recovered
+            rzpLogInfo("Updating cart type");
+            
+        }
+    }
+    clear_cart_data($order_id); //Clearing abandoned cart after it has been synced
+    rzpLogInfo("Clear cart data ");
+    
+}
+
+function update_cart_type( $session_id, $type ){
+    rzpLogInfo("Session ID is ".$session_id);
+    if($session_id){
+        global $wpdb;
+        $cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
+        $field = 'session_id';
+        $where_value = $session_id;
+        $data = array(
+            'type = ' . sanitize_text_field($type)
+        );
+
+        if( $type == get_cart_type('recovered') ){ //If order should be marked as recovered
+            //Increase total
+            $data[] = 'mail_sent = 0';
+            $public = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+            $public->increase_recovered_cart_count();
+        }
+
+        $data = implode(', ', $data);
+
+        $updated_rows = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE $cart_table
+                SET $data
+                WHERE $field = %s AND
+                type != %d",
+                $where_value,
+                get_cart_type('recovered')
+            )
+        );
+
+        rzpLogInfo("Number of rows updated ".$updated_rows);
+    }
+}
+
 
 //Delete Duplicate carts CartBounty plugin
 function delete_duplicate_carts( $session_id, $duplicate_count ){
@@ -777,7 +876,7 @@ function cart_saved( $session_id ){
               $single_variation = new WC_Product_Variation( $product['variation_id'] );
 
               //Handling variable product title output with attributes
-              $product_attributes = $this->attribute_slug_to_title( $single_variation->get_variation_attributes() );
+              $product_attributes = attribute_slug_to_title( $single_variation->get_variation_attributes() );
               $product_variation_id = $product['variation_id'];
           }else{
               $product_attributes = false;
