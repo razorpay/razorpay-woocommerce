@@ -5,12 +5,23 @@ use Razorpay\Api\Errors;
 
 class TrackPluginInstrumentation
 {
-    public function rzpTrackSegment($properties)
+    public $api;
+
+    public function __construct($key_id, $key_secret)
+    {
+        $this->api = new Api($key_id, $key_secret);
+    }
+
+    public function rzpTrackSegment($event, $properties)
     {
         try
         {
-            $api = $this->getRazorpayApiInstance();
-            $response = $api->request->request('POST', 'plugins/segment', $properties);
+            $data = [
+                'event' => $event,
+                'properties' => $properties
+            ];
+
+            $response = $this->api->request->request('POST', 'plugins/segment', $data);
         }
         catch (\Razorpay\Api\Errors\Error $e)
         {
@@ -36,11 +47,5 @@ class TrackPluginInstrumentation
         {
             error_log($e->getMessage());
         }
-    }
-
-    public function getRazorpayApiInstance()
-    {
-        $razorpaySettings = get_option('woocommerce_razorpay_settings');
-        return new Api($razorpaySettings['key_id'], $razorpaySettings['key_secret']);
     }
 }
