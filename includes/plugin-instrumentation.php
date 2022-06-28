@@ -9,7 +9,8 @@ class TrackPluginInstrumentation
     {
         try
         {
-
+            $api = $this->getRazorpayApiInstance();
+            $response = $api->request->request('POST', 'plugins/segment', $properties);
         }
         catch (\Razorpay\Api\Errors\Error $e)
         {
@@ -35,5 +36,11 @@ class TrackPluginInstrumentation
         {
             error_log($e->getMessage());
         }
+    }
+
+    public function getRazorpayApiInstance()
+    {
+        $razorpaySettings = get_option('woocommerce_razorpay_settings');
+        return new Api($razorpaySettings['key_id'], $razorpaySettings['key_secret']);
     }
 }
