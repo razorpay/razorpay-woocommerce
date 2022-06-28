@@ -8,6 +8,8 @@
   #btn-1cc-pdp {
     position: relative;
     top: 12px;
+    border-radius: 1.8em;
+    overflow: hidden;
   }
   #off-canvas-cart-summary .woocommerce-mini-cart__buttons.buttons{
     width: 41%;
