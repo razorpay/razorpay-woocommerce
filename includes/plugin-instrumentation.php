@@ -17,7 +17,7 @@ class TrackPluginInstrumentation
         try
         {
             $data = [
-                'event' => $event,
+                'event'      => $event,
                 'properties' => $properties
             ];
 
