@@ -1,5 +1,4 @@
 <?php
-
 function styleHandler($theme){
  
     $theme         = strtolower(str_replace(' ', '', $theme));
@@ -10,7 +9,5 @@ function styleHandler($theme){
     return is_file($cssFilePath)?
       $css
     :$defaultStyle;
-
 }
-
 ?>

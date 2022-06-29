@@ -1,15 +1,20 @@
 #btn-1cc {
     display: block !important;
     width: 100%;
+    border-radius: 1.8em;
+    overflow: hidden;
   }
   #btn-1cc-mini-cart {
     display: inline-flex;
+    border-radius: 1.8em;
+    overflow: hidden;
   }
   #btn-1cc-pdp {
     position: relative;
     top: 12px;
     border-radius: 1.8em;
     overflow: hidden;
+
   }
   #off-canvas-cart-summary .woocommerce-mini-cart__buttons.buttons{
     width: 41%;
@@ -93,3 +98,12 @@
       height: 45px !important;
     }
   }
+
+
+.single_add_to_cart_button.button{
+  z-index: 2 !important;
+}
+
+.quantity{
+  z-index: 2 !important;
+}

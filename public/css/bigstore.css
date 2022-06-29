@@ -99,3 +99,12 @@
 }
 
 
+.single_add_to_cart_button.button{
+    z-index: 2 !important;
+  }
+  
+  .quantity{
+    z-index: 2 !important;
+  }
+
+

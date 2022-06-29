@@ -12,6 +12,8 @@
     position: relative;
     top: 10px;
     width: 260px;
+    border-radius: 0;
+    overflow: hidden;
   }
   
   #rzp-spinner-backdrop {
@@ -82,3 +84,12 @@
       height: 45px !important;
     }
   }
+
+
+.single_add_to_cart_button.button{
+  z-index: 2 !important;
+}
+
+.quantity{
+  z-index: 2 !important;
+}
