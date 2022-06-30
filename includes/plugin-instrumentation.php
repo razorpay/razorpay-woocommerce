@@ -16,6 +16,18 @@ class TrackPluginInstrumentation
     {
         try
         {
+            if (empty($event) === true or
+                is_string($event) === false)
+            {
+                return ['status' => 'error', 'message' => 'event given as input is not valid'];
+            }
+
+            if (empty($properties) === true or
+                is_array($properties) === false)
+            {
+                return ['status' => 'error', 'message' => 'properties given as input is not valid'];
+            }
+
             $data = [
                 'event'      => $event,
                 'properties' => $properties
