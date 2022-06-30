@@ -374,7 +374,7 @@ function woocommerce_razorpay_init()
                     }
                 }
             } while ( $webhook['count'] === $count);
-            
+
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
@@ -396,7 +396,7 @@ function woocommerce_razorpay_init()
                                 $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
-                     
+
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
@@ -535,7 +535,7 @@ function woocommerce_razorpay_init()
 
             return $secret;
         }
-      
+
         // showing notice : status of 1cc active / inactive message in admin dashboard
         function addAdminCheckoutSettingsAlert() {
             $enable_1cc  = $this->getSetting('enable_1cc');
@@ -716,19 +716,19 @@ function woocommerce_razorpay_init()
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
-           if (empty($getWebhookFlag) == false)
-           {
+            if (empty($getWebhookFlag) == false)
+            {
                 if ($getWebhookFlag + 86400 < time())
                 {
                     $this->autoEnableWebhook();
                 }
-           }
-           else
-           {
+            }
+            else
+            {
                 update_option('webhook_enable_flag', $time);
                 $this->autoEnableWebhook();
-           }
-          
+            }
+
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
@@ -866,7 +866,7 @@ function woocommerce_razorpay_init()
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
 
-            
+
             // Calls the helper function to create order data
             global $woocommerce;
 
@@ -897,7 +897,7 @@ function woocommerce_razorpay_init()
             else
             {
                     update_option('webhook_enable_flag', $time);
-                    $this->autoEnableWebhook(); 
+                    $this->autoEnableWebhook();
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
@@ -1254,13 +1254,13 @@ EOT;
             rzpLogInfo("Called check_razorpay_response: $post_password");
 
             $meta_key = '_order_key';
-            
+
             $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
-            
+
             $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
-            
+
             $arrayPost = json_decode(json_encode($postMetaData), true);
-            
+
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
