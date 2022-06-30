@@ -509,7 +509,7 @@ function woocommerce_razorpay_init()
                 $authEvent = 'updating auth details';
             }
 
-            $trackObject->rzpTrackSegment($authEvent, $authProperties);
+            $response = $trackObject->rzpTrackSegment($authEvent, $authProperties);
 
             if ((empty($_POST['woocommerce_razorpay_enabled']) === false) and
                 ($this->getSetting('enabled') === 'no'))
@@ -524,7 +524,7 @@ function woocommerce_razorpay_init()
 
             if ($pluginStatusEvent !== '')
             {
-                $trackObject->rzpTrackSegment($pluginStatusEvent, $pluginStatusProperties);
+                $response = $trackObject->rzpTrackSegment($pluginStatusEvent, $pluginStatusProperties);
             }
         }
 
@@ -2225,7 +2225,7 @@ function razorpayPluginActivated()
         'redirect_to_page'    => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']
     ];
 
-    $trackObject->rzpTrackSegment('plugin activate', $activateProperties);
+    $response = $trackObject->rzpTrackSegment('plugin activate', $activateProperties);
 }
 
 // plugin deactivation hook
@@ -2250,7 +2250,7 @@ function razorpayPluginDeactivated()
         'is_transacting_user' => $isTransactingUser
     ];
 
-    $trackObject->rzpTrackSegment('plugin deactivate', $deactivateProperties);
+    $response = $trackObject->rzpTrackSegment('plugin deactivate', $deactivateProperties);
 }
 
 // plugin upgrade hook
@@ -2271,5 +2271,19 @@ function razorpayPluginUpgraded()
         'new_version'         => get_plugin_data(__FILE__)['Version'],
     ];
 
-    $trackObject->rzpTrackSegment('plugin upgrade', $upgradeProperties);
+    $response = $trackObject->rzpTrackSegment('plugin upgrade', $upgradeProperties);
+
+    if ($response['status'] === 'success')
+    {
+        $existingVersion = get_option('rzp_woocommerce_current_version');
+
+        if(isset($existingVersion))
+        {
+            update_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+        }
+        else
+        {
+            add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+        }
+    }
 }

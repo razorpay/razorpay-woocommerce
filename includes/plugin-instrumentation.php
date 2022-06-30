@@ -22,14 +22,18 @@ class TrackPluginInstrumentation
             ];
 
             $response = $this->api->request->request('POST', 'plugins/segment', $data);
+
+            return $response;
         }
         catch (\Razorpay\Api\Errors\Error $e)
         {
             error_log($e->getMessage());
+            return ['status' => 'error'];
         }
         catch (\Exception $e)
         {
             error_log($e->getMessage());
+            return ['status' => 'error'];
         }
     }
 
