@@ -10,6 +10,8 @@
     width: 380px;
     position: relative;
     top: 12px;
+    border-radius: 50px;
+    overflow: hidden;
   }
   #rzp-spinner-backdrop {
     position: fixed;
