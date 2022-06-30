@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.8.0
- * Stable tag: 3.8.0
+ * Version: 3.9.2
+ * Stable tag: 3.9.2
  * Author: Team Razorpay
  * WC tested up to: 6.4.1
  * Author URI: https://razorpay.com
@@ -315,8 +315,7 @@ function woocommerce_razorpay_init()
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
-            $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
-            $secret = substr(str_shuffle($alphanumericString), 0, 20);
+            $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
             $this->update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
@@ -374,8 +373,8 @@ function woocommerce_razorpay_init()
                         $webhookItems[] = $value;
                     }
                 }
-            } while ( $webhook['count'] >= 1);
-
+            } while ( $webhook['count'] === $count);
+            
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
@@ -394,10 +393,10 @@ function woocommerce_razorpay_init()
                             if (($evntval == 1) and
                                 (in_array($evntkey, $this->supportedWebhookEvents) === true))
                             {
-                                 $this->defaultWebhookEvents[$evntkey] =  true;
+                                $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
-
+                     
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
@@ -529,6 +528,14 @@ function woocommerce_razorpay_init()
             }
         }
 
+        public function generateSecret()
+        {
+            $alphanumericString = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=~!@#$%^&*()_+,./<>?;:[]{}|abcdefghijklmnopqrstuvwxyz';
+            $secret = substr(str_shuffle($alphanumericString), 0, 20);
+
+            return $secret;
+        }
+      
         // showing notice : status of 1cc active / inactive message in admin dashboard
         function addAdminCheckoutSettingsAlert() {
             $enable_1cc  = $this->getSetting('enable_1cc');
@@ -721,6 +728,7 @@ function woocommerce_razorpay_init()
                 update_option('webhook_enable_flag', $time);
                 $this->autoEnableWebhook();
            }
+          
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
@@ -789,7 +797,7 @@ function woocommerce_razorpay_init()
 
             return array(
                 'key'          => $this->getSetting('key_id'),
-                'name'         => get_bloginfo('name'),
+                'name'         => html_entity_decode(get_bloginfo('name'), ENT_QUOTES),
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
@@ -857,6 +865,8 @@ function woocommerce_razorpay_init()
         protected function createRazorpayOrderId($orderId, $sessionKey)
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
+
+            
             // Calls the helper function to create order data
             global $woocommerce;
 
@@ -872,6 +882,22 @@ function woocommerce_razorpay_init()
             catch (Exception $e)
             {
                 return $e;
+            }
+
+            $getWebhookFlag =  get_option('webhook_enable_flag');
+            $time = time();
+
+            if (empty($getWebhookFlag) == false)
+            {
+                    if ($getWebhookFlag + 43200 < time())
+                    {
+                        $this->autoEnableWebhook();
+                    }
+            }
+            else
+            {
+                    update_option('webhook_enable_flag', $time);
+                    $this->autoEnableWebhook(); 
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
@@ -978,6 +1004,28 @@ function woocommerce_razorpay_init()
         {
             // TODO: trim to 2 deciamls
             $data['line_items_total'] = $order->get_total()*100;
+
+            $i = 0;
+            // Get and Loop Over Order Items
+            foreach ( $order->get_items() as $item_id => $item )
+            {
+               $product = $item->get_product();
+               $productDetails = $product->get_data();
+
+               $data['line_items'][$i]['type'] = "e-commerce";
+               $data['line_items'][$i]['sku'] = $product->get_sku();
+               $data['line_items'][$i]['variant_id'] = $item->get_variation_id();
+               $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
+               $data['line_items'][$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $productDetails['price']*100;
+               $data['line_items'][$i]['quantity'] = (int)$item->get_quantity();
+               $data['line_items'][$i]['name'] = substr($item->get_name(), 0, 125);
+               $data['line_items'][$i]['description'] = substr($item->get_name(), 0, 250);
+               $productImage = $product->get_image_id()?? null;
+               $data['line_items'][$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
+               $data['line_items'][$i]['product_url'] = $product->get_permalink();
+
+               $i++;
+            }
 
             return $data;
         }
@@ -1205,15 +1253,20 @@ EOT;
 
             rzpLogInfo("Called check_razorpay_response: $post_password");
 
-            $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
-
-            $arrayPost = json_decode(json_encode($postData), true);
-
-            if (!empty($arrayPost) && count($arrayPost[0]) > 0)
+            $meta_key = '_order_key';
+            
+            $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
+            
+            $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
+            
+            $arrayPost = json_decode(json_encode($postMetaData), true);
+            
+            if (!empty($arrayPost) and
+                $arrayPost != null)
             {
-                $orderId = $postData[0]->ID;
+                $orderId = $postMetaData->post_id;
 
-                if($postData[0]->post_status == 'draft')
+                if ($postData->post_status === 'draft')
                 {
                     updateOrderStatus($orderId, 'wc-pending');
                 }
@@ -1546,6 +1599,9 @@ EOT;
             //Apply coupon to woo-order
             if (empty($couponKey) === false)
             {
+                // Remove the same coupon, if already being added to order.
+                $order->remove_coupon($couponKey);
+
                 //TODO: Convert all razorpay amount in paise to rupees
                 $discount_total = $razorpayData['promotions'][0]['value']/100;
 
@@ -1569,6 +1625,18 @@ EOT;
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
             {
+
+                //To remove by default shipping method added on order.
+                $existingItems = (array) $order->get_items('shipping');
+                rzpLogInfo("Shipping details updated for orderId: $wcOrderId is".json_encode($existingItems));
+
+                if (sizeof($existingItems) != 0) {
+                    // Loop through shipping items
+                    foreach ($existingItems as $existingItemId) {
+                        $order->remove_item($existingItemId);
+                    }
+                }
+
                 // Get a new instance of the WC_Order_Item_Shipping Object
                 $item = new WC_Order_Item_Shipping();
 
@@ -1903,7 +1971,7 @@ EOT;
          * @param $data
          * @return array
          */
-        protected function getVersionMetaInfo($data)
+        public function getVersionMetaInfo($data)
         {
             if (isset($data['subscription_id']) && isset($data['recurring'])) {
                 $pluginRoot = WP_PLUGIN_DIR . '/razorpay-subscriptions-for-woocommerce';
@@ -2020,6 +2088,7 @@ function enqueueScriptsFor1cc()
       'siteurl' => $siteurl,
       'blogname' => get_bloginfo('name'),
       'cookies' => $_COOKIE,
+      'requestData' => $_REQUEST,
     ) );
     wp_enqueue_script('btn_1cc_checkout');
 }
