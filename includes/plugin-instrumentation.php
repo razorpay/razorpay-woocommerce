@@ -30,7 +30,7 @@ class TrackPluginInstrumentation
 
             $data = [
                 'event'      => $event,
-                'properties' => $properties
+                'properties' => array_merge($properties, $this->getDefaultProperties())
             ];
 
             $response = $this->api->request->request('POST', 'plugins/segment', $data);
@@ -63,5 +63,19 @@ class TrackPluginInstrumentation
         {
             error_log($e->getMessage());
         }
+    }
+
+    public function getDefaultProperties()
+    {
+        global $wp_version;
+        $pluginData = get_plugin_data(plugin_dir_path(__FILE__) . '/../woo-razorpay.php');
+
+        return [
+            'platform'            => 'WordPress',
+            'platform_version'    => $wp_version,
+            'woocommerce_version' => WOOCOMMERCE_VERSION,
+            'plugin_name'         => $pluginData['Name'],
+            'plugin_version'      => $pluginData['Version'],
+        ];
     }
 }
