@@ -10,7 +10,7 @@
     display:block !important;
     position: relative;
     top: 12px;
-    width: 355px;
+    width: 352px;
 }
 #rzp-spinner-backdrop {
     position: fixed;
@@ -92,7 +92,7 @@
 
 @media screen and (max-width: 767px){
     #btn-1cc-pdp{
-        width: 235px;
+        width: 232px;
         padding-top: 20px;
         }
 
