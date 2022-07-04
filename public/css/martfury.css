@@ -4,8 +4,10 @@
   }
   #btn-1cc-mini-cart {
     display: inline-flex !important;
-    width: 34%;
-    margin-left: 20px;
+    width: 150px;
+    margin-left: 12px;
+    border-radius: 3px;
+    overflow-x: hidden;
   }
 
   .widget_shopping_cart_content .woocommerce-mini-cart__buttons .button{
@@ -20,6 +22,8 @@
     position: relative;
     top: 16px;
     width: 332px;
+    border-radius: 3px;
+    overflow: hidden;
   }
   #rzp-spinner-backdrop {
     position: fixed;

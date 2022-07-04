@@ -5,7 +5,7 @@ $productData = wp_json_encode(['id' => $product->get_id(), 'quantity' => 1]);
 <div id="btn-1cc-pdp"
   product_id="<?php echo esc_attr($product->get_id()); ?>"
   pdp_checkout="<?php echo true; ?>" >
-    <magic-checkout-btn page-type="product"></magic-checkout-btn>
+    <magic-checkout-btn page-type="product" border-radius="0px"></magic-checkout-btn>
 </div>
 
 <div id="rzp-spinner-backdrop"></div>
