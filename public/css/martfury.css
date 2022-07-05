@@ -3,8 +3,10 @@
     width: 100%;
   }
   #btn-1cc-mini-cart {
-    display: inline-flex !important;
+    display: inline-block !important;
     width: 150px;
+    position: relative;
+    top: 18px;
     margin-left: 12px;
     border-radius: 3px;
     overflow-x: hidden;
