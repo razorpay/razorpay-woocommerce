@@ -506,7 +506,7 @@ function handle_order( $order_id ){
                 $type = get_cart_type('recovered');
                 update_post_meta($session_id,'FromEmail',"N");
             }
-            update_cart_type(getSessionID($order_id), $type); //Update cart type to recovered
+            update_cart_type($session_id, $type); //Update cart type to recovered
             rzpLogInfo("Updating cart type");
             
         }
