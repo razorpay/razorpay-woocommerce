@@ -1923,7 +1923,12 @@ function razorpay_webhook_init()
 {
     $rzpWebhook = new RZP_Webhook();
 
-    $rzpWebhook->process();
+    while(true)
+    {
+        $temp=$rzpWebhook->process();
+        if(is_null($temp))break;
+        sleep(30);
+    }
 }
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
