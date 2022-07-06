@@ -1925,7 +1925,7 @@ function razorpay_webhook_init()
 
     while(true)
     {
-        $temp=$rzpWebhook->process();
+        $temp = $rzpWebhook->process();
         if (is_null($temp) === true)
         {
             break;
