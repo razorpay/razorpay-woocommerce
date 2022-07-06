@@ -8,7 +8,7 @@
   }
   #btn-1cc-pdp {    
     display: block !important;
-    width: 288px;
+    width: 287px;
     position: relative;
     top: 8px;
   }
@@ -94,3 +94,10 @@
       height: 45px !important;
     }
   }
+
+  @media (max-width: 991px){
+    #btn-1cc-pdp{
+      width: 270px;
+    }
+  }
+ 
