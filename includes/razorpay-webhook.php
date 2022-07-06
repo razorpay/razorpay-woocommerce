@@ -133,13 +133,13 @@ class RZP_Webhook
                     return;
                 }
 
-                if( !get_post_meta($orderId,"rzp_webhook_notified_at",true) )
+                if (!get_post_meta($orderId,"rzp_webhook_notified_at",true) )
                 {
                     update_post_meta($orderId,"rzp_webhook_notified_at",time());
                     error_log("webhook conflict due to early execution");
                     return 1;
                 }
-                elseif((time()-get_post_meta($orderId,"rzp_webhook_notified_at",true))< static::WEBHOOK_NOTIFY_WAIT_TIME)
+                elseif ((time() - get_post_meta($orderId,"rzp_webhook_notified_at",true)) < static::WEBHOOK_NOTIFY_WAIT_TIME)
                 {
                     error_log("webhook conflict due to early execution");
                     return 1;
