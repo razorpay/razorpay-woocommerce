@@ -350,29 +350,11 @@ function saveCartBountyData($razorpayData){
       'other_fields'	=> $other_fields
   );
 
-  $session_id = WC()->session->get_customer_id();
-  $order      = wc_get_order( $razorpayData['receipt'] );
-  $user       = $order->get_user();
-  $user_id    = $order->get_user_id();
-  
-if($user_id != 0 or $user_id != null){  //Used to check whether user is logged in
-    $session_id=$user_id;
-    print_r("\nUser logged in , USER ID ".$session_id);
-    print_r("\n");
-  }else{
-        $session_id = WC()->session->get( 'cartbounty_session_id' );
-        if( empty( $session_id ) ){ //If session value does not exist - set one now
-          $session_id = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
-         }
-       if( WC()->session->get( 'cartbounty_from_link' ) && WC()->session->get( 'cartbounty_session_id' ) ){
-          $session_id = WC()->session->get( 'cartbounty_session_id' );
-         }
-  }
-  
-  $cart_saved      = cart_saved($session_id);
+  $session_id = getSessionID($razorpayData['receipt']);
+  $cart_saved = cart_saved($session_id);
 
   if($cart_saved ){ //If cart has already been saved
-    print_r("\n\nSame session ID exists \n" . $session_id);
+    print_r("\n\Same session ID exists \n" . $session_id);
    }else{
            //If the cart has not been saved we need to insert the cart data 
     $wpdb->query(
@@ -454,32 +436,8 @@ if($user_id != 0 or $user_id != null){  //Used to check whether user is logged i
           $session_id = WC()->session->get( 'cartbounty_session_id' );
          }
   }
-
   return $session_id;
-  
 }
-
-//Marking a completed order as recovered
-function recoverCartBountyDB($order_id){
-    WC()->session->set( 'cartbounty_from_link', true );
-    rzpLogInfo("Order ID received ".$order_id);
-    global $wpdb;
-    $session_id = get_post_meta($order_id,'CBSessionId',true);
-    $cart_table = $wpdb->prefix ."cartbounty";
-    rzpLogInfo("Session ID received from post_meta table ".$session_id);
-    $updated_rows = $wpdb->query(
-        $wpdb->prepare(
-            "UPDATE $cart_table
-            SET type = 1
-            WHERE session_id = %s and type=0",
-            $session_id
-        )
-    );
-    rzpLogInfo("Query is performed,Number of updated rows : ".$updated_rows);
-    if($updated_rows===1)rzpLogInfo("Cart is recovered");
-}
-
-
 
 function handle_order( $order_id ){
     rzpLogInfo("Handle order is called ");
@@ -550,7 +508,6 @@ function update_cart_type( $session_id, $type ){
         rzpLogInfo("Number of rows updated ".$updated_rows);
     }
 }
-
 
 //Delete Duplicate carts CartBounty plugin
 function delete_duplicate_carts( $session_id, $duplicate_count ){
@@ -639,7 +596,6 @@ function get_cart_type( $status ){
     }
     return $type;
 }
-
 
 //CartBounty admin function to clear_cart_data
 function clear_cart_data($wcOrderId){
@@ -778,7 +734,6 @@ function get_user_data(){
     return $user_data;
 }
 
-
 //Function for CartBounty to check whether the cart is saved
 function cart_saved( $session_id ){
     $saved = false;
@@ -903,8 +858,6 @@ function cart_saved( $session_id ){
           'product_array'   => $product_array
       );
   }
-
-
 
  //  _________________________________________ CARTBOUNTY PLUGIN FUNCTIONS END __________________________________________________________
 

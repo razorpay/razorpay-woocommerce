@@ -83,13 +83,9 @@ function createWcOrder(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
-    $cartHash='900d67a7c72127621233fe4d42d360b2';
-    // $cartHash = WC()->cart->get_cart_hash();
-    rzpLogInfo("Cart hash ".$cartHash);
-    $orderIdFromHash = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
-    rzpLogInfo("Order ID from hash is ".$orderIdFromHash);
+    $cartHash = WC()->cart->get_cart_hash();
+    $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
     if ($orderIdFromHash == null) {
-        rzpLogInfo("1ONE");
         $checkout = WC()->checkout();
         $orderId  = $checkout->create_order(array());
 
@@ -99,12 +95,10 @@ function createWcOrder(WP_REST_Request $request)
         //Keep order in draft status untill customer info available
         updateOrderStatus($orderId, 'draft');
     } else {
-        rzpLogInfo("2TWO");
         $existingOrder = wc_get_order($orderIdFromHash);
         $existingOrder->calculate_totals();
 
         if ($existingOrder->needs_payment() == false) {
-            rzpLogInfo("3THREE");
             $woocommerce->session->__unset(RZP_1CC_CART_HASH . $cartHash);
             $checkout = WC()->checkout();
             $orderId  = $checkout->create_order(array());
@@ -115,7 +109,6 @@ function createWcOrder(WP_REST_Request $request)
             //Keep order in draft status untill customer info available
             updateOrderStatus($orderId, 'draft');
         } else {
-            rzpLogInfo("4FOUR");
             $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
 
             //To get the applied coupon details from cart object.
@@ -245,9 +238,8 @@ function createWcOrder(WP_REST_Request $request)
         }
 
         $woocommerce->session->set(RZP_1CC_CART_HASH . $cartHash, $orderId);
-        $ohash = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
-        rzpLogInfo("Order id hash ".$ohash);
         set_transient(RZP_1CC_CART_HASH . $orderId, $cartHash, 3600);
+        set_transient(RZP_1CC_CART_HASH . $cartHash, $orderId, 3600);
         set_transient($razorpay::SESSION_KEY, $orderId, 3600);
 
         $logObj['response'] = $response;
