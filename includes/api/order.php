@@ -83,7 +83,7 @@ function createWcOrder(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
-    $cartHash = WC()->cart->get_cart_hash();
+    $cartHash        = WC()->cart->get_cart_hash();
     $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
     if ($orderIdFromHash == null) {
         $checkout = WC()->checkout();
@@ -97,7 +97,6 @@ function createWcOrder(WP_REST_Request $request)
     } else {
         $existingOrder = wc_get_order($orderIdFromHash);
         $existingOrder->calculate_totals();
-
         if ($existingOrder->needs_payment() == false) {
             $woocommerce->session->__unset(RZP_1CC_CART_HASH . $cartHash);
             $checkout = WC()->checkout();
@@ -109,8 +108,7 @@ function createWcOrder(WP_REST_Request $request)
             //Keep order in draft status untill customer info available
             updateOrderStatus($orderId, 'draft');
         } else {
-            $orderId = $woocommerce->session->get(RZP_1CC_CART_HASH . $cartHash);
-
+            $orderId = $orderIdFromHash;
             //To get the applied coupon details from cart object.
             $coupons    = WC()->cart->get_coupons();
             $couponCode = !empty($coupons) ? array_key_first($coupons) : null;
