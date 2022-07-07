@@ -1500,7 +1500,7 @@ EOT;
 
                 if (sizeof($existingItems) != 0) {
                     // Loop through shipping items
-                    foreach ($existingItems as $existingItemId) {
+                    foreach ($existingItems as $existingItemKey => $existingItemVal) {
                         $order->remove_item($existingItemId);
                     }
                 }
