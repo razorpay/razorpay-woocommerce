@@ -32,7 +32,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
-
+    print_r($razorpayData);
     if (isset($razorpayData['receipt'])) {
         $wcOrderId = $razorpayData['receipt'];
 
@@ -312,7 +312,7 @@ function saveCartBountyData($razorpayData){
     $name            = $razorpayData['customer_details']['billing_address']['name'] ?? '';
     $surname         = " ";
     $email           = $razorpayData['customer_details']['email'];
-    $phone           = $razorpayData['customer_details']['shipping_address']['contact'];
+    $phone           = $razorpayData['customer_details']['contact'];
     $cart_table      = $wpdb->prefix ."cartbounty";
     $cart            = read_cart_CB($razorpayData['receipt']);
    
@@ -356,6 +356,7 @@ function saveCartBountyData($razorpayData){
   if($cart_saved ){ //If cart has already been saved
     print_r("\n\Same session ID exists \n" . $session_id);
    }else{
+    echo "User data phone in else block ".$user_data['phone'];
            //If the cart has not been saved we need to insert the cart data 
     $wpdb->query(
       $wpdb->prepare(
@@ -381,7 +382,7 @@ function saveCartBountyData($razorpayData){
    increase_recoverable_cart_count_CB();
    set_cartbounty_session($session_id);
 }
-
+echo "userdata phone ". $user_data['phone'];
   $updated_rows = $wpdb->query(
     $wpdb->prepare(
         "UPDATE $cart_table
