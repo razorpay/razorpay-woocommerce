@@ -32,7 +32,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
-    print_r($razorpayData);
     if (isset($razorpayData['receipt'])) {
         $wcOrderId = $razorpayData['receipt'];
 
@@ -350,9 +349,7 @@ function saveCartBountyData($razorpayData){
   $session_id = getSessionID($razorpayData['receipt']);
   $cart_saved = cart_saved($session_id);
 
-  if($cart_saved ){ //If cart has already been saved
-    print_r("\nSame session ID exists \n" . $session_id);
-   }else{ 
+  if(!$cart_saved){ //If cart is not saved
     $wpdb->query(
       $wpdb->prepare(
           "INSERT INTO $cart_table
