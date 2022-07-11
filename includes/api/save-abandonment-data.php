@@ -431,6 +431,7 @@ function handleOrder( $order_id ){
 
      $public = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
      $public->update_logged_customer_id(); //In case a user chooses to create an account during checkout process, the session id changes to a new one so we must update it
+     
      $cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 
      if( WC()->session ){ //If session exists
