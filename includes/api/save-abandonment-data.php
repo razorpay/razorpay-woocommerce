@@ -308,7 +308,7 @@ function saveCartBountyData($razorpayData){
     $email           = $razorpayData['customer_details']['email'];
     $phone           = $razorpayData['customer_details']['contact'];
     $cart_table      = $wpdb->prefix ."cartbounty";
-    $cart            = read_cart_CB($razorpayData['receipt']);
+    $cart            = readCartCB($razorpayData['receipt']);
    
     $location = array(
       'country' 	=> $razorpayData['customer_details']['shipping_address']['country'] ?? '',
@@ -345,9 +345,9 @@ function saveCartBountyData($razorpayData){
   );
 
   $session_id = getSessionID($razorpayData['receipt']);
-  $cart_saved = cart_saved($session_id,$cart_table);
+  $cartSaved = cartSaved($session_id,$cart_table);
 
-  if(!$cart_saved){ //If cart is not saved
+  if(!$cartSaved){ //If cart is not saved
     $wpdb->query(
       $wpdb->prepare(
           "INSERT INTO $cart_table
@@ -369,8 +369,8 @@ function saveCartBountyData($razorpayData){
       )
   );
 
-   increase_recoverable_cart_count_CB();
-   set_cartbounty_session($session_id);
+   increaseRecoverableCartCountCB();
+   setCartBountySession($session_id);
 }
   $updated_rows = $wpdb->query(
     $wpdb->prepare(
@@ -391,8 +391,8 @@ function saveCartBountyData($razorpayData){
     )
 );
 
-    delete_duplicate_carts( $session_id, $updated_rows,$cart_table);
-    set_cartbounty_session($session_id);
+    deleteDuplicateCarts( $session_id, $updated_rows,$cart_table);
+    setCartBountySession($session_id);
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for CartBounty plugin';
     $statusCode            = 200;
@@ -435,34 +435,34 @@ function handleOrder( $order_id ){
      $cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 
      if( WC()->session ){ //If session exists
-        $cart      = read_cart_CB($order_id);
-        $type      = get_cart_type('ordered'); //Default type describing an order has been placed
+        $cart      = readCartCB($order_id);
+        $type      = getCartType('ordered'); //Default type describing an order has been placed
         $session_id= getSessionID($order_id);
         $fromEmail = get_post_meta(getSessionID($order_id),'FromEmail',true);
 
         if(getSessionID($order_id)!=null){
             if($fromEmail==="Y"){ //If the user has arrived from CartBounty link
-                $type = get_cart_type('recovered');
+                $type = getCartType('recovered');
                 update_post_meta($session_id,'FromEmail',"N");
             }
-            update_cart_type($session_id, $type, $cart_table); //Update cart type to recovered
+            updateCartType($session_id, $type, $cart_table); //Update cart type to recovered
             
         }
     }
-    clear_cart_data($order_id, $cart_table); //Clearing abandoned cart after it has been synced
+    clearCartData($order_id, $cart_table); //Clearing abandoned cart after it has been synced
     
 }
 
-function update_cart_type( $session_id, $type, $cart_table ){
+function updateCartType( $session_id, $type, $cart_table ){
     if($session_id){
         global $wpdb;
-        $field = 'session_id';
+        $field       = 'session_id';
         $where_value = $session_id;
         $data = array(
             'type = ' . sanitize_text_field($type)
         );
 
-        if( $type == get_cart_type('recovered') ){ //If order should be marked as recovered
+        if( $type == getCartType('recovered') ){ //If order should be marked as recovered
             //Increase total
             $data[] = 'mail_sent = 0';
             $public = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
@@ -478,19 +478,19 @@ function update_cart_type( $session_id, $type, $cart_table ){
                 WHERE $field = %s AND
                 type != %d",
                 $where_value,
-                get_cart_type('recovered')
+                getCartType('recovered')
             )
         );
     }
 }
 
 //Delete Duplicate carts CartBounty plugin
-function delete_duplicate_carts( $session_id, $duplicate_count , $cart_table){
+function deleteDuplicateCarts( $session_id, $duplicate_count , $cart_table){
     global $wpdb;
     if($duplicate_count){ //If we have updated at least one row
         if($duplicate_count > 1){ //Checking if we have updated more than a single row to know if there were duplicates
             
-            $where_sentence = get_where_sentence('ghost');
+            $where_sentence = getWhereSentence('ghost');
             //First delete all duplicate ghost carts
             $deleted_duplicate_ghost_carts = $wpdb->query(
                 $wpdb->prepare(
@@ -522,18 +522,18 @@ function delete_duplicate_carts( $session_id, $duplicate_count , $cart_table){
     }
 }
 
-//CartBounty admin function to get_where_sentence
-function get_where_sentence( $cart_status ){
+//CartBounty admin function to getWhereSentence
+function getWhereSentence( $cart_status ){
     $where_sentence = '';
 
     if($cart_status == 'recoverable'){
-        $where_sentence = "AND (email != '' OR phone != '') AND type != ". get_cart_type('recovered') ." AND type != " . get_cart_type('ordered');
+        $where_sentence = "AND (email != '' OR phone != '') AND type != ". getCartType('recovered') ." AND type != " . getCartType('ordered');
 
     }elseif($cart_status == 'ghost'){
-        $where_sentence = "AND ((email IS NULL OR email = '') AND (phone IS NULL OR phone = '')) AND type != ". get_cart_type('recovered') ." AND type != " . get_cart_type('ordered');
+        $where_sentence = "AND ((email IS NULL OR email = '') AND (phone IS NULL OR phone = '')) AND type != ". getCartType('recovered') ." AND type != " . getCartType('ordered');
 
     }elseif($cart_status == 'recovered'){
-        $where_sentence = "AND type = ". get_cart_type('recovered');
+        $where_sentence = "AND type = ". getCartType('recovered');
 
     }elseif(get_option('cartbounty_exclude_ghost_carts')){ //In case Ghost carts have been excluded
         $where_sentence = "AND (email != '' OR phone != '')";
@@ -543,7 +543,7 @@ function get_where_sentence( $cart_status ){
 }
 
 //CartBounty admin function to get Cart type
-function get_cart_type( $status ){
+function getCartType( $status ){
     if( empty($status) ){
         return;
     }
@@ -570,15 +570,15 @@ function get_cart_type( $status ){
     return $type;
 }
 
-//CartBounty admin function to clear_cart_data
-function clear_cart_data($wcOrderId, $cart_table){
+//CartBounty admin function to clearCartData
+function clearCartData($wcOrderId, $cart_table){
     //If a new Order is added from the WooCommerce admin panel, we must check if WooCommerce session is set. Otherwise we would get a Fatal error.
     if( !isset( WC()->session ) ){
         return;
     }
 
     global $wpdb;
-    $cart = read_cart_CB($wcOrderId);
+    $cart = readCartCB($wcOrderId);
 
     if( !isset( $cart['session_id'] ) ){
         return;
@@ -604,7 +604,7 @@ function clear_cart_data($wcOrderId, $cart_table){
 }
 
 //Function for CartBounty to check whether the cart is saved
-function cart_saved( $session_id, $cart_table ){
+function cartSaved( $session_id, $cart_table ){
     $saved = false;
     if( $session_id !== NULL ){
         global $wpdb;
@@ -629,14 +629,14 @@ function cart_saved( $session_id, $cart_table ){
 }
 
   // CartBounty function to set session_id
-  function set_cartbounty_session($session_id){
+  function setCartBountySession($session_id){
      if(!WC()->session->get('cartbounty_session_id')){ //In case browser session is not set, we make sure it gets set
            WC()->session->set('cartbounty_session_id', $session_id); //Storing session_id in WooCommerce session
      }
 }
 
   //CartBounty function to keep track of number of recoverable carts
-  function increase_recoverable_cart_count_CB(){
+  function increaseRecoverableCartCountCB(){
       if(!WC()->session){ //If session does not exist, exit function
           return;
       }
@@ -652,7 +652,7 @@ function cart_saved( $session_id, $cart_table ){
   }
 
   //CartBounty plugin function for retrieving the cart data
-  function read_cart_CB($wcOrderId){
+  function readCartCB($wcOrderId){
       WC()->cart->empty_cart();
       $cart1cc = create1ccCart($wcOrderId);
       $cart = WC()->cart;
