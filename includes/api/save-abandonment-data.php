@@ -431,7 +431,8 @@ function handleOrder( $order_id ){
 
      $public = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
      $public->update_logged_customer_id(); //In case a user chooses to create an account during checkout process, the session id changes to a new one so we must update it
-     
+     $cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
+
      if( WC()->session ){ //If session exists
         $cart      = read_cart_CB($order_id);
         $type      = get_cart_type('ordered'); //Default type describing an order has been placed
@@ -443,18 +444,17 @@ function handleOrder( $order_id ){
                 $type = get_cart_type('recovered');
                 update_post_meta($session_id,'FromEmail',"N");
             }
-            update_cart_type($session_id, $type); //Update cart type to recovered
+            update_cart_type($session_id, $type, $cart_table); //Update cart type to recovered
             
         }
     }
-    clear_cart_data($order_id); //Clearing abandoned cart after it has been synced
+    clear_cart_data($order_id, $cart_table); //Clearing abandoned cart after it has been synced
     
 }
 
-function update_cart_type( $session_id, $type ){
+function update_cart_type( $session_id, $type, $cart_table ){
     if($session_id){
         global $wpdb;
-        $cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
         $field = 'session_id';
         $where_value = $session_id;
         $data = array(
@@ -570,14 +570,13 @@ function get_cart_type( $status ){
 }
 
 //CartBounty admin function to clear_cart_data
-function clear_cart_data($wcOrderId){
+function clear_cart_data($wcOrderId, $cart_table){
     //If a new Order is added from the WooCommerce admin panel, we must check if WooCommerce session is set. Otherwise we would get a Fatal error.
     if( !isset( WC()->session ) ){
         return;
     }
 
     global $wpdb;
-    $cart_table = $wpdb->prefix .'cartbounty';
     $cart = read_cart_CB($wcOrderId);
 
     if( !isset( $cart['session_id'] ) ){
