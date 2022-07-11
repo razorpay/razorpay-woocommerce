@@ -421,14 +421,14 @@ function woocommerce_razorpay_init()
 
         public function pluginInstrumentation()
         {
-            $trackObject = new TrackPluginInstrumentation($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
-
             if (empty($_POST['woocommerce_razorpay_key_id']) or
                 empty($_POST['woocommerce_razorpay_key_secret']))
             {
                 error_log('Key Id and Key Secret are required.');
                 return;
             }
+
+            $trackObject = new TrackPluginInstrumentation($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
 
             $existingVersion = get_option('rzp_woocommerce_current_version');
 
@@ -443,9 +443,18 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
-                $orderCount = $api->request->request('GET', 'orders')['count'];
-                $isTransactingUser = ($orderCount > 0) ? true : false;
+                global $wpdb;
+                $isTransactingUser = false;
+
+                $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+
+                $arrayPost = json_decode(json_encode($rzpTrancationData), true);
+
+                if (empty($arrayPost) === false and
+                    ($arrayPost == null) === false)
+                {
+                    $isTransactingUser = true;
+                }
             }
             catch (\Razorpay\Api\Errors\Error $e)
             {
@@ -2222,14 +2231,22 @@ function razorpayPluginActivated()
 // plugin deactivation hook
 function razorpayPluginDeactivated()
 {
+    global $wpdb;
+    $isTransactingUser = false;
+
     $paymentSettings = get_option('woocommerce_razorpay_settings');
 
     $trackObject  = new TrackPluginInstrumentation($paymentSettings['key_id'], $paymentSettings['key_secret']);
 
-    $api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
+    $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
 
-    $orderCount = $api->request->request('GET', 'orders')['count'];
-    $isTransactingUser = ($orderCount > 0) ? true : false;
+    $arrayPost = json_decode(json_encode($rzpTrancationData), true);
+
+    if (empty($arrayPost) === false and
+        ($arrayPost == null) === false)
+    {
+        $isTransactingUser = true;
+    }
 
     $deactivateProperties = [
         'event_timestamp'     => time(),
