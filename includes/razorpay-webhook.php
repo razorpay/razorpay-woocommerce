@@ -89,6 +89,7 @@ class RZP_Webhook
         if (empty($data['event']) === false) {
 
             $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+            $razorpayOrderId = $data['payload']['payment']['entity']['order_id'];
 
             // Skip the webhook if not the valid data and event
             if ($this->shouldConsumeWebhook($data) === false) {
@@ -133,21 +134,22 @@ class RZP_Webhook
                     return;
                 }
 
-                if (get_post_meta($orderId, "rzp_webhook_notified_at", true) === '')
+                $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
+                if ($rzpWebhookNotifiedAt === '')
                 {
                     update_post_meta($orderId, "rzp_webhook_notified_at", time());
-                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution");
+                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
-                elseif ((time() - get_post_meta($orderId, "rzp_webhook_notified_at", true)) < static::WEBHOOK_NOTIFY_WAIT_TIME)
+                elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
                 {
-                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution");
+                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
     
-                error_log("ORDER NUMBER $orderId:webhook conflict over");
+                error_log("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
 
@@ -242,18 +244,6 @@ class RZP_Webhook
         {
           $order =  $this->checkIsObject($orderId);
         }
-        //To give the priority to callback script to compleate the execution fist adding this locking.
-        $transientData = get_transient('webhook_trigger_count_for_' . $orderId);
-
-        if (empty($transientData) || $transientData == 1) {
-            rzpLogInfo("Woocommerce orderId: $orderId with transientData: $transientData webhook halted for 60 sec");
-
-            sleep(60);
-        }
-
-        $triggerCount = !empty($transientData) ? ($transientData + 1) : 1;
-
-        set_transient('webhook_trigger_count_for_' . $orderId, $triggerCount, 180);
 
         $orderStatus  = $order->get_status();
         rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
@@ -351,18 +341,6 @@ class RZP_Webhook
         {
           $order =  $this->checkIsObject($orderId);
         }
-        //To give the priority to callback script to compleate the execution fist adding this locking.
-        $transientData = get_transient('webhook_trigger_count_for_' . $orderId);
-
-        if (empty($transientData) || $transientData == 1) {
-            rzpLogInfo("Woocommerce orderId: $orderId with transientData: $transientData webhook halted for 60 sec");
-
-            sleep(60);
-        }
-
-        $triggerCount = !empty($transientData) ? ($transientData + 1) : 1;
-
-        set_transient('webhook_trigger_count_for_' . $orderId, $triggerCount, 180);
 
         $orderStatus  = $order->get_status();
         rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
