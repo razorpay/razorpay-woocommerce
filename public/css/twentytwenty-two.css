@@ -7,6 +7,8 @@
     width: 100%;
   }
   #btn-1cc-pdp {
+    position: relative;
+    top: -18px;
     width: 190px;
   }
   #rzp-spinner-backdrop {
@@ -81,5 +83,22 @@
     }
     #rzp-logo {
       height: 45px !important;
+    }
+
+    #btn-1cc-pdp {
+      position: relative;
+      bottom: 10px;
+      width: 190px;
+      padding-bottom: 10px;
+    }
+
+
+  }
+
+
+  @media (max-width: 991px){
+    #btn-1cc-pdp{
+      position: relative;
+      top: -16px;
     }
   }
