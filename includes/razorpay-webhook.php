@@ -137,13 +137,13 @@ class RZP_Webhook
                 {
                     update_post_meta($orderId, "rzp_webhook_notified_at", time());
                     error_log("ORDER NUMBER $orderId:webhook conflict due to early execution");
-                    header('Status:' . static::HTTP_CONFLICT_STATUS . 'Webhook_conflicts_due_to_early_execution.', true, static::HTTP_CONFLICT_STATUS);
+                    header('Status: '.static::HTTP_CONFLICT_STATUS.' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);
                     return;
                 }
                 elseif ((time() - get_post_meta($orderId, "rzp_webhook_notified_at", true)) < static::WEBHOOK_NOTIFY_WAIT_TIME)
                 {
                     error_log("ORDER NUMBER $orderId:webhook conflict due to early execution");
-                    header('Status:' . static::HTTP_CONFLICT_STATUS . 'Webhook_conflicts_due_to_early_execution.', true, static::HTTP_CONFLICT_STATUS);
+                    header('Status: '.static::HTTP_CONFLICT_STATUS.' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);
                     return;
                 }
     
