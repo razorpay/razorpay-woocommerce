@@ -406,10 +406,6 @@ function saveCartBountyData($razorpayData){
     $result['status_code'] = $statusCode;
     update_post_meta($session_id,'FromEmail',"Y");
     WC()->session->set( 'cartbounty_from_link', true ); 
-    rzpLogInfo("After the abandoned cart is saved or updated from the Rzp function");
-    rzpLogInfo("Order ID ".$razorpayData['receipt']);
-    rzpLogInfo("Session ID ".$session_id);
-    rzpLogInfo("Razorpay function end");
     return $result;
 }
 
@@ -421,8 +417,6 @@ function getSessionID($order_id){
   
 if($user_id != 0 or $user_id != null){  //Used to check whether user is logged in
     $session_id=$user_id;
-    print_r("\nUser logged in , USER ID ".$session_id);
-    print_r("\n");
   }else{
         $session_id = WC()->session->get( 'cartbounty_session_id' );
         if( empty( $session_id ) ){ //If session value does not exist - set one now
@@ -436,18 +430,14 @@ if($user_id != 0 or $user_id != null){  //Used to check whether user is logged i
 }
 
 function handle_order( $order_id ){
-    rzpLogInfo("Handle order is called ");
     if( !isset($order_id) ){ //Exit if Order ID is not present
         return;
     }
 
      $public = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
      $public->update_logged_customer_id(); //In case a user chooses to create an account during checkout process, the session id changes to a new one so we must update it
-     rzpLogInfo("Update logged customer id performed ");
      
      if( WC()->session ){ //If session exists
-        rzpLogInfo("If session exists  ");
-    
         $cart      = read_cart_CB($order_id);
         $type      = get_cart_type('ordered'); //Default type describing an order has been placed
         $session_id= getSessionID($order_id);
@@ -455,23 +445,18 @@ function handle_order( $order_id ){
 
         if(getSessionID($order_id)!=null){
             if($fromEmail==="Y"){ //If the user has arrived from CartBounty link
-                rzpLogInfo("CartBounty from link ");
-    
                 $type = get_cart_type('recovered');
                 update_post_meta($session_id,'FromEmail',"N");
             }
             update_cart_type($session_id, $type); //Update cart type to recovered
-            rzpLogInfo("Updating cart type");
             
         }
     }
     clear_cart_data($order_id); //Clearing abandoned cart after it has been synced
-    rzpLogInfo("Clear cart data ");
     
 }
 
 function update_cart_type( $session_id, $type ){
-    rzpLogInfo("Session ID is ".$session_id);
     if($session_id){
         global $wpdb;
         $cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
@@ -500,8 +485,6 @@ function update_cart_type( $session_id, $type ){
                 get_cart_type('recovered')
             )
         );
-
-        rzpLogInfo("Number of rows updated ".$updated_rows);
     }
 }
 
