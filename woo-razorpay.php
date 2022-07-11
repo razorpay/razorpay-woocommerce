@@ -1042,7 +1042,6 @@ EOT;
 
             $orderKey = $this->getOrderKey($order);
             
-
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
                 return array(
@@ -1347,7 +1346,7 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-                handle_order($orderId);
+                handleOrder($orderId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
