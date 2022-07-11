@@ -187,8 +187,6 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
         }
     }
 
-
-
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for cart abandonment recovery lite';
     $statusCode            = 200;
@@ -354,10 +352,8 @@ function saveCartBountyData($razorpayData){
   $cart_saved = cart_saved($session_id);
 
   if($cart_saved ){ //If cart has already been saved
-    print_r("\n\Same session ID exists \n" . $session_id);
-   }else{
-    echo "User data phone in else block ".$user_data['phone'];
-           //If the cart has not been saved we need to insert the cart data 
+    print_r("\nSame session ID exists \n" . $session_id);
+   }else{   //If the cart has not been saved we need to insert the cart data 
     $wpdb->query(
       $wpdb->prepare(
           "INSERT INTO $cart_table
@@ -382,7 +378,6 @@ function saveCartBountyData($razorpayData){
    increase_recoverable_cart_count_CB();
    set_cartbounty_session($session_id);
 }
-echo "userdata phone ". $user_data['phone'];
   $updated_rows = $wpdb->query(
     $wpdb->prepare(
         "UPDATE $cart_table
