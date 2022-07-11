@@ -299,7 +299,6 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
     return $logObj;
 }
 
-
 // ___________________ CARTBOUNTY PLUGIN FUNCTIONS _______________________________________________________________________________
 
 //Save cart abandonment data for CartBounty plugin
@@ -353,7 +352,7 @@ function saveCartBountyData($razorpayData){
 
   if($cart_saved ){ //If cart has already been saved
     print_r("\nSame session ID exists \n" . $session_id);
-   }else{   //If the cart has not been saved we need to insert the cart data 
+   }else{ 
     $wpdb->query(
       $wpdb->prepare(
           "INSERT INTO $cart_table
@@ -402,10 +401,12 @@ function saveCartBountyData($razorpayData){
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for CartBounty plugin';
     $statusCode            = 200;
+
+    update_post_meta($session_id,'FromEmail',"Y");
+    WC()->session->set( 'cartbounty_from_link', true );
+    
     $result['response']    = $response;
     $result['status_code'] = $statusCode;
-    update_post_meta($session_id,'FromEmail',"Y");
-    WC()->session->set( 'cartbounty_from_link', true ); 
     return $result;
 }
 
