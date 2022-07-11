@@ -345,7 +345,7 @@ function saveCartBountyData($razorpayData){
   );
 
   $session_id = getSessionID($razorpayData['receipt']);
-  $cartSaved = cartSaved($session_id,$cart_table);
+  $cartSaved  = cartSaved($session_id,$cart_table);
 
   if(!$cartSaved){ //If cart is not saved
     $wpdb->query(
@@ -489,7 +489,6 @@ function deleteDuplicateCarts( $session_id, $duplicate_count , $cart_table){
     global $wpdb;
     if($duplicate_count){ //If we have updated at least one row
         if($duplicate_count > 1){ //Checking if we have updated more than a single row to know if there were duplicates
-            
             $where_sentence = getWhereSentence('ghost');
             //First delete all duplicate ghost carts
             $deleted_duplicate_ghost_carts = $wpdb->query(
