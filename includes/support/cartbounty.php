@@ -2,16 +2,17 @@
 //Save cart abandonment data for CartBounty plugin
 function saveCartBountyData($razorpayData)
 {
-    rzpLogInfo("Plugin name slug " .CARTBOUNTY_PLUGIN_NAME_SLUG." and CB version number ".CARTBOUNTY_VERSION_NUMBER);
     global $wpdb;
-    $products        = WC()->cart->get_cart();
-    $ghost           = false;
-    $name            = $razorpayData['customer_details']['billing_address']['name'] ?? '';
-    $surname         = " ";
-    $email           = $razorpayData['customer_details']['email'];
-    $phone           = $razorpayData['customer_details']['contact'];
-    $cartTable       = $wpdb->prefix . "cartbounty";
-    $cart            = readCartCB($razorpayData['receipt']);
+    $products         = WC()->cart->get_cart();
+    $ghost            = false;
+    $name             = $razorpayData['customer_details']['billing_address']['name'] ?? '';
+    $surname          = " ";
+    $email            = $razorpayData['customer_details']['email'];
+    $phone            = $razorpayData['customer_details']['contact'];
+    $cartTable        = $wpdb->prefix . "cartbounty";
+    $cart             = readCartCB($razorpayData['receipt']);
+    $cartbountyPublic = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+    $cartbountyAdmin  = new CartBounty_Admin (CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
 
     $location = array(
         'country'      => $razorpayData['customer_details']['shipping_address']['country'] ?? '',
@@ -48,9 +49,8 @@ function saveCartBountyData($razorpayData)
     );
 
     $sessionID  = getSessionID($razorpayData['receipt']);
-    $cartSaved  = cartSaved($sessionID, $cartTable);
 
-    if (!$cartSaved) { //If cart is not saved
+    if ($cartbountyPublic->cart_saved($sessionID)==false) { //If cart is not saved
         $wpdb->query(
             $wpdb->prepare(
                 "INSERT INTO $cartTable
@@ -72,8 +72,8 @@ function saveCartBountyData($razorpayData)
             )
         );
 
-        increaseRecoverableCartCountCB();
-        setCartBountySession($sessionID);
+        $cartbountyPublic->increase_recoverable_cart_count();
+        $cartbountyPublic->set_cartbounty_session($sessionID);
     }
     $updatedRows = $wpdb->query(
         $wpdb->prepare(
@@ -93,9 +93,9 @@ function saveCartBountyData($razorpayData)
             $sessionID
         )
     );
-
-    deleteDuplicateCarts($sessionID, $updatedRows, $cartTable);
-    setCartBountySession($sessionID);
+   
+    deleteDuplicateCarts($sessionID, $updatedRows,$cartTable);
+    $cartbountyPublic->set_cartbounty_session($sessionID);
     $response['status']    = true;
     $response['message']   = 'Data successfully inserted for CartBounty plugin';
     $statusCode            = 200;
@@ -106,89 +106,6 @@ function saveCartBountyData($razorpayData)
     $result['response']    = $response;
     $result['status_code'] = $statusCode;
     return $result;
-}
-
-function getSessionID($orderID)
-{
-    $sessionID  = WC()->session->get_customer_id();
-    $order      = wc_get_order($orderID);
-    $userID     = $order->get_user_id();
-
-    if ($userID != 0 or $userID != null) {  //Used to check whether user is logged in
-        $sessionID = $userID;
-    } else {
-        $sessionID = WC()->session->get('cartbounty_session_id');
-        if (empty($sessionID)) { //If session value does not exist - set one now
-            $sessionID = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
-        }
-        if (WC()->session->get('cartbounty_from_link') && WC()->session->get('cartbounty_session_id')) {
-            $sessionID = WC()->session->get('cartbounty_session_id');
-        }
-    }
-    return $sessionID;
-}
-
-function handleCBRecoveredOrder($orderID)
-{
-    if (!isset($orderID)) { //Exit if Order ID is not present
-        return;
-    }
-
-    $cartbountyPublic = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
-    $cartbountyPublic->update_logged_customer_id(); //In case a user chooses to create an account during checkout process, the session id changes to a new one so we must update it
-
-    $cartTable = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
-
-    if (WC()->session) { //If session exists
-        $cart      = readCartCB($orderID);
-        $type      = getCartType('ordered'); //Default type describing an order has been placed
-        $sessionID = getSessionID($orderID);
-        $fromEmail = get_post_meta(getSessionID($orderID), 'FromEmail', true);
-
-        if ($sessionID != null) {
-            if ($fromEmail === "Y") { //If the user has arrived from CartBounty link
-                $type = getCartType('recovered');
-                update_post_meta($sessionID, 'FromEmail', "N");
-            }
-            updateCartType($sessionID, $type, $cartTable); //Update cart type to recovered
-
-        }
-    }
-    clearCartData($orderID, $cartTable); //Clearing abandoned cart after it has been synced
-
-}
-
-function updateCartType($sessionID, $type, $cartTable)
-{
-    if ($sessionID) {
-        global $wpdb;
-        $field       = 'session_id';
-        $whereValue  = $sessionID;
-        $data = array(
-            'type = ' . sanitize_text_field($type)
-        );
-
-        if ($type == getCartType('recovered')) { //If order should be marked as recovered
-            //Increase total
-            $data[] = 'mail_sent = 0';
-            $public = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
-            rzpLogInfo("Plugin name slug " .CARTBOUNTY_PLUGIN_NAME_SLUG." and CB version number ".CARTBOUNTY_VERSION_NUMBER);
-            $public->increase_recovered_cart_count();
-        }
-
-        $data = implode(', ', $data);
-
-        $updatedRows = $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE $cartTable
-                SET $data
-                WHERE $field = %s AND
-                type != %d",
-                $whereValue,
-                getCartType('recovered')
-            )
-        );
-    }
 }
 
 //Delete Duplicate carts CartBounty plugin
@@ -229,50 +146,56 @@ function deleteDuplicateCarts($sessionID, $duplicateCount, $cartTable)
     }
 }
 
-//CartBounty admin function to getWhereSentence
-function getWhereSentence($cartStatus)
+function getSessionID($orderID)
 {
-    $whereSentence = '';
+    $sessionID  = WC()->session->get_customer_id();
+    $order      = wc_get_order($orderID);
+    $userID     = $order->get_user_id();
 
-    if ($cartStatus == 'recoverable') {
-        $whereSentence = "AND (email != '' OR phone != '') AND type != " . getCartType('recovered') . " AND type != " . getCartType('ordered');
-    } elseif ($cartStatus == 'ghost') {
-        $whereSentence = "AND ((email IS NULL OR email = '') AND (phone IS NULL OR phone = '')) AND type != " . getCartType('recovered') . " AND type != " . getCartType('ordered');
-    } elseif ($cartStatus == 'recovered') {
-        $whereSentence = "AND type = " . getCartType('recovered');
-    } elseif (get_option('cartbounty_exclude_ghost_carts')) { //In case Ghost carts have been excluded
-        $whereSentence = "AND (email != '' OR phone != '')";
+    if ($userID != 0 or $userID != null) {  //Used to check whether user is logged in
+        $sessionID = $userID;
+    } else {
+        $sessionID = WC()->session->get('cartbounty_session_id');
+        if (empty($sessionID)) { //If session value does not exist - set one now
+            $sessionID = WC()->session->get_customer_id(); //Retrieving customer ID from WooCommerce sessions variable
+        }
+        if (WC()->session->get('cartbounty_from_link') && WC()->session->get('cartbounty_session_id')) {
+            $sessionID = WC()->session->get('cartbounty_session_id');
+        }
     }
-
-    return $whereSentence;
+    return $sessionID;
 }
 
-//CartBounty admin function to get Cart type
-function getCartType($status)
+function handleCBRecoveredOrder($orderID)
 {
-    if (empty($status)) {
+    if (!isset($orderID)) { //Exit if Order ID is not present
         return;
     }
 
-    $type = 0;
+    $cartbountyPublic = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+    $cartbountyAdmin  = new CartBounty_Admin (CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
 
-    switch ($status) {
-        case 'abandoned':
+    $cartbountyPublic->update_logged_customer_id(); //In case a user chooses to create an account during checkout process, the session id changes to a new one so we must update it
+    
+    $cartTable = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 
-            $type = 0;
-            break;
+    if (WC()->session) { //If session exists
+        $cart      = readCartCB($orderID);
+        $type      = $cartbountyAdmin->get_cart_type('ordered'); //Default type describing an order has been placed
+        $sessionID = getSessionID($orderID);
+        $fromEmail = get_post_meta(getSessionID($orderID), 'FromEmail', true);
 
-        case 'recovered':
+        if ($sessionID != null) {
+            if ($fromEmail === "Y") { //If the user has arrived from CartBounty link
+                $type = $cartbountyAdmin->get_cart_type('recovered');
+                update_post_meta($sessionID, 'FromEmail', "N");
+            }
+            $cartbountyAdmin->update_cart_type($sessionID, $type); //Update cart type to recovered
 
-            $type = 1;
-            break;
-
-        case 'ordered':
-
-            $type = 2;
-            break;
+        }
     }
-    return $type;
+    clearCartData($orderID, $cartTable); //Clearing abandoned cart after it has been synced
+
 }
 
 //CartBounty admin function to clearCartData
@@ -309,57 +232,6 @@ function clearCartData($wcOrderId, $cartTable)
     );
 }
 
-//Function for CartBounty to check whether the cart is saved
-function cartSaved($sessionID, $cartTable)
-{
-    $saved = false;
-    if ($sessionID !== NULL) {
-        global $wpdb;
-        //Checking if we have this abandoned cart in our database already
-        $result = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT session_id
-					FROM $cartTable
-					WHERE session_id = %s AND
-					type = %d",
-                $sessionID,
-                0
-            )
-        );
-
-        if ($result) {
-            $saved = true;
-        }
-    }
-
-    return $saved;
-}
-
-// CartBounty function to set session_id
-function setCartBountySession($sessionID)
-{
-    if (!WC()->session->get('cartbounty_session_id')) { //In case browser session is not set, we make sure it gets set
-        WC()->session->set('cartbounty_session_id', $sessionID); //Storing session_id in WooCommerce session
-    }
-}
-
-//CartBounty function to keep track of number of recoverable carts
-function increaseRecoverableCartCountCB()
-{
-    if (!WC()->session) { //If session does not exist, exit function
-        return;
-    }
-    if (WC()->session->get('cartbounty_recoverable_count_increased') || WC()->session->get('cartbounty_from_link')) { //Exit function in case we already have run this once or user has returned form a recovery link
-        return;
-    }
-    update_option('cartbounty_recoverable_cart_count', get_option('cartbounty_recoverable_cart_count') + 1);
-    WC()->session->set('cartbounty_recoverable_count_increased', 1);
-
-    if (WC()->session->get('cartbounty_ghost_count_increased')) { //In case we previously increased ghost cart count, we must now reduce it as it has been turned to recoverable
-        decrease_ghost_cart_count(1);
-    }
-}
-
 //CartBounty plugin function for retrieving the cart data
 function readCartCB($wcOrderId)
 {
@@ -371,9 +243,9 @@ function readCartCB($wcOrderId)
         return;
     }
 
-    $cartTotal    = WC()->cart->total; //Retrieving cart total value and currency
-    $cartCurrency = get_woocommerce_currency();
-    $currentTime  = current_time('mysql', false); //Retrieving current time
+    $cartTotal     = WC()->cart->total; //Retrieving cart total value and currency
+    $cartCurrency  = get_woocommerce_currency();
+    $currentTime   = current_time('mysql', false); //Retrieving current time
     $sessionID     = getSessionID($wcOrderId);
     //Retrieving cart
     $products      = WC()->cart->get_cart_contents();
@@ -400,7 +272,7 @@ function readCartCB($wcOrderId)
 
             //Handling variable product title output with attributes
             $productAttributes   = attribute_slug_to_title($singleVariation->get_variation_attributes());
-            $productVariationID = $product['variation_id'];
+            $productVariationID  = $product['variation_id'];
         } else {
             $productAttributes   = false;
             $productVariationID = '';

@@ -65,7 +65,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     }
 
     //Check CartBounty plugin is activated or not
-    if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && empty($razorpayData['customer_details']['email']) == false) {
+    if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && (empty($razorpayData['customer_details']['email']) == false || empty($customerEmail) == false)) {
 
         $result = saveCartBountyData($razorpayData); //save abandonment data
 
