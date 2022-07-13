@@ -165,13 +165,6 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
                 'step' => 1,
             ),
         ),
-        'enable_1cc_mandatory_login'    => array(
-            'title'       => __('Activate Mandatory Login'),
-            'type'        => 'checkbox',
-            'description' => "",
-            'label'       => __('Activate Mandatory Login for Magic Checkout'),
-            'default'     => 'no',
-        ),
         '1cc_min_COD_slab_amount'       => array(
             'title'             => __('Set minimum amount (INR) for COD'),
             'type'              => 'number',
