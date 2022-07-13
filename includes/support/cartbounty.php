@@ -1,5 +1,4 @@
 <?php
-
 //Save cart abandonment data for CartBounty plugin
 function saveCartBountyData($razorpayData)
 {
