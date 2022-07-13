@@ -63,6 +63,10 @@ function calculateShipping1cc(WP_REST_Request $request)
     WC()->cart->empty_cart();
     $logObj['response'] = $response;
     rzpLogInfo(json_encode($logObj));
+    if(is_plugin_active('woocommerce-currency-switcher/index.php')){ 
+        $order                         = wc_get_order($orderId);
+        $response['0']['shipping_fee'] = currencyConvert($response['0']['shipping_fee'],$order);
+    }
     return new WP_REST_Response(array('addresses' => $response), 200);
 }
 
@@ -695,4 +699,22 @@ function prepareHtmlResponse1cc($response)
         return array_map('prepareHtmlResponse1cc', $response);
     }
     return is_scalar($response) ? wp_kses_post(trim(convert_chars(wptexturize($response)))) : $response;
+}
+
+function currencyConvert($amountInPaise,$order){
+    global $WOOCS;
+    $orderCurrency = getOrderCurrency($order);
+    $currencies    = $WOOCS->get_currencies();
+    $order_rate    = $currencies[$orderCurrency]['rate'];
+    return $order_rate*$amountInPaise/100;
+}
+
+function getOrderCurrency($order)
+{
+    if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
+     {
+        return $order->get_currency();
+     }
+
+  return $order->get_order_currency();
 }
