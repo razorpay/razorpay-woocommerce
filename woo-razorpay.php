@@ -1518,7 +1518,7 @@ EOT;
                         }
                         else
                         {
-                             $item->set_method_title($shippingData[0]['name']);
+                             $item->set_method_title($shippingData??[0]['name']);
                         }
 
                         // set an non existing Shipping method rate ID will mark the order as completed instead of processing status

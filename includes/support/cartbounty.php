@@ -112,9 +112,10 @@ function saveCartBountyData($razorpayData)
 function deleteDuplicateCarts($sessionID, $duplicateCount, $cartTable)
 {
     global $wpdb;
+    $cartbountyAdmin  = new CartBounty_Admin (CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
     if ($duplicateCount) { //If we have updated at least one row
         if ($duplicateCount > 1) { //Checking if we have updated more than a single row to know if there were duplicates
-            $whereSentence = getWhereSentence('ghost');
+            $whereSentence = $cartbountyAdmin->get_where_sentence('ghost');
             //First delete all duplicate ghost carts
             $deletedDuplicateGhostCarts = $wpdb->query(
                 $wpdb->prepare(
