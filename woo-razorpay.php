@@ -1346,7 +1346,7 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-                handleOrder($orderId);
+                handleCBRecoveredOrder($orderId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
