@@ -1713,7 +1713,7 @@ EOT;
         {
             global $woocommerce;
 
-            if (!email_exists($razorpayData['customer_details']['email']) && isMandatoryLoginEnabled()) {
+            if (!email_exists($razorpayData['customer_details']['email']) && isMandatoryAccCreationEnabled()) {
 
                 $name = $shpping['name'];
                 $contact = $razorpayData['customer_details']['contact'];
