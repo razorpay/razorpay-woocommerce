@@ -102,20 +102,17 @@ class RZP_Webhook
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
-                if (empty($razorpayWebhookSecret) === true ) {
-                    $razorpayWebhookSecret =  get_option('rzp_webhook_secret');
-                    if (empty($razorpayWebhookSecret) === false){
+                if (empty($razorpayWebhookSecret) === true) {
+                    $razorpayWebhookSecret = get_option('rzp_webhook_secret');
+                    if (empty($razorpayWebhookSecret) === false) {
                         $this->razorpay->update_option('webhook_secret', $razorpayWebhookSecret);
-                    }
-                    else
-                    {
+                    } else {
                         rzpLogInfo("Woocommerce orderId: $orderId webhook process exited due to secret not available");
 
                         return;
-                    } 
+                    }
                 }
-                
-                
+
                 try
                 {
                     $this->api->utility->verifyWebhookSignature($post,
@@ -240,23 +237,21 @@ class RZP_Webhook
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for payment authorized event");
 
-        if(!empty($orderId))
-        {
-          $order =  $this->checkIsObject($orderId);
+        if (!empty($orderId)) {
+            $order = $this->checkIsObject($orderId);
         }
 
-        $orderStatus  = $order->get_status();
+        $orderStatus = $order->get_status();
         rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
 
         // If it is already marked as paid, ignore the event
         if ($orderStatus != 'draft' && $order->needs_payment() === false) {
-            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :". $order->needs_payment());
+            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :" . $order->needs_payment());
 
             return;
         }
 
-        if($orderStatus == 'draft')
-        {
+        if ($orderStatus == 'draft') {
             updateOrderStatus($orderId, 'wc-pending');
         }
 
@@ -326,7 +321,7 @@ class RZP_Webhook
             return;
         }
 
-        if (isset($data['payload']['payment']['entity']['method']) != 'cod' ) {
+        if (isset($data['payload']['payment']['entity']['method']) != 'cod') {
             return;
         }
 
@@ -337,23 +332,21 @@ class RZP_Webhook
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for COD method payment pending event");
 
-        if(!empty($orderId))
-        {
-          $order =  $this->checkIsObject($orderId);
+        if (!empty($orderId)) {
+            $order = $this->checkIsObject($orderId);
         }
 
-        $orderStatus  = $order->get_status();
+        $orderStatus = $order->get_status();
         rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
 
         // If it is already marked as paid, ignore the event
         if ($orderStatus != 'draft' && $order->needs_payment() === false) {
-            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :". $order->needs_payment());
+            rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :" . $order->needs_payment());
 
             return;
         }
 
-        if($orderStatus == 'draft')
-        {
+        if ($orderStatus == 'draft') {
             updateOrderStatus($orderId, 'wc-pending');
         }
 
@@ -392,9 +385,8 @@ class RZP_Webhook
         //
         $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
 
-        if(!empty($orderId))
-        {
-          $order =  $this->checkIsObject($orderId);
+        if (!empty($orderId)) {
+            $order = $this->checkIsObject($orderId);
         }
         // If it is already marked as paid, ignore the event
         if ($order->needs_payment() === false) {
@@ -531,9 +523,8 @@ class RZP_Webhook
         //
         $orderId = $payment['notes']['woocommerce_order_number'];
 
-        if(!empty($orderId))
-        {
-          $order =  $this->checkIsObject($orderId);
+        if (!empty($orderId)) {
+            $order = $this->checkIsObject($orderId);
         }
 
         // If it is already marked as unpaid, ignore the event
@@ -596,12 +587,9 @@ class RZP_Webhook
     public function checkIsObject($orderId)
     {
         $order = wc_get_order($orderId);
-        if(is_object($order))
-        {
+        if (is_object($order)) {
             return wc_get_order($orderId);
-        }
-        else
-        {
+        } else {
             rzpLogInfo("Woocommerce order Object does not exist");
             exit();
         }
