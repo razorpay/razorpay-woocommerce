@@ -1327,7 +1327,7 @@ EOT;
             {
                 $message = 'An error occured. Please contact administrator for assistance';
             }
-            rzpLogInfo("returning $getErrorMessage");
+            rzpLogInfo("returning $message");
             return $message;
         }
 
@@ -1342,7 +1342,7 @@ EOT;
 
             $orderId = $order->get_order_number();
 
-            rzpLogInfo("updateOrder orderId: $orderId , errorMessage: $errorMessage, razorpayPaymentId: $razorpayPaymentId , success: $success");
+            rzpLogInfo("updateOrder orderId: $orderId , razorpayPaymentId: $razorpayPaymentId , success: $success");
 
             if ($success === true)
             {
