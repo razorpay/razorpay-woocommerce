@@ -3,7 +3,7 @@
  * For abandon cart recovery related API
  */
 
-require_once __DIR__.'/../support/cartbounty.php';
+require_once __DIR__ . '/../support/cartbounty.php';
 
 function saveCartAbandonmentData(WP_REST_Request $request)
 {

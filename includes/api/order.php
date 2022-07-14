@@ -83,8 +83,10 @@ function createWcOrder(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
+
     $cartHash        = WC()->cart->get_cart_hash();
     $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
+
     if ($orderIdFromHash == null) {
         $checkout = WC()->checkout();
         $orderId  = $checkout->create_order(array());
