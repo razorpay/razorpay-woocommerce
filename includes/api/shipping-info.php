@@ -706,7 +706,7 @@ function currencyConvert($amountInPaise,$order){
     $orderCurrency = getOrderCurrency($order);
     $currencies    = $WOOCS->get_currencies();
     $order_rate    = $currencies[$orderCurrency]['rate'];
-    return $order_rate*$amountInPaise/100;
+    return $order_rate*$amountInPaise;
 }
 
 function getOrderCurrency($order)
