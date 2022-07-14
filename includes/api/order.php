@@ -178,10 +178,10 @@ function createWcOrder(WP_REST_Request $request)
         $razorpay = new WC_Razorpay(false);
 
         $rzp_order_id = $razorpay->createOrGetRazorpayOrderId($orderId, 'yes');
-        $rzp_response = $razorpay->getDefaultCheckoutArguments($order);
+        $response     = $razorpay->getDefaultCheckoutArguments($order);
 
         // Response sent to the user when order creation fails
-        if (empty($rzp_response['order_id'])) {
+        if (empty($response['order_id'])) {
             $response['status']  = false;
             $response['message'] = 'Unable to create order';
             $response['code']    = 'ORDER_CREATION_FAILED';
@@ -189,14 +189,11 @@ function createWcOrder(WP_REST_Request $request)
             $status                 = 400;
             $logObj['response']     = $response;
             $logObj['rzp_order_id'] = $rzp_order_id;
-            $logObj['rzp_response'] = $rzp_response;
+            $logObj['rzp_response'] = $response;
             rzpLogError(json_encode($logObj));
 
             return new WP_REST_Response($response, $status);
         }
-
-        // TODO: getDefaultCheckoutArguments() is already being called in L65 above
-        $response = $razorpay->getDefaultCheckoutArguments($order);
 
         $current_user = wp_get_current_user();
 
@@ -278,15 +275,14 @@ function wooSaveCheckoutUTMFields($orderId, $params)
     $browserTime            = $params['dateTime'];
     $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
     $pysData['pys_source']  = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
-    if($pysData['pys_source'] == 'direct')
-    {
-        $pysData['pys_source']  = $params['referrerDomain'] != '' ? $params['referrerDomain'] : "direct";
+    if ($pysData['pys_source'] == 'direct') {
+        $pysData['pys_source'] = $params['referrerDomain'] != '' ? $params['referrerDomain'] : "direct";
     }
-    $pysUTMSource           = $cookieData['pys_utm_source'] ?? $getQuery['utm_source'];
-    $pysUTMMedium           = $cookieData['pys_utm_medium'] ?? $getQuery['utm_medium'];
-    $pysUTMCampaign         = $cookieData['pys_utm_campaign'] ?? $getQuery['utm_medium'];
-    $pysUTMTerm             = $cookieData['pys_utm_term'] ?? $getQuery['utm_term'];
-    $pysUTMContent          = $cookieData['pys_utm_content'] ?? $getQuery['utm_content'];
+    $pysUTMSource   = $cookieData['pys_utm_source'] ?? $getQuery['utm_source'];
+    $pysUTMMedium   = $cookieData['pys_utm_medium'] ?? $getQuery['utm_medium'];
+    $pysUTMCampaign = $cookieData['pys_utm_campaign'] ?? $getQuery['utm_medium'];
+    $pysUTMTerm     = $cookieData['pys_utm_term'] ?? $getQuery['utm_term'];
+    $pysUTMContent  = $cookieData['pys_utm_content'] ?? $getQuery['utm_content'];
 
     $pysData['pys_utm']          = "utm_source:" . $pysUTMSource . "|utm_medium:" . $pysUTMMedium . "|utm_campaign:" . $pysUTMCampaign . "|utm_term:" . $pysUTMTerm . "|utm_content:" . $pysUTMContent;
     $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
