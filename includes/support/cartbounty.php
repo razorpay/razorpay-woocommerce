@@ -78,11 +78,11 @@ function saveCartBountyData($razorpayData)
     $updatedRows = $wpdb->query(
         $wpdb->prepare(
             "UPDATE $cartTable
-        SET name = %s,
-        surname = %s,
-        email = %s,
-        phone = %s,
-        location = %s,
+        SET name     = %s,
+        surname      = %s,
+        email        = %s,
+        phone        = %s,
+        location     = %s,
         other_fields = '$otherFields'
         WHERE session_id = %s and type=0",
             sanitize_text_field($userData['name']),
@@ -219,11 +219,11 @@ function clearCartData($wcOrderId, $cartTable)
         $wpdb->prepare(
             "UPDATE $cartTable
             SET cart_contents = '',
-            cart_total = %d,
-            currency = %s,
-            time = %s
-            WHERE session_id = %s AND
-            type = %d",
+            cart_total        = %d,
+            currency          = %s,
+            time              = %s
+            WHERE session_id  = %s AND
+            type              = %d",
             0,
             sanitize_text_field($cart['cart_currency']),
             sanitize_text_field($cart['current_time']),
@@ -250,14 +250,14 @@ function readCartCB($wcOrderId)
     $sessionID     = getSessionID($wcOrderId);
     //Retrieving cart
     $products      = WC()->cart->get_cart_contents();
-    $productArray = array();
+    $productArray  = array();
 
     foreach ($products as $key => $product) {
         $item                    = wc_get_product($product['data']->get_id());
-        $productTitle           = $item->get_title();
-        $productQuantity        = $product['quantity'];
-        $productVariationPrice = '';
-        $productTax             = '';
+        $productTitle            = $item->get_title();
+        $productQuantity         = $product['quantity'];
+        $productVariationPrice   = '';
+        $productTax              = '';
 
         if (isset($product['line_total'])) {
             $productVariationPrice = $product['line_total'];
@@ -293,9 +293,9 @@ function readCartCB($wcOrderId)
 
     return $resultsArray = array(
         'cart_total'       => $cartTotal,
-        'cart_currency'   => $cartCurrency,
+        'cart_currency'    => $cartCurrency,
         'current_time'     => $currentTime,
-        'session_id'      => $sessionID,
-        'product_array'   => $productArray
+        'session_id'       => $sessionID,
+        'product_array'    => $productArray
     );
 }
