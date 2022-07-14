@@ -23,6 +23,7 @@ require_once __DIR__ .'/includes/razorpay-route-actions.php';
 require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
+require_once __DIR__.'/includes/support/cartbounty.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -1073,7 +1074,7 @@ EOT;
             rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
 
             $orderKey = $this->getOrderKey($order);
-
+            
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
                 return array(
@@ -1383,7 +1384,7 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-
+                handleCBRecoveredOrder($orderId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
@@ -1570,7 +1571,7 @@ EOT;
                         }
                         else
                         {
-                             $item->set_method_title($shippingData[0]['name']);
+                             $item->set_method_title($shippingData??[0]['name']);
                         }
 
                         // set an non existing Shipping method rate ID will mark the order as completed instead of processing status
@@ -1946,7 +1947,6 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
@@ -2073,3 +2073,13 @@ if(is1ccEnabled())
     add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
+
+//Changes Recovery link URL to Magic cart URL to avoid redirection to checkout page
+function cartbounty_alter_automation_button( $button ){
+    return str_replace("cartbounty=","cartbounty=magic_",$button);
+}
+
+if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+    add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+}
+
