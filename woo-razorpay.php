@@ -2025,4 +2025,7 @@ function cartbounty_alter_automation_button( $button ){
     return str_replace("cartbounty=","cartbounty=magic_",$button);
 }
 
-add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+    add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+}
+
