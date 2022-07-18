@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.8.3
- * Stable tag: 3.8.3
+ * Version: 3.9.4
+ * Stable tag: 3.9.4
  * Author: Team Razorpay
  * WC tested up to: 6.4.1
  * Author URI: https://razorpay.com
@@ -23,6 +23,8 @@ require_once __DIR__ .'/includes/razorpay-route-actions.php';
 require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
+require_once __DIR__.'/includes/support/cartbounty.php';
+
 require_once __DIR__.'/includes/stylehandler.php';
 
 use Razorpay\Api\Api;
@@ -758,7 +760,7 @@ function woocommerce_razorpay_init()
 
             if (empty($getWebhookFlag) == false)
             {
-                    if ($getWebhookFlag + 86400 < time())
+                    if ($getWebhookFlag + 43200 < time())
                     {
                         $this->autoEnableWebhook();
                     }
@@ -873,6 +875,28 @@ function woocommerce_razorpay_init()
         {
             // TODO: trim to 2 deciamls
             $data['line_items_total'] = $order->get_total()*100;
+
+            $i = 0;
+            // Get and Loop Over Order Items
+            foreach ( $order->get_items() as $item_id => $item )
+            {
+               $product = $item->get_product();
+               $productDetails = $product->get_data();
+
+               $data['line_items'][$i]['type'] = "e-commerce";
+               $data['line_items'][$i]['sku'] = $product->get_sku();
+               $data['line_items'][$i]['variant_id'] = $item->get_variation_id();
+               $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
+               $data['line_items'][$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $productDetails['price']*100;
+               $data['line_items'][$i]['quantity'] = (int)$item->get_quantity();
+               $data['line_items'][$i]['name'] = substr($item->get_name(), 0, 125);
+               $data['line_items'][$i]['description'] = substr($item->get_name(), 0, 250);
+               $productImage = $product->get_image_id()?? null;
+               $data['line_items'][$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
+               $data['line_items'][$i]['product_url'] = $product->get_permalink();
+
+               $i++;
+            }
 
             return $data;
         }
@@ -1052,7 +1076,7 @@ EOT;
             rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
 
             $orderKey = $this->getOrderKey($order);
-
+            
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
                 return array(
@@ -1100,15 +1124,20 @@ EOT;
 
             rzpLogInfo("Called check_razorpay_response: $post_password");
 
-            $postData = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_status FROM $wpdb->posts AS P WHERE post_type=%s AND post_password = %s", $post_type, $post_password ) );
-
-            $arrayPost = json_decode(json_encode($postData), true);
-
-            if (!empty($arrayPost) && count($arrayPost[0]) > 0)
+            $meta_key = '_order_key';
+            
+            $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
+            
+            $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
+            
+            $arrayPost = json_decode(json_encode($postMetaData), true);
+            
+            if (!empty($arrayPost) and
+                $arrayPost != null)
             {
-                $orderId = $postData[0]->ID;
+                $orderId = $postMetaData->post_id;
 
-                if($postData[0]->post_status == 'draft')
+                if ($postData->post_status === 'draft')
                 {
                     updateOrderStatus($orderId, 'wc-pending');
                 }
@@ -1357,7 +1386,7 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-
+                handleCBRecoveredOrder($orderId);
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
@@ -1474,8 +1503,8 @@ EOT;
 
                 if (sizeof($existingItems) != 0) {
                     // Loop through shipping items
-                    foreach ($existingItems as $existingItemId) {
-                        $order->remove_item($existingItemId);
+                    foreach ($existingItems as $existingItemKey => $existingItemVal) {
+                        $order->remove_item($existingItemKey);
                     }
                 }
 
@@ -1922,6 +1951,8 @@ function enqueueScriptsFor1cc()
     wp_enqueue_script('1cc_razorpay_checkout');
     $themeInfo=styleHandler(wp_get_theme()->name);
     wp_register_style(RZP_1CC_CSS_SCRIPT,$themeInfo, null, null);
+
+   
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
     wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
@@ -2047,3 +2078,13 @@ if(is1ccEnabled())
     add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
+
+//Changes Recovery link URL to Magic cart URL to avoid redirection to checkout page
+function cartbounty_alter_automation_button( $button ){
+    return str_replace("cartbounty=","cartbounty=magic_",$button);
+}
+
+if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+    add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+}
+
