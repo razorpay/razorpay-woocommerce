@@ -172,6 +172,8 @@ function getSessionID($orderID)
 
 function handleCBRecoveredOrder($orderID)
 {
+    global $wpdb;
+    
     if (!isset($orderID)) {
         //Exit if Order ID is not present
         return;
