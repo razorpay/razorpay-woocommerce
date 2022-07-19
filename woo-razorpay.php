@@ -1384,7 +1384,11 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-                handleCBRecoveredOrder($orderId);
+              
+                if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+                    handleCBRecoveredOrder($orderId);
+                }
+
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
