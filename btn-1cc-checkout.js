@@ -8,6 +8,9 @@ window.addEventListener('DOMContentLoaded', function() {
   var pageURL = jQuery(location).attr('href');
   var url = new URL(pageURL);
   var accessToken = new URLSearchParams(url.search).get('wcf_ac_token');
+  var referrerDomain = document.referrer.toString();
+
+  rzp1ccCheckoutData.referrerDomain = referrerDomain;
 
   // event triggered by wc on any cart change
   // as input function is the same, duplicate event listeners are NOT called
