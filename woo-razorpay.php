@@ -302,114 +302,123 @@ function woocommerce_razorpay_init()
 
         public function autoEnableWebhook()
         {
-            $webhookExist = false;
-            $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
-
-            $key_id      = $this->getSetting('key_id');
-            $key_secret  = $this->getSetting('key_secret');
-            $enabled     = true;
-            $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
-
-            $this->update_option('webhook_secret', $secret);
-            $getWebhookFlag =  get_option('webhook_enable_flag');
-            $time = time();
-
-            if (empty($getWebhookFlag))
+            try
             {
-                add_option('webhook_enable_flag', $time);
-            }
-            else
-            {
-                update_option('webhook_enable_flag', $time);
-            }
-            //validating the key id and key secret set properly or not.
-            if($key_id == null || $key_secret == null)
-            {
-                ?>
-                <div class="notice error is-dismissible" >
-                    <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
-                </div>
-                <?php
+                $webhookExist = false;
+                $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
 
-                error_log('Key Id and Key Secret are required.');
-                return;
-            }
+                $key_id      = $this->getSetting('key_id');
+                $key_secret  = $this->getSetting('key_secret');
+                $enabled     = true;
+                $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
+                $this->update_option('webhook_secret', $secret);
+                $getWebhookFlag =  get_option('webhook_enable_flag');
+                $time = time();
 
-            $domain = parse_url($webhookUrl, PHP_URL_HOST);
-
-            $domain_ip = gethostbyname($domain);
-
-            if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
-            {
-
-                ?>
-                <div class="notice error is-dismissible" >
-                    <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
-                </div>
-                <?php
-
-                error_log('Could not enable webhook for localhost');
-                return;
-            }
-            $skip = 0;
-            $count = 10;
-            $webhookItems= [];
-
-            do {
-                $webhook = $this->webhookAPI("GET", "webhooks?count=".$count."&skip=".$skip);
-                $skip += 10;
-                if ($webhook['count'] > 0)
+                if (empty($getWebhookFlag))
                 {
-                    foreach ($webhook['items'] as $key => $value)
-                    {
-                        $webhookItems[] = $value;
-                    }
+                    add_option('webhook_enable_flag', $time);
                 }
-            } while ( $webhook['count'] === $count);
-            
-            $data = [
-                'url'    => $webhookUrl,
-                'active' => $enabled,
-                'events' => $this->defaultWebhookEvents,
-                'secret' => $secret,
-            ];
-
-            if (count($webhookItems) > 0)
-            {
-                foreach ($webhookItems as $key => $value)
+                else
                 {
-                    if ($value['url'] === $webhookUrl)
+                    update_option('webhook_enable_flag', $time);
+                }
+                //validating the key id and key secret set properly or not.
+                if($key_id == null || $key_secret == null)
+                {
+                    ?>
+                    <div class="notice error is-dismissible" >
+                        <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
+                    </div>
+                    <?php
+
+                    rzpLogError('Key Id and Key Secret are required.');
+                    return;
+                }
+
+
+                $domain = parse_url($webhookUrl, PHP_URL_HOST);
+
+                $domain_ip = gethostbyname($domain);
+
+                if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
+                {
+
+                    ?>
+                    <div class="notice error is-dismissible" >
+                        <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
+                    </div>
+                    <?php
+
+                    rzpLogError('Could not enable webhook for localhost');
+                    return;
+                }
+                $skip = 0;
+                $count = 10;
+                $webhookItems= [];
+
+                do {
+                    $webhook = $this->webhookAPI("GET", "webhooks?count=".$count."&skip=".$skip);
+                    $skip += 10;
+                    if ($webhook['count'] > 0)
                     {
-                        foreach ($value['events'] as $evntkey => $evntval)
+                        foreach ($webhook['items'] as $key => $value)
                         {
-                            if (($evntval == 1) and
-                                (in_array($evntkey, $this->supportedWebhookEvents) === true))
-                            {
-                                $this->defaultWebhookEvents[$evntkey] =  true;
-                            }
+                            $webhookItems[] = $value;
                         }
-                     
-                        $data = [
-                            'url'    => $webhookUrl,
-                            'active' => $enabled,
-                            'events' => $this->defaultWebhookEvents,
-                            'secret' => $secret,
-                        ];
-                        $webhookExist  = true;
-                        $webhookId     = $value['id'];
+                    }
+                } while ( $webhook['count'] === $count);
+
+                $data = [
+                    'url'    => $webhookUrl,
+                    'active' => $enabled,
+                    'events' => $this->defaultWebhookEvents,
+                    'secret' => $secret,
+                ];
+
+                if (count($webhookItems) > 0)
+                {
+                    foreach ($webhookItems as $key => $value)
+                    {
+                        if ($value['url'] === $webhookUrl)
+                        {
+                            foreach ($value['events'] as $evntkey => $evntval)
+                            {
+                                if (($evntval == 1) and
+                                    (in_array($evntkey, $this->supportedWebhookEvents) === true))
+                                {
+                                    $this->defaultWebhookEvents[$evntkey] =  true;
+                                }
+                            }
+
+                            $data = [
+                                'url'    => $webhookUrl,
+                                'active' => $enabled,
+                                'events' => $this->defaultWebhookEvents,
+                                'secret' => $secret,
+                            ];
+                            $webhookExist  = true;
+                            $webhookId     = $value['id'];
+                        }
                     }
                 }
+                if ($webhookExist)
+                {
+                    rzpLogInfo('Updating razorpay webhook');
+                    $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
+                }
+                else
+                {
+                    rzpLogInfo('Creating razorpay webhook');
+                    $this->webhookAPI('POST', "webhooks/", $data);
+                }
             }
-            if ($webhookExist)
+            catch (Exception $e)
             {
-                $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
+                $message = $e->getMessage();
+                rzpLogError("Auto enable webhook failed with error : $message");
             }
-            else
-            {
-                $this->webhookAPI('POST', "webhooks/", $data);
-            }
-
         }
 
         public function generateSecret()
@@ -597,7 +606,7 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($orderId)
         {
-            
+
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
@@ -735,7 +744,7 @@ function woocommerce_razorpay_init()
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
 
-            
+
             // Calls the helper function to create order data
             global $woocommerce;
 
@@ -766,7 +775,7 @@ function woocommerce_razorpay_init()
             else
             {
                     update_option('webhook_enable_flag', $time);
-                    $this->autoEnableWebhook(); 
+                    $this->autoEnableWebhook();
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
@@ -1074,7 +1083,7 @@ EOT;
             rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
 
             $orderKey = $this->getOrderKey($order);
-            
+
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
                 return array(
@@ -1123,13 +1132,13 @@ EOT;
             rzpLogInfo("Called check_razorpay_response: $post_password");
 
             $meta_key = '_order_key';
-            
+
             $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
-            
+
             $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
-            
+
             $arrayPost = json_decode(json_encode($postMetaData), true);
-            
+
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
@@ -1384,7 +1393,7 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-              
+
                 if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
                     handleCBRecoveredOrder($orderId);
                 }
