@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.9.2
- * Stable tag: 3.9.2
+ * Version: 3.9.4
+ * Stable tag: 3.9.4
  * Author: Team Razorpay
  * WC tested up to: 6.4.1
  * Author URI: https://razorpay.com
@@ -23,6 +23,7 @@ require_once __DIR__ .'/includes/razorpay-route-actions.php';
 require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
+require_once __DIR__.'/includes/support/cartbounty.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -1073,7 +1074,7 @@ EOT;
             rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
 
             $orderKey = $this->getOrderKey($order);
-
+            
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
                 return array(
@@ -1327,7 +1328,7 @@ EOT;
             {
                 $message = 'An error occured. Please contact administrator for assistance';
             }
-            rzpLogInfo("returning $getErrorMessage");
+            rzpLogInfo("returning $message");
             return $message;
         }
 
@@ -1342,7 +1343,7 @@ EOT;
 
             $orderId = $order->get_order_number();
 
-            rzpLogInfo("updateOrder orderId: $orderId , errorMessage: $errorMessage, razorpayPaymentId: $razorpayPaymentId , success: $success");
+            rzpLogInfo("updateOrder orderId: $orderId , razorpayPaymentId: $razorpayPaymentId , success: $success");
 
             if ($success === true)
             {
@@ -1382,6 +1383,10 @@ EOT;
                 else
                 {
                     $order->payment_complete($razorpayPaymentId);
+                }
+              
+                if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+                    handleCBRecoveredOrder($orderId);
                 }
 
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
@@ -1500,8 +1505,8 @@ EOT;
 
                 if (sizeof($existingItems) != 0) {
                     // Loop through shipping items
-                    foreach ($existingItems as $existingItemId) {
-                        $order->remove_item($existingItemId);
+                    foreach ($existingItems as $existingItemKey => $existingItemVal) {
+                        $order->remove_item($existingItemKey);
                     }
                 }
 
@@ -1570,7 +1575,7 @@ EOT;
                         }
                         else
                         {
-                             $item->set_method_title($shippingData[0]['name']);
+                             $item->set_method_title($shippingData??[0]['name']);
                         }
 
                         // set an non existing Shipping method rate ID will mark the order as completed instead of processing status
@@ -1946,7 +1951,6 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
@@ -2073,3 +2077,13 @@ if(is1ccEnabled())
     add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
+
+//Changes Recovery link URL to Magic cart URL to avoid redirection to checkout page
+function cartbounty_alter_automation_button( $button ){
+    return str_replace("cartbounty=","cartbounty=magic_",$button);
+}
+
+if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+    add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+}
+
