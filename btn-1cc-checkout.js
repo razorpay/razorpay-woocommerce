@@ -193,7 +193,12 @@ window.addEventListener('DOMContentLoaded', function() {
   
   async function openRzpCheckout(e) {
     e.preventDefault();
-    rzp1cc.showSpinner(true);
+
+    if (window.MagicCheckout) {
+      window.MagicCheckout.showModal();
+    } else {
+      rzp1cc.showSpinner(true);
+    }
 
     if (accessToken !== null) 
     {
@@ -231,6 +236,15 @@ window.addEventListener('DOMContentLoaded', function() {
           rzp1cc.showSpinner(false);
 
         }
+
+        razorpayCheckout.on('render',() => {
+          if(window.MagicCheckout){
+            window.MagicCheckout?.hideModal();
+          }else{
+            rzp1cc.showSpinner(false);
+          }
+
+        });
       })
       .catch(e => {
         // Response sent to the User when cart is empty or order creation fails
