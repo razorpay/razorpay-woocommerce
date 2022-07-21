@@ -4,7 +4,8 @@
  * for coupon related API
  */
 
- require_once 'shipping-info.php';
+
+require_once __DIR__ . '/../support/woocs-multicurrency.php';
 
 function applyCouponOnCart(WP_REST_Request $request)
 {
