@@ -206,3 +206,7 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);
 
 }
+
+add_filter( 'rest_authentication_errors', function( $maybe_error ) {
+    return true;
+});
