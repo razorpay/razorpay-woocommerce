@@ -82,6 +82,7 @@ function woocommerce_razorpay_init()
             'payment_action',
             'order_success_message',
             'route_enable',
+            'enable_1cc_debug_mode',
         );
 
         public $form_fields = array();
@@ -188,7 +189,6 @@ function woocommerce_razorpay_init()
                 'enable_1cc',
                 'enable_1cc_mandatory_login',
                 'enable_1cc_test_mode',
-                'enable_1cc_debug_mode',
                 'enable_1cc_pdp_checkout',
                 'enable_1cc_mini_cart_checkout',
                 'enable_1cc_ga_analytics',
@@ -286,6 +286,13 @@ function woocommerce_razorpay_init()
                     'type'  => 'textarea',
                     'description' =>  __('Message to be displayed after a successful order', $this->id),
                     'default' =>  __(STATIC::DEFAULT_SUCCESS_MESSAGE, $this->id),
+                ),
+                'enable_1cc_debug_mode' => array( //Added this config for both native and 1cc merchants
+                    'title'       => __('Activate debug mode'),
+                    'type'        => 'checkbox',
+                    'description' => 'When debug mode is active, API logs and errors are collected and stored in your Woocommerce dashboard. It is recommended to keep this activated.',
+                    'label'       => __('Enable debug mode'),
+                    'default'     => 'yes',
                 ),
             );
 
