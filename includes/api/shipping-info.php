@@ -7,6 +7,9 @@
  * @return array|WP_Error|WP_REST_Response
  * @throws Exception If failed to add items to cart or no shipping options available for address.
  */
+
+require_once __DIR__ . '/../support/multicurrency-premium.php';
+
 function calculateShipping1cc(WP_REST_Request $request)
 {
     $params = $request->get_params();
@@ -63,6 +66,12 @@ function calculateShipping1cc(WP_REST_Request $request)
     WC()->cart->empty_cart();
     $logObj['response'] = $response;
     rzpLogInfo(json_encode($logObj));
+
+    if(is_plugin_active('woocommerce-multicurrency/woocommerce-multicurrency.php')){ 
+        $order                         = wc_get_order($orderId);
+        $response['0']['shipping_fee'] = currencyConvert($response['0']['shipping_fee'],$order);
+    }
+
     return new WP_REST_Response(array('addresses' => $response), 200);
 }
 
