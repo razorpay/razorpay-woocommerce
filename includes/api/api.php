@@ -207,6 +207,14 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
 
 }
 
+//To handle rest cookies invalid issue 
+add_filter("nonce_user_logged_out", function ($uid, $action) {
+    if ($uid === 0 && $action === 'wp_rest') {
+      return null;
+    }
+    return $uid;
+}, 10, 2);
+
 add_filter( 'rest_authentication_errors', function( $maybe_error ) {
     return true;
 });
