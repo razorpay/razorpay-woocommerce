@@ -338,7 +338,7 @@ function woocommerce_razorpay_init()
                 </div>
                 <?php
 
-                error_log('Key Id and Key Secret are required.');
+                rzpLogError('Key Id and Key Secret are required.');
                 return;
             }
 
@@ -356,7 +356,7 @@ function woocommerce_razorpay_init()
                 </div>
                 <?php
 
-                error_log('Could not enable webhook for localhost');
+                rzpLogError('Could not enable webhook for localhost');
                 return;
             }
             $skip = 0;
@@ -374,7 +374,7 @@ function woocommerce_razorpay_init()
                     }
                 }
             } while ( $webhook['count'] === $count);
-            
+
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
@@ -396,7 +396,7 @@ function woocommerce_razorpay_init()
                                 $this->defaultWebhookEvents[$evntkey] =  true;
                             }
                         }
-                     
+
                         $data = [
                             'url'    => $webhookUrl,
                             'active' => $enabled,
@@ -410,10 +410,12 @@ function woocommerce_razorpay_init()
             }
             if ($webhookExist)
             {
+                rzpLogInfo('Updating razorpay webhook');
                 $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
             }
             else
             {
+                rzpLogInfo('Creating razorpay webhook');
                 $this->webhookAPI('POST', "webhooks/", $data);
             }
 
@@ -466,6 +468,7 @@ function woocommerce_razorpay_init()
                 );
 
                 error_log(json_encode($log));
+                rzpLogError(json_encode($log));
             }
 
             return $webhook;
@@ -604,7 +607,7 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($orderId)
         {
-            
+
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
 
@@ -742,7 +745,7 @@ function woocommerce_razorpay_init()
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
 
-            
+
             // Calls the helper function to create order data
             global $woocommerce;
 
@@ -773,7 +776,7 @@ function woocommerce_razorpay_init()
             else
             {
                     update_option('webhook_enable_flag', $time);
-                    $this->autoEnableWebhook(); 
+                    $this->autoEnableWebhook();
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
@@ -1081,7 +1084,7 @@ EOT;
             rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
 
             $orderKey = $this->getOrderKey($order);
-            
+
             if (version_compare(WOOCOMMERCE_VERSION, '2.1', '>='))
             {
                 return array(
@@ -1130,13 +1133,13 @@ EOT;
             rzpLogInfo("Called check_razorpay_response: $post_password");
 
             $meta_key = '_order_key';
-            
+
             $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
-            
+
             $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
-            
+
             $arrayPost = json_decode(json_encode($postMetaData), true);
-            
+
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
@@ -1391,7 +1394,7 @@ EOT;
                 {
                     $order->payment_complete($razorpayPaymentId);
                 }
-              
+
                 if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
                     handleCBRecoveredOrder($orderId);
                 }
