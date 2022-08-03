@@ -818,10 +818,15 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderArgs = array(
                 'id'        => $razorpayOrderId,
-                'amount'    => $orderCreationData['amount'],
                 'currency'  => $orderCreationData['currency'],
                 'receipt'   => (string) $orderId,
             );
+
+            if(is1ccEnabled()){
+                $razorpayOrderArgs['line_items_total'] = $orderCreationData['amount'];
+            }else{
+                $razorpayOrderArgs['amount'] = $orderCreationData['amount'];
+            }
 
             $orderKeys = array_keys($razorpayOrderArgs);
 
