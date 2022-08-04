@@ -76,6 +76,8 @@ class TrackPluginInstrumentation
             'woocommerce_version' => WOOCOMMERCE_VERSION,
             'plugin_name'         => $pluginData['Name'],
             'plugin_version'      => $pluginData['Version'],
+            'unique_id'           => $_SERVER['HTTP_HOST'],
+            'event_timestamp'     => time(),
         ];
     }
 }

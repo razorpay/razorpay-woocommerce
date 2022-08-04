@@ -491,8 +491,6 @@ function woocommerce_razorpay_init()
             $pluginStatusEvent = '';
 
             $authProperties = [
-                'event_timestamp'         => time(),
-                'unique_id'               => $_SERVER['HTTP_HOST'],
                 'is_key_id_populated'     => true,
                 'is_key_secret_populated' => true,
                 'page_url'                => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
@@ -502,7 +500,6 @@ function woocommerce_razorpay_init()
 
             // for enable and disable plugin
             $pluginStatusProperties = [
-                'event_timestamp'     => time(),
                 'current_status'      => ($this->getSetting('enabled')==='yes') ? 'enabled' :'disabled',
                 'is_transacting_user' => $isTransactingUser
             ];
@@ -2233,9 +2230,7 @@ function razorpayPluginActivated()
     $trackObject  = new TrackPluginInstrumentation($paymentSettings['key_id'], $paymentSettings['key_secret']);
 
     $activateProperties = [
-        'event_timestamp'     => time(),
         'page_url'            => $_SERVER['HTTP_REFERER'],
-        'unique_id'           => $_SERVER['HTTP_HOST'],
         'redirect_to_page'    => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']
     ];
 
@@ -2263,9 +2258,7 @@ function razorpayPluginDeactivated()
     }
 
     $deactivateProperties = [
-        'event_timestamp'     => time(),
         'page_url'            => $_SERVER['HTTP_REFERER'],
-        'unique_id'           => $_SERVER['HTTP_HOST'],
         'is_transacting_user' => $isTransactingUser
     ];
 
@@ -2280,9 +2273,7 @@ function razorpayPluginUpgraded()
     $trackObject  = new TrackPluginInstrumentation($paymentSettings['key_id'], $paymentSettings['key_secret']);
 
     $upgradeProperties = [
-        'event_timestamp'     => time(),
         'page_url'            => $_SERVER['HTTP_REFERER'],
-        'unique_id'           => $_SERVER['HTTP_HOST'],
         'prev_version'        => get_option('rzp_woocommerce_current_version'),
         'new_version'         => get_plugin_data(__FILE__)['Version'],
     ];
