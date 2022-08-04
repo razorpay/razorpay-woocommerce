@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
-Tested up to: 5.9
-Stable tag: 3.9.2
+Tested up to: 6.0.1
+Stable tag: 4.0.0
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,16 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 4.0.0 =
+* Added support for CartBounty plugin in magic checkout.
+* Added debug log config on native checkout flow.
+
+= 3.9.4 =
+* Added delay of 5 minutes to webhook process.
+
+= 3.9.3 =
+* Bug fix multiple shipping charges issue for magic checkout.
 
 = 3.9.2 =
 * Bug fix cart line item char limit issue for magic checkout.

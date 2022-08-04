@@ -1,0 +1,8 @@
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: "razorpay-sdk/libs/Requests-2.0.0/"
+    schedule:
+      interval: daily
+      time: "04:00"
+      timezone: Asia/Calcutta

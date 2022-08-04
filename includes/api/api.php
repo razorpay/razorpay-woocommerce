@@ -200,14 +200,7 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'description' => "To track orders using Facebook Pixel",
             'label'       => __('Activate Magic Checkout Facebook Analytics'),
             'default'     => 'no',
-        ),
-        'enable_1cc_debug_mode'         => array(
-            'title'       => __('Activate debug mode'),
-            'type'        => 'checkbox',
-            'description' => 'When debug mode is active, API logs and errors are collected and stored in your Woocommerce dashboard. It is recommended to keep this activated.',
-            'label'       => __('Enable debug mode for Magic Checkout'),
-            'default'     => 'yes',
-        ),
+        )
     );
 
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);

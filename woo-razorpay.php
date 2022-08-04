@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 3.9.2
- * Stable tag: 3.9.2
+ * Version: 4.0.0
+ * Stable tag: 4.0.0
  * Author: Team Razorpay
- * WC tested up to: 6.4.1
+ * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
 */
 
@@ -24,6 +24,7 @@ require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
+require_once __DIR__.'/includes/support/cartbounty.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -87,6 +88,7 @@ function woocommerce_razorpay_init()
             'payment_action',
             'order_success_message',
             'route_enable',
+            'enable_1cc_debug_mode',
         );
 
         public $form_fields = array();
@@ -193,7 +195,6 @@ function woocommerce_razorpay_init()
                 'enable_1cc',
                 'enable_1cc_mandatory_login',
                 'enable_1cc_test_mode',
-                'enable_1cc_debug_mode',
                 'enable_1cc_pdp_checkout',
                 'enable_1cc_mini_cart_checkout',
                 'enable_1cc_ga_analytics',
@@ -294,6 +295,13 @@ function woocommerce_razorpay_init()
                     'description' =>  __('Message to be displayed after a successful order', $this->id),
                     'default' =>  __(STATIC::DEFAULT_SUCCESS_MESSAGE, $this->id),
                 ),
+                'enable_1cc_debug_mode' => array( //Added this config for both native and 1cc merchants
+                    'title'       => __('Activate debug mode'),
+                    'type'        => 'checkbox',
+                    'description' => 'When debug mode is active, API logs and errors are collected and stored in your Woocommerce dashboard. It is recommended to keep this activated.',
+                    'label'       => __('Enable debug mode'),
+                    'default'     => 'yes',
+                ),
             );
 
             do_action_ref_array( 'setup_extra_setting_fields', array( &$defaultFormFields ) );
@@ -338,7 +346,7 @@ function woocommerce_razorpay_init()
                 </div>
                 <?php
 
-                error_log('Key Id and Key Secret are required.');
+                rzpLogError('Key Id and Key Secret are required.');
                 return;
             }
 
@@ -356,7 +364,7 @@ function woocommerce_razorpay_init()
                 </div>
                 <?php
 
-                error_log('Could not enable webhook for localhost');
+                rzpLogError('Could not enable webhook for localhost');
                 return;
             }
             $skip = 0;
@@ -410,10 +418,12 @@ function woocommerce_razorpay_init()
             }
             if ($webhookExist)
             {
+                rzpLogInfo('Updating razorpay webhook');
                 $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
             }
             else
             {
+                rzpLogInfo('Creating razorpay webhook');
                 $this->webhookAPI('POST', "webhooks/", $data);
             }
 
@@ -579,6 +589,7 @@ function woocommerce_razorpay_init()
                 );
 
                 error_log(json_encode($log));
+                rzpLogError(json_encode($log));
             }
 
             return $webhook;
@@ -1462,7 +1473,7 @@ EOT;
             {
                 $message = 'An error occured. Please contact administrator for assistance';
             }
-            rzpLogInfo("returning $getErrorMessage");
+            rzpLogInfo("returning $message");
             return $message;
         }
 
@@ -1477,7 +1488,7 @@ EOT;
 
             $orderId = $order->get_order_number();
 
-            rzpLogInfo("updateOrder orderId: $orderId , errorMessage: $errorMessage, razorpayPaymentId: $razorpayPaymentId , success: $success");
+            rzpLogInfo("updateOrder orderId: $orderId , razorpayPaymentId: $razorpayPaymentId , success: $success");
 
             if ($success === true)
             {
@@ -1517,6 +1528,10 @@ EOT;
                 else
                 {
                     $order->payment_complete($razorpayPaymentId);
+                }
+
+                if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+                    handleCBRecoveredOrder($orderId);
                 }
 
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
@@ -1635,8 +1650,8 @@ EOT;
 
                 if (sizeof($existingItems) != 0) {
                     // Loop through shipping items
-                    foreach ($existingItems as $existingItemId) {
-                        $order->remove_item($existingItemId);
+                    foreach ($existingItems as $existingItemKey => $existingItemVal) {
+                        $order->remove_item($existingItemKey);
                     }
                 }
 
@@ -1705,7 +1720,7 @@ EOT;
                         }
                         else
                         {
-                             $item->set_method_title($shippingData[0]['name']);
+                             $item->set_method_title($shippingData??[0]['name']);
                         }
 
                         // set an non existing Shipping method rate ID will mark the order as completed instead of processing status
@@ -2081,7 +2096,6 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
@@ -2289,3 +2303,13 @@ function razorpayPluginUpgraded()
         }
     }
 }
+
+//Changes Recovery link URL to Magic cart URL to avoid redirection to checkout page
+function cartbounty_alter_automation_button( $button ){
+    return str_replace("cartbounty=","cartbounty=magic_",$button);
+}
+
+if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+    add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
+}
+
