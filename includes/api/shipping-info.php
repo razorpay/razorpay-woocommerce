@@ -64,12 +64,15 @@ function calculateShipping1cc(WP_REST_Request $request)
     // Cleanup cart.
     WC()->cart->empty_cart();
     $logObj['response'] = $response;
-    rzpLogInfo(json_encode($logObj));
 
-    if(is_plugin_active('woocommerce-currency-switcher/index.php')){ 
-        $order                         = wc_get_order($orderId);
-        $response['0']['shipping_fee'] = currencyConvert($response['0']['shipping_fee'],$order);
-    }
+	if(is_plugin_active('woocommerce-currency-switcher/index.php')){ 
+        $is_multiple_allowed = get_option('woocs_is_multiple_allowed', 0);
+        
+        if($is_multiple_allowed==1){
+          $order                             = wc_get_order($orderId);
+          $response['0']['shipping_fee']     = currencyConvert($response['0']['shipping_fee'],$order);
+      }
+	}
 
     return new WP_REST_Response(array('addresses' => $response), 200);
 }
@@ -149,6 +152,7 @@ function shippingCalculatePackages1cc($id, $orderId, $address)
             $vendorId[] = $packages[$key]['vendor_id'];
         }
     }
+    
     $calculatedPackages = wc()->shipping()->calculate_shipping($packages);
 
     return getItemResponse1cc($calculatedPackages, $id, $vendorId, $orderId, $address);
@@ -255,7 +259,6 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
 
 function getRateResponse1cc($rate, $vendorId, $orderId, $address)
 {
-
     return array_merge(
         array(
             'rate_id'       => getRateProp1cc($rate, 'id'),
@@ -606,11 +609,13 @@ function smartCodRestriction($addresses, $order)
  * @returns int
  */
 function convertToPaisa($price)
-{
+{   
     if (is_string($price)) {
-        $price = (int) $price;
+        $price = floatval($price);
     }
-    return $price * 100;
+    round($price,2);
+    
+    return ($price * 100);
 }
 
 /**

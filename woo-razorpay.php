@@ -684,6 +684,12 @@ function woocommerce_razorpay_init()
          */
         private function getOrderCurrency($order)
         {
+            if(is_plugin_active('woocommerce-currency-switcher/index.php')){ 
+                $is_multiple_allowed = get_option('woocs_is_multiple_allowed', 0);
+                if($is_multiple_allowed==0){
+                    return get_option('woocs_welcome_currency',0);
+                }
+            }
             if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
             {
                 return $order->get_currency();

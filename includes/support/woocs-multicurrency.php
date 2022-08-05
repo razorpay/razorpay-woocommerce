@@ -3,8 +3,8 @@ function currencyConvert($amountInPaise,$order){
     global $WOOCS;
     $orderCurrency = getOrderCurrency($order);
     $currencies    = $WOOCS->get_currencies();
-    $order_rate    = $currencies[$orderCurrency]['rate'];
-    return round($order_rate*$amountInPaise,0);
+    $orderRate     = $currencies[$orderCurrency]['rate'];
+    return round($orderRate*$amountInPaise,0);
 }
 
 function getOrderCurrency($order)
