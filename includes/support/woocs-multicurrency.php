@@ -1,13 +1,13 @@
 <?php
-function currencyConvert($amountInPaise,$order){
+function currencyConvertCS($amountInPaise,$order){
     global $WOOCS;
-    $orderCurrency = getOrderCurrency($order);
+    $orderCurrency = getOrderCurrencyCS($order);
     $currencies    = $WOOCS->get_currencies();
     $orderRate     = $currencies[$orderCurrency]['rate'];
     return round($orderRate*$amountInPaise,0);
 }
 
-function getOrderCurrency($order)
+function getOrderCurrencyCS($order)
 {
     if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
      {

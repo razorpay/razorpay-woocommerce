@@ -70,7 +70,7 @@ function calculateShipping1cc(WP_REST_Request $request)
         
         if($is_multiple_allowed==1){
           $order                             = wc_get_order($orderId);
-          $response['0']['shipping_fee']     = currencyConvert($response['0']['shipping_fee'],$order);
+          $response['0']['shipping_fee']     = currencyConvertCS($response['0']['shipping_fee'],$order);
       }
 	}
 
