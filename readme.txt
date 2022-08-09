@@ -41,6 +41,10 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= 4.0.1 =
+* Added support for CartBounty plugin in magic checkout.
+* Bug fix for uft8 characters.
+
 = 4.0.0 =
 * Added support for CartBounty plugin in magic checkout.
 * Added debug log config on native checkout flow.
