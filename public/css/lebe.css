@@ -1,6 +1,5 @@
 #btn-1cc {
   display: block !important;
-  width: 100%;
 }
 #btn-1cc-mini-cart {
   display: block !important;
@@ -8,9 +7,8 @@
 }
 #btn-1cc-pdp {
   position: relative;
-  top: 12px;
-  width: 250px;
-  z-index: 1;
+  top: 6px;
+ width: 268px;
 }
 #rzp-spinner-backdrop {
   position: fixed;
@@ -87,10 +85,13 @@
   }
 }
 
+
+
+
 .single_add_to_cart_button.button{
-  z-index: 2 !important;
+z-index: 2 !important;
 }
 
 .quantity{
-  z-index: 2 !important;
+z-index: 2 !important;
 }

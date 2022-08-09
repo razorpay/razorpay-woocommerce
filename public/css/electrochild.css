@@ -1,16 +1,34 @@
 #btn-1cc {
   display: block !important;
   width: 100%;
+  border-radius: 1.8em;
+  overflow: hidden;
 }
 #btn-1cc-mini-cart {
-  display: block !important;
-  width: 100%;
+  display: inline-flex;
+  border-radius: 1.8em;
+  overflow: hidden;
 }
 #btn-1cc-pdp {
   position: relative;
   top: 12px;
-  width: 250px;
-  z-index: 1;
+  border-radius: 1.8em;
+  overflow: hidden;
+
+}
+#off-canvas-cart-summary .woocommerce-mini-cart__buttons.buttons{
+  width: 41%;
+  display: inline-flex !important;
+  padding: 20px !important;
+  margin-left: 10%;
+}
+
+.dropdown-menu-mini-cart .woocommerce-mini-cart__buttons.buttons{
+  display: inline-flex !important;
+}
+
+.button.wc-forward{
+ width: 100% !important;
 }
 #rzp-spinner-backdrop {
   position: fixed;
@@ -46,11 +64,6 @@
   visibility: visible;
   opacity: 1;
 }
-
-#icon{
-  position: fixed;
-  align-items: center;
-}
 @keyframes rotate {
   0% {
     transform: rotate(0);
@@ -66,9 +79,8 @@
   border: 4px solid;
   border-color: rgb(59, 124, 245) transparent rgb(59, 124, 245) rgb(59, 124, 245) !important;
   animation: 1s linear 0s infinite normal none running rotate;
-  /* margin-top: -6px; */
+  margin-top: 2px;
   box-sizing: content-box;
-  line-height: 14px;
 }
 #icon {
   position: absolute;
@@ -87,10 +99,11 @@
   }
 }
 
+
 .single_add_to_cart_button.button{
-  z-index: 2 !important;
+z-index: 2 !important;
 }
 
 .quantity{
-  z-index: 2 !important;
+z-index: 2 !important;
 }
