@@ -796,7 +796,7 @@ function woocommerce_razorpay_init()
             return $razorpayOrderId;
         }
 
-        protected function verifyOrderAmount($razorpayOrderId, $orderId, $is1ccCheckout)
+        protected function verifyOrderAmount($razorpayOrderId, $orderId, $is1ccCheckout = 'no')
         {
             rzpLogInfo("Called verifyOrderAmount with params orderId $orderId and rzporderId $razorpayOrderId");
             $order = wc_get_order($orderId);
