@@ -1,4 +1,12 @@
-window.addEventListener('DOMContentLoaded', function() {
+if (document.readyState !== 'loading') {
+     btnCheckout();
+} else {
+    document.addEventListener('DOMContentLoaded', function () {
+        btnCheckout();
+    });
+}
+
+function btnCheckout(){
 
   var btn = document.getElementById('btn-1cc');
   var btnMini = document.getElementById('btn-1cc-mini-cart');
@@ -253,4 +261,4 @@ window.addEventListener('DOMContentLoaded', function() {
         rzp1cc.showSpinner(false);
       });
   }
-});
+}
