@@ -41,7 +41,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
-= 4.0.2 =
+= 4.1.0 =
 * Bug fix for jquery undefined issue.
 * Bug fix for duplicate wooc orderId and Razorpay ID form same carthash.
 * Bug fix for nonce issue
