@@ -665,7 +665,7 @@ function woocommerce_razorpay_init()
                 // If we don't have an Order
                 // or the if the order is present in transient but doesn't match what we have saved
                 if (($razorpayOrderId === false) or
-                    (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId)) === false)))
+                    (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId, $is1ccCheckout)) === false)))
                 {
                     $create = true;
                 }
@@ -928,7 +928,7 @@ function woocommerce_razorpay_init()
             return $razorpayOrderId;
         }
 
-        protected function verifyOrderAmount($razorpayOrderId, $orderId)
+        protected function verifyOrderAmount($razorpayOrderId, $orderId, $is1ccCheckout = 'no')
         {
             rzpLogInfo("Called verifyOrderAmount with params orderId $orderId and rzporderId $razorpayOrderId");
             $order = wc_get_order($orderId);
@@ -950,10 +950,15 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderArgs = array(
                 'id'        => $razorpayOrderId,
-                'amount'    => $orderCreationData['amount'],
                 'currency'  => $orderCreationData['currency'],
                 'receipt'   => (string) $orderId,
             );
+
+            if($is1ccCheckout == 'no'){
+                $razorpayOrderArgs['amount'] = $orderCreationData['amount'];
+            }else{
+               $razorpayOrderArgs['line_items_total'] = $orderCreationData['amount'];
+            }
 
             $orderKeys = array_keys($razorpayOrderArgs);
 

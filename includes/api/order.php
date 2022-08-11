@@ -98,8 +98,9 @@ function createWcOrder(WP_REST_Request $request)
         updateOrderStatus($orderId, 'draft');
     } else {
         $existingOrder = wc_get_order($orderIdFromHash);
+        $orderStatus = $existingOrder->get_status();
         $existingOrder->calculate_totals();
-        if ($existingOrder->needs_payment() == false) {
+        if ($orderStatus != 'draft' && $existingOrder->needs_payment() == false) {
             $woocommerce->session->__unset(RZP_1CC_CART_HASH . $cartHash);
             $checkout = WC()->checkout();
             $orderId  = $checkout->create_order(array());
