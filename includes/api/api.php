@@ -210,13 +210,10 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
         ),
         '1cc_account_creation' => array(
             'title' => __('Allow customers to create store Account'),
-            'type' => 'select',
-            'description' =>  __('Allow customers to create store Account'),
+            'type'        => 'checkbox',
+            'description' => 'Allow customers to create store Account',
+            'label'      =>  __('Allow customers to create store Account'),
             'default' => 'No',
-            'options' => array(
-                'NO' => 'NO',
-                'MANDATORY'   => 'Mandatory'
-            )
         ),
     );
 

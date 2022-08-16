@@ -161,6 +161,7 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
+            $isAccCreationAvailable = true;
 
             // Load preference API call only for administrative interface page.
             if (is_admin())
@@ -175,6 +176,10 @@ function woocommerce_razorpay_init()
                       if (!empty($merchantPreferences['features']['one_click_checkout'])) {
                         $is1ccAvailable = true;
                       }
+
+                      // if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
+                      //   $is1ccAvailable = true;
+                      // }
 
                     } catch (\Exception $e) {
                       rzpLogError($e->getMessage());
@@ -196,8 +201,14 @@ function woocommerce_razorpay_init()
                 '1cc_min_cart_amount',
                 '1cc_min_COD_slab_amount',
                 '1cc_max_COD_slab_amount',
-                '1cc_account_creation',
               ));
+
+              if ($isAccCreationAvailable) {
+                $this->visibleSettings = array_merge($this->visibleSettings, array(
+                    '1cc_account_creation',
+                ));
+              }
+
             }
 
             $this->init_form_fields();

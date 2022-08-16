@@ -72,7 +72,7 @@ function isMandatoryAccCreationEnabled()
 {
     return (
         empty(get_option('woocommerce_razorpay_settings')['1cc_account_creation']) === false
-        && 'MANDATORY' == get_option('woocommerce_razorpay_settings')['1cc_account_creation']
+        && 'yes' == get_option('woocommerce_razorpay_settings')['1cc_account_creation']
     );
 }
 function validateInput($route, $param)
