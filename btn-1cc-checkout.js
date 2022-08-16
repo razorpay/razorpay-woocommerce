@@ -43,47 +43,153 @@ function btnCheckout(){
     });
   }
 
+  // For attaching event listener to Woodmart's sticky add-to-cart
+  document.addEventListener('scroll',(e)=>{
+     
+    var stickyBtn=document.querySelectorAll('#btn-1cc-pdp')[1];
+
+    let i = 0;
+     while (typeof quantity === 'undefined') {
+        var quantity = document.getElementsByClassName("qty")[i].value;
+        i++;
+     }
+
+    stickyBtn.setAttribute('quantity', quantity);
+
+      jQuery('.qty').on('change',function(e)
+     {
+        let x = 0;
+         while (typeof quantity === 'undefined') {
+          var quantity = document.getElementsByClassName("qty")[x].value;
+          x++;
+         }
+
+        stickyBtn.setAttribute('quantity', quantity);
+
+       if(quantity <= 0)
+       {
+          stickyBtn.classList.add("disabled");
+          stickyBtn.disabled = true;
+       }
+        else
+       {
+          stickyBtn.classList.remove("disabled");
+          stickyBtn.disabled = false;
+      }
+  });
+
+  (function($){
+
+      $('form.variations_form').on('show_variation', function(event, data){
+
+          stickyBtn.classList.remove("disabled");
+          stickyBtn.disabled = false;
+
+          stickyBtn.setAttribute('variation_id', data.variation_id);
+
+          var variationArr = {};
+
+          $.each( data.attributes, function( key, value ) {
+            variationArr[key] = $("[name="+key+"]").val();
+          });
+
+          stickyBtn.setAttribute('variations', JSON.stringify(variationArr));
+
+      }).on('hide_variation', function() {
+
+          stickyBtn.classList.add("disabled");
+          stickyBtn.disabled = true;
+      });
+  })(jQuery);
+
+    if (stickyBtn != null) {
+        stickyBtn.onclick = function(){
+
+          var pdpCheckout = stickyBtn.getAttribute('pdp_checkout');
+          var productId = stickyBtn.getAttribute('product_id');
+          var quantity = stickyBtn.getAttribute('quantity');
+      
+          rzp1ccCheckoutData.pdpCheckout = pdpCheckout;
+          rzp1ccCheckoutData.productId = productId;
+          rzp1ccCheckoutData.quantity = quantity;
+      
+          if (btnPdp.getAttribute('variation_id') != null) {
+            var variationId = stickyBtn.getAttribute('variation_id');
+            var variations = stickyBtn.getAttribute('variations');
+      
+            rzp1ccCheckoutData.variationId = variationId;
+            rzp1ccCheckoutData.variations = variations;
+          }
+      
+          //To support custom product fields plugin.
+          const customFieldForm = document.getElementsByClassName('wcpa_form_outer');
+      
+          if (customFieldForm && customFieldForm.length > 0) {
+      
+            var customProductFieldForm = customFieldForm[0];
+      
+            var fieldValues = customProductFieldForm.getElementsByTagName('input');
+            var fieldKey = customProductFieldForm.getElementsByTagName('label');
+            var fieldArray = [];
+            var fieldObj = {};
+      
+            for (i = 0; i < fieldKey.length; i++) {
+              fieldObj[fieldKey[i].innerText] = fieldValues[i].value;
+            }
+      
+            rzp1ccCheckoutData.fieldObj = fieldObj;
+          }
+        }
+    }
+  
+      if (stickyBtn !== null) {
+         stickyBtn.addEventListener('click', openRzpCheckout);
+       }
+})
+
   addEventListenerToMinicart('wc_fragments_refreshed');
   addEventListenerToMinicart('wc_fragments_loaded');
   addEventListenerToMinicart('added_to_cart');
 
   if (btnPdp != null) {
-    btnPdp.onclick = function() {
+      btnPdp.onclick = productInfoHandler;
+  }
 
-      var pdpCheckout = btnPdp.getAttribute('pdp_checkout');
-      var productId = btnPdp.getAttribute('product_id');
-      var quantity = btnPdp.getAttribute('quantity');
+  function productInfoHandler(){
 
-      rzp1ccCheckoutData.pdpCheckout = pdpCheckout;
-      rzp1ccCheckoutData.productId = productId;
-      rzp1ccCheckoutData.quantity = quantity;
+    var pdpCheckout = btnPdp.getAttribute('pdp_checkout');
+    var productId = btnPdp.getAttribute('product_id');
+    var quantity = btnPdp.getAttribute('quantity');
 
-      if (btnPdp.getAttribute('variation_id') != null) {
-        var variationId = btnPdp.getAttribute('variation_id');
-        var variations = btnPdp.getAttribute('variations');
+    rzp1ccCheckoutData.pdpCheckout = pdpCheckout;
+    rzp1ccCheckoutData.productId = productId;
+    rzp1ccCheckoutData.quantity = quantity;
 
-        rzp1ccCheckoutData.variationId = variationId;
-        rzp1ccCheckoutData.variations = variations;
+    if (btnPdp.getAttribute('variation_id') != null) {
+      var variationId = btnPdp.getAttribute('variation_id');
+      var variations = btnPdp.getAttribute('variations');
+
+      rzp1ccCheckoutData.variationId = variationId;
+      rzp1ccCheckoutData.variations = variations;
+    }
+
+    //To support custom product fields plugin.
+    const customFieldForm = document.getElementsByClassName('wcpa_form_outer');
+
+    if (customFieldForm && customFieldForm.length > 0) {
+
+      var customProductFieldForm = customFieldForm[0];
+
+      var fieldValues = customProductFieldForm.getElementsByTagName('input');
+      var fieldKey = customProductFieldForm.getElementsByTagName('label');
+      var fieldArray = [];
+      var fieldObj = {};
+
+      for (i = 0; i < fieldKey.length; i++) {
+        fieldObj[fieldKey[i].innerText] = fieldValues[i].value;
       }
 
-      //To support custom product fields plugin.
-      const customFieldForm = document.getElementsByClassName('wcpa_form_outer');
-
-      if (customFieldForm && customFieldForm.length > 0) {
-
-        var customProductFieldForm = customFieldForm[0];
-
-        var fieldValues = customProductFieldForm.getElementsByTagName('input');
-        var fieldKey = customProductFieldForm.getElementsByTagName('label');
-        var fieldArray = [];
-        var fieldObj = {};
-
-        for (i = 0; i < fieldKey.length; i++) {
-          fieldObj[fieldKey[i].innerText] = fieldValues[i].value;
-        }
-
-        rzp1ccCheckoutData.fieldObj = fieldObj;
-      }
+      rzp1ccCheckoutData.fieldObj = fieldObj;
     }
   }
 
