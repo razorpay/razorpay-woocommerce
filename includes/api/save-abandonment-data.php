@@ -4,6 +4,7 @@
  */
 
 require_once __DIR__ . '/../support/cartbounty.php';
+require_once __DIR__ . '/../support/wati.php';
 
 function saveCartAbandonmentData(WP_REST_Request $request)
 {
@@ -54,6 +55,14 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     // check plugin is activated or not
     rzpLogInfo('Woocommerce order id:');
     rzpLogInfo(json_encode($wcOrderId));
+
+    // Check Wati.io retargetting plugin is active or not
+    if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+
+        $result = saveWatiCartAbandonmentData($razorpayData);
+
+        return new WP_REST_Response($result['response'], $result['status_code']);
+    }
 
     //check woocommerce cart abandonment recovery plugin is activated or not
     if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
