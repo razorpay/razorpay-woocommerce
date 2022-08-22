@@ -98,7 +98,7 @@ function prepareAbandonmentData( $razorpayData ) {
             'wcf_order_comments'      => "",
             'wcf_first_name'          => $razorpayData['customer_details']['shipping_address']['name'] ?? '',
             'wcf_last_name'           => "",
-            'wcf_phone_number'        => $razorpayData['customer_details']['shipping_address']['contact'] ?? '', 'wcf_location' => $razorpayData['customer_details']['shipping_address']['country'] ?? '',
+            'wcf_phone_number'        => $razorpayData['customer_details']['shipping_address']['contact'] ?? '',
             'wcf_location'            => $razorpayData['customer_details']['shipping_address']['country'] ?? ''.','.$razorpayData['customer_details']['shipping_address']['city'] ?? '',
         );
 

@@ -57,7 +57,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     rzpLogInfo(json_encode($wcOrderId));
 
     // Check Wati.io retargetting plugin is active or not
-    if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+    if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php') && empty($razorpayData['customer_details']['shipping_address']['contact'])==false){
 
         $result = saveWatiCartAbandonmentData($razorpayData);
 
