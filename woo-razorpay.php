@@ -1540,7 +1540,7 @@ EOT;
                 // Check Wati.io retargetting plugin is active or not
                 if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
                     handleWatiRecoveredOrder($orderId);
-                 }
+                }
 
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
