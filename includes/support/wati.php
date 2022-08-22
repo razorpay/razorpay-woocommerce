@@ -80,7 +80,7 @@ function prepareAbandonmentData( $razorpayData ) {
         // Retrieving cart products and their quantities.
         $products     = WC()->cart->get_cart();
         $currentTime  = current_time( 'Y-m-d H:i:s' );
-        $otherFields = array(
+        $otherFields  = array(
             'wcf_billing_company'     => "",
             'wcf_billing_address_1'   => $razorpayData['customer_details']['billing_address']['line1'] ?? '',
             'wcf_billing_address_2'   => $razorpayData['customer_details']['billing_address']['line2'] ?? '',
