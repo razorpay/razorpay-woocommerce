@@ -351,6 +351,26 @@ function woocommerce_razorpay_init()
                 return;
             }
 
+            try
+            {
+                $api = $this->getRazorpayApiInstance();
+                $validateKeySecret = $api->request->request("GET", "orders");
+            }
+            catch (Exception $e)
+            {
+                ?>
+                <div class="notice error is-dismissible" >
+                    <p><b><?php _e( 'Please check Key Id and Key Secret.'); ?></b></p>
+                </div>
+                <?php
+
+                $log = array(
+                    'message' => $e->getMessage(),
+                );
+                rzpLogError(json_encode($log));
+
+                return;
+            }
 
             $domain = parse_url($webhookUrl, PHP_URL_HOST);
 
