@@ -161,7 +161,7 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
-            $isAccCreationAvailable = true;
+            $isAccCreationAvailable = false;
 
             // Load preference API call only for administrative interface page.
             if (is_admin())
@@ -177,9 +177,9 @@ function woocommerce_razorpay_init()
                         $is1ccAvailable = true;
                       }
 
-                      // if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
-                      //   $is1ccAvailable = true;
-                      // }
+                      if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
+                        $isAccCreationAvailable = true;
+                      }
 
                     } catch (\Exception $e) {
                       rzpLogError($e->getMessage());
@@ -1248,7 +1248,6 @@ EOT;
 
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
-                    $this->newUserAccount($razorpayData, $order);
                     $this->UpdateOrderAddress($razorpayData, $order);
                 }
 
@@ -1470,7 +1469,6 @@ EOT;
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
-            $this->newUserAccount($razorpayData, $order);
             $this->UpdateOrderAddress($razorpayData, $order);
    
 
@@ -1657,6 +1655,7 @@ EOT;
         //To update customer address info to wc order.
         public function updateOrderAddress($razorpayData, $order)
         {
+            $this->newUserAccount($razorpayData, $order);
             rzpLogInfo("updateOrderAddress function called");
             $receipt = $razorpayData['receipt'];
 
@@ -1726,7 +1725,7 @@ EOT;
 
             if (!email_exists($razorpayData['customer_details']['email']) && isMandatoryAccCreationEnabled()) {
 
-                $name = $shpping['name'];
+                //$name = $shpping['name'];
                 $contact = $razorpayData['customer_details']['contact'];
 
                 $email = $razorpayData['customer_details']['email'];
@@ -1771,7 +1770,7 @@ EOT;
                     $billingStateCode = getWcStateCodeFromName($billingStateName);
 
                     // user's shipping data
-                    update_user_meta( $userId, 'shipping_first_name', $name );
+                    update_user_meta( $userId, 'shipping_first_name', $shpping->name );
                     update_user_meta( $userId, 'shipping_address_1', $shpping->line1);
                     update_user_meta( $userId, 'shipping_address_2', $shpping->line2);
                     update_user_meta( $userId, 'shipping_city', $shpping->city);
@@ -1780,7 +1779,7 @@ EOT;
                     update_user_meta( $userId, 'shipping_state', $shippingStateCode);
 
                     // user's billing data
-                    update_user_meta( $userId, 'billing_first_name', $name);
+                    update_user_meta( $userId, 'billing_first_name', $shpping->name);
                     update_user_meta( $userId, 'billing_phone', $contact);
                     update_user_meta( $userId, 'billing_address_1', $billing->line1);
                     update_user_meta( $userId, 'billing_address_2', $billing->line2);
