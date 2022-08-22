@@ -1725,7 +1725,6 @@ EOT;
 
             if (!email_exists($razorpayData['customer_details']['email']) && isMandatoryAccCreationEnabled()) {
 
-                //$name = $shpping['name'];
                 $contact = $razorpayData['customer_details']['contact'];
 
                 $email = $razorpayData['customer_details']['email'];
