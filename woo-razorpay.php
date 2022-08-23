@@ -1079,7 +1079,7 @@ function woocommerce_razorpay_init()
                     array('razorpay_checkout'));
 
                 wp_register_script('razorpay_checkout',
-                    'https://checkout.razorpay.com/v1/checkout-1cc.js',
+                    'https://checkout.razorpay.com/v1/checkout.js',
                     null, null);
             }
 
@@ -2099,7 +2099,7 @@ function razorpay_webhook_init()
 }
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
-define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout.js');
+define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
 
