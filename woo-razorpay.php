@@ -1079,7 +1079,7 @@ function woocommerce_razorpay_init()
                     array('razorpay_checkout'));
 
                 wp_register_script('razorpay_checkout',
-                    'https://checkout.razorpay.com/v1/checkout.js',
+                    'https://checkout.razorpay.com/v1/checkout-1cc.js',
                     null, null);
             }
 
