@@ -46,12 +46,10 @@ function btnCheckout(){
   var stickyBtn = document.querySelectorAll('#btn-1cc-pdp')[1];
   
   if (stickyBtn != null) {
+
      // For attaching event listener to Woodmart's sticky add-to-cart
- 
     document.addEventListener('scroll',(e)=>{
      
-      // var stickyBtn=document.querySelectorAll('#btn-1cc-pdp')[1];
-      
       let i = 0;
        while (typeof quantity === 'undefined') {
           var quantity = document.getElementsByClassName("qty")[i].value;
