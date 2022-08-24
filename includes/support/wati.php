@@ -116,5 +116,5 @@ function prepareAbandonmentData( $razorpayData ) {
 
 function handleWatiRecoveredOrder($orderID){
     $wati = WATI_Chat_And_Notification_Aband_Cart::get_instance();
-    $wati->wati_ca_update_order_status($orderID,'abandoned','completed');
+    $wati->wati_ca_update_order_status($orderID,'pending','processing');
 }
