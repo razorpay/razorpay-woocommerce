@@ -239,9 +239,9 @@ function createWcOrder(WP_REST_Request $request)
         }
 
         $woocommerce->session->set(RZP_1CC_CART_HASH . $cartHash, $orderId);
-        set_transient(RZP_1CC_CART_HASH . $orderId, $cartHash, 3600);
-        set_transient(RZP_1CC_CART_HASH . $cartHash, $orderId, 3600);
-        set_transient($razorpay::SESSION_KEY, $orderId, 3600);
+        set_transient(RZP_1CC_CART_HASH . $orderId, $cartHash, 14400);
+        set_transient(RZP_1CC_CART_HASH . $cartHash, $orderId, 14400);
+        set_transient($razorpay::SESSION_KEY, $orderId, 14400);
 
         $logObj['response'] = $response;
         rzpLogInfo(json_encode($logObj));
