@@ -245,9 +245,10 @@ function clearCartData($wcOrderId, $cartTable)
 function readCartCB($wcOrderId)
 {
     WC()->cart->empty_cart();
-    $cart1cc = create1ccCart($wcOrderId);
-    $cart    = WC()->cart;
-
+    $cart1cc          = create1ccCart($wcOrderId);
+    $cart             = WC()->cart;
+    $cartbountyPublic = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+    
     if (!WC()->cart) {
         //Exit if Woocommerce cart has not been initialized
         return;
@@ -283,7 +284,7 @@ function readCartCB($wcOrderId)
             $singleVariation = new WC_Product_Variation($product['variation_id']);
 
             //Handling variable product title output with attributes
-            $productAttributes  = attribute_slug_to_title($singleVariation->get_variation_attributes());
+            $productAttributes = $cartbountyPublic->attribute_slug_to_title($singleVariation->get_variation_attributes());
             $productVariationID = $product['variation_id'];
         } else {
             $productAttributes  = false;
