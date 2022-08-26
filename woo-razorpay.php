@@ -1558,7 +1558,7 @@ EOT;
                 }
 
                 // Check Wati.io retargetting plugin is active or not
-                if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+                if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
                     handleWatiRecoveredOrder($orderId);
                 }
 
