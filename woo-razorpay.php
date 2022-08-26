@@ -1552,7 +1552,9 @@ EOT;
                     $order->payment_complete($razorpayPaymentId);
                 }
 
-                if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+                $is1ccOrder = get_post_meta( $wcOrderId, 'is_magic_checkout_order', true );
+
+                if(is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
                     handleCBRecoveredOrder($orderId);
                 }
 
