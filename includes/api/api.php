@@ -201,6 +201,13 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'       => __('Activate Magic Checkout Facebook Analytics'),
             'default'     => 'no',
         ),
+        '1cc_account_creation' => array(
+            'title' => __('Allow customers to create store Account'),
+            'type'        => 'checkbox',
+            'description' => 'Allow customers to create store Account',
+            'label'      =>  __('Allow customers to create store Account'),
+            'default' => 'No',
+        ),
     );
 
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);
