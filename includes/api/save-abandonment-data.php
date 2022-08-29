@@ -3,6 +3,8 @@
  * For abandon cart recovery related API
  */
 
+require_once __DIR__ . '/../support/cartbounty.php';
+
 function saveCartAbandonmentData(WP_REST_Request $request)
 {
     global $woocommerce;
@@ -31,7 +33,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
-
     if (isset($razorpayData['receipt'])) {
         $wcOrderId = $razorpayData['receipt'];
 
@@ -59,6 +60,14 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
         //save abandonment data
         $result = saveWooCartAbandonmentRecoveryData($razorpayData);
+
+        return new WP_REST_Response($result['response'], $result['status_code']);
+    }
+
+    //Check CartBounty plugin is activated or not
+    if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && (empty($razorpayData['customer_details']['email']) == false || empty($customerEmail) == false)) {
+
+        $result = saveCartBountyData($razorpayData); //save abandonment data
 
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
@@ -131,9 +140,8 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
     $billingLastName  = " ";
     $billingZipcode   = $razorpayData['customer_details']['billing_address']['zipcode'] ?? '';
     $shippingZipcode  = $razorpayData['customer_details']['shipping_address']['zipcode'] ?? '';
-
-    $shippingCharges = $razorpayData['shipping_fee'] / 100;
-    $email           = $razorpayData['customer_details']['email'];
+    $shippingCharges  = $razorpayData['shipping_fee'] / 100;
+    $email            = $razorpayData['customer_details']['email'];
 
     // Insert record in abandoned cart table for the guest user.
     $userId = saveGuestUserDetails($billingFirstName, $billingLastName, $email, $billingZipcode, $shippingZipcode, $shippingCharges);

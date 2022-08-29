@@ -7,6 +7,7 @@ $productData = wp_json_encode(['id' => $product->get_id(), 'quantity' => 1]);
   class="button alt single_add_to_cart_button"
   type="button"
   product_id="<?php echo esc_attr($product->get_id()); ?>"
+  value="<?php echo esc_attr($product->get_id()); ?>"
   pdp_checkout="<?php echo true; ?>"
   >BUY NOW
 </button>
