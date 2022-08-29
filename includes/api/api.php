@@ -201,13 +201,6 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'       => __('Activate Magic Checkout Facebook Analytics'),
             'default'     => 'no',
         ),
-        'enable_1cc_debug_mode'         => array(
-            'title'       => __('Activate debug mode'),
-            'type'        => 'checkbox',
-            'description' => 'When debug mode is active, API logs and errors are collected and stored in your Woocommerce dashboard. It is recommended to keep this activated.',
-            'label'       => __('Enable debug mode for Magic Checkout'),
-            'default'     => 'yes',
-        ),
         '1cc_account_creation' => array(
             'title' => __('Allow customers to create store Account'),
             'type'        => 'checkbox',
@@ -221,14 +214,14 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
 
 }
 
-//To handle rest cookies invalid issue 
+//To handle rest cookies invalid issue
 add_filter("nonce_user_logged_out", function ($uid, $action) {
     if ($uid === 0 && $action === 'wp_rest') {
-      return null;
+        return null;
     }
     return $uid;
 }, 10, 2);
 
-add_filter( 'rest_authentication_errors', function( $maybe_error ) {
+add_filter('rest_authentication_errors', function ($maybe_error) {
     return true;
 });
