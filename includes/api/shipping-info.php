@@ -281,7 +281,7 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
     $minCODAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_min_COD_slab_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_min_COD_slab_amount'] : 0;
     $maxCODAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_max_COD_slab_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_max_COD_slab_amount'] : 0;
 
-    if (!isset($availablePaymentMethods['cod']) || 'no' == $availablePaymentMethods['cod']->enabled ) {
+    if (!isset($availablePaymentMethods['cod']) || 'no' == $availablePaymentMethods['cod']->enabled) {
         return false;
     }
 
