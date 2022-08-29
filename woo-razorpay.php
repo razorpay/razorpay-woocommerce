@@ -1552,7 +1552,7 @@ EOT;
                     $order->payment_complete($razorpayPaymentId);
                 }
 
-                if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+                if(is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
                     handleCBRecoveredOrder($orderId);
                 }
 
