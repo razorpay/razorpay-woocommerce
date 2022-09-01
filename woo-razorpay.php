@@ -25,6 +25,7 @@ require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
+require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -324,6 +325,24 @@ function woocommerce_razorpay_init()
                 if (in_array($key, $this->visibleSettings, true))
                 {
                     $this->form_fields[$key] = $value;
+                }
+            }
+            if(isset($_POST['woocommerce_razorpay_key_id']) and isset($_POST['woocommerce_razorpay_key_secret']))
+            {
+                $api = new Api($_POST['woocommerce_razorpay_key_id'],$_POST['woocommerce_razorpay_key_secret']);
+            }
+            else
+            {
+                $api = $this->getRazorpayApiInstance();
+            }
+            $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+            
+            foreach ($merchantPreferences['assigned_features'] as $preference) {
+                if ($preference['name'] == 'affordability_widget') 
+                {
+                    add_action( 'woocommerce_sections_checkout', 'addSubSection');
+                    add_action( 'woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
+                    add_action( 'woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
                 }
             }
         }
@@ -2172,6 +2191,8 @@ EOT;
     }
 
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
+
+    add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
 }
 
 // This is set to a priority of 10
