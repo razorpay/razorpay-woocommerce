@@ -3,7 +3,10 @@
 function saveWatiCartAbandonmentData($razorpayData){
 
 	$wati = WATI_Chat_And_Notification_Aband_Cart::get_instance();
-
+    $wati->webhook_setting_script();
+    $wati->cart_abandonment_tracking_script();
+    $wati->save_cart_abandonment_data();
+    
     if ( isset( $razorpayData['customer_details']['email'] ) ) {
        
         global $wpdb;
