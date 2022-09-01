@@ -116,7 +116,8 @@ function deleteDuplicateCarts($sessionID, $duplicateCount, $cartTable)
     $cartbountyAdmin = new CartBounty_Admin(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
     if ($duplicateCount) {
         //If we have updated at least one row
-        if ($duplicateCount > 1) { //Checking if we have updated more than a single row to know if there were duplicates
+        if ($duplicateCount > 1) {
+            //Checking if we have updated more than a single row to know if there were duplicates
             $whereSentence = $cartbountyAdmin->get_where_sentence('ghost');
             //First delete all duplicate ghost carts
             $deletedDuplicateGhostCarts = $wpdb->query(
@@ -173,7 +174,7 @@ function getSessionID($orderID)
 function handleCBRecoveredOrder($orderID)
 {
     global $wpdb;
-    
+
     if (!isset($orderID)) {
         //Exit if Order ID is not present
         return;
@@ -245,8 +246,9 @@ function clearCartData($wcOrderId, $cartTable)
 function readCartCB($wcOrderId)
 {
     WC()->cart->empty_cart();
-    $cart1cc = create1ccCart($wcOrderId);
-    $cart    = WC()->cart;
+    $cart1cc          = create1ccCart($wcOrderId);
+    $cart             = WC()->cart;
+    $cartbountyPublic = new CartBounty_Public(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
 
     if (!WC()->cart) {
         //Exit if Woocommerce cart has not been initialized
@@ -283,7 +285,7 @@ function readCartCB($wcOrderId)
             $singleVariation = new WC_Product_Variation($product['variation_id']);
 
             //Handling variable product title output with attributes
-            $productAttributes  = attribute_slug_to_title($singleVariation->get_variation_attributes());
+            $productAttributes  = $cartbountyPublic->attribute_slug_to_title($singleVariation->get_variation_attributes());
             $productVariationID = $product['variation_id'];
         } else {
             $productAttributes  = false;

@@ -200,21 +200,28 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'description' => "To track orders using Facebook Pixel",
             'label'       => __('Activate Magic Checkout Facebook Analytics'),
             'default'     => 'no',
-        )
+        ),
+        '1cc_account_creation' => array(
+            'title' => __('Allow customers to create store Account'),
+            'type'        => 'checkbox',
+            'description' => 'Allow customers to create store Account',
+            'label'      =>  __('Allow customers to create store Account'),
+            'default' => 'No',
+        ),
     );
 
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);
 
 }
 
-//To handle rest cookies invalid issue 
+//To handle rest cookies invalid issue
 add_filter("nonce_user_logged_out", function ($uid, $action) {
     if ($uid === 0 && $action === 'wp_rest') {
-      return null;
+        return null;
     }
     return $uid;
 }, 10, 2);
 
-add_filter( 'rest_authentication_errors', function( $maybe_error ) {
+add_filter('rest_authentication_errors', function ($maybe_error) {
     return true;
 });

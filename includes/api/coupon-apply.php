@@ -125,7 +125,7 @@ function applyCouponOnCart(WP_REST_Request $request)
     WC()->cart->empty_cart();
 
     $cart1cc = create1ccCart($orderId);
-    
+
     WC()->cart->remove_coupon($couponCode);
 
     if ($cart1cc) {
