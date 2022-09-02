@@ -327,7 +327,8 @@ function woocommerce_razorpay_init()
                     $this->form_fields[$key] = $value;
                 }
             }
-            if(isset($_POST['woocommerce_razorpay_key_id']) and isset($_POST['woocommerce_razorpay_key_secret']))
+            if (isset($_POST['woocommerce_razorpay_key_id']) and 
+                isset($_POST['woocommerce_razorpay_key_secret']))
             {
                 $api = new Api($_POST['woocommerce_razorpay_key_id'],$_POST['woocommerce_razorpay_key_secret']);
             }

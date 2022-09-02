@@ -1,12 +1,17 @@
 <?php
 
 require_once __DIR__.'/utils.php';
+
 function addAffordabilityWidgetHTML()
 {
     $current_user = wp_get_current_user();
-    if ((isAffordabilityWidgetTestModeEnabled() == false and empty(get_option('rzp_afd_enable')) == false and  get_option('rzp_afd_enable') == 'yes') 
-    or 
-    (isAffordabilityWidgetTestModeEnabled() and ($current_user->has_cap( 'administrator' ) or preg_match( '/@razorpay.com$/i', $current_user->user_email ))))
+    if ((isAffordabilityWidgetTestModeEnabled() === false and 
+        empty(get_option('rzp_afd_enable')) === false and  
+        get_option('rzp_afd_enable') === 'yes') 
+        or 
+        (isAffordabilityWidgetTestModeEnabled() and 
+        ($current_user->has_cap('administrator') or 
+        preg_match('/@razorpay.com$/i', $current_user->user_email))))
     {
         echo '<div id="razorpay-affordability-widget" style="display: block;"></div>
         <script src="https://cdn.razorpay.com/widgets/affordability/affordability.js">
@@ -20,45 +25,44 @@ function addAffordabilityWidgetHTML()
                         "key": key,
                         "amount": amount,
                         "theme": {
-                        "color": "'.getThemeColor().'"
+                            "color": "'.getThemeColor().'"
                         },
                         "features": {
-                        "offers": {
-                            "list": '.getAdditionalOffers().',
-                        }
+                            "offers": {
+                                "list": '.getAdditionalOffers().',
+                            }
                         },
                         "display": {
-                        "offers": '.getOffers().',
-                        "emi": '.getEmi().',
-                        "cardlessEmi": '.getCardlessEmi().',
-                        "paylater": '.getPayLater().',
-                        "widget": {
-                            "main": {
-                                "heading": {
-                                "color": "'.getHeadingColor().'",
-                                "fontSize": "'.getHeadingFontSize().'px"
-                                },
-                                "content": {
-                                "color": "'.getContentColor().'",
-                                "fontSize": "'.getContentFontSize().'px"
-                                },
-                                "link": {
-                                "color": "'.getLinkColor().'",
-                                "fontSize": "'.getLinkFontSize().'px"
-                                },
-                                "footer": {
-                                "color": "'.getFooterColor().'",
-                                "fontSize": "'.getFooterFontSize().'px",
-                                "darkLogo": '.getFooterDarkLogo().'// true is default show black text rzp logo
+                            "offers": '.getOffers().',
+                            "emi": '.getEmi().',
+                            "cardlessEmi": '.getCardlessEmi().',
+                            "paylater": '.getPayLater().',
+                            "widget": {
+                                "main": {
+                                    "heading": {
+                                        "color": "'.getHeadingColor().'",
+                                        "fontSize": "'.getHeadingFontSize().'px"
+                                    },
+                                    "content": {
+                                        "color": "'.getContentColor().'",
+                                        "fontSize": "'.getContentFontSize().'px"
+                                    },
+                                    "link": {
+                                        "color": "'.getLinkColor().'",
+                                        "fontSize": "'.getLinkFontSize().'px"
+                                    },
+                                    "footer": {
+                                        "color": "'.getFooterColor().'",
+                                        "fontSize": "'.getFooterFontSize().'px",
+                                        "darkLogo": '.getFooterDarkLogo().'// true is default show black text rzp logo
+                                    }
                                 }
-                            }
                             }
                         }
                 };
-                console.log(widgetConfig);
-            const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
-            rzpAffordabilitySuite.render();
-                }
+                const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
+                rzpAffordabilitySuite.render();
+            }
         </script>
         ';
     }
@@ -72,7 +76,7 @@ function getKeyId()
 function getPrice()
 {
     global $product;
-    if (!$product->is_type('variable'))
+    if ($product->is_type('variable') === false)
     {
         if ($product->is_on_sale()) {
             $price = $product->get_sale_price();
@@ -86,22 +90,24 @@ function getPrice()
     {
         $price = $product->get_price();
     }
+
     return $price;
 }
 function getOffers()
 {
     $offers = 'true';
-    if (empty(get_option('rzp_afd_enable_offers')) === false
-    and 'yes' == get_option('rzp_afd_enable_offers'))
+    if (empty(get_option('rzp_afd_enable_offers')) === false and 
+        get_option('rzp_afd_enable_offers') === 'yes')
     {
         $offers = "true";
     }
-    elseif (empty(get_option('rzp_afd_enable_offers')) === false
-    and 'no' == get_option('rzp_afd_enable_offers'))
+    elseif (empty(get_option('rzp_afd_enable_offers')) === false and 
+            get_option('rzp_afd_enable_offers') === 'no')
     {
         $offers = "false";
     }
-    if (empty(get_option('rzp_afd_limited_offers')) == false and $offers != "false")
+    if (empty(get_option('rzp_afd_limited_offers')) === false and 
+        $offers != "false")
     {
         $offers = '{ "offerIds": [';
         foreach (explode(",",get_option('rzp_afd_limited_offers')) as $provider){
@@ -110,7 +116,8 @@ function getOffers()
         }	
         $offers = $offers.']';
     }
-    if (empty(get_option('rzp_afd_show_discount_amount')) == false and $offers != "false")
+    if (empty(get_option('rzp_afd_show_discount_amount')) === false and 
+        $offers != "false")
     {
         if ($offers != "true")
         {
@@ -122,24 +129,26 @@ function getOffers()
         }
         $offers = $offers.'"showDiscount": ';
         if (empty(get_option('rzp_afd_show_discount_amount')) === false
-        and 'yes' == get_option('rzp_afd_show_discount_amount'))
+        and get_option('rzp_afd_show_discount_amount') === 'yes')
         {
             $offers = $offers.'true';
         }
         elseif (empty(get_option('rzp_afd_show_discount_amount')) === false
-        and 'no' == get_option('rzp_afd_show_discount_amount'))
+        and get_option('rzp_afd_show_discount_amount') === 'no')
         {
             $offers = $offers.'false';
         }
         $offers = $offers.'}';
     }
+
     return $offers;
 }
 
 function getAdditionalOffers()
 {
     $additionalOffers = '[]';
-    if (empty(get_option('rzp_afd_additional_offers')) == false and getOffers() != "false")
+    if (empty(get_option('rzp_afd_additional_offers')) === false and 
+        getOffers() != "false")
     {
         $additionalOffers = '[';
         foreach (explode(",",get_option('rzp_afd_additional_offers')) as $provider){
@@ -148,23 +157,25 @@ function getAdditionalOffers()
         }	
         $additionalOffers = $additionalOffers.']';
     }
+
     return $additionalOffers;
 }
 
 function getEmi()
 {
     $emi = 'true';
-    if (empty(get_option('rzp_afd_enable_emi')) === false
-    and 'yes' == get_option('rzp_afd_enable_emi'))
+    if (empty(get_option('rzp_afd_enable_emi')) === false and 
+        get_option('rzp_afd_enable_emi') === 'yes')
     {
         $emi = "true";
     }
-    elseif (empty(get_option('rzp_afd_enable_emi')) === false
-    and 'no' == get_option('rzp_afd_enable_emi'))
+    elseif (empty(get_option('rzp_afd_enable_emi')) === false and 
+        get_option('rzp_afd_enable_emi') === 'no')
     {
         $emi = "false";
     }
-    if (empty(get_option('rzp_afd_limited_emi_providers')) == false and $emi != "false")
+    if (empty(get_option('rzp_afd_limited_emi_providers')) === false and 
+        $emi != "false")
     {
         $emi = '{ "issuers": [';
         foreach (explode(",",get_option('rzp_afd_limited_emi_providers')) as $provider){
@@ -173,23 +184,25 @@ function getEmi()
         }	
         $emi = $emi.'] }';
     }
+
     return $emi;
 }
 
 function getCardlessEmi()
 {
     $cardlessEmi = 'true';
-    if (empty(get_option('rzp_afd_enable_cardless_emi')) === false
-    and 'yes' == get_option('rzp_afd_enable_cardless_emi'))
+    if (empty(get_option('rzp_afd_enable_cardless_emi')) === false and 
+        get_option('rzp_afd_enable_cardless_emi') === 'yes')
     {
         $cardlessEmi = "true";
     }
-    elseif (empty(get_option('rzp_afd_enable_cardless_emi')) === false
-    and 'no' == get_option('rzp_afd_enable_cardless_emi'))
+    elseif (empty(get_option('rzp_afd_enable_cardless_emi')) === false and 
+            get_option('rzp_afd_enable_cardless_emi') === 'no')
     {
         $cardlessEmi = "false";
     }
-    if (empty(get_option('rzp_afd_limited_cardless_emi_providers')) == false and $cardlessEmi != "false")
+    if (empty(get_option('rzp_afd_limited_cardless_emi_providers')) === false and 
+        $cardlessEmi != "false")
     {
         $cardlessEmi = '{ "providers": [';
         foreach (explode(",",get_option('rzp_afd_limited_cardless_emi_providers')) as $provider){
@@ -198,23 +211,25 @@ function getCardlessEmi()
         }	
         $cardlessEmi = $cardlessEmi.'] }';
     }
+
     return $cardlessEmi;
 }
 
 function getPayLater()
 {
     $payLater = 'true';
-    if (empty(get_option('rzp_afd_enable_pay_later')) === false
-    and 'yes' == get_option('rzp_afd_enable_pay_later'))
+    if (empty(get_option('rzp_afd_enable_pay_later')) === false and 
+        get_option('rzp_afd_enable_pay_later') === 'yes')
     {
         $payLater = "true";
     }
-    elseif (empty(get_option('rzp_afd_enable_pay_later')) === false
-    and 'no' == get_option('rzp_afd_enable_pay_later'))
+    elseif (empty(get_option('rzp_afd_enable_pay_later')) === false and 
+            get_option('rzp_afd_enable_pay_later') === 'no')
     {
         $payLater = "false";
     }
-    if (empty(get_option('rzp_afd_limited_pay_later_providers')) == false and $payLater != "false")
+    if (empty(get_option('rzp_afd_limited_pay_later_providers')) === false and 
+        $payLater != "false")
     {
         $payLater = '{ "providers": [';
         foreach (explode(",",get_option('rzp_afd_limited_pay_later_providers')) as $provider){
@@ -223,6 +238,7 @@ function getPayLater()
         }	
         $payLater = $payLater.'] }';
     }
+
     return $payLater;
 }
 
@@ -233,6 +249,7 @@ function getThemeColor()
     {
         $themeColor = get_option('rzp_afd_theme_color');
     }
+
     return $themeColor;
 }
 
@@ -243,6 +260,7 @@ function getHeadingColor()
     {
         $headingColor = get_option('rzp_afd_heading_color');
     }
+
     return $headingColor;
 }
 
@@ -253,6 +271,7 @@ function getHeadingFontSize()
     {
         $headingFontSize = get_option('rzp_afd_heading_font_size');
     }
+
     return $headingFontSize;
 }
 
@@ -263,6 +282,7 @@ function getContentColor()
     {
         $contentColor = get_option('rzp_afd_content_color');
     }
+
     return $contentColor;
 }
 
@@ -273,6 +293,7 @@ function getContentFontSize()
     {
         $contentFontSize = get_option('rzp_afd_content_font_size');
     }
+
     return $contentFontSize;
 }
 
@@ -283,6 +304,7 @@ function getLinkColor()
     {
         $linkColor = get_option('rzp_afd_link_color');
     }
+
     return $linkColor;
 }
 
@@ -293,6 +315,7 @@ function getLinkFontSize()
     {
         $linkFontSize = get_option('rzp_afd_link_font_size');
     }
+
     return $linkFontSize;
 }
 
@@ -303,6 +326,7 @@ function getFooterColor()
     {
         $footerColor = get_option('rzp_afd_footer_color');
     }
+
     return $footerColor;
 }
 
@@ -313,22 +337,24 @@ function getFooterFontSize()
     {
         $footerFontSize = get_option('rzp_afd_footer_font_size');
     }
+
     return $footerFontSize;
 }
 
 function getFooterDarkLogo()
 {
     $footerDarkLogo = "true";
-    if (empty(get_option('rzp_afd_enable_dark_logo')) === false
-    and 'yes' == get_option('rzp_afd_enable_dark_logo'))
+    if (empty(get_option('rzp_afd_enable_dark_logo')) === false and 
+        get_option('rzp_afd_enable_dark_logo') === 'yes')
     {
         $footerDarkLogo = "true";
     }
-    elseif (empty(get_option('rzp_afd_enable_dark_logo')) === false
-    and 'no' == get_option('rzp_afd_enable_dark_logo'))
+    elseif (empty(get_option('rzp_afd_enable_dark_logo')) === false and
+             get_option('rzp_afd_enable_dark_logo') === 'no')
     {
         $footerDarkLogo = "false";
     }
+
     return $footerDarkLogo;
 }
 
@@ -348,9 +374,11 @@ function addSubSection() {
     echo '<ul class="subsubsub">';
 
     $array_keys = array_keys( $sections );
-    foreach ( $sections as $id => $label ) {
-        if ($current_section == 'razorpay' or $current_section == 'affordability-widget')
-        echo '<li><a href="' . admin_url( 'admin.php?page=wc-settings&tab=' . $tab_id . '&section=' . sanitize_title( $id ) ) . '" class="' . ( $current_section == $id ? 'current' : '' ) . '">' . $label . '</a> ' . ( end( $array_keys ) == $id ? '' : '|' ) . ' </li>';
+    foreach ( $sections as $id => $label ) 
+    {
+        if ($current_section === 'razorpay' or 
+            $current_section === 'affordability-widget')
+        echo '<li><a href="' . admin_url( 'admin.php?page=wc-settings&tab=' . $tab_id . '&section=' . sanitize_title( $id ) ) . '" class="' . ( $current_section === $id ? 'current' : '' ) . '">' . $label . '</a> ' . ( end( $array_keys ) === $id ? '' : '|' ) . ' </li>';
     }
    
     echo '</ul><br class="clear" />';
@@ -360,44 +388,44 @@ function getAffordabilityWidgetSettings() {
     global $current_section;
     $settings = array();
 
-    if ( $current_section == 'affordability-widget' ) {
+    if ( $current_section === 'affordability-widget' ) {
         $settings = array(
             'section_title' => array(
-                'name'     => __( 'Affordability Widget Settings'),
-                'type'     => 'title',
-                'desc'     => '',
-                'id'       => 'rzp_afd_section_title'
+                'name' => __( 'Affordability Widget Settings'),
+                'type' => 'title',
+                'desc' => '',
+                'id' => 'rzp_afd_section_title'
             ),
             'enable' => array(
                 'title' => __('Affordability Widget Enable/Disable'),
                 'type' => 'checkbox',
                 'desc' => __('Enable Affordability Widget?'),
                 'default' => 'yes',
-                'id'   => 'rzp_afd_enable'
+                'id' => 'rzp_afd_enable'
             ),
             'enable_test_mode' => array(
                 'title' => __('Test Mode Enable/Disable'),
                 'type' => 'checkbox',
                 'desc' => __('Enable Test Mode?'),
                 'default' => 'yes',
-                'id'   => 'rzp_afd_enable_test_mode'
+                'id' => 'rzp_afd_enable_test_mode'
             ),
             'enable_offers' => array(
                 'title' => __('Offers Enable/Disable'),
                 'type' => 'checkbox',
                 'desc' => __('Enable offers?'),
                 'default' => 'yes',
-                'id'   => 'rzp_afd_enable_offers'
+                'id' => 'rzp_afd_enable_offers'
             ),
             'additional_offers' => array(
                 'title' => __('Additional Offers'),
-                'type'  => 'textarea',
+                'type' => 'textarea',
                 'desc' =>  __('Enter offer id for offer that did not have the \'Show Offer on Checkout\' option enabled'),
                 'id' => 'rzp_afd_additional_offers'
             ),
             'limited_offers' => array(
                 'title' => __('Limited Offers'),
-                'type'  => 'textarea',
+                'type' => 'textarea',
                 'desc' =>  __('In case you want to display limited offers on the widget, enter the offer_id of the offers of your choice.'),
                 'id' => 'rzp_afd_limited_offers'
             ),
@@ -417,7 +445,7 @@ function getAffordabilityWidgetSettings() {
             ),
             'limited_emi_providers' => array(
                 'title' => __('Limited EMI Providers'),
-                'type'  => 'textarea',
+                'type' => 'textarea',
                 'desc' =>  __('In case you want to display limited EMI options on the widget, enter the list of provider codes based on your requirement.'),
                 'id' => 'rzp_afd_limited_emi_providers'
             ),
@@ -430,7 +458,7 @@ function getAffordabilityWidgetSettings() {
             ),
             'limited_cardles_emi_providers' => array(
                 'title' => __('Limited Cardless EMI Providers'),
-                'type'  => 'textarea',
+                'type' => 'textarea',
                 'desc' =>  __('In case you want to display limited Cardless EMI options on the widget, enter the list of provider codes based on your requirement.'),
                 'id' => 'rzp_afd_limited_cardless_emi_providers'
             ),
@@ -443,7 +471,7 @@ function getAffordabilityWidgetSettings() {
             ),
             'limited_pay_later_providers' => array(
                 'title' => __('Limited Pay Later Providers'),
-                'type'  => 'textarea',
+                'type' => 'textarea',
                 'desc' =>  __('In case you want to display limited Pay Later options on the widget, enter the list of provider codes based on your requirement.'),
                 'id' => 'rzp_afd_limited_pay_later_providers'
             ),
@@ -508,7 +536,6 @@ function getAffordabilityWidgetSettings() {
                 'default' => 'yes',
                 'id'   => 'rzp_afd_enable_dark_logo'
             ),
-
             'section_end' => array(
                  'type' => 'sectionend',
                  'id' => 'wc_settings_tab_demo_section_end'
