@@ -172,7 +172,7 @@ function getEmi()
         $emi = "true";
     }
     elseif (empty(get_option('rzp_afd_enable_emi')) === false and 
-        get_option('rzp_afd_enable_emi') === 'no')
+            get_option('rzp_afd_enable_emi') === 'no')
     {
         $emi = "false";
     }
