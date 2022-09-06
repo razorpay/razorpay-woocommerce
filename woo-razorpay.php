@@ -1642,7 +1642,7 @@ EOT;
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
             $this->UpdateOrderAddress($razorpayData, $order);
-   
+
 
 
             if (empty($razorpayData['promotions'][0]) === false)
@@ -1890,7 +1890,7 @@ EOT;
             }
         }
 
-        //Create new user account 
+        //Create new user account
         public function newUserAccount($razorpayData, $order)
         {
             global $woocommerce;
@@ -1903,11 +1903,11 @@ EOT;
                 $random_password = wp_generate_password(8, false);
 
                 //create user name with the help default woocommerce function
-                $username = wc_create_new_customer_username( $email , $name);
+                $username = wc_create_new_customer_username( $email );
                 $userId  = wp_create_user( $username, $random_password, $email );
                 $user = get_user_by('id', $userId);
 
-                update_post_meta($order->id, '_customer_user', $userId);
+                update_post_meta($order->get_id(), '_customer_user', $userId);
 
                 // Get all WooCommerce emails Objects from WC_Emails Object instance
                 $emails = wc()->mailer()->emails;
