@@ -119,7 +119,7 @@ function validateInput($route, $param)
 function isAffordabilityWidgetTestModeEnabled()
 {
     return (
-        empty(get_option('rzp_afd_enable_test_mode')) === false
-        && 'yes' == get_option('rzp_afd_enable_test_mode')
+        empty(get_option('rzp_afd_enable_test_mode')) === false and
+        get_option('rzp_afd_enable_test_mode') === 'yes'
     );
 }	

@@ -338,7 +338,8 @@ function woocommerce_razorpay_init()
             }
             $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
             
-            foreach ($merchantPreferences['assigned_features'] as $preference) {
+            foreach ($merchantPreferences['assigned_features'] as $preference) 
+            {
                 if ($preference['name'] == 'affordability_widget') 
                 {
                     add_action( 'woocommerce_sections_checkout', 'addSubSection');

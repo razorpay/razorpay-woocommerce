@@ -110,7 +110,8 @@ function getOffers()
         $offers != "false")
     {
         $offers = '{ "offerIds": [';
-        foreach (explode(",",get_option('rzp_afd_limited_offers')) as $provider){
+        foreach (explode(",",get_option('rzp_afd_limited_offers')) as $provider)
+        {
             $offers = $offers.'"'.$provider.'"';
             $offers = $offers.',';
         }	
@@ -151,7 +152,8 @@ function getAdditionalOffers()
         getOffers() != "false")
     {
         $additionalOffers = '[';
-        foreach (explode(",",get_option('rzp_afd_additional_offers')) as $provider){
+        foreach (explode(",",get_option('rzp_afd_additional_offers')) as $provider)
+        {
             $additionalOffers = $additionalOffers.'"'.$provider.'"';
             $additionalOffers = $additionalOffers.',';
         }	
@@ -178,7 +180,8 @@ function getEmi()
         $emi != "false")
     {
         $emi = '{ "issuers": [';
-        foreach (explode(",",get_option('rzp_afd_limited_emi_providers')) as $provider){
+        foreach (explode(",",get_option('rzp_afd_limited_emi_providers')) as $provider)
+        {
             $emi = $emi.'"'.$provider.'"';
             $emi = $emi.',';
         }	
@@ -205,7 +208,8 @@ function getCardlessEmi()
         $cardlessEmi != "false")
     {
         $cardlessEmi = '{ "providers": [';
-        foreach (explode(",",get_option('rzp_afd_limited_cardless_emi_providers')) as $provider){
+        foreach (explode(",",get_option('rzp_afd_limited_cardless_emi_providers')) as $provider)
+        {
             $cardlessEmi = $cardlessEmi.'"'.$provider.'"';
             $cardlessEmi = $cardlessEmi.',';
         }	
@@ -232,7 +236,8 @@ function getPayLater()
         $payLater != "false")
     {
         $payLater = '{ "providers": [';
-        foreach (explode(",",get_option('rzp_afd_limited_pay_later_providers')) as $provider){
+        foreach (explode(",",get_option('rzp_afd_limited_pay_later_providers')) as $provider)
+        {
             $payLater = $payLater.'"'.$provider.'"';
             $payLater = $payLater.',';
         }	
