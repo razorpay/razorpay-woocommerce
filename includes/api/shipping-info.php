@@ -160,7 +160,7 @@ function getItemResponse1cc($package, $id, $vendorId, $orderId, $address)
 
     //To support advancd free shipping plugin
     if (is_plugin_active('woocommerce-advanced-free-shipping/woocommerce-advanced-free-shipping.php')) {
-        include_once ABSPATH . 'wp-content/plugins/woocommerce-advanced-free-shipping/woocommerce-advanced-free-shipping.php';
+        include_once ABSPATH . 'wp-content/plugins/woocommerce-advanced-free-shipping/woocommerce-advanced-free-shipping.php'; //nosemgrep : file-inclusion
 
         if (class_exists('Wafs_Free_Shipping_Method')) {
             $wasp_method          = new Wafs_Free_Shipping_Method();
