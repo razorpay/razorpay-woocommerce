@@ -19,7 +19,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     $razorpay = new WC_Razorpay(false);
     $api      = $razorpay->getRazorpayApiInstance();
-
     try
     {
         $razorpayData = $api->order->fetch($rzpOrderId);
@@ -34,7 +33,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
-
     if (isset($razorpayData['receipt'])) {
         $wcOrderId = $razorpayData['receipt'];
 
