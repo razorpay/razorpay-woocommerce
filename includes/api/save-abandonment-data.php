@@ -79,10 +79,10 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $res = saveCartBountyData($razorpayData); //save abandonment data
 
         if($res['status_code'] == 200){
-            $result['response']    = $result['response']."\r\n"."Data inserted for CartBounty plugin";
+            $result['response']    = $result['response'].PHP_EOL."Data inserted for CartBounty plugin";
             $result['status_code'] = 200;
         }else{
-            $result['response']    = $result['response']."\r\n"."Failed to insert data for CartBounty plugin"; 
+            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for CartBounty plugin"; 
             $result['status_code'] = 400;
         }
     }
@@ -98,7 +98,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             $response['status']    = false;
             $response['message']   = 'cart item does not exist in klaviyo';
             $statusCode            = 400;
-            $result['response']    = $result['response']."\r\n"."\nFailed to insert data for Klaviyo plugin"; 
+            $result['response']    = $result['response'].PHP_EOL."\nFailed to insert data for Klaviyo plugin"; 
             $result['status_code'] = 400;
         }
         $eventData['$service'] = 'woocommerce';
@@ -127,7 +127,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             $response['status']    = false;
             $response['message']   = 'For Register user we can not insert data';
             $statusCode            = 400;
-            $result['response']    = $result['response']."\r\n"."Failed to insert data for Abandonment Cart Lite plugin"; 
+            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin"; 
             $result['status_code'] = 400;
         }
 
@@ -135,10 +135,10 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $res = saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId);
         
         if($res['status_code'] == 200){
-            $result['response']    = $result['response']."\r\n"."Successfully inserted data for Abandonment Cart Lite plugin"; 
+            $result['response']    = $result['response'].PHP_EOL."Successfully inserted data for Abandonment Cart Lite plugin"; 
             $result['status_code'] = 200;
         }else{
-            $result['response']    = $result['response']."\r\n"."Failed to insert data for Abandonment Cart Lite plugin"; 
+            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin"; 
             $result['status_code'] = 400;
         }
     
@@ -146,7 +146,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $response['status']    = false;
         $response['message']   = 'Failed to insert data';
         $statusCode            = 400;
-        $result['response']    = $result['response']."\r\n"."Failed to insert data for Abandonment Cart Lite plugin"; 
+        $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin"; 
         $result['status_code'] = 400;
         $logObj['response']    = $response;
         $logObj['status_code'] = $statusCode;
