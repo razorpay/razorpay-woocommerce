@@ -67,13 +67,12 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $res = saveWooCartAbandonmentRecoveryData($razorpayData);
 
         if($res['status_code'] == 200){
-            $result['response']    = "Data inserted for Wati plugin";
+            $result['response']    = "Data inserted for WooCart abandoned recovery plugin";
             $result['status_code'] = 200;
         }else{
-            $result['response']    = "Failed to insert data for Wati plugin"; 
+            $result['response']    = "Failed to insert data for WooCart abandoned recovery plugin"; 
             $result['status_code'] = 400;
         }
-        // return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
     //Check CartBounty plugin is activated or not
