@@ -19,6 +19,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     $razorpay = new WC_Razorpay(false);
     $api      = $razorpay->getRazorpayApiInstance();
+
     try
     {
         $razorpayData = $api->order->fetch($rzpOrderId);
@@ -33,6 +34,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
         return new WP_REST_Response($response, $statusCode);
     }
+
     if (isset($razorpayData['receipt'])) {
         $wcOrderId = $razorpayData['receipt'];
 
@@ -55,21 +57,37 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     rzpLogInfo('Woocommerce order id:');
     rzpLogInfo(json_encode($wcOrderId));
 
+    $result['response']    = "";
+    $result['status_code'] = 200;
+
     //check woocommerce cart abandonment recovery plugin is activated or not
     if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
 
         //save abandonment data
-        $result = saveWooCartAbandonmentRecoveryData($razorpayData);
+        $res = saveWooCartAbandonmentRecoveryData($razorpayData);
 
-        return new WP_REST_Response($result['response'], $result['status_code']);
+        if($res['status_code'] == 200){
+            $result['response']    = "Data inserted for Wati plugin";
+            $result['status_code'] = 200;
+        }else{
+            $result['response']    = "Failed to insert data for Wati plugin"; 
+            $result['status_code'] = 400;
+        }
+        // return new WP_REST_Response($result['response'], $result['status_code']);
     }
 
     //Check CartBounty plugin is activated or not
     if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && (empty($razorpayData['customer_details']['email']) == false || empty($customerEmail) == false)) {
 
-        $result = saveCartBountyData($razorpayData); //save abandonment data
+        $res = saveCartBountyData($razorpayData); //save abandonment data
 
-        return new WP_REST_Response($result['response'], $result['status_code']);
+        if($res['status_code'] == 200){
+            $result['response']    = $result['response']."\r\n"."Data inserted for CartBounty plugin";
+            $result['status_code'] = 200;
+        }else{
+            $result['response']    = $result['response']."\r\n"."Failed to insert data for CartBounty plugin"; 
+            $result['status_code'] = 400;
+        }
     }
 
     if (is_plugin_active('klaviyo/klaviyo.php') && empty($razorpayData['customer_details']['email']) == false) {
@@ -80,10 +98,11 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         //Insert data for tracking started checkout.
         $eventData = wck_build_cart_data($cart);
         if (empty($eventData['$extra']['Items'])) {
-            $response['status']  = false;
-            $response['message'] = 'cart item not exist in kalviyo';
-            $statusCode          = 400;
-            return new WP_REST_Response($response, $statusCode);
+            $response['status']    = false;
+            $response['message']   = 'cart item not exist in kalviyo';
+            $statusCode            = 400;
+            $result['response']    = $result['response']."\r\n"."\nFailed to insert data for Klaviyo plugin"; 
+            $result['status_code'] = 400;
         }
         $eventData['$service'] = 'woocommerce';
         unset($eventData['Tags']);
@@ -104,31 +123,40 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         file_get_contents($url);
     }
 
-    //check Abondonment cart lite plugin active or not
+    //check Abandonment cart lite plugin active or not
     if (is_plugin_active('woocommerce-abandoned-cart/woocommerce-ac.php') && empty($razorpayData['customer_details']['email']) == false) {
         //To verify whether the email id is already exist on WordPress
         if (email_exists($razorpayData['customer_details']['email'])) {
-            $response['status']  = false;
-            $response['message'] = 'For Register user we can not insert data';
-            $statusCode          = 400;
-            return new WP_REST_Response($response, $statusCode);
+            $response['status']    = false;
+            $response['message']   = 'For Register user we can not insert data';
+            $statusCode            = 400;
+            $result['response']    = $result['response']."\r\n"."Failed to insert data for Abandonment Cart Lite plugin"; 
+            $result['status_code'] = 400;
         }
 
-        // Save Abondonment data for Abondonment cart lite
-        $result = saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId);
-
-        return new WP_REST_Response($result['response'], $result['status_code']);
+        // Save Abandonment data for Abandonment cart lite
+        $res = saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId);
+        
+        if($res['status_code'] == 200){
+            $result['response']    = $result['response']."\r\n"."Successfully inserted data for Abandonment Cart Lite plugin"; 
+            $result['status_code'] = 200;
+        }else{
+            $result['response']    = $result['response']."\r\n"."Failed to insert data for Abandonment Cart Lite plugin"; 
+            $result['status_code'] = 400;
+        }
+    
     } else {
-        $response['status']  = false;
-        $response['message'] = 'Failed to insert data';
-        $statusCode          = 400;
-
+        $response['status']    = false;
+        $response['message']   = 'Failed to insert data';
+        $statusCode            = 400;
+        $result['response']    = $result['response']."\r\n"."Failed to insert data for Abandonment Cart Lite plugin"; 
+        $result['status_code'] = 400;
         $logObj['response']    = $response;
         $logObj['status_code'] = $statusCode;
         rzpLogInfo(json_encode($logObj));
     }
 
-    return new WP_REST_Response($response, $statusCode);
+    return new WP_REST_Response($result['response'], $result['status_code']);
 }
 
 //Save abandonment data for woocommerce Abondonment cart lite plugin
