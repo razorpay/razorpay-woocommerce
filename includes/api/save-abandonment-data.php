@@ -96,7 +96,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $eventData = wck_build_cart_data($cart);
         if (empty($eventData['$extra']['Items'])) {
             $response['status']    = false;
-            $response['message']   = 'cart item not exist in kalviyo';
+            $response['message']   = 'cart item does not exist in klaviyo';
             $statusCode            = 400;
             $result['response']    = $result['response']."\r\n"."\nFailed to insert data for Klaviyo plugin"; 
             $result['status_code'] = 400;
@@ -115,7 +115,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $event       = 'track';
 
         $logObj['klaviyoData'] = $eventData;
-        //calling kalviyo plugin public api
+        //calling klaviyo plugin public api
         $url = "https://a.klaviyo.com/api/" . $event . '?data=' . $data;
         file_get_contents($url);
     }
