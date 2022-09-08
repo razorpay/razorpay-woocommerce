@@ -320,6 +320,7 @@ function btnCheckout(){
 
     rzp1cc.getBrowserTime();
     
+
     var body = rzp1ccCheckoutData;
 
     rzp1cc.setDisabled('btn-1cc');
@@ -336,7 +337,11 @@ function btnCheckout(){
               ondismiss: function() {
                 rzp1cc.handleAbandonmentCart(data.order_id);
                 rzp1cc.enableCheckoutButtons();
-              }
+              },
+              onload: setTimeout(() => {
+                rzp1cc.handleAbandonmentCart(data.order_id);
+                rzp1cc.enableCheckoutButtons();
+              }, 25000),
             },
           });
           razorpayCheckout.open();
