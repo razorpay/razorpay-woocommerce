@@ -56,7 +56,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     rzpLogInfo(json_encode($wcOrderId));
 
     $result['response']    = "";
-    $result['status_code'] = 200;
+    $result['status_code'] = 400;
 
     //check woocommerce cart abandonment recovery plugin is activated or not
     if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
@@ -83,7 +83,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             $result['status_code'] = 200;
         }else{
             $result['response']    = $result['response'].PHP_EOL."Failed to insert data for CartBounty plugin"; 
-            $result['status_code'] = 400;
         }
     }
 
@@ -99,7 +98,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             $response['message']   = 'cart item does not exist in klaviyo';
             $statusCode            = 400;
             $result['response']    = $result['response'].PHP_EOL."\nFailed to insert data for Klaviyo plugin"; 
-            $result['status_code'] = 400;
         }
         $eventData['$service'] = 'woocommerce';
         unset($eventData['Tags']);
@@ -128,7 +126,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             $response['message']   = 'For Register user we can not insert data';
             $statusCode            = 400;
             $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin"; 
-            $result['status_code'] = 400;
         }
 
         // Save Abandonment data for Abandonment cart lite
@@ -139,7 +136,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             $result['status_code'] = 200;
         }else{
             $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin"; 
-            $result['status_code'] = 400;
         }
     
     } else {
@@ -147,7 +143,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $response['message']   = 'Failed to insert data';
         $statusCode            = 400;
         $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin"; 
-        $result['status_code'] = 400;
         $logObj['response']    = $response;
         $logObj['status_code'] = $statusCode;
         rzpLogInfo(json_encode($logObj));
