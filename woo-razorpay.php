@@ -342,9 +342,9 @@ function woocommerce_razorpay_init()
             {
                 if ($preference['name'] === 'affordability_widget') 
                 {
-                    add_action( 'woocommerce_sections_checkout', 'addSubSection');
-                    add_action( 'woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
-                    add_action( 'woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
+                    add_action('woocommerce_sections_checkout', 'addSubSection');
+                    add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
+                    add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
                 }
             }
         }

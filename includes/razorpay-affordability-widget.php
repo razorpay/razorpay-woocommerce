@@ -207,7 +207,7 @@ function getPayLater()
 
 function getThemeColor()
 {
-    $themeColor = '#000000';
+    $themeColor = '#8BBFFF';
     if (empty(get_option('rzp_afd_theme_color')) === false)
     {
         $themeColor = get_option('rzp_afd_theme_color');
@@ -311,11 +311,11 @@ function getFooterDarkLogo()
     return $footerDarkLogo;
 }
 
-function addSubSection() {
+function addSubSection() 
+{
     global $current_section;
 
     $tab_id = 'checkout';
-    $section_id = 'razorpay';
 
     $sections = array(
         'razorpay'              => __('Plugin Settings'),
@@ -330,17 +330,23 @@ function addSubSection() {
     {
         if ($current_section === 'razorpay' or 
             $current_section === 'affordability-widget')
-        echo '<li><a href="'.admin_url('admin.php?page=wc-settings&tab='.$tab_id.'&section='.sanitize_title( $id )).'" class="'.($current_section === $id ? 'current' : '').'">'.$label.'</a> '.(end($array_keys) === $id ? '' : '|').' </li>';
+        {
+            echo '<li><a href="'.admin_url('admin.php?page=wc-settings&tab='.$tab_id.
+            '&section='.sanitize_title( $id )).'" class="'.($current_section === $id ? 'current' : '').'">'.
+            $label.'</a> '.(end($array_keys) === $id ? '' : '|').' </li>';
+        }
     }
    
     echo '</ul><br class="clear" />';
 }
 
-function getAffordabilityWidgetSettings() {
+function getAffordabilityWidgetSettings() 
+{
     global $current_section;
     $settings = array();
 
-    if ($current_section === 'affordability-widget') {
+    if ($current_section === 'affordability-widget') 
+    {
         $settings = array(
             'section_title' => array(
                 'name'                  => __('Affordability Widget Settings'),
@@ -418,7 +424,7 @@ function getAffordabilityWidgetSettings() {
                 'title'                 => __('Pay Later Enable/Disable'),
                 'type'                  => 'checkbox',
                 'desc'                  => __('Enable Pay Later?'),
-                'default'               => 'no',
+                'default'               => 'yes',
                 'id'                    => 'rzp_afd_enable_pay_later'
             ),
             'limited_pay_later_providers' => array(
@@ -430,55 +436,55 @@ function getAffordabilityWidgetSettings() {
             'theme_color' => array(
                 'title'                 => __('Theme Color'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the 6 character hex code of the theme color based on your requirement.Default is blue.'),
+                'desc'                  => __('Enter the 6 character hex code of the theme color based on your requirement. Default is blue.'),
                 'id'                    => 'rzp_afd_theme_color'
             ),
             'heading_color' => array(
                 'title'                 => __('Heading Color'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the heading color based on your requirement.Default is black.' ),
+                'desc'                  => __('Enter the heading color based on your requirement. Default is black.' ),
                 'id'                    => 'rzp_afd_heading_color'
             ),
             'heading_font_size' => array(
                 'title'                 => __('Heading Font Size'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the font size of heading in px based on your requirement.Default is 10px.'),
+                'desc'                  => __('Enter the font size of heading in px based on your requirement. Default is 10px.'),
                 'id'                    => 'rzp_afd_heading_font_size'
             ),
             'content_color' => array(
                 'title'                 => __('Content Color'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the content color based on your requirement.Default is grey.'),
+                'desc'                  => __('Enter the content color based on your requirement. Default is grey.'),
                 'id'                    => 'rzp_afd_content_color'
             ),
             'content_font_size' => array(
                 'title'                 => __('Content Font Size'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the font size of content in px based on your requirement.Default is 10px.'),
+                'desc'                  => __('Enter the font size of content in px based on your requirement. Default is 10px.'),
                 'id'                    => 'rzp_afd_content_font_size'
             ),
             'link_color' => array(
                 'title'                 => __('Link Color'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the color based on your requirement.Default is blue.'),
+                'desc'                  => __('Enter the color based on your requirement. Default is blue.'),
                 'id'                    => 'rzp_afd_link_color'
             ),
             'link_font_size' => array(
                 'title'                 => __('Link Font Size'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the font size of link in px based on your requirement.Default is 10px.'),
+                'desc'                  => __('Enter the font size of link in px based on your requirement. Default is 10px.'),
                 'id'                    => 'rzp_afd_link_font_size'
             ),
             'footer_color' => array(
                 'title'                 => __('Footer Color'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the color based on your requirement.Default is grey.'),
+                'desc'                  => __('Enter the color based on your requirement. Default is grey.'),
                 'id'                    => 'rzp_afd_footer_color'
             ),
             'footer_font_size' => array(
                 'title'                 => __('Footer Font Size'),
                 'type'                  => 'text',
-                'desc'                  => __('Enter the font size of footer in px based on your requirement.Default is 10px.'),
+                'desc'                  => __('Enter the font size of footer in px based on your requirement. Default is 10px.'),
                 'id'                    => 'rzp_afd_footer_font_size'
             ),
             'dark_logo' => array(
@@ -510,16 +516,12 @@ function updateAffordabilityWidgetSettings()
 
 function isEnabled($feature)
 {
-    
+    $value = 'false';
+
     if (empty(get_option($feature)) === false and 
         get_option($feature) === 'yes')
     {
         $value = 'true';
-    }
-    elseif (empty(get_option($feature)) === false and 
-            get_option($feature) === 'no')
-    {
-        $value = 'false';
     }
     
     return $value;
