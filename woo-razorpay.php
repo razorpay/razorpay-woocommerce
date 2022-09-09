@@ -330,7 +330,7 @@ function woocommerce_razorpay_init()
             if (isset($_POST['woocommerce_razorpay_key_id']) and 
                 isset($_POST['woocommerce_razorpay_key_secret']))
             {
-                $api = new Api($_POST['woocommerce_razorpay_key_id'],$_POST['woocommerce_razorpay_key_secret']);
+                $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
             }
             else
             {
@@ -340,7 +340,7 @@ function woocommerce_razorpay_init()
             
             foreach ($merchantPreferences['assigned_features'] as $preference) 
             {
-                if ($preference['name'] == 'affordability_widget') 
+                if ($preference['name'] === 'affordability_widget') 
                 {
                     add_action( 'woocommerce_sections_checkout', 'addSubSection');
                     add_action( 'woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
