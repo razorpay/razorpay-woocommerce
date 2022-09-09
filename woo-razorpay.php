@@ -554,6 +554,8 @@ function woocommerce_razorpay_init()
 
             $response = $trackObject->rzpTrackSegment($authEvent, $authProperties);
 
+            $trackObject->rzpTrackDataLake($authEvent, $authProperties);
+
             if ((empty($_POST['woocommerce_razorpay_enabled']) === false) and
                 ($this->getSetting('enabled') === 'no'))
             {
@@ -568,6 +570,8 @@ function woocommerce_razorpay_init()
             if ($pluginStatusEvent !== '')
             {
                 $response = $trackObject->rzpTrackSegment($pluginStatusEvent, $pluginStatusProperties);
+
+                $trackObject->rzpTrackDataLake($pluginStatusEvent, $pluginStatusProperties);
             }
         }
 
@@ -1642,7 +1646,7 @@ EOT;
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
             $this->UpdateOrderAddress($razorpayData, $order);
-   
+
 
 
             if (empty($razorpayData['promotions'][0]) === false)
@@ -1890,7 +1894,7 @@ EOT;
             }
         }
 
-        //Create new user account 
+        //Create new user account
         public function newUserAccount($razorpayData, $order)
         {
             global $woocommerce;
@@ -2344,6 +2348,8 @@ function razorpayPluginActivated()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin activate', $activateProperties);
+
+    $trackObject->rzpTrackDataLake('plugin activate', $activateProperties);
 }
 
 // plugin deactivation hook
@@ -2372,6 +2378,8 @@ function razorpayPluginDeactivated()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin deactivate', $deactivateProperties);
+
+    $trackObject->rzpTrackDataLake('plugin deactivate', $deactivateProperties);
 }
 
 // plugin upgrade hook
@@ -2388,6 +2396,8 @@ function razorpayPluginUpgraded()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin upgrade', $upgradeProperties);
+
+    $trackObject->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
 
     if ($response['status'] === 'success')
     {
