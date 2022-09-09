@@ -207,101 +207,47 @@ function getPayLater()
 
 function getThemeColor()
 {
-    $themeColor = '#8BBFFF';
-    if (empty(get_option('rzp_afd_theme_color')) === false)
-    {
-        $themeColor = get_option('rzp_afd_theme_color');
-    }
-
-    return $themeColor;
+    return getCustomisation('rzp_afd_theme_color');
 }
 
 function getHeadingColor()
 {
-    $headingColor = 'black';
-    if (empty(get_option('rzp_afd_heading_color')) === false)
-    {
-        $headingColor = get_option('rzp_afd_heading_color');
-    }
-
-    return $headingColor;
+    return getCustomisation('rzp_afd_heading_color');
 }
 
 function getHeadingFontSize()
 {
-    $headingFontSize = '10';
-    if (empty(get_option('rzp_afd_heading_font_size')) === false)
-    {
-        $headingFontSize = get_option('rzp_afd_heading_font_size');
-    }
-
-    return $headingFontSize;
+    return getCustomisation('rzp_afd_heading_font_size');
 }
 
 function getContentColor()
 {
-    $contentColor = 'grey';
-    if (empty(get_option('rzp_afd_content_color')) === false)
-    {
-        $contentColor = get_option('rzp_afd_content_color');
-    }
-
-    return $contentColor;
+    return getCustomisation('rzp_afd_content_color');
 }
 
 function getContentFontSize()
 {
-    $contentFontSize = '10';
-    if (empty(get_option('rzp_afd_content_font_size')) === false)
-    {
-        $contentFontSize = get_option('rzp_afd_content_font_size');
-    }
-
-    return $contentFontSize;
+    return getCustomisation('rzp_afd_content_font_size');
 }
 
 function getLinkColor()
 {
-    $linkColor = 'blue';
-    if (empty(get_option('rzp_afd_link_color')) === false)
-    {
-        $linkColor = get_option('rzp_afd_link_color');
-    }
-
-    return $linkColor;
+    return getCustomisation('rzp_afd_link_color');
 }
 
 function getLinkFontSize()
 {
-    $linkFontSize = '10';
-    if (empty(get_option('rzp_afd_link_font_size')) === false)
-    {
-        $linkFontSize = get_option('rzp_afd_link_font_size');
-    }
-
-    return $linkFontSize;
+    return getCustomisation('rzp_afd_link_font_size');
 }
 
 function getFooterColor()
 {
-    $footerColor = 'grey';
-    if (empty(get_option('rzp_afd_footer_color')) === false)
-    {
-        $footerColor = get_option('rzp_afd_footer_color');
-    }
-
-    return $footerColor;
+    return getCustomisation('rzp_afd_footer_color');
 }
 
 function getFooterFontSize()
 {
-    $footerFontSize = '10';
-    if (empty(get_option('rzp_afd_footer_font_size')) === false)
-    {
-        $footerFontSize = get_option('rzp_afd_footer_font_size');
-    }
-
-    return $footerFontSize;
+    return getCustomisation('rzp_afd_footer_font_size');
 }
 
 function getFooterDarkLogo()
@@ -525,4 +471,27 @@ function isEnabled($feature)
     }
     
     return $value;
+}
+
+function getCustomisation($customisation)
+{
+    $defaultCustomisationValues = [
+        'rzp_afd_theme_color'               => '#8BBFFF',
+        'rzp_afd_heading_color'             => 'black',
+        'rzp_afd_heading_font_size'         => '10',
+        'rzp_afd_content_color'             => 'grey',
+        'rzp_afd_content_font_size'         => '10',
+        'rzp_afd_link_color'                => 'blue',
+        'rzp_afd_link_font_size'            => '10',
+        'rzp_afd_footer_color'              => 'grey',
+        'rzp_afd_footer_font_size'          => '10'
+    ];
+
+    $customisationValue = get_option($customisation);
+    if (empty($customisationValue) === true)
+    {
+        $customisationValue = $defaultCustomisationValues[$customisation];
+    }
+    
+    return $customisationValue;
 }

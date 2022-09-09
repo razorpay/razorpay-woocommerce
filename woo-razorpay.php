@@ -327,25 +327,31 @@ function woocommerce_razorpay_init()
                     $this->form_fields[$key] = $value;
                 }
             }
-            if (isset($_POST['woocommerce_razorpay_key_id']) and 
-                isset($_POST['woocommerce_razorpay_key_secret']))
-            {
-                $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
-            }
-            else
-            {
-                $api = $this->getRazorpayApiInstance();
-            }
-            $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-            
-            foreach ($merchantPreferences['assigned_features'] as $preference) 
-            {
-                if ($preference['name'] === 'affordability_widget') 
+            try{
+                if (isset($_POST['woocommerce_razorpay_key_id']) and 
+                    isset($_POST['woocommerce_razorpay_key_secret']))
                 {
-                    add_action('woocommerce_sections_checkout', 'addSubSection');
-                    add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
-                    add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
+                    $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
                 }
+                else
+                {
+                    $api = $this->getRazorpayApiInstance();
+                }
+                $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+                
+                foreach ($merchantPreferences['assigned_features'] as $preference) 
+                {
+                    if ($preference['name'] === 'affordability_widget') 
+                    {
+                        add_action('woocommerce_sections_checkout', 'addSubSection');
+                        add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
+                        add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
+                    }
+                }
+            }
+            catch (Exception $e)
+            {
+                return;
             }
         }
 
@@ -2194,7 +2200,17 @@ EOT;
 
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
 
-    add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
+    try
+    {
+        $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_id']);
+        $validateKeySecret = $api->request->request('GET', 'accounts/me/features');
+        add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
+    }
+    catch(Exception $e)
+    {
+        return;
+    }
+    
 }
 
 // This is set to a priority of 10
