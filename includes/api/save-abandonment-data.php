@@ -95,9 +95,9 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $eventData = wck_build_cart_data($cart);
         if (empty($eventData['$extra']['Items'])) {
             $response['status']    = false;
-            $response['message']   = 'cart item does not exist in klaviyo';
+            $response['message']   = 'Failed to insert as Cart item does not exist in klaviyo';
             $statusCode            = 400;
-            $result['response']    = $result['response'].PHP_EOL."\nFailed to insert data for Klaviyo plugin"; 
+            $result['response']    = $result['response'].PHP_EOL.$response['message']; 
         }
         $eventData['$service'] = 'woocommerce';
         unset($eventData['Tags']);
@@ -123,9 +123,8 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         //To verify whether the email id is already exist on WordPress
         if (email_exists($razorpayData['customer_details']['email'])) {
             $response['status']    = false;
-            $response['message']   = 'For Register user we can not insert data';
             $statusCode            = 400;
-            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin"; 
+            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin for registered user"; 
         }
 
         // Save Abandonment data for Abandonment cart lite
