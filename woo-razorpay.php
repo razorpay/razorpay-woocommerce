@@ -2202,7 +2202,7 @@ EOT;
 
     try
     {
-        $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_id']);
+        $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
         $validateKeySecret = $api->request->request('GET', 'accounts/me/features');
         add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
     }
