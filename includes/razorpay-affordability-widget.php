@@ -5,11 +5,8 @@ require_once __DIR__.'/utils.php';
 function addAffordabilityWidgetHTML()
 {
     $current_user = wp_get_current_user();
-    $afdWidgetEnabled = isEnabled('rzp_afd_enable');
-    if ((isAffordabilityWidgetTestModeEnabled() === false and
-         $afdWidgetEnabled === 'true') or 
-        (isAffordabilityWidgetTestModeEnabled() and 
-         $afdWidgetEnabled === 'true' and
+    if ((isAffordabilityWidgetTestModeEnabled() === false) or 
+        (isAffordabilityWidgetTestModeEnabled() and
         ($current_user->has_cap('administrator') or 
         preg_match('/@razorpay.com$/i', $current_user->user_email))))
     {
@@ -60,6 +57,7 @@ function addAffordabilityWidgetHTML()
                         }
                     }
                 };
+                console.log(widgetConfig);
                 const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
                 rzpAffordabilitySuite.render();
             }
@@ -300,13 +298,6 @@ function getAffordabilityWidgetSettings()
                 'desc'                  => '',
                 'id'                    => 'rzp_afd_section_title'
             ),
-            'enable' => array(
-                'title'                 => __('Affordability Widget Enable/Disable'),
-                'type'                  => 'checkbox',
-                'desc'                  => __('Enable Affordability Widget?'),
-                'default'               => 'yes',
-                'id'                    => 'rzp_afd_enable'
-            ),
             'enable_test_mode' => array(
                 'title'                 => __('Test Mode Enable/Disable'),
                 'type'                  => 'checkbox',
@@ -324,13 +315,13 @@ function getAffordabilityWidgetSettings()
             'additional_offers' => array(
                 'title'                 => __('Additional Offers'),
                 'type'                  => 'textarea',
-                'desc'                  =>  __('Enter offer id for offer that did not have the \'Show Offer on Checkout\' option enabled'),
+                'desc'                  =>  __('Enter offer id for offer that did not have the \'Show Offer on Checkout\' option enabled at the time of creation.'),
                 'id'                    => 'rzp_afd_additional_offers'
             ),
             'limited_offers' => array(
                 'title'                 => __('Limited Offers'),
                 'type'                  => 'textarea',
-                'desc'                  =>  __('In case you want to display limited offers on the widget, enter the offer_id of the offers of your choice.'),
+                'desc'                  =>  __('In case you want to display limited offers on the widget, enter the offer_id of your choice that you want to display.'),
                 'id'                    => 'rzp_afd_limited_offers'
             ),
             'show_discount_amount' => array(
@@ -341,16 +332,16 @@ function getAffordabilityWidgetSettings()
                 'id'                    => 'rzp_afd_show_discount_amount'
             ),
             'enable_emi' => array(
-                'title'                 => __('EMI Enable/Disable'),
+                'title'                 => __('Card EMI Enable/Disable'),
                 'type'                  => 'checkbox',
-                'desc'                  => __('Enable EMI?'),
+                'desc'                  => __('Enable Card EMI?'),
                 'default'               => 'yes',
                 'id'                    => 'rzp_afd_enable_emi'
             ),
             'limited_emi_providers' => array(
-                'title'                 => __('Limited EMI Providers'),
+                'title'                 => __('Limited Card EMI Providers'),
                 'type'                  => 'textarea',
-                'desc'                  =>  __('In case you want to display limited EMI options on the widget, enter the list of provider codes based on your requirement.'),
+                'desc'                  =>  __('In case you want to display limited EMI options on the widget, enter the list of provider codes based on your requirement.Please find the list of <a href="https://razorpay.com/docs/payments/payment-gateway/affordability/faqs/#2-what-are-the-standard-credit-card-interest">provider codes</a> here.'),
                 'id'                    => 'rzp_afd_limited_emi_providers'
             ),
             'enable_cardless_emi' => array(
@@ -363,7 +354,7 @@ function getAffordabilityWidgetSettings()
             'limited_cardles_emi_providers' => array(
                 'title'                 => __('Limited Cardless EMI Providers'),
                 'type'                  => 'textarea',
-                'desc'                  =>  __('In case you want to display limited Cardless EMI options on the widget, enter the list of provider codes based on your requirement.'),
+                'desc'                  =>  __('In case you want to display limited Cardless EMI options on the widget, enter the list of provider codes based on your requirement.Please find the list of <a href="https://razorpay.com/docs/payments/payment-methods/emi/cardless-emi/">provider codes</a> here.'),
                 'id'                    => 'rzp_afd_limited_cardless_emi_providers'
             ),
             'enable_pay_later' => array(
@@ -376,7 +367,7 @@ function getAffordabilityWidgetSettings()
             'limited_pay_later_providers' => array(
                 'title'                 => __('Limited Pay Later Providers'),
                 'type'                  => 'textarea',
-                'desc'                  =>  __('In case you want to display limited Pay Later options on the widget, enter the list of provider codes based on your requirement.'),
+                'desc'                  =>  __('In case you want to display limited Pay Later options on the widget, enter the list of provider codes based on your requirement.Please find the list of <a href="https://razorpay.com/docs/payments/payment-methods/pay-later/">provider codes</a> here.'),
                 'id'                    => 'rzp_afd_limited_pay_later_providers'
             ),
             'theme_color' => array(
