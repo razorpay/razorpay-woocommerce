@@ -57,7 +57,6 @@ function addAffordabilityWidgetHTML()
                         }
                     }
                 };
-                console.log(widgetConfig);
                 const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
                 rzpAffordabilitySuite.render();
             }
