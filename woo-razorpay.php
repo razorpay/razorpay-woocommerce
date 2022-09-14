@@ -327,9 +327,14 @@ function woocommerce_razorpay_init()
                     $this->form_fields[$key] = $value;
                 }
             }
-            try{
-                if (isset($_POST['woocommerce_razorpay_key_id']) and 
-                    isset($_POST['woocommerce_razorpay_key_secret']))
+            
+            //Affordability Widget Code
+            try
+            {
+                if (isset($_POST['woocommerce_razorpay_key_id']) and
+                    empty($_POST['woocommerce_razorpay_key_id']) === false and 
+                    isset($_POST['woocommerce_razorpay_key_secret']) and
+                    empty($_POST['woocommerce_razorpay_key_secret']) === false)
                 {
                     $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
                 }

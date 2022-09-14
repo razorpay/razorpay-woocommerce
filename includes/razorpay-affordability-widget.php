@@ -1,7 +1,5 @@
 <?php
 
-require_once __DIR__.'/utils.php';
-
 function addAffordabilityWidgetHTML()
 {
     $current_user = wp_get_current_user();
@@ -485,3 +483,11 @@ function getCustomisation($customisation)
     
     return $customisationValue;
 }
+
+function isAffordabilityWidgetTestModeEnabled()
+{
+    return (
+        empty(get_option('rzp_afd_enable_test_mode')) === false and
+        get_option('rzp_afd_enable_test_mode') === 'yes'
+    );
+}	

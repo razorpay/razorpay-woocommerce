@@ -116,10 +116,3 @@ function validateInput($route, $param)
     return $failure_reason;
 }
 
-function isAffordabilityWidgetTestModeEnabled()
-{
-    return (
-        empty(get_option('rzp_afd_enable_test_mode')) === false and
-        get_option('rzp_afd_enable_test_mode') === 'yes'
-    );
-}	
