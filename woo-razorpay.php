@@ -351,7 +351,6 @@ function woocommerce_razorpay_init()
                         add_action('woocommerce_sections_checkout', 'addSubSection');
                         add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
                         add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
-                        add_action('woocommerce_update_options_checkout', array($this, 'autoEnableWebhook'));
                     }
                 }
             }
