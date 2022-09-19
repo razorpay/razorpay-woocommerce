@@ -17,7 +17,7 @@ function btnCheckout(){
   var url = new URL(pageURL);
   var accessToken = new URLSearchParams(url.search).get('wcf_ac_token');
   var referrerDomain = document.referrer.toString();
-
+  var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
   rzp1ccCheckoutData.referrerDomain = referrerDomain;
 
   // event triggered by wc on any cart change
@@ -32,6 +32,11 @@ function btnCheckout(){
     if (btnMini !== null) {
       btnMini.addEventListener('click', openRzpCheckout);
     }
+ 
+    var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
+    if (flycartBtn !== null) {
+      flycartBtn.addEventListener('click', openRzpCheckout);
+    }
   });
 
   function addEventListenerToMinicart(wcEvent) {
@@ -39,6 +44,10 @@ function btnCheckout(){
       var btnMini = document.getElementById('btn-1cc-mini-cart');
       if (btnMini !== null) {
         btnMini.addEventListener('click', openRzpCheckout);
+      }
+      var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
+     if (flycartBtn !== null) {
+       flycartBtn.addEventListener('click', openRzpCheckout);
       }
     });
   }
@@ -307,6 +316,10 @@ function btnCheckout(){
 
   if (btnPdp !== null) {
     btnPdp.addEventListener('click', openRzpCheckout);
+  }
+
+  if (flycartBtn !== null) {
+    flycartBtn.addEventListener('click', openRzpCheckout);
   }
   
   async function openRzpCheckout(e) {
