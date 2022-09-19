@@ -380,7 +380,7 @@ function btnCheckout(){
           } else if (e.response.code == 'ORDER_CREATION_FAILED'){
             document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Razorpay Error: Order could not be placed, please try again after sometime.</p>";
           } else if (e.response.code == 'MIN_CART_AMOUNT_CHECK_FAILED' || e.response.code == 'WOOCOMMERCE_ORDER_CREATION_FAILED'){
-            document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>";
+            document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>"; //nosemgrep: insecure-innerhtml
           } else {
             document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
           }

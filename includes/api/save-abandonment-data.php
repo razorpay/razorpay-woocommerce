@@ -43,7 +43,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         }
         $order = wc_get_order($wcOrderId);
     }
-    
+
     $razorpay->UpdateOrderAddress($razorpayData, $order);
 
     initCustomerSessionAndCart();
@@ -269,7 +269,8 @@ function saveWooCartAbandonmentRecoveryData($razorpayData)
             }
 
         } else {
-            $sessionId                     = md5(uniqid(wp_rand(), true));
+            $sessionId                     = md5(uniqid(wp_rand(), true));  //nosemgrep : php.lang.security.weak-crypto.weak-crypto
+
             $checkoutDetails['session_id'] = sanitize_text_field($sessionId);
 
             // Inserting row into Database.
