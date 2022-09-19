@@ -311,6 +311,10 @@ function btnCheckout(){
   
   async function openRzpCheckout(e) {
     e.preventDefault();
+
+    if( btnPdp !== null && btnPdp.classList.contains('disabled')){
+      return;
+    } 
     rzp1cc.showSpinner(true);
 
     if (accessToken !== null) 
