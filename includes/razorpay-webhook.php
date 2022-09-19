@@ -145,7 +145,7 @@ class RZP_Webhook
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
-    
+
                 error_log("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
@@ -245,7 +245,9 @@ class RZP_Webhook
         rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
 
         // If it is already marked as paid, ignore the event
-        if ($orderStatus != 'draft' && $order->needs_payment() === false) {
+        if ($orderStatus != 'draft' and
+            ($order->needs_payment() === false and
+                ($orderStatus === 'cancelled') === false)) {
             rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :" . $order->needs_payment());
 
             return;
