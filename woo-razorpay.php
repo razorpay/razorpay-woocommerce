@@ -1258,7 +1258,7 @@ EOT;
                 $order->add_order_note( __( 'fail Id: ' . $e->getMessage(), 'woocommerce' ) );
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
-            //$error = "Refund initiated";
+
             wp_redirect(wc_get_cart_url());
             exit;
         }
@@ -1845,7 +1845,6 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
-            //$this->process_refund($wcOrderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
         }
 
         public function updateGiftCardData($razorpayData, $order, $orderId, $razorpayPaymentId)
@@ -2259,7 +2258,7 @@ function razorpay_webhook_init()
 }
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
-define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js?branch=1cc/resuming-user-journey');
+define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
 
