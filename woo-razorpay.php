@@ -1056,12 +1056,27 @@ function woocommerce_razorpay_init()
 
             $i = 0;
             // Get and Loop Over Order Items
+            $type = 'false';
             foreach ( $order->get_items() as $item_id => $item )
             {
                $product = $item->get_product();
                $productDetails = $product->get_data();
+               if($product->is_type('variation')){
+                    $parent_product_id = $product->get_parent_id();
+                    $parent_product = wc_get_product($parent_product_id);
+                 
+                    if($parent_product->get_type() == 'pw-gift-card'){
+                        $type = 'true';
+                    }
+                    
+                    }else{
+                        if($product->get_type() == 'pw-gift-card'){
+                        $type = 'true';
+                    }
+               }
 
-               $data['line_items'][$i]['type'] = "e-commerce";
+               $data['line_items'][$i]['gift_card'] = $type;
+               $data['line_items'][$i]['type'] =  "e-commerce";
                $data['line_items'][$i]['sku'] = $product->get_sku();
                $data['line_items'][$i]['variant_id'] = $item->get_variation_id();
                $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
@@ -1194,21 +1209,19 @@ EOT;
             return $order->order_key;
         }
 
-        public function process_refund($orderId, $amount = null, $reason = '')
+        function process_refund($orderId, $amount = null, $reason = '', $razorpayPaymentId)
         {
             $order = wc_get_order($orderId);
 
-            if (! $order or ! $order->get_transaction_id())
+            if (! $order or ! $razorpayPaymentId)
             {
                 return new WP_Error('error', __('Refund failed: No transaction ID', 'woocommerce'));
             }
 
             $client = $this->getRazorpayApiInstance();
 
-            $paymentId = $order->get_transaction_id();
-
             $data = array(
-                'amount'    =>  (int) round($amount * 100),
+                'amount'    =>  (int) round($amount),
                 'notes'     =>  array(
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
@@ -1219,9 +1232,16 @@ EOT;
 
             try
             {
-                $refund = $client->payment
-                    ->fetch( $paymentId )
-                    ->refund( $data );
+                $refund = $client->payment->fetch( $razorpayPaymentId )->refund( $data );
+
+                wc_create_refund(array(
+                    'amount'         => $amount,
+                    'reason'         => $reason,
+                    'order_id'       => $orderId,
+                    'refund_id'      => $refund->id,
+                    'line_items'     => array(),
+                    'refund_payment' => false,
+                ));
 
                 $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
                 /**
@@ -1229,14 +1249,18 @@ EOT;
                  * @var $orderId -> Refunded Order ID
                  * @var $refund -> WooCommerce Refund Instance.
                  */
-                do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+                //do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
 
                 return true;
             }
             catch(Exception $e)
             {
+                $order->add_order_note( __( 'fail Id: ' . $e->getMessage(), 'woocommerce' ) );
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
+            //$error = "Refund initiated";
+            wp_redirect(wc_get_cart_url());
+            exit;
         }
 
         /**
@@ -1640,10 +1664,9 @@ EOT;
             }
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
-
+            
             $this->UpdateOrderAddress($razorpayData, $order);
-   
-
+            $this->updateGiftCardData($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             if (empty($razorpayData['promotions'][0]) === false)
             {
@@ -1822,6 +1845,59 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
+            //$this->process_refund($wcOrderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+        }
+
+        public function updateGiftCardData($razorpayData, $order, $orderId, $razorpayPaymentId)
+        {
+            foreach($razorpayData['promotions'] as $giftcard)
+            {
+                if($giftcard['type'] == 'gift_card'){
+
+                    $usedAmt = $giftcard['value']/100;
+                    $result = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s", $giftcard['code'] ) );
+                    if($result != null){
+                        $balance = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM {$wpdb->pimwick_gift_card_activity} WHERE pimwick_gift_card_id = %d", $result->pimwick_gift_card_id ) );
+                        
+                        if($balance == null && $balance >= 0 && $usedAmt > $balance ){
+                            // initiate refund in case gift card faliure
+                            $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                        }else{
+                            //Deduct amount of gift card
+                           $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt);
+                        }
+
+                    }else{
+                        $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                    }
+                }
+                
+            }
+        }
+
+        public function debitGiftCards( $order_id, $order, $note, $usedAmt) {
+           
+            if ( ! is_a( $order, 'WC_Order' ) ) {
+                return;
+            }
+
+            foreach( $order->get_items( 'pw_gift_card' ) as $order_item_id => $line ) {
+                $gift_card = new PW_Gift_Card( $line->get_card_number() );
+                 wc_add_order_item_meta( $order_item_id, 'card_number', $gift_card->get_number() );
+                 wc_add_order_item_meta( $order_item_id, 'amount', $usedAmt );
+
+                
+                if ( $gift_card->get_id() ) {
+                    if ( !$line->meta_exists( '_pw_gift_card_debited' ) ) {
+                        if ( $line->get_amount() != 0 ) {
+                            $gift_card->debit( ( $line->get_amount() * -1 ), "$note, order_item_id: $order_item_id" );
+                        }
+
+                        $line->add_meta_data( '_pw_gift_card_debited', true );
+                        $line->save();
+                    }
+                }
+            }
         }
 
         //To update customer address info to wc order.
@@ -2183,7 +2259,7 @@ function razorpay_webhook_init()
 }
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
-define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js');
+define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js?branch=1cc/resuming-user-journey');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
 

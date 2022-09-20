@@ -223,7 +223,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
     }
     // we only consider the lowest shipping fee
     array_multisort($price, SORT_ASC, $response);
-
+   
     if (!empty($vendorId)) {
         foreach ($response as $key => $row) {
             $response['shipping_fee'] += isset($response[$key]['price']) ? $response[$key]['price'] : 0;
@@ -233,6 +233,12 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
         $response['shipping_fee']     = isset($response[0]['price']) ? $response[0]['price'] : 0;
         $response['shipping_fee_tax'] = !empty($response[0]['taxes']) ? 0 : 0; //By default tax is considered as zero.
     }
+
+    // check shipping fee for gift card product
+    if(giftCardProduct($orderId)){
+        $response['shipping_fee'] = 0;
+    }
+
     $response['cod'] = isset($response[0]['cod']) ? $response[0]['cod'] : false;
 
     return $response;
@@ -321,6 +327,38 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
         }
     }
     return false;
+}
+
+function giftCardProduct($orderId){
+    $order   = wc_get_order($orderId);
+    $items = $order->get_items();
+
+    $giftCount = 0;
+    $cartCount  = 0;
+    foreach ($order->get_items() as $item_id => $item)  {
+        $cartCount++;
+        $product = $item->get_product();
+
+        if($product->is_type('variation')){
+             $parent_product_id = $product->get_parent_id();
+             $parent_product = wc_get_product($parent_product_id);
+             
+            if($parent_product->get_type() == 'pw-gift-card'){
+                $giftCount++;
+            }
+       }else{
+            if($product->get_type() == 'pw-gift-card'){
+                $giftCount++;
+            }
+             
+       }
+    }
+
+    if($giftCount == $cartCount){
+        return true;
+    }
+
+  return false;
 }
 
 /**

@@ -14,9 +14,11 @@ require_once __DIR__ . '/cart.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../state-map.php';
 require_once __DIR__ . '/save-abandonment-data.php';
+require_once __DIR__ . '/giftcard-apply.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
+define('RZP_1CC_GIFT_BASE', 'v1/1cc/orders');
 define('RZP_1CC_CART_HASH', 'wc_razorpay_cart_hash_');
 
 function rzp1ccInitRestApi()
@@ -88,6 +90,22 @@ function rzp1ccInitRestApi()
             'permission_callback' => 'checkAuthCredentials',
         )
     );
+
+     /**
+     * Gift Card APIs
+     */
+
+     // validate gift card data
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE.'/giftcard',
+        'apply',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'validateGiftCardData',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
+
 }
 
 add_action('rest_api_init', 'rzp1ccInitRestApi');
