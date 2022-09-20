@@ -234,8 +234,6 @@ function woocommerce_razorpay_init()
 
         protected function initHooks()
         {
-            add_action('init', array(&$this, 'check_razorpay_response'));
-
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
             add_action('woocommerce_api_' . $this->id, array($this, 'check_razorpay_response'));
@@ -586,6 +584,8 @@ function woocommerce_razorpay_init()
 
             $response = $trackObject->rzpTrackSegment($authEvent, $authProperties);
 
+            $trackObject->rzpTrackDataLake($authEvent, $authProperties);
+
             if ((empty($_POST['woocommerce_razorpay_enabled']) === false) and
                 ($this->getSetting('enabled') === 'no'))
             {
@@ -600,6 +600,8 @@ function woocommerce_razorpay_init()
             if ($pluginStatusEvent !== '')
             {
                 $response = $trackObject->rzpTrackSegment($pluginStatusEvent, $pluginStatusProperties);
+
+                $trackObject->rzpTrackDataLake($pluginStatusEvent, $pluginStatusProperties);
             }
         }
 
@@ -2388,6 +2390,8 @@ function razorpayPluginActivated()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin activate', $activateProperties);
+
+    $trackObject->rzpTrackDataLake('plugin activate', $activateProperties);
 }
 
 // plugin deactivation hook
@@ -2416,6 +2420,8 @@ function razorpayPluginDeactivated()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin deactivate', $deactivateProperties);
+
+    $trackObject->rzpTrackDataLake('plugin deactivate', $deactivateProperties);
 }
 
 // plugin upgrade hook
@@ -2432,6 +2438,8 @@ function razorpayPluginUpgraded()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin upgrade', $upgradeProperties);
+
+    $trackObject->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
 
     if ($response['status'] === 'success')
     {

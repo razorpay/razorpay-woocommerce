@@ -17,7 +17,7 @@ function btnCheckout(){
   var url = new URL(pageURL);
   var accessToken = new URLSearchParams(url.search).get('wcf_ac_token');
   var referrerDomain = document.referrer.toString();
-
+  var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
   rzp1ccCheckoutData.referrerDomain = referrerDomain;
 
   // event triggered by wc on any cart change
@@ -32,6 +32,11 @@ function btnCheckout(){
     if (btnMini !== null) {
       btnMini.addEventListener('click', openRzpCheckout);
     }
+ 
+    var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
+    if (flycartBtn !== null) {
+      flycartBtn.addEventListener('click', openRzpCheckout);
+    }
   });
 
   function addEventListenerToMinicart(wcEvent) {
@@ -39,6 +44,10 @@ function btnCheckout(){
       var btnMini = document.getElementById('btn-1cc-mini-cart');
       if (btnMini !== null) {
         btnMini.addEventListener('click', openRzpCheckout);
+      }
+      var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
+     if (flycartBtn !== null) {
+       flycartBtn.addEventListener('click', openRzpCheckout);
       }
     });
   }
@@ -308,9 +317,17 @@ function btnCheckout(){
   if (btnPdp !== null) {
     btnPdp.addEventListener('click', openRzpCheckout);
   }
+
+  if (flycartBtn !== null) {
+    flycartBtn.addEventListener('click', openRzpCheckout);
+  }
   
   async function openRzpCheckout(e) {
     e.preventDefault();
+
+    if( btnPdp !== null && btnPdp.classList.contains('disabled')){
+      return;
+    } 
     rzp1cc.showSpinner(true);
 
     if (accessToken !== null) 
@@ -320,6 +337,7 @@ function btnCheckout(){
 
     rzp1cc.getBrowserTime();
     
+
     var body = rzp1ccCheckoutData;
 
     rzp1cc.setDisabled('btn-1cc');
@@ -336,7 +354,11 @@ function btnCheckout(){
               ondismiss: function() {
                 rzp1cc.handleAbandonmentCart(data.order_id);
                 rzp1cc.enableCheckoutButtons();
-              }
+              },
+              onload: setTimeout(() => {
+                rzp1cc.handleAbandonmentCart(data.order_id);
+                rzp1cc.enableCheckoutButtons();
+              }, 25000),
             },
           });
           razorpayCheckout.open();
@@ -358,7 +380,7 @@ function btnCheckout(){
           } else if (e.response.code == 'ORDER_CREATION_FAILED'){
             document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Razorpay Error: Order could not be placed, please try again after sometime.</p>";
           } else if (e.response.code == 'MIN_CART_AMOUNT_CHECK_FAILED' || e.response.code == 'WOOCOMMERCE_ORDER_CREATION_FAILED'){
-            document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>";
+            document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>"; // nosemgrep: insecure-innerhtml
           } else {
             document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
           }
