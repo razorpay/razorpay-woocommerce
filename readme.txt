@@ -49,6 +49,10 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Added datalake changes.
 * Added mandatory fields variations check.
 * Fixed recursive redirect issue.
+* Flycart plugin support
+* Mandatory fields check bug fix.
+* Auto cart-abandonment with timeout feature.
+* Multi-retargeting parallel support.
 
 = 4.2.0 =
 * Bug fix for cart bounty plugin support issue in magic checkout.
