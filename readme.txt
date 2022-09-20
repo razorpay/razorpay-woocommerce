@@ -44,10 +44,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 = 4.3.0 =
 * Added affordability widget.
 * Bug fix, Order properties cannot be accessed directly. 
-* Added timeout for auto cart abondment.
-* Added Flycart plugin support.
 * Added datalake changes.
-* Added mandatory fields variations check.
 * Fixed recursive redirect issue.
 * Flycart plugin support
 * Mandatory fields check bug fix.
