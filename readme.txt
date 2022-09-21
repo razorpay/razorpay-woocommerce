@@ -43,7 +43,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 = 4.3.1 =
 * Fixed, automatic injection of affordability widget code.
-* Added, button to enable affordability widget.
+* Added, checkbox to enable affordability widget.
 
 = 4.3.0 =
 * Added affordability widget.
