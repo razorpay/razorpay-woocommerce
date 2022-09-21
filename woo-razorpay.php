@@ -352,8 +352,9 @@ function woocommerce_razorpay_init()
                     }
                 }
             }
-            catch (Exception $e)
+            catch (\Exception $e)
             {
+                rzpLogError($e->getMessage());
                 return;
             }
         }
@@ -2213,7 +2214,7 @@ EOT;
         try
         {
             $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
-            $validateKeySecret = $api->request->request('GET', 'accounts/me/features');
+            $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
             foreach ($merchantPreferences['assigned_features'] as $preference) 
             {
                 if ($preference['name'] === 'affordability_widget') 
@@ -2222,8 +2223,9 @@ EOT;
                 }
             }
         }
-        catch(Exception $e)
+        catch(\Exception $e)
         {
+            rzpLogError($e->getMessage());
             return;
         }
     }
