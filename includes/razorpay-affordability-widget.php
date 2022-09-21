@@ -295,6 +295,13 @@ function getAffordabilityWidgetSettings()
                 'desc'                  => '',
                 'id'                    => 'rzp_afd_section_title'
             ),
+            'enable' => array(
+                'title'                 => __('Affordability Widget Enable/Disable'),
+                'type'                  => 'checkbox',
+                'desc'                  => __('Enable Affordability Widget?'),
+                'default'               => 'no',
+                'id'                    => 'rzp_afd_enable'
+            ),
             'enable_test_mode' => array(
                 'title'                 => __('Test Mode Enable/Disable'),
                 'type'                  => 'checkbox',
@@ -486,6 +493,10 @@ function getCustomisation($customisation)
 
 function isAffordabilityWidgetTestModeEnabled()
 {
+    if(empty(get_option('rzp_afd_enable_test_mode')) === true)
+    {
+        return true;
+    }
     return (
         empty(get_option('rzp_afd_enable_test_mode')) === false and
         get_option('rzp_afd_enable_test_mode') === 'yes'
