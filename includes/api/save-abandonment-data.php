@@ -56,11 +56,23 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     rzpLogInfo('Woocommerce order id:');
     rzpLogInfo(json_encode($wcOrderId));
 
-
     $result['response']    = "";
     $result['status_code'] = 400;
 
+ //check woocommerce cart abandonment recovery plugin is activated or not
+ if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
 
+    //save abandonment data
+    $res = saveWooCartAbandonmentRecoveryData($razorpayData);
+
+    if($res['status_code'] == 200){
+        $result['response']    = "Data inserted for WooCart abandoned recovery plugin";
+        $result['status_code'] = 200;
+    }else{
+        $result['response']    = "Failed to insert data for WooCart abandoned recovery plugin"; 
+        $result['status_code'] = 400;
+    }
+}
 
     // Check Wati.io retargetting plugin is active or not
     if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
@@ -74,21 +86,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             $result['status_code'] = 400;
         }
        
-    }
-
-    //check woocommerce cart abandonment recovery plugin is activated or not
-    if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
-
-        //save abandonment data
-        $res = saveWooCartAbandonmentRecoveryData($razorpayData);
-
-        if($res['status_code'] == 200){
-            $result['response']    = "Data inserted for WooCart abandoned recovery plugin";
-            $result['status_code'] = 200;
-        }else{
-            $result['response']    = "Failed to insert data for WooCart abandoned recovery plugin"; 
-            $result['status_code'] = 400;
-        }
     }
 
     //Check CartBounty plugin is activated or not
