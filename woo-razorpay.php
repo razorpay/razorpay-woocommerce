@@ -1666,38 +1666,40 @@ EOT;
             $razorpayData = $api->order->fetch($razorpayOrderId);
             
             $this->UpdateOrderAddress($razorpayData, $order);
+
+            // update gift card and coupons
             $this->updateGiftCardData($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
-            if (empty($razorpayData['promotions'][0]) === false)
-            {
-                $couponKey = $razorpayData['promotions'][0]['code'];
-            }
+            // if (empty($razorpayData['promotions'][0]) === false)
+            // {
+            //     $couponKey = $razorpayData['promotions'][0]['code'];
+            // }
 
-            //Apply coupon to woo-order
-            if (empty($couponKey) === false)
-            {
-                // Remove the same coupon, if already being added to order.
-                $order->remove_coupon($couponKey);
+            // //Apply coupon to woo-order
+            // if (empty($couponKey) === false)
+            // {
+            //     // Remove the same coupon, if already being added to order.
+            //     $order->remove_coupon($couponKey);
 
-                //TODO: Convert all razorpay amount in paise to rupees
-                $discount_total = $razorpayData['promotions'][0]['value']/100;
+            //     //TODO: Convert all razorpay amount in paise to rupees
+            //     $discount_total = $razorpayData['promotions'][0]['value']/100;
 
-                //TODO: Verify source code implementation
-                // Loop through products and apply the coupon discount
-                foreach($order->get_items() as $order_item)
-                {
-                    $total = $order_item->get_total();
-                    $order_item->set_subtotal($total);
-                    $order_item->set_total($total - $discount_total);
-                    $order_item->save();
-                }
-                // TODO: Test if individual use coupon fails by hardcoding here
-                $isApplied = $order->apply_coupon($couponKey);
-                $order->save();
+            //     //TODO: Verify source code implementation
+            //     // Loop through products and apply the coupon discount
+            //     foreach($order->get_items() as $order_item)
+            //     {
+            //         $total = $order_item->get_total();
+            //         $order_item->set_subtotal($total);
+            //         $order_item->set_total($total - $discount_total);
+            //         $order_item->save();
+            //     }
+            //     // TODO: Test if individual use coupon fails by hardcoding here
+            //     $isApplied = $order->apply_coupon($couponKey);
+            //     $order->save();
 
-                rzpLogInfo("Coupon details updated for orderId: $wcOrderId");
+            //     rzpLogInfo("Coupon details updated for orderId: $wcOrderId");
 
-            }
+            // }
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -1849,6 +1851,9 @@ EOT;
 
         public function updateGiftCardData($razorpayData, $order, $orderId, $razorpayPaymentId)
         {
+            global $woocommerce;
+            global $wpdb;
+
             foreach($razorpayData['promotions'] as $giftcard)
             {
                 if($giftcard['type'] == 'gift_card'){
@@ -1869,22 +1874,63 @@ EOT;
                     }else{
                         $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                     }
+                }else{
+
+                    $couponKey = $giftcard['code'];
+
+                    if (empty($couponKey) === false)
+                    {
+                        // Remove the same coupon, if already being added to order.
+                        $order->remove_coupon($couponKey);
+
+                        //TODO: Convert all razorpay amount in paise to rupees
+                        $discount_total = $giftcard['value']/100;
+
+                        //TODO: Verify source code implementation
+                        // Loop through products and apply the coupon discount
+                        foreach($order->get_items() as $order_item)
+                        {
+                            $total = $order_item->get_total();
+                            $order_item->set_subtotal($total);
+                            $order_item->set_total($total - $discount_total);
+                            $order_item->save();
+                        }
+                        // TODO: Test if individual use coupon fails by hardcoding here
+                        $isApplied = $order->apply_coupon($couponKey);
+                        $order->save();
+
+                        rzpLogInfo("Coupon details updated for orderId: $orderId");
+                    }
                 }
                 
             }
         }
 
-        public function debitGiftCards( $order_id, $order, $note, $usedAmt) {
+        public function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
+
+            global $woocommerce;
+            global $wpdb;
            
             if ( ! is_a( $order, 'WC_Order' ) ) {
                 return;
             }
 
-            foreach( $order->get_items( 'pw_gift_card' ) as $order_item_id => $line ) {
-                $gift_card = new PW_Gift_Card( $line->get_card_number() );
-                 wc_add_order_item_meta( $order_item_id, 'card_number', $gift_card->get_number() );
-                 wc_add_order_item_meta( $order_item_id, 'amount', $usedAmt );
+            // insert GC in orderitems
+            $wpdb->query( // phpcs:ignore
+                $wpdb->prepare(
+                    'INSERT INTO `' . $wpdb->prefix . 'woocommerce_order_items`( order_item_name, order_item_type, order_id ) VALUES ( %s, %s, %s)',
+                    $code,
+                    'pw_gift_card',
+                    $orderId
+                )
+            );
 
+            $itemId = $wpdb->insert_id;
+            wc_add_order_item_meta( $itemId, 'card_number', $giftCardNo );
+            wc_add_order_item_meta( $itemId, 'amount', $usedAmt );
+
+            foreach( $order->get_items( 'pw_gift_card' ) as $order_item_id => $line ) {
+                $gift_card = new PW_Gift_Card( $giftCardNo );
                 
                 if ( $gift_card->get_id() ) {
                     if ( !$line->meta_exists( '_pw_gift_card_debited' ) ) {
