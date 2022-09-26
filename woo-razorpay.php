@@ -26,10 +26,15 @@ require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 <<<<<<< HEAD
+<<<<<<< HEAD
 require_once __DIR__.'/includes/support/wati.php';
 =======
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 >>>>>>> 79715ebe6a617a5a2aaea376efe587c645c1f34e
+=======
+require_once __DIR__.'/includes/support/wati.php';
+require_once __DIR__.'/includes/razorpay-affordability-widget.php';
+>>>>>>> 211f67b5af538fbd6e29f5c16a3137d671d84329
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
