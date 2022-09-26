@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.2.0
- * Stable tag: 4.2.0
+ * Version: 4.3.1
+ * Stable tag: 4.3.1
  * Author: Team Razorpay
  * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
@@ -25,7 +25,11 @@ require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
+<<<<<<< HEAD
 require_once __DIR__.'/includes/support/wati.php';
+=======
+require_once __DIR__.'/includes/razorpay-affordability-widget.php';
+>>>>>>> 79715ebe6a617a5a2aaea376efe587c645c1f34e
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -234,8 +238,6 @@ function woocommerce_razorpay_init()
 
         protected function initHooks()
         {
-            add_action('init', array(&$this, 'check_razorpay_response'));
-
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
             add_action('woocommerce_api_' . $this->id, array($this, 'check_razorpay_response'));
@@ -326,6 +328,38 @@ function woocommerce_razorpay_init()
                 {
                     $this->form_fields[$key] = $value;
                 }
+            }
+            
+            //Affordability Widget Code
+            try
+            {
+                if (isset($_POST['woocommerce_razorpay_key_id']) and
+                    empty($_POST['woocommerce_razorpay_key_id']) === false and 
+                    isset($_POST['woocommerce_razorpay_key_secret']) and
+                    empty($_POST['woocommerce_razorpay_key_secret']) === false)
+                {
+                    $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
+                }
+                else
+                {
+                    $api = $this->getRazorpayApiInstance();
+                }
+                $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+                
+                foreach ($merchantPreferences['assigned_features'] as $preference) 
+                {
+                    if ($preference['name'] === 'affordability_widget') 
+                    {
+                        add_action('woocommerce_sections_checkout', 'addSubSection');
+                        add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
+                        add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
+                    }
+                }
+            }
+            catch (\Exception $e)
+            {
+                rzpLogError($e->getMessage());
+                return;
             }
         }
 
@@ -555,6 +589,8 @@ function woocommerce_razorpay_init()
 
             $response = $trackObject->rzpTrackSegment($authEvent, $authProperties);
 
+            $trackObject->rzpTrackDataLake($authEvent, $authProperties);
+
             if ((empty($_POST['woocommerce_razorpay_enabled']) === false) and
                 ($this->getSetting('enabled') === 'no'))
             {
@@ -569,6 +605,8 @@ function woocommerce_razorpay_init()
             if ($pluginStatusEvent !== '')
             {
                 $response = $trackObject->rzpTrackSegment($pluginStatusEvent, $pluginStatusProperties);
+
+                $trackObject->rzpTrackDataLake($pluginStatusEvent, $pluginStatusProperties);
             }
         }
 
@@ -1648,7 +1686,7 @@ EOT;
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
             $this->UpdateOrderAddress($razorpayData, $order);
-   
+
 
 
             if (empty($razorpayData['promotions'][0]) === false)
@@ -1896,7 +1934,7 @@ EOT;
             }
         }
 
-        //Create new user account 
+        //Create new user account
         public function newUserAccount($razorpayData, $order)
         {
             global $woocommerce;
@@ -1909,11 +1947,11 @@ EOT;
                 $random_password = wp_generate_password(8, false);
 
                 //create user name with the help default woocommerce function
-                $username = wc_create_new_customer_username( $email , $name);
+                $username = wc_create_new_customer_username( $email );
                 $userId  = wp_create_user( $username, $random_password, $email );
                 $user = get_user_by('id', $userId);
 
-                update_post_meta($order->id, '_customer_user', $userId);
+                update_post_meta($order->get_id(), '_customer_user', $userId);
 
                 // Get all WooCommerce emails Objects from WC_Emails Object instance
                 $emails = wc()->mailer()->emails;
@@ -2178,6 +2216,28 @@ EOT;
     }
 
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
+
+    if (empty(get_option('rzp_afd_enable')) === false and
+        get_option('rzp_afd_enable') === 'yes')
+    {
+        try
+        {
+            $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
+            $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+            foreach ($merchantPreferences['assigned_features'] as $preference) 
+            {
+                if ($preference['name'] === 'affordability_widget') 
+                {
+                    add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
+                }
+            }
+        }
+        catch(\Exception $e)
+        {
+            rzpLogError($e->getMessage());
+            return;
+        }
+    }
 }
 
 // This is set to a priority of 10
@@ -2350,6 +2410,8 @@ function razorpayPluginActivated()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin activate', $activateProperties);
+
+    $trackObject->rzpTrackDataLake('plugin activate', $activateProperties);
 }
 
 // plugin deactivation hook
@@ -2378,6 +2440,8 @@ function razorpayPluginDeactivated()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin deactivate', $deactivateProperties);
+
+    $trackObject->rzpTrackDataLake('plugin deactivate', $deactivateProperties);
 }
 
 // plugin upgrade hook
@@ -2394,6 +2458,8 @@ function razorpayPluginUpgraded()
     ];
 
     $response = $trackObject->rzpTrackSegment('plugin upgrade', $upgradeProperties);
+
+    $trackObject->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
 
     if ($response['status'] === 'success')
     {
