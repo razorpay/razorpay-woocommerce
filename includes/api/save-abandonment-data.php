@@ -56,12 +56,11 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     rzpLogInfo('Woocommerce order id:');
     rzpLogInfo(json_encode($wcOrderId));
 
-<<<<<<< HEAD
+
     $result['response']    = "";
     $result['status_code'] = 400;
 
-=======
->>>>>>> 211f67b5af538fbd6e29f5c16a3137d671d84329
+
 
     // Check Wati.io retargetting plugin is active or not
     if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
@@ -76,13 +75,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         }
        
     }
-<<<<<<< HEAD
-=======
-
-    $result['response']    = "";
-    $result['status_code'] = 400;
-
->>>>>>> 211f67b5af538fbd6e29f5c16a3137d671d84329
 
     //check woocommerce cart abandonment recovery plugin is activated or not
     if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
