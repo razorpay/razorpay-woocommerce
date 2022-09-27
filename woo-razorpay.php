@@ -1677,8 +1677,15 @@ EOT;
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
             $this->UpdateOrderAddress($razorpayData, $order);
+            
+            $razorpayData['notes']['gstin']             = "MOCKGST-32626092022";
+            $razorpayData['notes']['order_instruction'] = "MOCKOrderInstructions";
 
-
+            $gstin             = $razorpayData['notes']['gstin'];
+            $order_instruction = $razorpayData['notes']['order_instruction'];
+            
+            $order->add_order_note( "GSTIN ". $gstin );
+            $order->add_order_note( "Order Instruction ". $order_instruction);
 
             if (empty($razorpayData['promotions'][0]) === false)
             {
