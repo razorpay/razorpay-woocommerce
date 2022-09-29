@@ -34,7 +34,7 @@ jQuery(document.body).on('updated_cart_totals', function(event) {
  }
 
  var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
- if (flycartBtn !== null) {
+ if (flycartBtn !== null && flycartBtn!==undefined) {
    flycartBtn.addEventListener('click', openRzpCheckout);
  }
 });
@@ -46,7 +46,7 @@ function addEventListenerToMinicart(wcEvent) {
      btnMini.addEventListener('click', openRzpCheckout);
    }
    var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
-  if (flycartBtn !== null) {
+  if (flycartBtn !== null && flycartBtn!==undefined) {
     flycartBtn.addEventListener('click', openRzpCheckout);
    }
  });
