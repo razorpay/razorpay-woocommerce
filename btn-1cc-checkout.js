@@ -1,9 +1,9 @@
 if (document.readyState !== 'loading') {
-  btnCheckout();
+      btnCheckout();
 } else {
  document.addEventListener('DOMContentLoaded', function () {
-     btnCheckout();
- });
+      btnCheckout();
+  });
 }
 
 function btnCheckout(){
