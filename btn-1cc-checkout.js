@@ -1,9 +1,9 @@
 if (document.readyState !== 'loading') {
-      btnCheckout();
+  btnCheckout();
 } else {
  document.addEventListener('DOMContentLoaded', function () {
-      btnCheckout();
-  });
+     btnCheckout();
+ });
 }
 
 function btnCheckout(){
@@ -17,7 +17,7 @@ var pageURL = jQuery(location).attr('href');
 var url = new URL(pageURL);
 var accessToken = new URLSearchParams(url.search).get('wcf_ac_token');
 var referrerDomain = document.referrer.toString();
-var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
 rzp1ccCheckoutData.referrerDomain = referrerDomain;
 
 // event triggered by wc on any cart change
@@ -33,7 +33,7 @@ jQuery(document.body).on('updated_cart_totals', function(event) {
    btnMini.addEventListener('click', openRzpCheckout);
  }
 
- var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+ var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
  if (flycartBtn != null) {
    flycartBtn.addEventListener('click', openRzpCheckout);
  }
@@ -45,7 +45,7 @@ function addEventListenerToMinicart(wcEvent) {
    if (btnMini !== null) {
      btnMini.addEventListener('click', openRzpCheckout);
    }
-   var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+   var flycartBtn = document.getElementsByClassName("woofc-action-right")[0];
   if (flycartBtn != null) {
     flycartBtn.addEventListener('click', openRzpCheckout);
    }
