@@ -1874,7 +1874,7 @@ EOT;
 
                 $shippingAddress['first_name'] = $shippingAddressKey['name'];
                 $shippingAddress['address_1'] = $shippingAddressKey['line1'];
-                $shippingAddress['address_2'] = $shippingAddressKey['line2'];
+                $shippingAddress['address_2'] = $shippingAddressKey['line2'] ?? '';
                 $shippingAddress['city'] = $shippingAddressKey['city'];
                 $shippingAddress['country'] = strtoupper($shippingAddressKey['country']);
                 $shippingAddress['postcode'] = $shippingAddressKey['zipcode'];
@@ -1895,7 +1895,7 @@ EOT;
                 {
                     $billingAddress['first_name'] = $razorpayData['customer_details']['billing_address']['name'];
                     $billingAddress['address_1'] = $razorpayData['customer_details']['billing_address']['line1'];
-                    $billingAddress['address_2'] = $razorpayData['customer_details']['billing_address']['line2'];
+                    $billingAddress['address_2'] = $razorpayData['customer_details']['billing_address']['line2'] ?? '';
                     $billingAddress['city'] = $razorpayData['customer_details']['billing_address']['city'];
                     $billingAddress['country'] = strtoupper($razorpayData['customer_details']['billing_address']['country']);
                     $billingAddress['postcode'] = $razorpayData['customer_details']['billing_address']['zipcode'];
@@ -1978,7 +1978,7 @@ EOT;
                     // user's shipping data
                     update_user_meta( $userId, 'shipping_first_name', $shpping->name );
                     update_user_meta( $userId, 'shipping_address_1', $shpping->line1);
-                    update_user_meta( $userId, 'shipping_address_2', $shpping->line2);
+                    update_user_meta( $userId, 'shipping_address_2', $shpping->line2 ?? '');
                     update_user_meta( $userId, 'shipping_city', $shpping->city);
                     update_user_meta( $userId, 'shipping_country', strtoupper($shpping->country));
                     update_user_meta( $userId, 'shipping_postcode', $shpping->zipcode);
@@ -1988,7 +1988,7 @@ EOT;
                     update_user_meta( $userId, 'billing_first_name', $shpping->name);
                     update_user_meta( $userId, 'billing_phone', $contact);
                     update_user_meta( $userId, 'billing_address_1', $billing->line1);
-                    update_user_meta( $userId, 'billing_address_2', $billing->line2);
+                    update_user_meta( $userId, 'billing_address_2', $billing->line2 ?? '');
                     update_user_meta( $userId, 'billing_city', $billing->city);
                     update_user_meta( $userId, 'billing_country', strtoupper($billing->country));
                     update_user_meta( $userId, 'billing_postcode', $billing->zipcode);
