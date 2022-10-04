@@ -4,6 +4,7 @@
  */
 
 require_once __DIR__ . '/../support/cartbounty.php';
+require_once __DIR__ . '/../support/wati.php';
 
 function saveCartAbandonmentData(WP_REST_Request $request)
 {
@@ -58,19 +59,33 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     $result['response']    = "";
     $result['status_code'] = 400;
 
-    //check woocommerce cart abandonment recovery plugin is activated or not
-    if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
+ //check woocommerce cart abandonment recovery plugin is activated or not
+ if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
 
-        //save abandonment data
-        $res = saveWooCartAbandonmentRecoveryData($razorpayData);
+    //save abandonment data
+    $res = saveWooCartAbandonmentRecoveryData($razorpayData);
 
+    if($res['status_code'] == 200){
+        $result['response']    = "Data inserted for WooCart abandoned recovery plugin";
+        $result['status_code'] = 200;
+    }else{
+        $result['response']    = "Failed to insert data for WooCart abandoned recovery plugin"; 
+        $result['status_code'] = 400;
+    }
+}
+
+    // Check Wati.io retargetting plugin is active or not
+    if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+
+        $res = saveWatiCartAbandonmentData($razorpayData);
         if($res['status_code'] == 200){
-            $result['response']    = "Data inserted for WooCart abandoned recovery plugin";
+            $result['response']    = $result['response']."Data inserted for Wati plugin";
             $result['status_code'] = 200;
         }else{
-            $result['response']    = "Failed to insert data for WooCart abandoned recovery plugin"; 
+            $result['response']    = $result['response']."Failed to insert data for Wati plugin"; 
             $result['status_code'] = 400;
         }
+       
     }
 
     //Check CartBounty plugin is activated or not
