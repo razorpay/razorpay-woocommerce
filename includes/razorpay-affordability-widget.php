@@ -15,7 +15,8 @@ function addAffordabilityWidgetHTML()
         <script>
             const key = "'.getKeyId().'";
             const amount = parseFloat("'.getPrice().'s") * 100;
-            window.onload = function() {
+            addEventListener("load", 
+            function() {
                 const widgetConfig = {
                     "key": key,
                     "amount": amount,
@@ -58,7 +59,7 @@ function addAffordabilityWidgetHTML()
                 const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
                 rzpAffordabilitySuite.render();
                 console.log(widgetConfig);
-            }
+            });
 
             jQuery(function($) { 
 
@@ -119,7 +120,7 @@ function addAffordabilityWidgetHTML()
                 $("input.variation_id").change(function(){
                     $.fn.myFunction();
                 });
-                
+
             });
 
         </script>
