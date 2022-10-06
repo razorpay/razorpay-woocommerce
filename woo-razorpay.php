@@ -2208,26 +2208,22 @@ EOT;
 
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
 
-    if (empty(get_option('rzp_afd_enable')) === false and
-        get_option('rzp_afd_enable') === 'yes')
+    try
     {
-        try
+        $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
+        $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+        foreach ($merchantPreferences['assigned_features'] as $preference) 
         {
-            $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
-            $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-            foreach ($merchantPreferences['assigned_features'] as $preference) 
+            if ($preference['name'] === 'affordability_widget') 
             {
-                if ($preference['name'] === 'affordability_widget') 
-                {
-                    add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
-                }
+                add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
             }
         }
-        catch(\Exception $e)
-        {
-            rzpLogError($e->getMessage());
-            return;
-        }
+    }
+    catch(\Exception $e)
+    {
+        rzpLogError($e->getMessage());
+        return;
     }
 }
 

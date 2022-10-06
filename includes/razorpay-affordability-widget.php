@@ -57,7 +57,71 @@ function addAffordabilityWidgetHTML()
                 };
                 const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
                 rzpAffordabilitySuite.render();
+                console.log(widgetConfig);
             }
+
+            jQuery(function($) { 
+
+                $.fn.myFunction = function()
+                {
+                    var variants = (document.querySelector("form.variations_form").dataset.product_variations);
+                    var selectedVariantID = document.querySelector("input.variation_id").value;
+                    var selectedVariant = JSON.parse(variants).filter( variant => variant.variation_id === parseInt(selectedVariantID));
+                    
+                    if(typeof(selectedVariant[0]) != "undefined")
+                    {
+                        amt = selectedVariant[0].display_price * 100;
+                        const widgetConfig = {
+                            "key": key,
+                            "amount": amt,
+                            "theme": {
+                                "color": "'.getThemeColor().'"
+                            },
+                            "features": {
+                                "offers": {
+                                    "list": '.getAdditionalOffers().',
+                                }
+                            },
+                            "display": {
+                                "offers": '.getOffers().',
+                                "emi": '.getEmi().',
+                                "cardlessEmi": '.getCardlessEmi().',
+                                "paylater": '.getPayLater().',
+                                "widget": {
+                                    "main": {
+                                        "heading": {
+                                            "color": "'.getHeadingColor().'",
+                                            "fontSize": "'.getHeadingFontSize().'px"
+                                        },
+                                        "content": {
+                                            "color": "'.getContentColor().'",
+                                            "fontSize": "'.getContentFontSize().'px"
+                                        },
+                                        "link": {
+                                            "color": "'.getLinkColor().'",
+                                            "fontSize": "'.getLinkFontSize().'px"
+                                        },
+                                        "footer": {
+                                            "color": "'.getFooterColor().'",
+                                            "fontSize": "'.getFooterFontSize().'px",
+                                            "darkLogo": '.getFooterDarkLogo().'// true is default show black text rzp logo
+                                        }
+                                    }
+                                }
+                            }
+                        };
+                        const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
+                        rzpAffordabilitySuite.render();
+                        console.log(widgetConfig);
+                    }
+                }
+
+                $("input.variation_id").change(function(){
+                    $.fn.myFunction();
+                });
+                
+            });
+
         </script>
         ';
     }
@@ -71,7 +135,7 @@ function getKeyId()
 function getPrice()
 {
     global $product;
-    if ($product->is_type('variable') === false)
+    if ($product->is_type('simple') === true)
     {
         if ($product->is_on_sale()) 
         {
@@ -82,9 +146,9 @@ function getPrice()
             $price = $product->get_regular_price();
         }
     }
-    else
+    else if($product->is_type('variable') === true)
     {
-        $price = $product->get_price();
+        $price = $product->get_price(); 
     }
 
     return $price;
@@ -295,13 +359,6 @@ function getAffordabilityWidgetSettings()
                 'desc'                  => '',
                 'id'                    => 'rzp_afd_section_title'
             ),
-            'enable' => array(
-                'title'                 => __('Affordability Widget Enable/Disable'),
-                'type'                  => 'checkbox',
-                'desc'                  => __('Enable Affordability Widget?'),
-                'default'               => 'no',
-                'id'                    => 'rzp_afd_enable'
-            ),
             'enable_test_mode' => array(
                 'title'                 => __('Test Mode Enable/Disable'),
                 'type'                  => 'checkbox',
@@ -457,6 +514,10 @@ function updateAffordabilityWidgetSettings()
 
 function isEnabled($feature)
 {
+    if(empty(get_option($feature)) === true)
+    {
+        return 'true';
+    }
     $value = 'false';
 
     if (empty(get_option($feature)) === false and 
@@ -482,10 +543,10 @@ function getCustomisation($customisation)
         'rzp_afd_footer_font_size'          => '10'
     ];
 
-    $customisationValue = get_option($customisation);
-    if (empty($customisationValue) === true)
+    $customisationValue = $defaultCustomisationValues[$customisation];
+    if (empty(get_option($customisation)) === false)
     {
-        $customisationValue = $defaultCustomisationValues[$customisation];
+        $customisationValue = get_option($customisation);
     }
     
     return $customisationValue;
