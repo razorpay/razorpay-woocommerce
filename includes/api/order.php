@@ -4,6 +4,9 @@
  * create order with status pending
  * user, adddress, coupon and shipping are left blank
  */
+
+require_once __DIR__ . '/../authentication/nonces.php';
+
 function createWcOrder(WP_REST_Request $request)
 {
     rzpLogInfo("createWcOrder");
@@ -24,7 +27,7 @@ function createWcOrder(WP_REST_Request $request)
     }
 
     $nonce     = $request->get_header('X-WP-Nonce');
-    $verifyReq = wp_verify_nonce($nonce, 'wp_rest');
+    $verifyReq = rzp_verify_nonce($nonce, 'wp_rest');
 
     if ($verifyReq === false) {
         $response['status']  = false;

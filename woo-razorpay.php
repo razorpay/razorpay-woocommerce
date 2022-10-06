@@ -26,6 +26,7 @@ require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
+require_once __DIR__.'/includes/authentication/nonces.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 
 use Razorpay\Api\Api;
@@ -2270,7 +2271,7 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
-      'nonce' => wp_create_nonce("wp_rest"),
+      'nonce' => rzp_create_nonce("wp_rest"),
       'siteurl' => $siteurl,
       'blogname' => get_bloginfo('name'),
       'cookies' => $_COOKIE,
