@@ -342,6 +342,12 @@ function woocommerce_razorpay_init()
                 }
                 $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
                 
+                if (isset($merchantPreferences) === false or
+                    isset($merchantPreferences['assigned_features']) === false)
+                {
+                    throw new Exception("Error in Api call.");
+                }
+                
                 foreach ($merchantPreferences['assigned_features'] as $preference) 
                 {
                     if ($preference['name'] === 'affordability_widget') 
@@ -2212,6 +2218,13 @@ EOT;
     {
         $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
         $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+
+        if (isset($merchantPreferences) === false or
+            isset($merchantPreferences['assigned_features']) === false)
+        {
+            throw new Exception("Error in Api call.");
+        }
+
         foreach ($merchantPreferences['assigned_features'] as $preference) 
         {
             if ($preference['name'] === 'affordability_widget') 

@@ -58,7 +58,6 @@ function addAffordabilityWidgetHTML()
                 };
                 const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
                 rzpAffordabilitySuite.render();
-                console.log(widgetConfig);
             });
 
             jQuery(function($) { 
@@ -113,7 +112,6 @@ function addAffordabilityWidgetHTML()
                         };
                         const rzpAffordabilitySuite = new RazorpayAffordabilitySuite(widgetConfig);
                         rzpAffordabilitySuite.render();
-                        console.log(widgetConfig);
                     }
                 }
 
@@ -147,7 +145,7 @@ function getPrice()
             $price = $product->get_regular_price();
         }
     }
-    else if($product->is_type('variable') === true)
+    else
     {
         $price = $product->get_price(); 
     }
@@ -515,7 +513,7 @@ function updateAffordabilityWidgetSettings()
 
 function isEnabled($feature)
 {
-    if(empty(get_option($feature)) === true)
+    if (empty(get_option($feature)) === true)
     {
         return 'true';
     }
@@ -555,7 +553,7 @@ function getCustomisation($customisation)
 
 function isAffordabilityWidgetTestModeEnabled()
 {
-    if(empty(get_option('rzp_afd_enable_test_mode')) === true)
+    if (empty(get_option('rzp_afd_enable_test_mode')) === true)
     {
         return true;
     }
