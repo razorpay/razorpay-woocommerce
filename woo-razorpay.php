@@ -326,12 +326,12 @@ function woocommerce_razorpay_init()
                     $this->form_fields[$key] = $value;
                 }
             }
-            
+
             //Affordability Widget Code
             try
             {
                 if (isset($_POST['woocommerce_razorpay_key_id']) and
-                    empty($_POST['woocommerce_razorpay_key_id']) === false and 
+                    empty($_POST['woocommerce_razorpay_key_id']) === false and
                     isset($_POST['woocommerce_razorpay_key_secret']) and
                     empty($_POST['woocommerce_razorpay_key_secret']) === false)
                 {
@@ -341,6 +341,7 @@ function woocommerce_razorpay_init()
                 {
                     $api = $this->getRazorpayApiInstance();
                 }
+                
                 $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
                 
                 if (isset($merchantPreferences) === false or
@@ -349,9 +350,9 @@ function woocommerce_razorpay_init()
                     throw new Exception("Error in Api call.");
                 }
                 
-                foreach ($merchantPreferences['assigned_features'] as $preference) 
+                foreach ($merchantPreferences['assigned_features'] as $preference)
                 {
-                    if ($preference['name'] === 'affordability_widget') 
+                    if ($preference['name'] === 'affordability_widget')
                     {
                         add_action('woocommerce_sections_checkout', 'addSubSection');
                         add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
@@ -689,6 +690,15 @@ function woocommerce_razorpay_init()
          **/
         function receipt_page($orderId)
         {
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value){
+                if ($value['function'] === 'output' and
+                    stripos($value['file'], 'divi') !== false and
+                    basename($value['file'], ".php") !== 'CheckoutPaymentInfo')
+                {
+                    return;
+                }
+            }
+
             echo $this->generate_razorpay_form($orderId);
         }
 
