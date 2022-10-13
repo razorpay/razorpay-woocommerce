@@ -44,7 +44,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 = 4.3.2 =
 * Added, support for variable products.
 * Removed, checkbox to enable affordability widget.
-* Fixed, duplicate form bug.
+* Added, Divi theme support.
 * Added, WATI plugin support.
 * Added, Flycart changes.
 
