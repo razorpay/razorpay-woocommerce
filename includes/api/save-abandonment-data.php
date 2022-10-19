@@ -522,6 +522,6 @@ function abandonedCart( $title, $metas ) {
         update_post_meta( $cartId, '_cart_subtotal', $recoverCart->get_subtotal_cart() );
     }
 
-    return $cart_id;
+    return $cartId;
 }
 
