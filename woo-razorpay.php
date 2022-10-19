@@ -1056,7 +1056,7 @@ function woocommerce_razorpay_init()
 
             $i = 0;
             // Get and Loop Over Order Items
-            $type = 'false';
+            $type = "e-commerce";
             foreach ( $order->get_items() as $item_id => $item )
             {
                $product = $item->get_product();
@@ -1065,18 +1065,18 @@ function woocommerce_razorpay_init()
                     $parent_product_id = $product->get_parent_id();
                     $parent_product = wc_get_product($parent_product_id);
                  
-                    if($parent_product->get_type() == 'pw-gift-card'){
-                        $type = 'true';
+                    if($parent_product->get_type() == 'pw-gift-card' || $parent_product->get_type() == 'gift-card'){
+                        $type = 'gift_card';
                     }
-                    
-                    }else{
-                        if($product->get_type() == 'pw-gift-card'){
-                        $type = 'true';
-                    }
+
+               }else{
+
+                   if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
+                          $type = 'gift_card'; 
+                   }
                }
 
-               $data['line_items'][$i]['gift_card'] = $type;
-               $data['line_items'][$i]['type'] =  "e-commerce";
+               $data['line_items'][$i]['type'] =  $type;
                $data['line_items'][$i]['sku'] = $product->get_sku();
                $data['line_items'][$i]['variant_id'] = $item->get_variation_id();
                $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
@@ -1250,8 +1250,8 @@ EOT;
                  * @var $refund -> WooCommerce Refund Instance.
                  */
                 //do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+                $this->add_notice("Payment refunded", "error");
 
-                return true;
             }
             catch(Exception $e)
             {
@@ -1859,21 +1859,59 @@ EOT;
                 if($giftcard['type'] == 'gift_card'){
 
                     $usedAmt = $giftcard['value']/100;
-                    $result = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s", $giftcard['code'] ) );
-                    if($result != null){
-                        $balance = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM {$wpdb->pimwick_gift_card_activity} WHERE pimwick_gift_card_id = %d", $result->pimwick_gift_card_id ) );
-                        
-                        if($balance == null && $balance >= 0 && $usedAmt > $balance ){
+                    $giftCode = $giftcard['code'];
+                    if(is_plugin_active('yith-woocommerce-gift-cards/init.php')){
+
+                        $yithCard = new YITH_YWGC_Gift_Card( $args = array('gift_card_number'=> $giftCode));
+
+                        $giftCardBalance = $yithCard->get_balance();
+
+                        if($giftCardBalance == null && $balance >= 0 && $usedAmt > $giftCardBalance ){
                             // initiate refund in case gift card faliure
                             $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                         }else{
                             //Deduct amount of gift card
-                           $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt);
+                            $yithCard->update_balance( $yithCard->get_balance() - $usedAmt );
+                            $yithCard->register_order($orderId);
+
+                            $code = "Gift Card ($giftCode)";
+
+                            $wpdb->query( // phpcs:ignore
+                                $wpdb->prepare(
+                                    'INSERT INTO `' . $wpdb->prefix . 'woocommerce_order_items`( order_item_name, order_item_type, order_id ) VALUES ( %s, %s, %s)',
+                                    $code,
+                                    'fee',
+                                    $orderId
+                                )
+                            );
+
+                            $itemId = $wpdb->insert_id;
+                            wc_add_order_item_meta( $itemId, '_line_total', -$usedAmt );
+                        }
+
+                    }
+                    else if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php'))
+                    {
+                        $result = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s", $giftcard['code'] ) );
+                        if($result != null){
+                            $balance = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM {$wpdb->pimwick_gift_card_activity} WHERE pimwick_gift_card_id = %d", $result->pimwick_gift_card_id ) );
+                            
+                            if($balance == null && $balance >= 0 && $usedAmt > $balance ){
+                                // initiate refund in case gift card faliure
+                                $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                            }else{
+                                //Deduct amount of gift card
+                               $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt);
+                            }
+
+                        }else{
+                            $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                         }
 
                     }else{
-                        $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                       $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                     }
+                    
                 }else{
 
                     $couponKey = $giftcard['code'];

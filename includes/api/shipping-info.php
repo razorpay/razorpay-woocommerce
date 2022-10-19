@@ -343,11 +343,11 @@ function giftCardProduct($orderId){
              $parent_product_id = $product->get_parent_id();
              $parent_product = wc_get_product($parent_product_id);
              
-            if($parent_product->get_type() == 'pw-gift-card'){
+            if($parent_product->get_type() == 'pw-gift-card' || $parent_product->get_type() == 'gift-card'){
                 $giftCount++;
             }
        }else{
-            if($product->get_type() == 'pw-gift-card'){
+            if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
                 $giftCount++;
             }
              
