@@ -366,7 +366,8 @@ function woocommerce_razorpay_init()
                             break;
                         }
                     }
-                    
+
+                    update_option('rzp_afd_feature_checked', "yes");
                 }
                 catch (\Exception $e)
                 {
@@ -2260,26 +2261,17 @@ EOT;
                         throw new Exception("Error in Api call.");
                     }
 
-                    $afdFeaturePresent = 0;
+                    update_option('rzp_afd_enable', "no");
                     foreach ($merchantPreferences['assigned_features'] as $preference) 
                     {
                         if ($preference['name'] === 'affordability_widget') 
                         {
-                            $afdFeaturePresent = 1;
+                            update_option('rzp_afd_enable', "yes");
                             break;
                         }
                     }
 
                     update_option('rzp_afd_feature_checked', "yes");
-                    if ($afdFeaturePresent === 1)
-                    {
-                        update_option('rzp_afd_enable', "yes");
-                    }
-                    else
-                    {
-                        update_option('rzp_afd_enable', "no");
-                    }
-                    
                 }
                 catch(\Exception $e)
                 {
