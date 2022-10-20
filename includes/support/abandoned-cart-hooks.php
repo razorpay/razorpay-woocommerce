@@ -2,15 +2,15 @@
 
 function abandonedPluginHook($razorpayData) {
 
-     $rzpAbandonedData                                                     = array();
-     $rzpAbandonedData['woocommerceOrderID']                               = $razorpayData['receipt'];
-     $rzpAbandonedData['amount']                                           = $razorpayData['amount'];
-     $rzpAbandonedData['currency']                                         = $razorpayData['currency'];
-     $rzpAbandonedData['customer_details']                                 = array();
-     $rzpAbandonedData['customer_details']['contact']                      = $razorpayData['customer_details']['contact'];
-     $rzpAbandonedData['customer_details']['email']                        = $razorpayData['customer_details']['email'];
+     $rzpAbandonedData                                = array();
+     $rzpAbandonedData['woocommerceOrderID']          = $razorpayData['receipt'];
+     $rzpAbandonedData['amount']                      = $razorpayData['amount'];
+     $rzpAbandonedData['currency']                    = $razorpayData['currency'];
+     $rzpAbandonedData['customer_details']            = array();
+     $rzpAbandonedData['customer_details']['contact'] = $razorpayData['customer_details']['contact'];
+     $rzpAbandonedData['customer_details']['email']   = $razorpayData['customer_details']['email'];
 
-    $shippingAddress                                                       = array(
+    $shippingAddress                                  = array(
         'name'     => $razorpayData['customer_details']['shipping_address']['name'],
         'line1'    => $razorpayData['customer_details']['shipping_address']['line1'],
         'line2'    => $razorpayData['customer_details']['shipping_address']['line2'],
