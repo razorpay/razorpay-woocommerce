@@ -103,7 +103,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     // check yith woocommerce recover abandoned cart plugin activated or not
     if (is_plugin_active('yith-woocommerce-recover-abandoned-cart-premium/init.php') && (empty($razorpayData['customer_details']['email']) == false) && (empty($razorpayData['customer_details']['shipping_address']))== true) {
-        if ((email_exists($razorpayData['customer_details']['email']) == false) {
+        if ((email_exists($razorpayData['customer_details']['email'])) == false) {
 
             $meta_cart = array(
                 'user_id'         => '0',
@@ -111,7 +111,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
                 'user_first_name' => '',
                 'user_last_name'  => '',
                 'user_phone'      => $razorpayData['customer_details']['contact'],
-                'language'        => wc_clean( $posted['language'] ),
+                'language'        => get_woocommerce_currency(),
                 'email_sent'      => 'no',
                 'cart_status'     => 'open',
                 'user_currency'   => 'INR',
@@ -123,8 +123,8 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
             if ( $postId ) {
                 // add a cookie to the user.
-                setcookie( 'ywrac_guest_cart', $post_id, ywrac_get_timestamp() + $this->delete_abandoned_time * 60, '/' );
-                $result['message']   = $result['response'].PHP_EOL."Data successfully inserted for yith cart abandonment recovery and postid". $postId;
+                setcookie( 'ywrac_guest_cart', $postId, ywrac_get_timestamp() + $this->delete_abandoned_time * 60, '/' );
+                $result['message']   = $result['response'].PHP_EOL."Data successfully inserted for yith cart abandonment recovery and postid";
                 $result['status_code']           = 200;
             }else{
                 $result['message']   = $result['response'].PHP_EOL."Data falied to inserted for yith cart abandonment recovery";
