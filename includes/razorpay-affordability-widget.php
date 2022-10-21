@@ -362,7 +362,7 @@ function getAffordabilityWidgetSettings()
             ),
             'enable' => array(
                 'title'                 => __('Affordability Widget Enable/Disable'),
-                'type'                  => 'checkbox',
+                'type'                  => 'hidden',
                 'desc'                  => __('Enable Affordability Widget?'),
                 'default'               => 'no',
                 'id'                    => 'rzp_afd_enable'

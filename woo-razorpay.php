@@ -329,8 +329,7 @@ function woocommerce_razorpay_init()
 
             //Affordability Widget Code
             global $current_section;
-            if ($current_section === 'razorpay' or 
-            $current_section === 'affordability-widget')
+            if (is_admin())
             {
                 try
                 {
@@ -347,7 +346,7 @@ function woocommerce_razorpay_init()
                     }
                     
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-                    
+                    rzpLogError('api call');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
                     {
@@ -2254,7 +2253,7 @@ EOT;
                 {
                     $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-
+                    rzpLogError('api call');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
                     {
