@@ -346,7 +346,6 @@ function woocommerce_razorpay_init()
                     }
                     
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-                    rzpLogError('api call');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
                     {
@@ -2253,7 +2252,6 @@ EOT;
                 {
                     $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-                    rzpLogError('api call');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
                     {
