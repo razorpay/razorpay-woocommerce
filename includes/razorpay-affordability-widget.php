@@ -540,12 +540,12 @@ function updateAffordabilityWidgetSettings()
             throw new Exception("Error in Api call.");
         }
 
-        update_option('rzp_afd_enable', "no");
+        update_option('rzp_afd_enable', 'no');
         foreach ($merchantPreferences['assigned_features'] as $preference)
         {
             if ($preference['name'] === 'affordability_widget')
             {
-                update_option('rzp_afd_enable', "yes");
+                update_option('rzp_afd_enable', 'yes');
                 break;
             }
         }

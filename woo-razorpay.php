@@ -351,7 +351,7 @@ function woocommerce_razorpay_init()
                         throw new Exception("Error in Api call.");
                     }
 
-                    update_option('rzp_afd_enable', "no");
+                    update_option('rzp_afd_enable', 'no');
                     foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
                         if ($preference['name'] === 'affordability_widget')
@@ -359,7 +359,7 @@ function woocommerce_razorpay_init()
                             add_action('woocommerce_sections_checkout', 'addSubSection');
                             add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
                             add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
-                            update_option('rzp_afd_enable', "yes");
+                            update_option('rzp_afd_enable', 'yes');
                             break;
                         }
                     }
@@ -2257,12 +2257,12 @@ EOT;
                         throw new Exception("Error in Api call.");
                     }
 
-                    update_option('rzp_afd_enable', "no");
+                    update_option('rzp_afd_enable', 'no');
                     foreach ($merchantPreferences['assigned_features'] as $preference) 
                     {
                         if ($preference['name'] === 'affordability_widget') 
                         {
-                            update_option('rzp_afd_enable', "yes");
+                            update_option('rzp_afd_enable', 'yes');
                             break;
                         }
                     }
