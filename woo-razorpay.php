@@ -364,7 +364,7 @@ function woocommerce_razorpay_init()
                         }
                     }
 
-                    update_option('rzp_afd_feature_checked', "yes");
+                    update_option('rzp_afd_feature_checked', 'yes');
                 }
                 catch (\Exception $e)
                 {
