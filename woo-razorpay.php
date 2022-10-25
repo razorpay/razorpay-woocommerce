@@ -328,7 +328,6 @@ function woocommerce_razorpay_init()
             }
 
             //Affordability Widget Code
-            global $current_section;
             if (is_admin())
             {
                 try
