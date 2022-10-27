@@ -1,5 +1,7 @@
 <?php
 
+use Razorpay\Api\Api;
+
 function addAffordabilityWidgetHTML()
 {
     $current_user = wp_get_current_user();
@@ -360,7 +362,7 @@ function getAffordabilityWidgetSettings()
             ),
             'enable' => array(
                 'title'                 => __('Affordability Widget Enable/Disable'),
-                'type'                  => 'checkbox',
+                'type'                  => 'hidden',
                 'desc'                  => __('Enable Affordability Widget?'),
                 'default'               => 'no',
                 'id'                    => 'rzp_afd_enable'
@@ -516,6 +518,44 @@ function displayAffordabilityWidgetSettings()
 function updateAffordabilityWidgetSettings() 
 {
     woocommerce_update_options(getAffordabilityWidgetSettings());
+    try
+    {
+        if (isset($_POST['woocommerce_razorpay_key_id']) and
+            empty($_POST['woocommerce_razorpay_key_id']) === false and
+            isset($_POST['woocommerce_razorpay_key_secret']) and
+            empty($_POST['woocommerce_razorpay_key_secret']) === false)
+        {
+            $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
+        }
+        else
+        {
+            $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'],get_option('woocommerce_razorpay_settings')['key_secret']);
+        }
+        
+        $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+        
+        if (isset($merchantPreferences) === false or
+            isset($merchantPreferences['assigned_features']) === false)
+        {
+            throw new Exception("Error in Api call.");
+        }
+
+        update_option('rzp_afd_enable', 'no');
+        foreach ($merchantPreferences['assigned_features'] as $preference)
+        {
+            if ($preference['name'] === 'affordability_widget')
+            {
+                update_option('rzp_afd_enable', 'yes');
+                break;
+            }
+        }
+        
+    }
+    catch (\Exception $e)
+    {
+        rzpLogError($e->getMessage());
+        return;
+    }
 }
 
 function isEnabled($feature)
