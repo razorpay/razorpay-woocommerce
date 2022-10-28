@@ -48,6 +48,8 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     $razorpay->UpdateOrderAddress($razorpayData, $order);
 
+    abandonedPluginHook($razorpayData); // do_action to notify/send the abandonedCart data to 3rd party plugins
+
     initCustomerSessionAndCart();
 
     $customerEmail = get_post_meta($wcOrderId, '_billing_email', true);
@@ -59,8 +61,6 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     $result['response']    = "";
     $result['status_code'] = 400;
-
-    abandonedPluginHook($razorpayData); // do_action to notify/send the abandonedCart data to 3rd party plugins
 
  //check woocommerce cart abandonment recovery plugin is activated or not
  if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
