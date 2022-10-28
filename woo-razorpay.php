@@ -1060,20 +1060,25 @@ function woocommerce_razorpay_init()
             foreach ( $order->get_items() as $item_id => $item )
             {
                $product = $item->get_product();
-               $productDetails = $product->get_data();
-               if($product->is_type('variation')){
-                    $parent_product_id = $product->get_parent_id();
-                    $parent_product = wc_get_product($parent_product_id);
-                 
-                    if($parent_product->get_type() == 'pw-gift-card' || $parent_product->get_type() == 'gift-card'){
-                        $type = 'gift_card';
-                    }
 
-               }else{
+               // check product type for gift card plugin
+               if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
+                    $productDetails = $product->get_data();
+                   if($product->is_type('variation')){
+                        $parentProductId = $product->get_parent_id();
+                        $parentProduct = wc_get_product($parentProductId);
+                     
+                        if($parentProduct->get_type() == 'pw-gift-card' || $parentProduct->get_type() == 'gift-card'){
+                            $type = 'gift_card';
+                        }
 
-                   if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
-                          $type = 'gift_card'; 
+                   }else{
+
+                       if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
+                              $type = 'gift_card'; 
+                       }
                    }
+
                }
 
                $data['line_items'][$i]['type'] =  $type;
@@ -1255,7 +1260,7 @@ EOT;
             }
             catch(Exception $e)
             {
-                $order->add_order_note( __( 'fail Id: ' . $e->getMessage(), 'woocommerce' ) );
+                $order->add_order_note( __( 'failure message for refund: ' . $e->getMessage(), 'woocommerce' ) );
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
 
@@ -1668,38 +1673,7 @@ EOT;
             $this->UpdateOrderAddress($razorpayData, $order);
 
             // update gift card and coupons
-            $this->updateGiftCardData($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
-
-            // if (empty($razorpayData['promotions'][0]) === false)
-            // {
-            //     $couponKey = $razorpayData['promotions'][0]['code'];
-            // }
-
-            // //Apply coupon to woo-order
-            // if (empty($couponKey) === false)
-            // {
-            //     // Remove the same coupon, if already being added to order.
-            //     $order->remove_coupon($couponKey);
-
-            //     //TODO: Convert all razorpay amount in paise to rupees
-            //     $discount_total = $razorpayData['promotions'][0]['value']/100;
-
-            //     //TODO: Verify source code implementation
-            //     // Loop through products and apply the coupon discount
-            //     foreach($order->get_items() as $order_item)
-            //     {
-            //         $total = $order_item->get_total();
-            //         $order_item->set_subtotal($total);
-            //         $order_item->set_total($total - $discount_total);
-            //         $order_item->save();
-            //     }
-            //     // TODO: Test if individual use coupon fails by hardcoding here
-            //     $isApplied = $order->apply_coupon($couponKey);
-            //     $order->save();
-
-            //     rzpLogInfo("Coupon details updated for orderId: $wcOrderId");
-
-            // }
+            $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -1849,24 +1823,24 @@ EOT;
             $order->add_order_note( $note );
         }
 
-        public function updateGiftCardData($razorpayData, $order, $orderId, $razorpayPaymentId)
+        public function updateGiftAndCoupon($razorpayData, $order, $orderId, $razorpayPaymentId)
         {
             global $woocommerce;
             global $wpdb;
 
-            foreach($razorpayData['promotions'] as $giftcard)
+            foreach($razorpayData['promotions'] as $promotion)
             {
-                if($giftcard['type'] == 'gift_card'){
+                if($promotion['type'] == 'gift_card'){
 
-                    $usedAmt = $giftcard['value']/100;
-                    $giftCode = $giftcard['code'];
+                    $usedAmt = $promotion['value']/100;
+                    $giftCode = $promotion['code'];
                     if(is_plugin_active('yith-woocommerce-gift-cards/init.php')){
 
                         $yithCard = new YITH_YWGC_Gift_Card( $args = array('gift_card_number'=> $giftCode));
 
                         $giftCardBalance = $yithCard->get_balance();
 
-                        if($giftCardBalance == null && $balance >= 0 && $usedAmt > $giftCardBalance ){
+                        if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance ){
                             // initiate refund in case gift card faliure
                             $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                         }else{
@@ -1892,7 +1866,7 @@ EOT;
                     }
                     else if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php'))
                     {
-                        $result = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s", $giftcard['code'] ) );
+                        $result = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s", $promotion['code'] ) );
                         if($result != null){
                             $balance = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM {$wpdb->pimwick_gift_card_activity} WHERE pimwick_gift_card_id = %d", $result->pimwick_gift_card_id ) );
                             
@@ -1914,7 +1888,7 @@ EOT;
                     
                 }else{
 
-                    $couponKey = $giftcard['code'];
+                    $couponKey = $promotion['code'];
 
                     if (empty($couponKey) === false)
                     {
@@ -1944,7 +1918,7 @@ EOT;
             }
         }
 
-        public function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
+        protected function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
 
             global $woocommerce;
             global $wpdb;

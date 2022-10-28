@@ -9,8 +9,9 @@ function validateGiftCardData(WP_REST_Request $request)
     global $woocommerce;
     global $wpdb;    
 
-    $status         = 400;
-    $giftCard =array();
+    $status = 400;
+    $giftCard = [];
+    $giftCardData= [];
 
     $params = $request->get_params();
 
@@ -25,35 +26,35 @@ function validateGiftCardData(WP_REST_Request $request)
 
     if ($validateInput != null) {
 
-        $response["failure_reason"] = $validateInput;
-        $response["failure_code"]   = "VALIDATION_ERROR";
-        $giftCardRes['response'] = $response;
+        $giftCardRes['response']["failure_reason"] = $validateInput;
+        $giftCardRes['response']["failure_code"] = "VALIDATION_ERROR";
         $giftCardRes['status_code'] =  $status;
 
         $logObj["response"]         = $response;
-
         rzpLogError(json_encode($logObj));
 
-        return new WP_REST_Response($giftCardRes, 400);
+        return new WP_REST_Response($giftCardRes, $status);
     }
 
     $giftCardNumber = sanitize_text_field($params['gift_card_number']);
 
-
     //Yith gift card plugin 
     if(is_plugin_active('yith-woocommerce-gift-cards/init.php'))
     {
-        $yithCard = new YITH_YWGC_Gift_Card( $args = array('gift_card_number'=> $giftCardNumber));
+        $yithArgs = ['gift_card_number'=> $giftCardNumber];
+
+        $yithCard = new YITH_YWGC_Gift_Card($yithArgs);
 
         $giftCardBalance = $yithCard->get_balance();
 
         if ( $giftCardBalance <= 0 ) {
             $response = getApplyGiftCardErrors('ZERO_BALANCE');
-            return new WP_REST_Response($response, 400);
+            return new WP_REST_Response($response, $status);
         }else{
             $giftCardData['gift_card_number'] = $giftCardNumber;
-            $giftCardData['balance']   = intval ($giftCardBalance) *100;
+            $giftCardData['balance']   = intval($giftCardBalance) *100;
             $giftCardData['allowedPartialRedemption']   = 1;
+
             $logObj['response']         = $response;
             $logObj['status_code']      = 200;
             $giftCard['gift_card_promotion'] = $giftCardData;
@@ -68,11 +69,9 @@ function validateGiftCardData(WP_REST_Request $request)
     else if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php')){
         $result = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s and `active` =%s", $giftCardNumber, 1 ) );
 
-        $giftCardData= array();
-
         if ( $result == null ) {
             $response = getApplyGiftCardErrors('INVALID_GIFTCODE');
-            return new WP_REST_Response($response, $statusCode);
+            return new WP_REST_Response($response, $status);
         
         }
 
@@ -80,27 +79,31 @@ function validateGiftCardData(WP_REST_Request $request)
 
        if($balance <= 0 ){
             $response = getApplyGiftCardErrors('ZERO_BALANCE');
-            return new WP_REST_Response($response, $statusCode);
+            return new WP_REST_Response($response, $status);
        }
 
         $giftCardData['gift_card_number'] = $giftCardNumber;
         $giftCardData['balance']   = intval ($balance) *100;
+        // 1 for Gift card allowed Partial Redemption
         $giftCardData['allowedPartialRedemption']   = 1;
+        $giftCard['gift_card_promotion'] = $giftCardData;
+
         $logObj['response']         = $response;
         $logObj['status_code']      = 200;
-        $giftCard['gift_card_promotion'] = $giftCardData;
+        
         rzpLogError(json_encode($logObj));
         return new WP_REST_Response($giftCard, 200);
        
     }else{
         $response = getApplyGiftCardErrors('INVALID_GIFTCODE');
-        return new WP_REST_Response($response, 400);
+        return new WP_REST_Response($response, $status);
     }
 
 }
 
 function validateApplyGiftCardApi($param)
 {
+    $failureReason = null;
     if (empty(sanitize_text_field($param["gift_card_number"])) === true) {
         $failureReason = "Gift code is required.";
     } 
@@ -111,22 +114,29 @@ function getApplyGiftCardErrors($errCode)
 {
     $statusCode  = 400;
     $error =[];
-    if($errCode == 'ZERO_BALANCE'){
-        $error['failure_code'] = 'ZERO_BALANCE';
-        $error['failure_reason']   = 'This gift card has a zero balance..';
-    }elseif($errCode == 'INVALID_GIFTCODE'){
-        $error['failure_code'] = 'INVALID_GIFTCODE';
-        $error['failure_reason']   = "Card number does not exist";
-    }else
+
+    switch ($errCode)
     {
-        $error['failure_code'] = 'INVALID_GIFTCODE';
-        $error['failure_reason']   = "Card number does not exist";
+        case "ZERO_BALANCE" :
+            $error['failure_code'] = 'ZERO_BALANCE';
+            $error['failure_reason']   = 'This gift card has a zero balance..';
+            break;
+
+        case "INVALID_GIFTCODE" :
+            $error['failure_code'] = 'INVALID_GIFTCODE';
+            $error['failure_reason']   = 'Card number does not exist.';
+            break;
+
+        default :
+            $error['failure_code'] = 'INVALID_GIFTCODE';
+            $error['failure_reason']   = "Card number does not exist";
+            break;
     }
 
     $logObj['response']         = $response;
     $logObj['status_code']      = $statusCode;
-     rzpLogError(json_encode($logObj));
+    rzpLogError(json_encode($logObj));
 
-     return $error;
+    return $error;
 
 }

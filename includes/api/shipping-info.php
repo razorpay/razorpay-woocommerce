@@ -195,12 +195,13 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
 {
 
     $response = array();
+    $order   = wc_get_order($orderId);
 
     if (isset($vendorId)) {
         foreach ($vendorId as $id) {
             $rates = $package[$id]['rates'];
             foreach ($rates as $rate) {
-                $response[] = getRateResponse1cc($rate, $id, $orderId, $address);
+                $response[] = getRateResponse1cc($rate, $id, $orderId, $address, $order);
             }
         }
     }
@@ -235,9 +236,12 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
     }
 
     // check shipping fee for gift card product
-    if(giftCardProduct($orderId)){
-        $response['shipping_fee'] = 0;
+    if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
+        if(giftCardProduct($order)){
+          $response['shipping_fee'] = 0;
+        }
     }
+    
 
     $response['cod'] = isset($response[0]['cod']) ? $response[0]['cod'] : false;
 
@@ -251,7 +255,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
  * @return array
  */
 
-function getRateResponse1cc($rate, $vendorId, $orderId, $address)
+function getRateResponse1cc($rate, $vendorId, $orderId, $address, $order)
 {
 
     return array_merge(
@@ -266,7 +270,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId, $address)
             'method_id'     => getRateProp1cc($rate, 'method_id'),
             'meta_data'     => getRateMetaData1cc($rate),
             'vendor_id'     => $vendorId,
-            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId, $address),
+            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId, $address, $order),
         ),
         getStoreCurrencyResponse1cc()
     );
@@ -277,7 +281,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId, $address)
  *
  * @returns bool
  */
-function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
+function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $order)
 {
 
     global $woocommerce;
@@ -291,7 +295,6 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
         return false;
     }
 
-    $order  = wc_get_order($orderId);
     $amount = floatval($order->get_total());
 
     //To verify the min order amount required to place COD order
@@ -329,32 +332,31 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
     return false;
 }
 
-function giftCardProduct($orderId){
-    $order   = wc_get_order($orderId);
+function giftCardProduct($order){
     $items = $order->get_items();
 
-    $giftCount = 0;
+    $giftProductCount = 0;
     $cartCount  = 0;
-    foreach ($order->get_items() as $item_id => $item)  {
+    foreach ($order->get_items() as $itemId => $item)  {
         $cartCount++;
         $product = $item->get_product();
 
         if($product->is_type('variation')){
-             $parent_product_id = $product->get_parent_id();
-             $parent_product = wc_get_product($parent_product_id);
+             $parentProductId = $product->get_parent_id();
+             $parentProduct = wc_get_product($parentProductId);
              
-            if($parent_product->get_type() == 'pw-gift-card' || $parent_product->get_type() == 'gift-card'){
-                $giftCount++;
+            if($parentProduct->get_type() == 'pw-gift-card' || $parentProduct->get_type() == 'gift-card'){
+                $giftProductCount++;
             }
        }else{
             if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
-                $giftCount++;
+                $giftProductCount++;
             }
              
        }
     }
 
-    if($giftCount == $cartCount){
+    if($giftProductCount == $cartCount){
         return true;
     }
 
