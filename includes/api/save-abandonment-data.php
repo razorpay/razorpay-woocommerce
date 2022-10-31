@@ -111,10 +111,10 @@ function saveCartAbandonmentData(WP_REST_Request $request)
                 'user_first_name' => '',
                 'user_last_name'  => '',
                 'user_phone'      => $razorpayData['customer_details']['contact'],
-                'language'        => get_woocommerce_currency(),
+                'language'        => substr( get_bloginfo( 'language' ), 0, 2 ),
                 'email_sent'      => 'no',
                 'cart_status'     => 'open',
-                'user_currency'   => 'INR',
+                'user_currency'   => get_woocommerce_currency(),
             );
 
             $title = $razorpayData['customer_details']['email'];
@@ -495,6 +495,7 @@ function checkRecordBySession($cookie)
     return $results;
 }
 
+// prepare cart data
 function abandonedCart( $title, $metas ) {
 
     if ( apply_filters( 'ywrac_add_abandoned_cart', false ) ) {
