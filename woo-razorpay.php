@@ -343,7 +343,7 @@ function woocommerce_razorpay_init()
                     {
                         $api = $this->getRazorpayApiInstance();
                     }
-                    
+
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
@@ -1706,13 +1706,10 @@ EOT;
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
             $this->UpdateOrderAddress($razorpayData, $order);
-            
-            $razorpayData['notes']['gstin']             = "MOCKGST-32626092022";
-            $razorpayData['notes']['order_instruction'] = "MOCKOrderInstructions";
 
-            $gstin             = $razorpayData['notes']['gstin'];
-            $order_instruction = $razorpayData['notes']['order_instruction'];
-            
+            $gstin             = $razorpayData['notes']['gstin']??'';
+            $order_instruction = $razorpayData['notes']['order_instruction']??'';
+
             $order->add_order_note( "GSTIN ". $gstin );
             $order->add_order_note( "Order Instruction ". $order_instruction);
 
@@ -2265,9 +2262,9 @@ EOT;
                     }
 
                     update_option('rzp_afd_enable', 'no');
-                    foreach ($merchantPreferences['assigned_features'] as $preference) 
+                    foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
-                        if ($preference['name'] === 'affordability_widget') 
+                        if ($preference['name'] === 'affordability_widget')
                         {
                             update_option('rzp_afd_enable', 'yes');
                             break;
@@ -2282,7 +2279,7 @@ EOT;
                     return;
                 }
             }
-            
+
             if (empty(get_option('rzp_afd_enable')) === false and
                 get_option('rzp_afd_enable') === 'yes')
             {
