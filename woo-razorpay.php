@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.3.1
- * Stable tag: 4.3.1
+ * Version: 4.3.3
+ * Stable tag: 4.3.3
  * Author: Team Razorpay
  * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
@@ -25,6 +25,7 @@ require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
+require_once __DIR__.'/includes/support/wati.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 
 use Razorpay\Api\Api;
@@ -325,37 +326,51 @@ function woocommerce_razorpay_init()
                     $this->form_fields[$key] = $value;
                 }
             }
-            
+
             //Affordability Widget Code
-            try
+            if (is_admin())
             {
-                if (isset($_POST['woocommerce_razorpay_key_id']) and
-                    empty($_POST['woocommerce_razorpay_key_id']) === false and 
-                    isset($_POST['woocommerce_razorpay_key_secret']) and
-                    empty($_POST['woocommerce_razorpay_key_secret']) === false)
+                try
                 {
-                    $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
-                }
-                else
-                {
-                    $api = $this->getRazorpayApiInstance();
-                }
-                $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-                
-                foreach ($merchantPreferences['assigned_features'] as $preference) 
-                {
-                    if ($preference['name'] === 'affordability_widget') 
+                    if (isset($_POST['woocommerce_razorpay_key_id']) and
+                        empty($_POST['woocommerce_razorpay_key_id']) === false and
+                        isset($_POST['woocommerce_razorpay_key_secret']) and
+                        empty($_POST['woocommerce_razorpay_key_secret']) === false)
                     {
-                        add_action('woocommerce_sections_checkout', 'addSubSection');
-                        add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
-                        add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
+                        $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
                     }
+                    else
+                    {
+                        $api = $this->getRazorpayApiInstance();
+                    }
+                    
+                    $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+                    if (isset($merchantPreferences) === false or
+                        isset($merchantPreferences['assigned_features']) === false)
+                    {
+                        throw new Exception("Error in Api call.");
+                    }
+
+                    update_option('rzp_afd_enable', 'no');
+                    foreach ($merchantPreferences['assigned_features'] as $preference)
+                    {
+                        if ($preference['name'] === 'affordability_widget')
+                        {
+                            add_action('woocommerce_sections_checkout', 'addSubSection');
+                            add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
+                            add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
+                            update_option('rzp_afd_enable', 'yes');
+                            break;
+                        }
+                    }
+
+                    update_option('rzp_afd_feature_checked', 'yes');
                 }
-            }
-            catch (\Exception $e)
-            {
-                rzpLogError($e->getMessage());
-                return;
+                catch (\Exception $e)
+                {
+                    rzpLogError($e->getMessage());
+                    return;
+                }
             }
         }
 
@@ -682,6 +697,15 @@ function woocommerce_razorpay_init()
          **/
         function receipt_page($orderId)
         {
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value){
+                if ($value['function'] === 'output' and
+                    stripos($value['file'], 'divi') !== false and
+                    basename($value['file'], ".php") !== 'CheckoutPaymentInfo')
+                {
+                    return;
+                }
+            }
+
             echo $this->generate_razorpay_form($orderId);
         }
 
@@ -1604,6 +1628,11 @@ EOT;
                     handleCBRecoveredOrder($orderId);
                 }
 
+                // Check Wati.io retargetting plugin is active or not
+                if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+                    handleWatiRecoveredOrder($orderId);
+                }
+
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
@@ -2215,25 +2244,50 @@ EOT;
 
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'razorpay_woo_plugin_links');
 
-    if (empty(get_option('rzp_afd_enable')) === false and
-        get_option('rzp_afd_enable') === 'yes')
+    add_action( 'woocommerce_before_single_product', 'trigger_affordability_widget', 10 );
+
+    function trigger_affordability_widget()
     {
-        try
+        if (empty(get_option('rzp_afd_enable')) === false and
+            get_option('rzp_afd_enable') === 'yes')
         {
-            $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
-            $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-            foreach ($merchantPreferences['assigned_features'] as $preference) 
+            if (empty(get_option('rzp_afd_feature_checked')) === true or
+                get_option('rzp_afd_feature_checked') === 'no')
             {
-                if ($preference['name'] === 'affordability_widget') 
+                try
                 {
-                    add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
+                    $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
+                    $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+                    if (isset($merchantPreferences) === false or
+                        isset($merchantPreferences['assigned_features']) === false)
+                    {
+                        throw new Exception("Error in Api call.");
+                    }
+
+                    update_option('rzp_afd_enable', 'no');
+                    foreach ($merchantPreferences['assigned_features'] as $preference) 
+                    {
+                        if ($preference['name'] === 'affordability_widget') 
+                        {
+                            update_option('rzp_afd_enable', 'yes');
+                            break;
+                        }
+                    }
+
+                    update_option('rzp_afd_feature_checked', 'yes');
+                }
+                catch(\Exception $e)
+                {
+                    rzpLogError($e->getMessage());
+                    return;
                 }
             }
-        }
-        catch(\Exception $e)
-        {
-            rzpLogError($e->getMessage());
-            return;
+            
+            if (empty(get_option('rzp_afd_enable')) === false and
+                get_option('rzp_afd_enable') === 'yes')
+            {
+                add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
+            }
         }
     }
 }
