@@ -52,7 +52,7 @@ function validateGiftCardData(WP_REST_Request $request)
             return new WP_REST_Response($response, $status);
         }else{
             $giftCardData['gift_card_number'] = $giftCardNumber;
-            $giftCardData['balance']   = intval($giftCardBalance) *100;
+            $giftCardData['balance']   = floatval($giftCardBalance) *100;
             $giftCardData['allowedPartialRedemption']   = 1;
 
             $logObj['response']         = $response;
@@ -83,7 +83,7 @@ function validateGiftCardData(WP_REST_Request $request)
        }
 
         $giftCardData['gift_card_number'] = $giftCardNumber;
-        $giftCardData['balance']   = intval ($balance) *100;
+        $giftCardData['balance']   = floatval ($balance) *100;
         // 1 for Gift card allowed Partial Redemption
         $giftCardData['allowedPartialRedemption']   = 1;
         $giftCard['gift_card_promotion'] = $giftCardData;

@@ -208,7 +208,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
 
     $rates = $package[0]['rates'];
     foreach ($rates as $val) {
-        $response[] = getRateResponse1cc($val, "", $orderId, $address);
+        $response[] = getRateResponse1cc($val, "", $orderId, $address, $order);
     }
 
     if (empty($response) === true) {

@@ -1214,7 +1214,53 @@ EOT;
             return $order->order_key;
         }
 
-        function process_refund($orderId, $amount = null, $reason = '', $razorpayPaymentId)
+        public function process_refund($orderId, $amount = null, $reason = '')
+        {
+            $order = wc_get_order($orderId);
+
+            if (! $order or ! $order->get_transaction_id())
+            {
+                return new WP_Error('error', __('Refund failed: No transaction ID', 'woocommerce'));
+            }
+
+            $client = $this->getRazorpayApiInstance();
+
+            $paymentId = $order->get_transaction_id();
+
+            $data = array(
+                'amount'    =>  (int) round($amount * 100),
+                'notes'     =>  array(
+                    'reason'                =>  $reason,
+                    'order_id'              =>  $orderId,
+                    'refund_from_website'   =>  true,
+                    'source'                =>  'woocommerce',
+                )
+            );
+
+            try
+            {
+                $refund = $client->payment
+                    ->fetch( $paymentId )
+                    ->refund( $data );
+
+                $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
+                /**
+                 * @var $refund ->id -- Provides the RazorPay Refund ID
+                 * @var $orderId -> Refunded Order ID
+                 * @var $refund -> WooCommerce Refund Instance.
+                 */
+                do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+
+                return true;
+            }
+            catch(Exception $e)
+            {
+                return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
+            }
+        }
+
+        // process refund for gift card
+        function processGiftCardRefund($orderId, $amount = null, $reason = '', $razorpayPaymentId)
         {
             $order = wc_get_order($orderId);
 
@@ -1260,8 +1306,7 @@ EOT;
             }
             catch(Exception $e)
             {
-                $order->add_order_note( __( 'failure message for refund: ' . $e->getMessage(), 'woocommerce' ) );
-                return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
+                rzpLogInfo('failure message for refund:' . $e->getMessage());
             }
 
             wp_redirect(wc_get_cart_url());
@@ -1842,7 +1887,7 @@ EOT;
 
                         if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance ){
                             // initiate refund in case gift card faliure
-                            $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                            $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                         }else{
                             //Deduct amount of gift card
                             $yithCard->update_balance( $yithCard->get_balance() - $usedAmt );
@@ -1861,6 +1906,12 @@ EOT;
 
                             $itemId = $wpdb->insert_id;
                             wc_add_order_item_meta( $itemId, '_line_total', -$usedAmt );
+
+                            $order->add_order_note( sprintf( esc_html__( 'Order paid with gift cards for a total amount of %s.', 'yith-woocommerce-gift-cards' ), wc_price( $usedAmt ) ) );
+                            
+                            $orderTotal = $order->get_total() - $usedAmt;
+                            $order->set_total($orderTotal);
+                            $order->save();
                         }
 
                     }
@@ -1872,18 +1923,18 @@ EOT;
                             
                             if($balance == null && $balance >= 0 && $usedAmt > $balance ){
                                 // initiate refund in case gift card faliure
-                                $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                                $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                             }else{
                                 //Deduct amount of gift card
                                $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt);
                             }
 
                         }else{
-                            $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                            $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                         }
 
                     }else{
-                       $this->process_refund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                       $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                     }
                     
                 }else{
