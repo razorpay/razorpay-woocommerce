@@ -26,6 +26,7 @@ require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
+require_once __DIR__.'/authenticate.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 
 use Razorpay\Api\Api;
@@ -343,7 +344,7 @@ function woocommerce_razorpay_init()
                     {
                         $api = $this->getRazorpayApiInstance();
                     }
-                    
+
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
@@ -2258,9 +2259,9 @@ EOT;
                     }
 
                     update_option('rzp_afd_enable', 'no');
-                    foreach ($merchantPreferences['assigned_features'] as $preference) 
+                    foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
-                        if ($preference['name'] === 'affordability_widget') 
+                        if ($preference['name'] === 'affordability_widget')
                         {
                             update_option('rzp_afd_enable', 'yes');
                             break;
@@ -2275,7 +2276,7 @@ EOT;
                     return;
                 }
             }
-            
+
             if (empty(get_option('rzp_afd_enable')) === false and
                 get_option('rzp_afd_enable') === 'yes')
             {
@@ -2315,9 +2316,9 @@ function enqueueScriptsFor1cc()
     wp_enqueue_script('1cc_razorpay_checkout');
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
-
     wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
+      'JWT_token' => getToken(),
       'nonce' => wp_create_nonce("wp_rest"),
       'siteurl' => $siteurl,
       'blogname' => get_bloginfo('name'),

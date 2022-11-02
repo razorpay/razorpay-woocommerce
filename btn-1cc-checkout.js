@@ -215,6 +215,7 @@ var rzp1cc = {
      var xhr = new XMLHttpRequest();
      xhr.open('POST', url, true);
      xhr.setRequestHeader('Content-Type', 'application/json');
+     xhr.setRequestHeader('JWT-Token',rzp1ccCheckoutData.JWT_token);
      xhr.setRequestHeader('X-WP-Nonce', rzp1ccCheckoutData.nonce);
      xhr.onload = function() {
        if (this.status === 200) {

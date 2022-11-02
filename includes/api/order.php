@@ -4,6 +4,9 @@
  * create order with status pending
  * user, adddress, coupon and shipping are left blank
  */
+
+require_once __DIR__ . '/../../authenticate.php';
+
 function createWcOrder(WP_REST_Request $request)
 {
     rzpLogInfo("createWcOrder");
@@ -23,10 +26,12 @@ function createWcOrder(WP_REST_Request $request)
         }
     }
 
-    $nonce     = $request->get_header('X-WP-Nonce');
+    // $nonce     = $request->get_header('X-WP-Nonce');
     $verifyReq = wp_verify_nonce($nonce, 'wp_rest');
+    $JWT_token = $request->get_header('JWT_Token');
 
-    if ($verifyReq === false) {
+
+    if ( decodeToken($JWT_token) === false) {
         $response['status']  = false;
         $response['message'] = 'Authentication failed';
 
