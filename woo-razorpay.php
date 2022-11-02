@@ -1708,10 +1708,10 @@ EOT;
             $this->UpdateOrderAddress($razorpayData, $order);
 
             $gstNo             = $razorpayData['notes']['gstin']??'';
-            $orderInstruction  = $razorpayData['notes']['order_instruction']??'';
+            $orderInstructions  = $razorpayData['notes']['order_instructions']??'';
 
-            $order->add_order_note( "GST No. ". $gstNo );
-            $order->add_order_note( "Order Instruction ". $orderInstruction);
+            $order->add_order_note( "GSTIN No. ". $gstNo );
+            $order->add_order_note( "Order Instructions ". $orderInstructions);
 
             if (empty($razorpayData['promotions'][0]) === false)
             {
