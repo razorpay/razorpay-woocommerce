@@ -2319,7 +2319,6 @@ function enqueueScriptsFor1cc()
     wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
       'JWT_token' => getToken(),
-      'nonce' => wp_create_nonce("wp_rest"),
       'siteurl' => $siteurl,
       'blogname' => get_bloginfo('name'),
       'cookies' => $_COOKIE,

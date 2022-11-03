@@ -26,10 +26,7 @@ function createWcOrder(WP_REST_Request $request)
         }
     }
 
-    // $nonce     = $request->get_header('X-WP-Nonce');
-    $verifyReq = wp_verify_nonce($nonce, 'wp_rest');
     $JWT_token = $request->get_header('JWT_Token');
-
 
     if ( decodeToken($JWT_token) === false) {
         $response['status']  = false;
