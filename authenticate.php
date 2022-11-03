@@ -31,7 +31,7 @@ function getToken() {
 
 function decodeToken($jwt) {
     $secret_Key  = '68V0zWFrS72GbpPreidkQFLfj4v9m3Ti+DXc8OB0gcM=';
-    $token       = JWT::decode($jwt, $secret_Key, ['HS512']);
+    $token       = JWT::decode($jwt, new Key($secret_Key,'HS512') );
     $now         = new DateTimeImmutable();
     $serverName  = "magic.razorpay.com";
 
