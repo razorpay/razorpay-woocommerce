@@ -343,7 +343,7 @@ function woocommerce_razorpay_init()
                     {
                         $api = $this->getRazorpayApiInstance();
                     }
-                    
+
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
@@ -2258,9 +2258,9 @@ EOT;
                     }
 
                     update_option('rzp_afd_enable', 'no');
-                    foreach ($merchantPreferences['assigned_features'] as $preference) 
+                    foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
-                        if ($preference['name'] === 'affordability_widget') 
+                        if ($preference['name'] === 'affordability_widget')
                         {
                             update_option('rzp_afd_enable', 'yes');
                             break;
@@ -2275,7 +2275,7 @@ EOT;
                     return;
                 }
             }
-            
+
             if (empty(get_option('rzp_afd_enable')) === false and
                 get_option('rzp_afd_enable') === 'yes')
             {
@@ -2329,6 +2329,8 @@ function enqueueScriptsFor1cc()
 
 //To add 1CC button on cart page.
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
+add_action( 'woocommerce_before_cart', 'addRzpSpinner');
+add_action( 'woocommerce_before_main_content', 'addRzpSpinner');
 
 function addCheckoutButton()
 {
@@ -2388,6 +2390,21 @@ function addMiniCheckoutButton()
 if(isRazorpayPluginEnabled() && is1ccEnabled() && isPdpCheckoutEnabled())
 {
     add_action( 'woocommerce_after_add_to_cart_button', 'addPdpCheckoutButton');
+    add_action('woocommerce_before_main_content', 'addRzpSpinner');
+}
+
+function addRzpSpinner()
+{
+    if (isTestModeEnabled()) {
+      $current_user = wp_get_current_user();
+      if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
+        $tempTest = RZP_PATH . 'templates/rzp-spinner.php';
+        load_template( $tempTest, false, array() );
+      }
+    } else {
+      $tempTest = RZP_PATH . 'templates/rzp-spinner.php';
+      load_template( $tempTest, false, array() );
+    }
 }
 
 function addPdpCheckoutButton()
