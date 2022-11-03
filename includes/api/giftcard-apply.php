@@ -45,9 +45,20 @@ function validateGiftCardData(WP_REST_Request $request)
 
         $yithCard = new YITH_YWGC_Gift_Card($yithArgs);
 
+        // check post status
+        $post  = get_post($yithCard->ID);
+        if ('trash' == $post->post_status ) {
+            $response = getApplyGiftCardErrors('INVALID_GIFTCODE');
+            return new WP_REST_Response($response, $status);
+        }
+
         $giftCardBalance = $yithCard->get_balance();
 
-        if ( $giftCardBalance <= 0 ) {
+        if(!$yithCard->exists()){
+            $response = getApplyGiftCardErrors('INVALID_GIFTCODE');
+            return new WP_REST_Response($response, $status);
+
+        }elseif($giftCardBalance <= 0) {
             $response = getApplyGiftCardErrors('ZERO_BALANCE');
             return new WP_REST_Response($response, $status);
         }else{

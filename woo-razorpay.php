@@ -1883,9 +1883,13 @@ EOT;
 
                         $yithCard = new YITH_YWGC_Gift_Card( $args = array('gift_card_number'=> $giftCode));
 
+                        //Get GC status
+                        $post  = get_post($yithCard->ID);
+                        $status = $post->post_status;
+
                         $giftCardBalance = $yithCard->get_balance();
 
-                        if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance ){
+                        if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance && 'trash' == $status && !$yithCard->exists()){
                             // initiate refund in case gift card faliure
                             $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                         }else{
