@@ -6,9 +6,9 @@ require_once('vendor/autoload.php');
 
 
 function getToken() {
-    $secret_Key    = '68V0zWFrS72GbpPreidkQFLfj4v9m3Ti+DXc8OB0gcM=';
+    $secret_Key    = SECRET;
     $date          = new DateTimeImmutable();
-    $expire_at     = $date->modify('+6 minutes')->getTimestamp();      // Add 6 MINUTES
+    $expire_at     = $date->modify('+60 seconds')->getTimestamp();      // Add 6 MINUTES
     $domainName    = "magic.razorpay.com";
     $username      = "rzpTestID";                                           // Retrieved from filtered POST data
 
@@ -30,7 +30,7 @@ function getToken() {
 }
 
 function decodeToken($jwt) {
-    $secret_Key  = '68V0zWFrS72GbpPreidkQFLfj4v9m3Ti+DXc8OB0gcM=';
+    $secret_Key  = SECRET;
     $token       = JWT::decode($jwt, new Key($secret_Key,'HS512') );
     $now         = new DateTimeImmutable();
     $serverName  = "magic.razorpay.com";
