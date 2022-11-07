@@ -165,6 +165,12 @@ function applyCouponOnCart(WP_REST_Request $request)
     $promotion["value"]        = round($discountAmount ?? 0);
     $response["promotion"]     = $promotion;
 
+    add_action('rzp_coupon_rate','modifyCouponValue',10,1);
+
+    function modifyCouponValue($rate) {
+        $promotion["value"] = $rate * $promotion["value"];
+    }
+
     if ($couponError["failure_reason"] === "") {
         $logObj["response"] = $response;
         rzpLogInfo(json_encode($logObj));
