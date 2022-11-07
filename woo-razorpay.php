@@ -285,7 +285,9 @@ function woocommerce_razorpay_init()
                 'key_id' => array(
                     'title' => __('Key ID', $this->id),
                     'type' => 'text',
-                    'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.', $this->id)
+                    'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.<br>
+                                        <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank">Signup</a> to create a Razorpay account or 
+                                        <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=woocommerce" target="_blank">Login</a> if you have an existing razorpay account.', $this->id)
                 ),
                 'key_secret' => array(
                     'title' => __('Key Secret', $this->id),
