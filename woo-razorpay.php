@@ -1709,9 +1709,14 @@ EOT;
 
             $gstNo             = $razorpayData['notes']['gstin']??'';
             $orderInstructions  = $razorpayData['notes']['order_instructions']??'';
-
-            $order->add_order_note( "GSTIN No. : ". $gstNo );
-            $order->add_order_note( "Order Instructions: ". $orderInstructions);
+            
+            if($gstNo != ''){
+                $order->add_order_note( "GSTIN No. : ". $gstNo );
+            }
+            if($orderInstructions != ''){
+                $order->add_order_note( "Order Instructions: ". $orderInstructions);
+            }
+            
 
             if (empty($razorpayData['promotions'][0]) === false)
             {
