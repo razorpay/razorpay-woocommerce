@@ -1,0 +1,12 @@
+<phpunit bootstrap="tests/phpunit/bootstrap.php" backupGlobals="false"
+         colors="false" convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true" convertWarningsToExceptions="true">
+    <testsuites>
+        <testsuite name="unit">
+            <file>tests/phpunit/tests/test-metadata.php</file>
+            <file>tests/phpunit/tests/test-constants.php</file>
+            <file>tests/phpunit/tests/test-hooks.php</file>
+            <file>tests/phpunit/tests/test-scripts-styles.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>

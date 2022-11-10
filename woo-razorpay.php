@@ -42,7 +42,7 @@ add_action('upgrader_process_complete', 'razorpayPluginUpgraded', 10, 2);
 
 function woocommerce_razorpay_init()
 {
-    if (!class_exists('WC_Payment_Gateway'))
+    if (!class_exists('WC_Payment_Gateway') || class_exists('WC_Razorpay'))
     {
         return;
     }
@@ -343,7 +343,7 @@ function woocommerce_razorpay_init()
                     {
                         $api = $this->getRazorpayApiInstance();
                     }
-                    
+
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
@@ -2258,9 +2258,9 @@ EOT;
                     }
 
                     update_option('rzp_afd_enable', 'no');
-                    foreach ($merchantPreferences['assigned_features'] as $preference) 
+                    foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
-                        if ($preference['name'] === 'affordability_widget') 
+                        if ($preference['name'] === 'affordability_widget')
                         {
                             update_option('rzp_afd_enable', 'yes');
                             break;
@@ -2275,7 +2275,7 @@ EOT;
                     return;
                 }
             }
-            
+
             if (empty(get_option('rzp_afd_enable')) === false and
                 get_option('rzp_afd_enable') === 'yes')
             {
