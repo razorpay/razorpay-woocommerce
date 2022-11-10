@@ -12,7 +12,7 @@ if ( ! file_exists( $test_lib_bootstrap_file ) ) {
 $GLOBALS[ 'wp_tests_options' ] = array(
     'active_plugins' => array(
         'woocommerce/woocommerce.php',
-        'razorpay-woocommerce-4.3.2/woo-razorpay.php'
+        'razorpay_woocommerce/woo-razorpay.php'
     ),
     'wpsp_test' => true
 );
