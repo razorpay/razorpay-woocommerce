@@ -1,7 +1,8 @@
 <?php
 
 // change the next line to points to your wordpress dir
-define( 'ABSPATH',  '/Applications/MAMP/htdocs/wordpress/' );
+define( 'ABSPATH',  realpath(dirname(__FILE__) . '/../../../../../').'/');
+
 define( 'PLUGIN_DIR',  realpath(dirname(__FILE__) . '/../../'));
 
 define( 'WP_DEBUG', false );
