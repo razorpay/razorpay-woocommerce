@@ -7,6 +7,7 @@
             <file>tests/phpunit/tests/test-constants.php</file>
             <file>tests/phpunit/tests/test-hooks.php</file>
             <file>tests/phpunit/tests/test-scripts-styles.php</file>
+            <file>tests/phpunit/tests/test-formfields.php</file>
         </testsuite>
     </testsuites>
 </phpunit>
