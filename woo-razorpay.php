@@ -679,6 +679,8 @@ function woocommerce_razorpay_init()
         {
             echo '<h3>'.__('Razorpay Payment Gateway', $this->id) . '</h3>';
             echo '<p>'.__('Allows payments by Credit/Debit Cards, NetBanking, UPI, and multiple Wallets') . '</p>';
+            echo '<p>'.__('First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank">signup</a> for a Razorpay account or 
+            <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=woocommerce" target="_blank">login</a> if you have an existing account.'). '</p>';
             echo '<table class="form-table">';
 
             // Generate the HTML For the settings form.
