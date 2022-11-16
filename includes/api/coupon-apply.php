@@ -4,6 +4,9 @@
  * for coupon related API
  */
 
+
+require_once __DIR__ . '/../support/woocs-multicurrency.php';
+
 function applyCouponOnCart(WP_REST_Request $request)
 {
     global $woocommerce;
@@ -164,6 +167,17 @@ function applyCouponOnCart(WP_REST_Request $request)
     $promotion["reference_id"] = $couponCode;
     $promotion["value"]        = round($discountAmount ?? 0);
     $response["promotion"]     = $promotion;
+
+
+
+    if(is_plugin_active('woocommerce-currency-switcher/index.php')){ 
+        $is_multiple_allowed = get_option('woocs_is_multiple_allowed', 0);
+
+        if($is_multiple_allowed==1){
+            $order                          = wc_get_order($orderId);
+            $response['promotion']['value'] = currencyConvert($response['promotion']['value'],$order);
+        }
+    }
 
     if ($couponError["failure_reason"] === "") {
         $logObj["response"] = $response;
