@@ -2168,12 +2168,14 @@ EOT;
                     'integration_version' => get_plugin_data($pluginRoot . '/razorpay-subscriptions.php')['Version'],
                     'integration_woo_razorpay_version' => get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'],
                     'integration_parent_version' => WOOCOMMERCE_VERSION,
+                    'integration_type' => 'plugin',
                 );
             } else {
                 return array(
                     'integration' => 'woocommerce',
                     'integration_version' => get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'],
                     'integration_parent_version' => WOOCOMMERCE_VERSION,
+                    'integration_type' => 'plugin',
                 );
             }
         }
