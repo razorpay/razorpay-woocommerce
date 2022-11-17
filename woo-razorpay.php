@@ -2329,8 +2329,10 @@ function enqueueScriptsFor1cc()
 
 //To add 1CC button on cart page.
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
-add_action( 'woocommerce_before_cart', 'addRzpSpinner');
-add_action( 'woocommerce_before_main_content', 'addRzpSpinner');
+
+if(isRazorpayPluginEnabled() && is1ccEnabled()) {
+   add_action('wp_head', 'addRzpSpinner');
+}
 
 function addCheckoutButton()
 {
@@ -2358,6 +2360,7 @@ function addCheckoutButton()
 //To add 1CC Mini cart checkout button
 if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
 {
+
     add_action( 'woocommerce_widget_shopping_cart_buttons', function()
     {
         // Removing Buttons
@@ -2366,6 +2369,7 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
         add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
 
         add_action( 'woocommerce_widget_shopping_cart_buttons', 'addMiniCheckoutButton', 20 );
+
     }, 1 );
 }
 
@@ -2390,7 +2394,6 @@ function addMiniCheckoutButton()
 if(isRazorpayPluginEnabled() && is1ccEnabled() && isPdpCheckoutEnabled())
 {
     add_action( 'woocommerce_after_add_to_cart_button', 'addPdpCheckoutButton');
-    add_action('woocommerce_before_main_content', 'addRzpSpinner');
 }
 
 function addRzpSpinner()
