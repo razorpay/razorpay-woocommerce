@@ -34,6 +34,7 @@ jQuery(document.body).on('updated_cart_totals', function(event) {
  }
 
  var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+ 
  if (flycartBtn != null) {
    flycartBtn.addEventListener('click', openRzpCheckout);
  }
@@ -45,7 +46,9 @@ function addEventListenerToMinicart(wcEvent) {
    if (btnMini !== null) {
      btnMini.addEventListener('click', openRzpCheckout);
    }
+
    var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+
   if (flycartBtn != null) {
     flycartBtn.addEventListener('click', openRzpCheckout);
    }
