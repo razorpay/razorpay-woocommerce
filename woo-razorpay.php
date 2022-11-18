@@ -462,6 +462,17 @@ function woocommerce_razorpay_init()
                 }
             } while ( $webhook['count'] === $count);
 
+            $subscriptionWebhookFlag =  get_option('rzp_subscription_webhook_enable_flag');
+
+            if ($subscriptionWebhookFlag)
+            {
+                $this->defaultWebhookEvents += array(
+                    'subscription.cancelled' => true,
+                    'subscription.resumed'   => true,
+                    'subscription.paused'    => true
+                );
+            }
+
             $data = [
                 'url'    => $webhookUrl,
                 'active' => $enabled,
@@ -482,6 +493,13 @@ function woocommerce_razorpay_init()
                             {
                                 $this->defaultWebhookEvents[$evntkey] =  true;
                             }
+                        }
+
+                        if (!$subscriptionWebhookFlag)
+                        {
+                            unset($this->defaultWebhookEvents['subscription.cancelled']);
+                            unset($this->defaultWebhookEvents['subscription.resumed']);
+                            unset($this->defaultWebhookEvents['subscription.paused']);
                         }
 
                         $data = [
@@ -679,7 +697,7 @@ function woocommerce_razorpay_init()
         {
             echo '<h3>'.__('Razorpay Payment Gateway', $this->id) . '</h3>';
             echo '<p>'.__('Allows payments by Credit/Debit Cards, NetBanking, UPI, and multiple Wallets') . '</p>';
-            echo '<p>'.__('First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank">signup</a> for a Razorpay account or 
+            echo '<p>'.__('First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank">signup</a> for a Razorpay account or
             <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=woocommerce" target="_blank">login</a> if you have an existing account.'). '</p>';
             echo '<table class="form-table">';
 
@@ -1711,14 +1729,14 @@ EOT;
 
             $gstNo             = $razorpayData['notes']['gstin']??'';
             $orderInstructions  = $razorpayData['notes']['order_instructions']??'';
-            
+
             if($gstNo != ''){
                 $order->add_order_note( "GSTIN No. : ". $gstNo );
             }
             if($orderInstructions != ''){
                 $order->add_order_note( "Order Instructions: ". $orderInstructions);
             }
-            
+
 
             if (empty($razorpayData['promotions'][0]) === false)
             {
@@ -2540,4 +2558,3 @@ function cartbounty_alter_automation_button( $button ){
 if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
     add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
 }
-
