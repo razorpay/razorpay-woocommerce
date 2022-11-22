@@ -6,14 +6,15 @@
   "authors": [
     {
       "name": "Team Razorpay",
-      "email": "abdul.sharief@razorpay.com",
       "role": "developer"
     }
   ],
   "require-dev": {
     "valu/wp-testing-tools": "^0.4.0",
     "wp-cli/wp-cli-bundle": "*",
-    "yoast/phpunit-polyfills": "^1.0"
+    "yoast/phpunit-polyfills": "^1.0",
+    "mockery/mockery": "^1.5",
+    "brain/monkey": "^2.6"
   },
   "scripts": {
     "wp-install": "wp-install --full --env-file .env --wp-composer-file composer.wp-install.json"
