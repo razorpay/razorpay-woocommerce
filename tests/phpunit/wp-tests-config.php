@@ -1,8 +1,14 @@
 <?php
 
 // change the next line to points to your wordpress dir
-//define( 'ABSPATH',  realpath(dirname(__FILE__) . '/../../../../../').'/');
-define( 'ABSPATH',  realpath(dirname(__FILE__) . '/../../').'/.wp-install/web/');
+if (file_exists(realpath(dirname(__FILE__) . '/../../').'/.wp-install/web/'))
+{
+    define( 'ABSPATH',  realpath(dirname(__FILE__) . '/../../').'/.wp-install/web/');
+}
+else
+{
+    define( 'ABSPATH',  realpath(dirname(__FILE__) . '/../../../../../').'/');
+}
 
 define( 'PLUGIN_DIR',  realpath(dirname(__FILE__) . '/../../'));
 
