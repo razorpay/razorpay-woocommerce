@@ -2343,6 +2343,10 @@ function enqueueScriptsFor1cc()
 //To add 1CC button on cart page.
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 
+if(isRazorpayPluginEnabled() && is1ccEnabled()) {
+   add_action('wp_head', 'addRzpSpinner');
+}
+
 function addCheckoutButton()
 {
   add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
@@ -2369,6 +2373,7 @@ function addCheckoutButton()
 //To add 1CC Mini cart checkout button
 if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
 {
+
     add_action( 'woocommerce_widget_shopping_cart_buttons', function()
     {
         // Removing Buttons
@@ -2377,6 +2382,7 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
         add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
 
         add_action( 'woocommerce_widget_shopping_cart_buttons', 'addMiniCheckoutButton', 20 );
+
     }, 1 );
 }
 
@@ -2401,6 +2407,20 @@ function addMiniCheckoutButton()
 if(isRazorpayPluginEnabled() && is1ccEnabled() && isPdpCheckoutEnabled())
 {
     add_action( 'woocommerce_after_add_to_cart_button', 'addPdpCheckoutButton');
+}
+
+function addRzpSpinner()
+{
+    if (isTestModeEnabled()) {
+      $current_user = wp_get_current_user();
+      if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
+        $tempTest = RZP_PATH . 'templates/rzp-spinner.php';
+        load_template( $tempTest, false, array() );
+      }
+    } else {
+      $tempTest = RZP_PATH . 'templates/rzp-spinner.php';
+      load_template( $tempTest, false, array() );
+    }
 }
 
 function addPdpCheckoutButton()
