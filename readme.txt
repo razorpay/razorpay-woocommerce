@@ -46,7 +46,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Added, subscription.charged webhook event.
 * Updated, plugin activation and deactivation hooks.
 * Electro mobile button support added.
-* Knitroot minicart and spinner issue fix.
+* Minicart and spinner issue fix.
 * Abandoned cart hooks support
 * GSTIN and Order Instructions support
 * Build support for yith abandoned recovery plugin
