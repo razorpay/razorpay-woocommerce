@@ -104,6 +104,40 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         }
     }
 
+    // check yith woocommerce recover abandoned cart plugin activated or not
+    if (is_plugin_active('yith-woocommerce-recover-abandoned-cart-premium/init.php') && (empty($razorpayData['customer_details']['email']) == false) && (empty($razorpayData['customer_details']['shipping_address']))== true) {
+        if ((email_exists($razorpayData['customer_details']['email'])) == false) {
+
+            $meta_cart = array(
+                'user_id'         => '0',
+                'user_email'      => $razorpayData['customer_details']['email'],
+                'user_first_name' => '',
+                'user_last_name'  => '',
+                'user_phone'      => $razorpayData['customer_details']['contact'],
+                'language'        => substr( get_bloginfo( 'language' ), 0, 2 ),
+                'email_sent'      => 'no',
+                'cart_status'     => 'open',
+                'user_currency'   => get_woocommerce_currency(),
+            );
+
+            $title = $razorpayData['customer_details']['email'];
+
+            $postId = abandonedCart( $title, $meta_cart );
+
+            if ( $postId ) {
+                // add a cookie to the user.
+                setcookie( 'ywrac_guest_cart', $postId, ywrac_get_timestamp() + $this->delete_abandoned_time * 60, '/' );
+                $result['message']   = $result['response'].PHP_EOL."Data successfully inserted for yith cart abandonment recovery and postid";
+                $result['status_code']           = 200;
+            }else{
+                $result['message']   = $result['response'].PHP_EOL."Data falied to inserted for yith cart abandonment recovery";
+                $result['status_code'] = 400;
+            }
+
+        }
+    
+    }
+
     if (is_plugin_active('klaviyo/klaviyo.php') && empty($razorpayData['customer_details']['email']) == false) {
         WC()->cart->empty_cart();
         $cart1cc = create1ccCart($wcOrderId);
@@ -463,3 +497,35 @@ function checkRecordBySession($cookie)
 
     return $results;
 }
+
+// prepare cart data
+function abandonedCart( $title, $metas ) {
+
+    if ( apply_filters( 'ywrac_add_abandoned_cart', false ) ) {
+        return;
+    }
+
+    $post = array(
+        'post_content' => '',
+        'post_status'  => 'publish',
+        'post_title'   => $title,
+        'post_type'    => 'ywrac_cart',
+    );
+
+    $cartId = wp_insert_post( $post );
+
+    $recoverCart = new YITH_WC_Recover_Abandoned_Cart();
+
+    if ( $cartId && ! empty( $metas ) ) {
+        update_post_meta( $cartId, '_language', $recoverCart->get_user_language() );
+        foreach ( $metas as $meta_key => $meta_value ) {
+            update_post_meta( $cartId, '_' . $meta_key, $meta_value );
+        }
+
+        update_post_meta( $cartId, '_cart_content', $recoverCart->get_item_cart() );
+        update_post_meta( $cartId, '_cart_subtotal', $recoverCart->get_subtotal_cart() );
+    }
+
+    return $cartId;
+}
+
