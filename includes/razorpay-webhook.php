@@ -41,6 +41,7 @@ class RZP_Webhook
     const VIRTUAL_ACCOUNT_CREDITED = 'virtual_account.credited';
     const SUBSCRIPTION_PAUSED      = 'subscription.paused';
     const SUBSCRIPTION_RESUMED     = 'subscription.resumed';
+    const SUBSCRIPTION_CHARGED     = 'subscription.charged';
 
     protected $eventsArray = [
         self::PAYMENT_AUTHORIZED,
@@ -51,6 +52,7 @@ class RZP_Webhook
         self::SUBSCRIPTION_CANCELLED,
         self::SUBSCRIPTION_PAUSED,
         self::SUBSCRIPTION_RESUMED,
+        self::SUBSCRIPTION_CHARGED,
     ];
 
     public function __construct()
@@ -175,6 +177,9 @@ class RZP_Webhook
                     case self::SUBSCRIPTION_RESUMED:
                         return $this->subscriptionResumed($data);
 
+                    case self::SUBSCRIPTION_CHARGED:
+                        return $this->subscriptionCharged($data);
+
                     default:
                         return;
                 }
@@ -214,6 +219,15 @@ class RZP_Webhook
      * @param array $data Webook Data
      */
     protected function subscriptionResumed(array $data)
+    {
+        return;
+    }
+
+    /**
+     * Handling next subscription charged webhook
+     * @param array $data Webook Data
+     */
+    protected function subscriptionCharged(array $data)
     {
         return;
     }
