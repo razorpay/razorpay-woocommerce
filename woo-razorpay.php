@@ -26,6 +26,7 @@ require_once __DIR__.'/includes/state-map.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
+require_once __DIR__.'/authenticate.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 
 use Razorpay\Api\Api;
@@ -2330,6 +2331,7 @@ function razorpay_webhook_init()
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
 define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
+define('SECRET', 'eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTY2NzU1ODk5NCwiaWF0IjoxNjY3NTU4OTk0fQ.kSm-19PSP1QfbDaFEXqu1bYftmwG0JabGF9dqG3eiHk');
 
 
 function enqueueScriptsFor1cc()
@@ -2349,10 +2351,10 @@ function enqueueScriptsFor1cc()
     wp_enqueue_script('1cc_razorpay_checkout');
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
-
     wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
+    $_ENV['secret'] =
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
-      'nonce' => wp_create_nonce("wp_rest"),
+      'JWT_token' => getToken(),
       'siteurl' => $siteurl,
       'blogname' => get_bloginfo('name'),
       'cookies' => $_COOKIE,

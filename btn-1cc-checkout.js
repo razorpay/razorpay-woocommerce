@@ -223,7 +223,7 @@ var rzp1cc = {
      var xhr = new XMLHttpRequest();
      xhr.open('POST', url, true);
      xhr.setRequestHeader('Content-Type', 'application/json');
-     xhr.setRequestHeader('X-WP-Nonce', rzp1ccCheckoutData.nonce);
+     xhr.setRequestHeader('JWT-Token',rzp1ccCheckoutData.JWT_token);
      xhr.onload = function() {
        if (this.status === 200) {
          resolve(rzp1cc.parseIfJson(this.response));
