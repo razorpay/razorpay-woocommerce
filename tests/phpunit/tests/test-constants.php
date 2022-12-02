@@ -14,6 +14,8 @@ class Test_Constants extends WP_UnitTestCase
     {
         $this->assertSame('razorpay_wc_order_id', $this->razorpayTests::SESSION_KEY);
 
+        $this->assertSame('razorpay_order_id_1cc', $this->razorpayTests::RAZORPAY_ORDER_ID_1CC);
+
         $this->assertSame('razorpay_payment_id', $this->razorpayTests::RAZORPAY_PAYMENT_ID);
 
         $this->assertSame('razorpay_order_id', $this->razorpayTests::RAZORPAY_ORDER_ID);
