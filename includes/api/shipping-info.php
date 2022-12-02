@@ -408,7 +408,7 @@ function smartCodRestriction($addresses, $order)
             }
         } else {
             if (!array_intersect($categoryIds, $productCat)) {
-                if ($restriction['category_restriction_mode'] === 'all_product') {
+                if ($restriction['category_restriction_mode'] === 'all_products') {
                     return false;
                 } else {
                     $restrictCatCount++;
