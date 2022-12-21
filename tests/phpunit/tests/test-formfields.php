@@ -12,7 +12,7 @@ class Test_FormFields extends WP_UnitTestCase
 
     public function testformfields()
     {
-        $form_fields= $this->razorpayTests->{"form_fields"};
+        $form_fields = $this->razorpayTests->{"form_fields"};
 
         $this->assertSame('Key ID',$form_fields['key_id']['title']);
 
