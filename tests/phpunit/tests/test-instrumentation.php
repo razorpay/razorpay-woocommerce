@@ -12,7 +12,8 @@ class Test_Instrumentation extends WP_UnitTestCase
     public function setup(): void
     {
         parent::setup();
-        $this->rzpInstrumentation = Mockery::mock('TrackPluginInstrumentation', ['key_id', 'key_secret'])->makePartial()->shouldAllowMockingProtectedMethods();
+        $this->rzpInstrumentation = Mockery::mock('TrackPluginInstrumentation',
+            ['key_id', 'key_secret'])->makePartial()->shouldAllowMockingProtectedMethods();
     }
 
     public function testHooks()
@@ -25,9 +26,11 @@ class Test_Instrumentation extends WP_UnitTestCase
     public function testInstrumentationSegment()
     {
         $this->rzpInstrumentation->api = new MockApi('key_id', 'key_secret');
+
         $response = $this->rzpInstrumentation->rzpTrackSegment('event',
             ['key' => 'value']
         );
+
         $this->assertSame('success', $response['status']);
     }
 }

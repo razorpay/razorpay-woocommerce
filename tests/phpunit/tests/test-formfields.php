@@ -9,6 +9,7 @@ class Test_FormFields extends WP_UnitTestCase
         parent::setup();
         $this->razorpayTests = new WC_Razorpay();
     }
+
     public function testformfields()
     {
         $form_fields= $this->razorpayTests->{"form_fields"};
