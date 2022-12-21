@@ -18,8 +18,8 @@ class Test_Instrumentation extends WP_UnitTestCase
 
     public function testHooks()
     {
-        $this->assertSame(10, has_action('activated_plugin', 'razorpayPluginActivated'));
-        $this->assertSame(10, has_action('deactivated_plugin', 'razorpayPluginDeactivated'));
+        $this->assertSame(10, has_action('activate_' . basename(PLUGIN_DIR) .'/woo-razorpay.php', 'razorpayPluginActivated'));
+        $this->assertSame(10, has_action('deactivate_' . basename(PLUGIN_DIR) .'/woo-razorpay.php', 'razorpayPluginDeactivated'));
         $this->assertSame(10, has_action('upgrader_process_complete', 'razorpayPluginUpgraded'));
     }
 

@@ -35,8 +35,8 @@ add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
 
 // instrumentation hooks
-add_action('activated_plugin', 'razorpayPluginActivated', 10, 2 );
-add_action('deactivated_plugin', 'razorpayPluginDeactivated', 10, 2 );
+register_activation_hook(__FILE__, 'razorpayPluginActivated', 10, 2 );
+register_deactivation_hook(__FILE__, 'razorpayPluginDeactivated', 10, 2 );
 add_action('upgrader_process_complete', 'razorpayPluginUpgraded', 10, 2);
 
 
