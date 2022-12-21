@@ -9,6 +9,7 @@ if (document.readyState !== 'loading') {
 function btnCheckout(){
 
 var btn = document.getElementById('btn-1cc');
+var mobileBtn = document.querySelectorAll('#btn-1cc')[1];
 var btnMini = document.getElementById('btn-1cc-mini-cart');
 var btnPdp = document.getElementById('btn-1cc-pdp');
 var rzpSpinnerBackdrop = document.getElementById('rzp-spinner-backdrop');
@@ -28,12 +29,17 @@ jQuery(document.body).on('updated_cart_totals', function(event) {
    btn.addEventListener('click', openRzpCheckout);
  }
 
+ if (mobileBtn != null) {
+  mobileBtn.addEventListener('click', openRzpCheckout);
+}
+
  var btnMini = document.getElementById('btn-1cc-mini-cart');
  if (btnMini !== null) {
    btnMini.addEventListener('click', openRzpCheckout);
  }
 
  var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+ 
  if (flycartBtn != null) {
    flycartBtn.addEventListener('click', openRzpCheckout);
  }
@@ -45,7 +51,9 @@ function addEventListenerToMinicart(wcEvent) {
    if (btnMini !== null) {
      btnMini.addEventListener('click', openRzpCheckout);
    }
+
    var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+
   if (flycartBtn != null) {
     flycartBtn.addEventListener('click', openRzpCheckout);
    }
@@ -308,6 +316,10 @@ var rzp1cc = {
 
 if (btn !== null) {
  btn.addEventListener('click', openRzpCheckout);
+}
+
+if (mobileBtn != null) {
+  mobileBtn.addEventListener('click', openRzpCheckout);
 }
 
 if (btnMini !== null) {
