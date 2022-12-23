@@ -469,8 +469,8 @@ function woocommerce_razorpay_init()
             {
                 $this->defaultWebhookEvents += array(
                     'subscription.cancelled' => true,
-                    'subscription.resumed'   => true,
-                    'subscription.paused'    => true,
+//                     'subscription.resumed'   => true,
+//                     'subscription.paused'    => true,
                     'subscription.charged'   => true
                 );
             }
@@ -500,8 +500,8 @@ function woocommerce_razorpay_init()
                         if (!$subscriptionWebhookFlag)
                         {
                             unset($this->defaultWebhookEvents['subscription.cancelled']);
-                            unset($this->defaultWebhookEvents['subscription.resumed']);
-                            unset($this->defaultWebhookEvents['subscription.paused']);
+//                             unset($this->defaultWebhookEvents['subscription.resumed']);
+//                             unset($this->defaultWebhookEvents['subscription.paused']);
                             unset($this->defaultWebhookEvents['subscription.charged']);
                         }
 
