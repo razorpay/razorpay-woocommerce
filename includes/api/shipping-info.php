@@ -28,7 +28,7 @@ function calculateShipping1cc(WP_REST_Request $request)
     $cartResponse = false;
     $orderId      = (int) sanitize_text_field($params['order_id']);
     $addresses    = $params['addresses'];
-    $rzpOrderId   = sanitize_text_field(($params['razorpay_order_id']);
+    $rzpOrderId   = sanitize_text_field($params['razorpay_order_id']);
 
     initCustomerSessionAndCart();
     // Cleanup cart.
@@ -304,9 +304,9 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $rzpO
     }
 
     // Restrict shipping and payment
-    if(is_plugin_active('woocommerce-conditional-shipping-and-payments/woocommerce-conditional-shipping-and-payments.php')){
-        return restictPaymentGetway($rzpOrderId);
-    }
+    // if(is_plugin_active('woocommerce-conditional-shipping-and-payments/woocommerce-conditional-shipping-and-payments.php')){
+    //     return restictPaymentGetway($rzpOrderId);
+    // }
 
     if (isset($availablePaymentMethods['cod'])) {
 
@@ -627,7 +627,7 @@ function restictPaymentGetway($rzpOrderId){
     }
 
     if(empty($couponCode) === false) {
-        
+
         $globalRes = new WC_CSP_Restrict_Payment_Gateways();
         $globalRestrictionData = $globalRes->get_global_restriction_data();
 
