@@ -217,6 +217,7 @@ function productInfoHandler(){
 // fetch opts from server and open 1cc modal
 var rzp1cc = {
  orderApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/order/create',
+ cartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/fetch-cart',
  saveAbandonedCartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/abandoned-cart',
  makeRequest: function(url, body) {
    return new Promise(function(resolve, reject) {
@@ -356,7 +357,7 @@ async function openRzpCheckout(e) {
  rzp1cc.setDisabled('btn-1cc-mini-cart');
  rzp1cc.setDisabled('btn-1cc-pdp');
 
- rzp1cc.makeRequest(rzp1cc.orderApi, body)
+ rzp1cc.makeRequest(rzp1cc.cartApi, body)
    .then(data => {
      rzp1cc.showSpinner(false);
      try {

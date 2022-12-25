@@ -14,6 +14,7 @@ require_once __DIR__ . '/cart.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../state-map.php';
 require_once __DIR__ . '/save-abandonment-data.php';
+require_once __DIR__ . '/fetch-cart.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
@@ -85,6 +86,17 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'saveCartAbandonmentData',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
+
+     // cart data
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE,
+        'fetch-cart',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'fetchCartData',
             'permission_callback' => 'checkAuthCredentials',
         )
     );
