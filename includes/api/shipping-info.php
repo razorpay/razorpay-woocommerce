@@ -304,9 +304,9 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $rzpO
     }
 
     // Restrict shipping and payment
-    // if(is_plugin_active('woocommerce-conditional-shipping-and-payments/woocommerce-conditional-shipping-and-payments.php')){
-    //     return restictPaymentGetway($rzpOrderId);
-    // }
+    if(is_plugin_active('woocommerce-conditional-shipping-and-payments/woocommerce-conditional-shipping-and-payments.php')){
+        return restictPaymentGetway($rzpOrderId);
+    }
 
     if (isset($availablePaymentMethods['cod'])) {
 
