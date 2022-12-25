@@ -39,3 +39,38 @@ function create1ccCart($orderId)
         return false;
     }
 }
+
+function fetchWcCart()
+{
+    include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion
+
+    if (null === WC()->session) {
+        $session_class = apply_filters('woocommerce_session_handler', 'WC_Session_Handler');
+        WC()->session = new $session_class();
+        WC()->session->init();
+    }
+
+    if (null === WC()->customer) {
+        WC()->customer = new WC_Customer(get_current_user_id(), true);
+    }
+
+    $cart = WC()->cart;
+
+    if (null === $cart) {
+        $cart = new WC_Cart();
+        WC()->cart = $cart;
+    }
+
+    return $cart;
+}
+
+function createWcCart(WP_REST_Request $request) {
+    $params = $request->get_params();
+    $productId = $params['product_id'];
+    $quantity = $params['quantity'];
+
+    $cart = fetchWcCart();
+    $cart->empty_cart();
+    $cart->add_to_cart($productId, $quantity);
+    return $cart->get_item_data();
+}

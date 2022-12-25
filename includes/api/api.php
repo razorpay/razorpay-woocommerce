@@ -88,6 +88,26 @@ function rzp1ccInitRestApi()
             'permission_callback' => 'checkAuthCredentials',
         )
     );
+
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE . '/cart',
+        'fetch',
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'fetchWcCart',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
+
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE . '/cart',
+        'create',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'createWcCart',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
 }
 
 add_action('rest_api_init', 'rzp1ccInitRestApi');
