@@ -15,6 +15,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../state-map.php';
 require_once __DIR__ . '/save-abandonment-data.php';
 require_once __DIR__ . '/fetch-cart.php';
+require_once __DIR__ . '/create-cart.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
@@ -100,6 +101,16 @@ function rzp1ccInitRestApi()
             'permission_callback' => 'checkAuthCredentials',
         )
     );
+
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE,
+        'create-cart',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'CreateCartData',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
 }
 
 add_action('rest_api_init', 'rzp1ccInitRestApi');
@@ -111,9 +122,18 @@ function initCustomerSessionAndCart()
 {
     if (defined('WC_ABSPATH')) {
         // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
-        include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion
         include_once WC_ABSPATH . 'includes/wc-notice-functions.php'; // nosemgrep: file-inclusion
         include_once WC_ABSPATH . 'includes/wc-template-hooks.php'; // nosemgrep: file-inclusion
+    }
+
+    intiCartCommon();
+}
+
+function intiCartCommon()
+{ 
+    if (defined('WC_ABSPATH')) {
+        // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
+        include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion
     }
 
     if (null === WC()->session) {
@@ -128,7 +148,47 @@ function initCustomerSessionAndCart()
 
     if (null === WC()->cart) {
         WC()->cart = new WC_Cart();
-        WC()->cart->get_cart();
+    }
+
+}
+
+function getCartLineItem()
+{
+    $cart = WC()->cart->get_cart();
+    $i = 0;
+
+    foreach($cart as $item_id => $item) { 
+        $product =  wc_get_product( $item['data']->get_id()); 
+        $price = get_post_meta($values['product_id'] , '_price', true);
+
+
+       $data[$i]['type'] = "e-commerce";
+       $data[$i]['sku'] = $product->get_sku();
+       $data[$i]['quantity'] = $item['quantity'];
+       $data[$i]['name'] = mb_substr($product->get_title(), 0, 125, "UTF-8");
+       $data[$i]['description'] = mb_substr($product->get_title(), 0, 250,"UTF-8");
+       $productImage = $product->get_image_id()?? null;
+       $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
+       $data[$i]['product_url'] = $product->get_permalink();
+       $data[$i]['price'] = $product->get_price();
+
+       $i++;
+    } 
+
+    return $data;
+}
+
+function checkCartEmpty($logObj){
+    if (WC()->cart->get_cart_contents_count() == 0) {
+        $response['message'] = 'Cart cannot be empty';
+        $response['code']    = 'BAD_REQUEST_EMPTY_CART';
+
+        $statusCode            = 400;
+        $logObj['status_code'] = $statusCode;
+        $logObj['response']    = $response;
+        rzpLogError(json_encode($logObj));
+
+        return new WP_REST_Response($response, $statusCode);
     }
 }
 

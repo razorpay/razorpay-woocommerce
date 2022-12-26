@@ -218,6 +218,7 @@ function productInfoHandler(){
 var rzp1cc = {
  orderApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/order/create',
  cartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/fetch-cart',
+ createCartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/create-cart',
  saveAbandonedCartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/abandoned-cart',
  makeRequest: function(url, body) {
    return new Promise(function(resolve, reject) {
@@ -296,6 +297,68 @@ var rzp1cc = {
    rzp1cc.setDisabled('btn-1cc-mini-cart', false);
    rzp1cc.setDisabled('btn-1cc-pdp', false);
  },
+ sendCartData: function(cartApi,body, e) {
+
+   if( btnPdp !== null && btnPdp.classList.contains('disabled')){
+     return;
+   }
+
+    rzp1cc.showSpinner(true);
+    rzp1cc.getBrowserTime();
+
+    rzp1cc.setDisabled('btn-1cc');
+    rzp1cc.setDisabled('btn-1cc-mini-cart');
+    rzp1cc.setDisabled('btn-1cc-pdp');
+
+    rzp1cc.makeRequest(cartApi, body)
+     .then(data => {
+       rzp1cc.showSpinner(false);
+       try {
+         var razorpayCheckout = new Razorpay({
+           ...data,
+           modal: {
+             ondismiss: function() {
+               rzp1cc.handleAbandonmentCart(data.order_id);
+               rzp1cc.enableCheckoutButtons();
+             },
+             onload: setTimeout(() => {
+               rzp1cc.handleAbandonmentCart(data.order_id);
+               rzp1cc.enableCheckoutButtons();
+             }, 25000),
+           },
+         });
+         razorpayCheckout.open();
+
+       } catch (e) {
+         document.getElementById('error-message').innerHTML =
+           "<div class='entry-content'><div class='woocommerce'><div class='woocommerce-notices-wrapper'><p class='cart-empty woocommerce-info' style='margin-left: -50px; margin-right: 75px'>Something went wrong, please try again after sometime.</p></div></div></div>";
+
+         rzp1cc.enableCheckoutButtons();
+         rzp1cc.showSpinner(false);
+
+       }
+     })
+     .catch(e => {
+       // Response sent to the User when cart is empty or order creation fails
+       if (e.status == 400){
+         if (e.response.code == 'BAD_REQUEST_EMPTY_CART'){
+           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Order could not be placed as your cart is empty.</p>";
+         } else if (e.response.code == 'ORDER_CREATION_FAILED'){
+           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Razorpay Error: Order could not be placed, please try again after sometime.</p>";
+         } else if (e.response.code == 'MIN_CART_AMOUNT_CHECK_FAILED' || e.response.code == 'WOOCOMMERCE_ORDER_CREATION_FAILED'){
+           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>"; // nosemgrep: insecure-innerhtml
+         } else {
+           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
+         }
+
+       } else {
+           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
+       }
+
+       rzp1cc.enableCheckoutButtons();
+       rzp1cc.showSpinner(false);
+     });
+ },
  getBrowserTime: function() {
    var dateTime = [];
    var date = new Date(),
@@ -328,82 +391,30 @@ if (btnMini !== null) {
 }
 
 if (btnPdp !== null) {
- btnPdp.addEventListener('click', openRzpCheckout);
+  btnPdp.addEventListener('click', openPdpRzpCheckout);
 }
 
 if (flycartBtn != null) {
  flycartBtn.addEventListener('click', openRzpCheckout);
 }
 
-async function openRzpCheckout(e) {
- e.preventDefault();
+async function openPdpRzpCheckout(e) {
+  e.preventDefault();
 
- if( btnPdp !== null && btnPdp.classList.contains('disabled')){
-   return;
- } 
- rzp1cc.showSpinner(true);
+  var body = rzp1ccCheckoutData;
 
- if (accessToken !== null) 
- {
-   rzp1ccCheckoutData.token = accessToken;
- }
-
- rzp1cc.getBrowserTime();
- 
-
- var body = rzp1ccCheckoutData;
-
- rzp1cc.setDisabled('btn-1cc');
- rzp1cc.setDisabled('btn-1cc-mini-cart');
- rzp1cc.setDisabled('btn-1cc-pdp');
-
- rzp1cc.makeRequest(rzp1cc.cartApi, body)
-   .then(data => {
-     rzp1cc.showSpinner(false);
-     try {
-       var razorpayCheckout = new Razorpay({
-         ...data,
-         modal: {
-           ondismiss: function() {
-             rzp1cc.handleAbandonmentCart(data.order_id);
-             rzp1cc.enableCheckoutButtons();
-           },
-           onload: setTimeout(() => {
-             rzp1cc.handleAbandonmentCart(data.order_id);
-             rzp1cc.enableCheckoutButtons();
-           }, 25000),
-         },
-       });
-       razorpayCheckout.open();
-
-     } catch (e) {
-       document.getElementById('error-message').innerHTML =
-         "<div class='entry-content'><div class='woocommerce'><div class='woocommerce-notices-wrapper'><p class='cart-empty woocommerce-info' style='margin-left: -50px; margin-right: 75px'>Something went wrong, please try again after sometime.</p></div></div></div>";
-
-       rzp1cc.enableCheckoutButtons();
-       rzp1cc.showSpinner(false);
-
-     }
-   })
-   .catch(e => {
-     // Response sent to the User when cart is empty or order creation fails
-     if (e.status == 400){
-       if (e.response.code == 'BAD_REQUEST_EMPTY_CART'){
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Order could not be placed as your cart is empty.</p>";
-       } else if (e.response.code == 'ORDER_CREATION_FAILED'){
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Razorpay Error: Order could not be placed, please try again after sometime.</p>";
-       } else if (e.response.code == 'MIN_CART_AMOUNT_CHECK_FAILED' || e.response.code == 'WOOCOMMERCE_ORDER_CREATION_FAILED'){
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>"; // nosemgrep: insecure-innerhtml
-       } else {
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
-       }
-
-     } else {
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
-     }
-
-     rzp1cc.enableCheckoutButtons();
-     rzp1cc.showSpinner(false);
-   });
+  rzp1cc.sendCartData(rzp1cc.createCartApi, body, e);
 }
+
+async function openRzpCheckout(e) {
+  e.preventDefault();
+
+  if (accessToken !== null) 
+  {
+   rzp1ccCheckoutData.token = accessToken;
+  }
+  var body = rzp1ccCheckoutData;
+  rzp1cc.sendCartData(rzp1cc.cartApi, body, e);
+  }
+
 }
