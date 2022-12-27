@@ -297,7 +297,7 @@ var rzp1cc = {
    rzp1cc.setDisabled('btn-1cc-mini-cart', false);
    rzp1cc.setDisabled('btn-1cc-pdp', false);
  },
- sendCartData: function(cartApi,body, e) {
+ sendCartData: function(cartApi, body, e) {
 
    if( btnPdp !== null && btnPdp.classList.contains('disabled')){
      return;
@@ -310,7 +310,16 @@ var rzp1cc = {
     rzp1cc.setDisabled('btn-1cc-mini-cart');
     rzp1cc.setDisabled('btn-1cc-pdp');
 
-    rzp1cc.makeRequest(cartApi, body)
+    rzp1cc.makeRequest(orderApi, body)
+    .then(data => {
+      cartRequest.then((razorpayCheckout) => {
+        if (razorpayCheckout) {
+          razorpayCheckout.set(data);
+        }
+      })
+    })
+
+    const cartRequest = rzp1cc.makeRequest(cartApi, body)
      .then(data => {
        rzp1cc.showSpinner(false);
        try {
@@ -328,6 +337,8 @@ var rzp1cc = {
            },
          });
          razorpayCheckout.open();
+
+         return razorpayCheckout;
 
        } catch (e) {
          document.getElementById('error-message').innerHTML =
