@@ -20,7 +20,6 @@ var accessToken = new URLSearchParams(url.search).get('wcf_ac_token');
 var referrerDomain = document.referrer.toString();
 var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
 var caddyBtn = document.getElementsByClassName('cc-button cc-button-primary')[0];
-console.log(caddyBtn)
 rzp1ccCheckoutData.referrerDomain = referrerDomain;
 
 // event triggered by wc on any cart change
