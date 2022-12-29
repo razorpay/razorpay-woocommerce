@@ -1,0 +1,21 @@
+{
+  "name": "razorpay/razorpay-woocommerce",
+  "description": "Razorpay Payment Gateway Integration for WooCommerce",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Team Razorpay",
+      "role": "developer"
+    }
+  ],
+  "require-dev": {
+    "valu/wp-testing-tools": "^0.4.0",
+    "wp-cli/wp-cli-bundle": "*",
+    "yoast/phpunit-polyfills": "^1.0",
+    "mockery/mockery": "^1.5"
+  },
+  "scripts": {
+    "wp-install": "wp-install --full --env-file .env --wp-composer-file composer.wp-install.json"
+  }
+}

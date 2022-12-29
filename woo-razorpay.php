@@ -35,14 +35,14 @@ add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
 
 // instrumentation hooks
-register_activation_hook(__FILE__, 'razorpayPluginActivated');
-register_deactivation_hook(__FILE__, 'razorpayPluginDeactivated');
+register_activation_hook(__FILE__, 'razorpayPluginActivated', 10, 2);
+register_deactivation_hook(__FILE__, 'razorpayPluginDeactivated', 10, 2);
 add_action('upgrader_process_complete', 'razorpayPluginUpgraded', 10, 2);
 
 
 function woocommerce_razorpay_init()
 {
-    if (!class_exists('WC_Payment_Gateway'))
+    if (!class_exists('WC_Payment_Gateway') || class_exists('WC_Razorpay'))
     {
         return;
     }
