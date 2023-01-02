@@ -437,7 +437,6 @@ function woocommerce_razorpay_init()
 
             if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
             {
-
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
@@ -2345,6 +2344,10 @@ function enqueueScriptsFor1cc()
         $siteurl = str_replace('http://', 'https://', $siteurl);
     }
 
+    wp_register_script( '1cc_razorpay_config', '' );
+    wp_enqueue_script( '1cc_razorpay_config' );
+    wp_add_inline_script( '1cc_razorpay_config', '!function(){var o=document.querySelector("meta[name=rzp_merchant_key]");o&&(window.Razorpay||(window.Razorpay={}),"object"==typeof window.Razorpay&&(window.Razorpay.config||(window.Razorpay.config={}),window.Razorpay.config.merchant_key=o.getAttribute("value")))}();');
+
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
@@ -2365,7 +2368,7 @@ function enqueueScriptsFor1cc()
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 
 if(isRazorpayPluginEnabled() && is1ccEnabled()) {
-   add_action('wp_head', 'addRzpSpinner');
+   add_action('wp_head', 'addRzpSpinnerAndConfig');
 }
 
 function addCheckoutButton()
@@ -2430,8 +2433,9 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isPdpCheckoutEnabled())
     add_action( 'woocommerce_after_add_to_cart_button', 'addPdpCheckoutButton');
 }
 
-function addRzpSpinner()
+function addRzpSpinnerAndConfig()
 {
+    echo "<meta name='rzp_merchant_key' value=" . get_option('woocommerce_razorpay_settings')['key_id'] . ">";
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {

@@ -297,7 +297,7 @@ var rzp1cc = {
    rzp1cc.setDisabled('btn-1cc-mini-cart', false);
    rzp1cc.setDisabled('btn-1cc-pdp', false);
  },
- sendCartData: function(cartApi, body, e) {
+ sendCartData: function(body, e) {
 
    if( btnPdp !== null && btnPdp.classList.contains('disabled')){
      return;
@@ -310,65 +310,35 @@ var rzp1cc = {
     rzp1cc.setDisabled('btn-1cc-mini-cart');
     rzp1cc.setDisabled('btn-1cc-pdp');
 
-    rzp1cc.makeRequest(orderApi, body)
-    .then(data => {
-      cartRequest.then((razorpayCheckout) => {
-        if (razorpayCheckout) {
-          razorpayCheckout.set(data);
-        }
-      })
-    })
+    const key = document.querySelector('meta[name=rzp_merchant_key]').getAttribute('value');
 
-    const cartRequest = rzp1cc.makeRequest(cartApi, body)
-     .then(data => {
-       rzp1cc.showSpinner(false);
-       try {
-         var razorpayCheckout = new Razorpay({
-           ...data,
-           modal: {
-             ondismiss: function() {
-               rzp1cc.handleAbandonmentCart(data.order_id);
-               rzp1cc.enableCheckoutButtons();
-             },
-             onload: setTimeout(() => {
-               rzp1cc.handleAbandonmentCart(data.order_id);
-               rzp1cc.enableCheckoutButtons();
-             }, 25000),
-           },
-         });
-         razorpayCheckout.open();
-
-         return razorpayCheckout;
-
-       } catch (e) {
-         document.getElementById('error-message').innerHTML =
-           "<div class='entry-content'><div class='woocommerce'><div class='woocommerce-notices-wrapper'><p class='cart-empty woocommerce-info' style='margin-left: -50px; margin-right: 75px'>Something went wrong, please try again after sometime.</p></div></div></div>";
-
-         rzp1cc.enableCheckoutButtons();
-         rzp1cc.showSpinner(false);
-
-       }
-     })
-     .catch(e => {
-       // Response sent to the User when cart is empty or order creation fails
-       if (e.status == 400){
-         if (e.response.code == 'BAD_REQUEST_EMPTY_CART'){
-           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Order could not be placed as your cart is empty.</p>";
-         } else if (e.response.code == 'ORDER_CREATION_FAILED'){
-           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Razorpay Error: Order could not be placed, please try again after sometime.</p>";
-         } else if (e.response.code == 'MIN_CART_AMOUNT_CHECK_FAILED' || e.response.code == 'WOOCOMMERCE_ORDER_CREATION_FAILED'){
-           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>"; // nosemgrep: insecure-innerhtml
-         } else {
-           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
-         }
-
-       } else {
-           document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
-       }
-
-       rzp1cc.enableCheckoutButtons();
-       rzp1cc.showSpinner(false);
-     });
+    if (body.pdpCheckout) {
+      rzp1cc.makeRequest(rzp1cc.createCartApi, body)
+        .then(cart => {
+          return Promise.all([
+            initRazorpayWithOptions({
+              cart,
+              key,
+            }),
+            rzp1cc.makeRequest(rzp1cc.orderApi, body),
+          ]);
+        })
+        .then(updateLazyOrder)
+        .catch(handleCheckoutError);
+    } else {
+      Promise.all([
+        rzp1cc.makeRequest(rzp1cc.cartApi, body)
+          .then(cart => {
+            return initRazorpayWithOptions({
+              cart,
+              key,
+            });
+          }),
+        rzp1cc.makeRequest(rzp1cc.orderApi, body),
+      ])
+      .then(updateLazyOrder)
+      .catch(handleCheckoutError);
+    }
  },
  getBrowserTime: function() {
    var dateTime = [];
@@ -387,6 +357,31 @@ var rzp1cc = {
 
    rzp1ccCheckoutData.dateTime = dateTime;
  }
+}
+
+function handleCheckoutError(e) {
+  // Response sent to the User when cart is empty or order creation fails
+  if (e.status == 400){
+    if (e.response.code == 'BAD_REQUEST_EMPTY_CART'){
+      document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Order could not be placed as your cart is empty.</p>";
+    } else if (e.response.code == 'ORDER_CREATION_FAILED'){
+      document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Razorpay Error: Order could not be placed, please try again after sometime.</p>";
+    } else if (e.response.code == 'MIN_CART_AMOUNT_CHECK_FAILED' || e.response.code == 'WOOCOMMERCE_ORDER_CREATION_FAILED'){
+      document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>"; // nosemgrep: insecure-innerhtml
+    } else {
+      document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
+    }
+
+  } else {
+    document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
+  }
+
+  rzp1cc.enableCheckoutButtons();
+  rzp1cc.showSpinner(false);
+}
+
+function updateLazyOrder(razorpayCheckout, orderResponse) {
+  razorpayCheckout.set({ order_id: orderResponse.order_id });
 }
 
 if (btn !== null) {
@@ -409,12 +404,14 @@ if (flycartBtn != null) {
  flycartBtn.addEventListener('click', openRzpCheckout);
 }
 
+
+
 async function openPdpRzpCheckout(e) {
   e.preventDefault();
 
   var body = rzp1ccCheckoutData;
 
-  rzp1cc.sendCartData(rzp1cc.createCartApi, body, e);
+  rzp1cc.sendCartData(body, e);
 }
 
 async function openRzpCheckout(e) {
@@ -425,7 +422,35 @@ async function openRzpCheckout(e) {
    rzp1ccCheckoutData.token = accessToken;
   }
   var body = rzp1ccCheckoutData;
-  rzp1cc.sendCartData(rzp1cc.cartApi, body, e);
+  rzp1cc.sendCartData(body, e);
   }
+}
 
+function initRazorpayWithOptions(options) {
+  rzp1cc.showSpinner(false);
+  try {
+    var razorpayCheckout = new Razorpay({
+      cart: data,
+      modal: {
+        ondismiss: function() {
+          rzp1cc.handleAbandonmentCart(data.order_id);
+          rzp1cc.enableCheckoutButtons();
+        },
+        onload: setTimeout(() => {
+          rzp1cc.handleAbandonmentCart(data.order_id);
+          rzp1cc.enableCheckoutButtons();
+        }, 25000),
+      },
+    });
+    razorpayCheckout.open();
+
+    return razorpayCheckout;
+
+  } catch (e) {
+    document.getElementById('error-message').innerHTML =
+      "<div class='entry-content'><div class='woocommerce'><div class='woocommerce-notices-wrapper'><p class='cart-empty woocommerce-info' style='margin-left: -50px; margin-right: 75px'>Something went wrong, please try again after sometime.</p></div></div></div>";
+
+    rzp1cc.enableCheckoutButtons();
+    rzp1cc.showSpinner(false);
+  }
 }
