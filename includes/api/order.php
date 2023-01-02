@@ -12,7 +12,7 @@ function createWcOrder(WP_REST_Request $request)
     $logObj           = array();
     $logObj['api']    = 'createWcOrder';
     $logObj['params'] = $params;
-
+    
     //Abandoment cart plugin decode the coupon code from token
     $couponCode = null;
     if (isset($params['token'])) {
@@ -38,7 +38,7 @@ function createWcOrder(WP_REST_Request $request)
         return new WP_REST_Response($response, $statusCode);
     }
 
-    initCustomerSessionAndCart();
+    intiCartCommon();
 
     if (empty($params['pdpCheckout']) === false) {
         $variations = [];
@@ -71,20 +71,10 @@ function createWcOrder(WP_REST_Request $request)
         WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variation_id, $variations);
     }
 
-    // check if cart is empty
-    if (WC()->cart->get_cart_contents_count() == 0) {
-        $response['message'] = 'Cart cannot be empty';
-        $response['code']    = 'BAD_REQUEST_EMPTY_CART';
+     // check if cart is empty
+    checkCartEmpty($logObj);
 
-        $statusCode            = 400;
-        $logObj['status_code'] = $statusCode;
-        $logObj['response']    = $response;
-        rzpLogError(json_encode($logObj));
-
-        return new WP_REST_Response($response, $statusCode);
-    }
-
-    $cartHash        = WC()->cart->get_cart_hash();
+    $cartHash        = $params['cookies']['woocommerce_cart_hash'];
     $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
 
     if ($orderIdFromHash == null) {

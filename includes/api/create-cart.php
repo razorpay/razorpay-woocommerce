@@ -5,34 +5,30 @@
  */
 function createCartData(WP_REST_Request $request)
 {
-    rzpLogInfo("fetchCartData");
+    rzpLogInfo("createCartData");
     global $woocommerce;
     $params           = $request->get_params();
-    $logObj           = array();
-    $logObj['api']    = 'createCartData';
-    $logObj['params'] = $params;
+    $logObj           = ['api' => 'createCartData', 'params' => $params];
 
     $couponCode = null;
-
-    intiCartCommon();
 
     if (empty($params['pdpCheckout']) === false) {
         $variations = [];
         // Cleanup cart.
         WC()->cart->empty_cart();
 
-        $variation_id = (empty($params['variationId']) === false) ? (int) $params['variationId'] : 0;
+        $variationId = (empty($params['variationId']) === false) ? (int) $params['variationId'] : 0;
 
         if (empty($params['variations']) === false) {
-            $variations_arr = json_decode($params['variations'], true);
+            $variationsArr = json_decode($params['variations'], true);
 
-            foreach ($variations_arr as $key => $value) {
-                $var_key          = explode('_', $key);
-                $variations_key[] = ucwords(end($var_key));
-                $variations_val[] = ucwords($value);
+            foreach ($variationsArr as $key => $value) {
+                $varKey          = explode('_', $key);
+                $variationsKey[] = ucwords(end($varKey));
+                $variationsVal[] = ucwords($value);
             }
 
-            $variations = array_combine($variations_key, $variations_val);
+            $variations = array_combine($variationsKey, $variationsVal);
         }
 
         //To add custom fields to buy now orders
@@ -44,19 +40,19 @@ function createCartData(WP_REST_Request $request)
             }
         }
 
-        WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variation_id, $variations);
+        WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variationId, $variations);
     }
+
+    initCartCommon();
 
     // check if cart is empty
     checkCartEmpty($logObj);
 
     //Get Cart line Item
     $data = getCartLineItem();
-    $cartTotal = WC()->cart->total;
+    $cartTotal = WC()->cart->total - WC()->cart->get_shipping_total();
 
-    $response['line_items'] = $data;
-    $response['promotions'] = $couponCode;
-    $response['total_amount'] = $cartTotal*100;
+    $response = ['line_items' => $data, 'promotions' => $couponCode,  'total_price' => $cartTotal*100];
 
     return new WP_REST_Response($response, 200);
 }

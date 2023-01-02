@@ -2368,7 +2368,8 @@ function enqueueScriptsFor1cc()
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 
 if(isRazorpayPluginEnabled() && is1ccEnabled()) {
-   add_action('wp_head', 'addRzpSpinnerAndConfig');
+   add_action('wp_head', 'injectMerchantKeyMeta', 1);
+   add_action('wp_head', 'addRzpSpinner');
 }
 
 function addCheckoutButton()
@@ -2433,9 +2434,12 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isPdpCheckoutEnabled())
     add_action( 'woocommerce_after_add_to_cart_button', 'addPdpCheckoutButton');
 }
 
-function addRzpSpinnerAndConfig()
+function injectMerchantKeyMeta(){
+  echo "<meta name='rzp_merchant_key' value=" . get_option('woocommerce_razorpay_settings')['key_id'] . ">";
+}
+
+function addRzpSpinner()
 {
-    echo "<meta name='rzp_merchant_key' value=" . get_option('woocommerce_razorpay_settings')['key_id'] . ">";
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {

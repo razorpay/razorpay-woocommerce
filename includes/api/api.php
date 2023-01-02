@@ -107,7 +107,7 @@ function rzp1ccInitRestApi()
         'create-cart',
         array(
             'methods'             => 'POST',
-            'callback'            => 'CreateCartData',
+            'callback'            => 'createCartData',
             'permission_callback' => 'checkAuthCredentials',
         )
     );
@@ -126,10 +126,10 @@ function initCustomerSessionAndCart()
         include_once WC_ABSPATH . 'includes/wc-template-hooks.php'; // nosemgrep: file-inclusion
     }
 
-    intiCartCommon();
+    initCartCommon();
 }
 
-function intiCartCommon()
+function initCartCommon()
 { 
     if (defined('WC_ABSPATH')) {
         // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
@@ -158,7 +158,7 @@ function getCartLineItem()
     $i = 0;
 
     foreach($cart as $item_id => $item) { 
-        $product =  wc_get_product( $item['data']->get_id()); 
+        $product =  wc_get_product( $item['product_id']); 
         $price = get_post_meta($values['product_id'] , '_price', true);
 
 
@@ -170,8 +170,9 @@ function getCartLineItem()
        $productImage = $product->get_image_id()?? null;
        $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
-       $data[$i]['price'] = $product->get_price();
-
+       $data[$i]['price'] = (empty($product->get_price())=== false) ? round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100 / $item['quantity']) : 0;
+       $data[$i]['variant_id'] = $item['variation_id'];
+       $data[$i]['offer_price'] =  (empty($product->get_sale_price())=== false) ? (int) $product->get_sale_price()*100 : $product->get_price()*100; 
        $i++;
     } 
 
@@ -180,12 +181,9 @@ function getCartLineItem()
 
 function checkCartEmpty($logObj){
     if (WC()->cart->get_cart_contents_count() == 0) {
-        $response['message'] = 'Cart cannot be empty';
-        $response['code']    = 'BAD_REQUEST_EMPTY_CART';
+        $response = ['message' => 'Cart cannot be empty', 'code' => 'BAD_REQUEST_EMPTY_CART'];
 
-        $statusCode            = 400;
-        $logObj['status_code'] = $statusCode;
-        $logObj['response']    = $response;
+        $logObj = ['status_code' => 400 , 'response' => $response];
         rzpLogError(json_encode($logObj));
 
         return new WP_REST_Response($response, $statusCode);

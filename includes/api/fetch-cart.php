@@ -8,9 +8,7 @@ function fetchCartData(WP_REST_Request $request)
     rzpLogInfo("fetchCartData");
     global $woocommerce;
     $params           = $request->get_params();
-    $logObj           = array();
-    $logObj['api']    = 'fetchCartData';
-    $logObj['params'] = $params;
+    $logObj           = ['api' => 'fetchCartData', 'params' => $params];
 
     //Abandoment cart plugin decode the coupon code from token
     $couponCode = null;
@@ -22,7 +20,7 @@ function fetchCartData(WP_REST_Request $request)
         }
     }
 
-    intiCartCommon();
+    initCartCommon();
 
     // check if cart is empty
     checkCartEmpty($logObj);
@@ -35,11 +33,9 @@ function fetchCartData(WP_REST_Request $request)
 
     //Get Cart line Item
     $data = getCartLineItem();
-    $cartTotal = WC()->cart->total;
+    $cartTotal = WC()->cart->total - WC()->cart->get_shipping_total();
 
-    $response['line_items'] = $data;
-    $response['promotions'] = $couponCode;
-    $response['total_amount'] = $cartTotal*100;
+    $response = ['line_items' => $data, 'promotions' => $couponCode,  'total_price' => $cartTotal*100];
 
     return new WP_REST_Response($response, 200);
 }

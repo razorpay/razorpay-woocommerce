@@ -216,6 +216,7 @@ function productInfoHandler(){
 
 // fetch opts from server and open 1cc modal
 var rzp1cc = {
+ order_id: null, // order id is filled post order creation
  orderApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/order/create',
  cartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/fetch-cart',
  createCartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/create-cart',
@@ -318,8 +319,8 @@ var rzp1cc = {
           return Promise.all([
             initRazorpayWithOptions({
               cart,
-              key,
-            }),
+              key
+            }, rzp1cc),
             rzp1cc.makeRequest(rzp1cc.orderApi, body),
           ]);
         })
@@ -332,7 +333,7 @@ var rzp1cc = {
             return initRazorpayWithOptions({
               cart,
               key,
-            });
+            }, rzp1cc);
           }),
         rzp1cc.makeRequest(rzp1cc.orderApi, body),
       ])
@@ -380,8 +381,9 @@ function handleCheckoutError(e) {
   rzp1cc.showSpinner(false);
 }
 
-function updateLazyOrder(razorpayCheckout, orderResponse) {
-  razorpayCheckout.set({ order_id: orderResponse.order_id });
+function updateLazyOrder([razorpayCheckout, orderResponse]) {
+  razorpayCheckout.set('order_id', orderResponse.order_id);
+  rzp1cc.order_id = orderResponse.order_id;
 }
 
 if (btn !== null) {
@@ -426,18 +428,31 @@ async function openRzpCheckout(e) {
   }
 }
 
-function initRazorpayWithOptions(options) {
+function initRazorpayWithOptions(options, rzp1cc) {
   rzp1cc.showSpinner(false);
+  
+  var prefill = {}
+  
+  if(options.cart.promotions){
+    prefill.coupon_code = options.cart.promotions
+  }
+  
   try {
     var razorpayCheckout = new Razorpay({
-      cart: data,
+    key: options.key,
+      cart: options.cart,
+      prefill,
       modal: {
-        ondismiss: function() {
-          rzp1cc.handleAbandonmentCart(data.order_id);
+      ondismiss: function() {
+         if(!rzp1cc.order_id) return;
+          
+          rzp1cc.handleAbandonmentCart(rzp1cc.order_id);
           rzp1cc.enableCheckoutButtons();
         },
         onload: setTimeout(() => {
-          rzp1cc.handleAbandonmentCart(data.order_id);
+          if(!rzp1cc.order_id) return;
+          
+          rzp1cc.handleAbandonmentCart(rzp1cc.order_id);
           rzp1cc.enableCheckoutButtons();
         }, 25000),
       },
