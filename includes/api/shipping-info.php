@@ -614,16 +614,11 @@ function restictPaymentGetway($rzpOrderId){
         return true;
     }
 
-    // foreach($razorpayData['promotions'] as $promotion)
-    // {
-    //     if($promotion['type'] != 'gift_card'){
-    //         $couponCode = $promotion['code'];
-    //     }
-    // }
-
-    if (empty($razorpayData['promotions'][0]) === false)
+    foreach($razorpayData['promotions'] as $promotion)
     {
-        $couponCode = $razorpayData['promotions'][0]['code'];
+        if($promotion['type'] != 'gift_card'){
+            $couponCode = $promotion['code'];
+        }
     }
 
     if(empty($couponCode) === false) {
@@ -644,6 +639,8 @@ function restictPaymentGetway($rzpOrderId){
                 
         }
     }
+    
+    return true; 
 }
 
 /**
