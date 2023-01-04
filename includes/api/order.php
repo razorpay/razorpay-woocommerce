@@ -130,16 +130,19 @@ function createWcOrder(WP_REST_Request $request)
             foreach ($order->get_items() as $itemId => $item) {
                 $dynamicRules = $item->get_meta('_ywdpd_discounts');
 
-                foreach ($dynamicRules['applied_discounts'] as $appliedDiscount) {
-                    if (isset( $appliedDiscount['set_id'])){
-                        $ruleId = $appliedDiscount['set_id'];
-                        $rule    = ywdpd_get_rule($ruleId);
-                    } else {
-                        $rule = $appliedDiscount['by'];
-                    }
-                    // check coupon is disable with discount price
-                    if($rule->is_disabled_with_other_coupon() == 1){
-                        $disableCouponFlag = true;
+                if(empty($dynamicRules) == false){
+                    
+                    foreach ($dynamicRules['applied_discounts'] as $appliedDiscount) {
+                        if (isset( $appliedDiscount['set_id'])){
+                            $ruleId = $appliedDiscount['set_id'];
+                            $rule    = ywdpd_get_rule($ruleId);
+                        } else {
+                            $rule = $appliedDiscount['by'];
+                        }
+                        // check coupon is disable with discount price
+                        if($rule->is_disabled_with_other_coupon() == 1){
+                            $disableCouponFlag = true;
+                        }
                     }
                 }
             }
