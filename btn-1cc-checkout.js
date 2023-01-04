@@ -19,6 +19,8 @@ var url = new URL(pageURL);
 var accessToken = new URLSearchParams(url.search).get('wcf_ac_token');
 var referrerDomain = document.referrer.toString();
 var flycartBtn = document.getElementsByClassName("woofc-action-checkout")[0];
+var caddyBtn = document.getElementsByClassName('cc-button cc-button-primary')[0];
+var sidecartBtn = document.getElementsByClassName('xoo-wsc-ft-btn button btn xoo-wsc-ft-btn-checkout')[0];
 rzp1ccCheckoutData.referrerDomain = referrerDomain;
 
 // event triggered by wc on any cart change
@@ -43,6 +45,17 @@ jQuery(document.body).on('updated_cart_totals', function(event) {
  if (flycartBtn != null) {
    flycartBtn.addEventListener('click', openRzpCheckout);
  }
+
+ var caddyBtn = document.getElementsByClassName('cc-button cc-button-primary')[0];
+ 
+ if (caddyBtn != null) {
+   caddyBtn.addEventListener('click', openRzpCheckout);
+ }
+
+ var sidecartBtn = document.getElementsByClassName('xoo-wsc-ft-btn button btn xoo-wsc-ft-btn-checkout')[0];
+ if (sidecartBtn != null) {
+  sidecartBtn.addEventListener('click', openRzpCheckout);
+}
 });
 
 function addEventListenerToMinicart(wcEvent) {
@@ -57,6 +70,18 @@ function addEventListenerToMinicart(wcEvent) {
   if (flycartBtn != null) {
     flycartBtn.addEventListener('click', openRzpCheckout);
    }
+   var caddyBtn = document.getElementsByClassName('cc-button cc-button-primary')[0];
+
+  if (caddyBtn != null) {
+    caddyBtn.addEventListener('click', openRzpCheckout);
+   }
+
+   var sidecartBtn = document.getElementsByClassName('xoo-wsc-ft-btn button btn xoo-wsc-ft-btn-checkout')[0];
+  
+   if (sidecartBtn != null) {
+    sidecartBtn.addEventListener('click', openRzpCheckout);
+   }
+
  });
 }
 
@@ -333,6 +358,14 @@ if (btnPdp !== null) {
 if (flycartBtn != null) {
  flycartBtn.addEventListener('click', openRzpCheckout);
 }
+
+if (caddyBtn != null) {
+  caddyBtn.addEventListener('click', openRzpCheckout);
+ }
+
+ if (sidecartBtn != null) {
+  sidecartBtn.addEventListener('click', openRzpCheckout);
+ }
 
 async function openRzpCheckout(e) {
  e.preventDefault();
