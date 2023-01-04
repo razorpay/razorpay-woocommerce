@@ -159,7 +159,7 @@ function getCartLineItem()
 
     foreach($cart as $item_id => $item) { 
         $product =  wc_get_product( $item['product_id']); 
-        $price = get_post_meta($values['product_id'] , '_price', true);
+        $price = round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100 / $item['quantity']);
 
 
        $data[$i]['type'] = "e-commerce";
@@ -170,13 +170,28 @@ function getCartLineItem()
        $productImage = $product->get_image_id()?? null;
        $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
-       $data[$i]['price'] = (empty($product->get_price())=== false) ? round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100 / $item['quantity']) : 0;
+       $data[$i]['price'] = (empty($product->get_price())=== false) ? $price : 0;
        $data[$i]['variant_id'] = $item['variation_id'];
-       $data[$i]['offer_price'] =  (empty($product->get_sale_price())=== false) ? (int) $product->get_sale_price()*100 : $product->get_price()*100; 
+       $data[$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $price;
        $i++;
     } 
 
     return $data;
+}
+
+function getPrefillCartData(){
+
+    $currentUser = wp_get_current_user();
+
+    if ($currentUser instanceof WP_User) {
+        update_post_meta($orderId, '_customer_user', $current_user->ID);
+        $prefillData['email']   = $current_user->user_email ?? '';
+        $contact                        = get_user_meta($current_user->ID, 'billing_phone', true);
+        $prefillData['contact'] = $contact ? $contact : '';
+        $prefillData['coupon_code'] = $couponCode ? $couponCode : '';
+    }
+
+    return $prefillData;
 }
 
 function checkCartEmpty($logObj){

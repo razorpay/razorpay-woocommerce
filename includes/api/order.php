@@ -186,27 +186,9 @@ function createWcOrder(WP_REST_Request $request)
         // TODO: getDefaultCheckoutArguments() is already being called in L65 above
         $response = $razorpay->getDefaultCheckoutArguments($order);
 
-        $current_user = wp_get_current_user();
+        $fbAnalytics = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
 
-        if ($current_user instanceof WP_User) {
-            update_post_meta($orderId, '_customer_user', $current_user->ID);
-            $response['prefill']['email']   = $current_user->user_email ?? '';
-            $contact                        = get_user_meta($current_user->ID, 'billing_phone', true);
-            $response['prefill']['contact'] = $contact ? $contact : '';
-        }
-
-        $response["_"] = $razorpay->getVersionMetaInfo($response);
-
-        $response['prefill']['coupon_code'] = $couponCode;
-
-        $response['mandatory_login'] = false; // Removed the mandatory login option from admin config so sending bydefault false.
-
-        $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
-        $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
-        $response['redirect']            = true;
-        $response['one_click_checkout']  = true;
-
-        if ($response['enable_fb_analytics'] === true) {
+        if ($fbAnalytics === true) {
             //Customer cart related data for FB analytics.
             $customer_cart['value']        = (string) WC()->cart->subtotal;
             $customer_cart['content_type'] = 'product';
