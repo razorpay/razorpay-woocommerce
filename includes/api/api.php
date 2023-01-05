@@ -159,7 +159,7 @@ function getCartLineItem()
 
     foreach($cart as $item_id => $item) { 
         $product =  wc_get_product( $item['product_id']); 
-        $price = round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100 / $item['quantity']);
+        $price = round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100);
 
 
        $data[$i]['type'] = "e-commerce";
@@ -170,16 +170,16 @@ function getCartLineItem()
        $productImage = $product->get_image_id()?? null;
        $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
-       $data[$i]['price'] = (empty($product->get_price())=== false) ? $price : 0;
+       $data[$i]['price'] = (empty($product->get_price())=== false) ? $price/$item['quantity'] : 0;
        $data[$i]['variant_id'] = $item['variation_id'];
-       $data[$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $price;
+       $data[$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $price/$item['quantity'];
        $i++;
     } 
 
     return $data;
 }
 
-function getPrefillCartData(){
+function getPrefillCartData($couponCode){
 
     $currentUser = wp_get_current_user();
 

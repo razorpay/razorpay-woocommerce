@@ -26,6 +26,7 @@ function fetchCartData(WP_REST_Request $request)
     checkCartEmpty($logObj);
 
     // Get coupon if already added on cart.
+    $couponCode = null;
     $coupons = WC()->cart->get_applied_coupons();
     if (!empty($coupons)) {
         $couponCode = $coupons[0];
@@ -38,8 +39,8 @@ function fetchCartData(WP_REST_Request $request)
 
     $razorpay = new WC_Razorpay(false);
     $response["_"] = $razorpay->getVersionMetaInfo($response);
-    
-    $prefillData = getPrefillCartData();
+
+    $prefillData = getPrefillCartData($couponCode);
     $response['prefill'] = $prefillData;
 
     $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
