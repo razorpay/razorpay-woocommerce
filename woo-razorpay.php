@@ -1161,7 +1161,7 @@ function woocommerce_razorpay_init()
             return $data;
         }
 
-        private function enqueueCheckoutScripts($data)
+        public function enqueueCheckoutScripts($data)
         {
             if($data === 'checkoutForm' || $data === 'routeAnalyticsForm')
             {
