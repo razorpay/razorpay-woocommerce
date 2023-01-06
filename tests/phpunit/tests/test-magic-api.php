@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * @covers \WC_Razorpay
+ */
 class Test_Maigc_Api extends WP_UnitTestCase
 {
     public function testMagicApi()

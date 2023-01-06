@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="" tests="39" assertions="143" errors="1" warnings="0" failures="0" skipped="0" time="1.476983">
+    <testsuite name="unit" tests="39" assertions="143" errors="1" warnings="0" failures="0" skipped="0" time="1.476983">
+      <testsuite name="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" tests="9" assertions="42" errors="0" warnings="0" failures="0" skipped="0" time="0.965688">
+        <testcase name="testgetRazorpayPaymentParamsRzpidnull" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="52" assertions="1" time="0.094711"/>
+        <testcase name="testhandleErrorCase" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="258" assertions="2" time="0.061002"/>
+        <testcase name="testgetDefaultCheckoutArguments" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="96" assertions="7" time="0.088705"/>
+        <testcase name="testgetCustomOrdercreationMessage" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="81" assertions="1" time="0.059451"/>
+        <testcase name="testupdateUserAddressInfo" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="204" assertions="9" time="0.136767"/>
+        <testcase name="testgetRazorpayPaymentParams" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="28" assertions="2" time="0.060967"/>
+        <testcase name="testnewUserAccount" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="278" assertions="15" time="0.220478"/>
+        <testcase name="testverifyOrderAmount" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="155" assertions="1" time="0.066671"/>
+        <testcase name="testUpdateOrder" class="Test_OrderMethods" classname="Test_OrderMethods" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-ordermethods.php" line="175" assertions="4" time="0.176937"/>
+      </testsuite>
+      <testsuite name="Test_AutoWebhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-autowebhook.php" tests="4" assertions="16" errors="0" warnings="0" failures="0" skipped="0" time="0.026831">
+        <testcase name="testAutoUpdateWebhook" class="Test_AutoWebhook" classname="Test_AutoWebhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-autowebhook.php" line="128" assertions="7" time="0.006972"/>
+        <testcase name="testAutoCreateWebhook" class="Test_AutoWebhook" classname="Test_AutoWebhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-autowebhook.php" line="98" assertions="7" time="0.006914"/>
+        <testcase name="testEmptyKeyAndSecretValidation" class="Test_AutoWebhook" classname="Test_AutoWebhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-autowebhook.php" line="24" assertions="1" time="0.006376"/>
+        <testcase name="testWebhookFailedForLocalhost" class="Test_AutoWebhook" classname="Test_AutoWebhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-autowebhook.php" line="73" assertions="1" time="0.006568"/>
+      </testsuite>
+      <testsuite name="Test_Hooks" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-hooks.php" tests="2" assertions="12" errors="0" warnings="0" failures="0" skipped="0" time="0.011647">
+        <testcase name="testHooks" class="Test_Hooks" classname="Test_Hooks" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-hooks.php" line="43" assertions="4" time="0.005315"/>
+        <testcase name="testRegisteredHooks" class="Test_Hooks" classname="Test_Hooks" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-hooks.php" line="15" assertions="8" time="0.006332"/>
+      </testsuite>
+      <testsuite name="Test_Instrumentation" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-instrumentation.php" tests="2" assertions="4" errors="0" warnings="0" failures="0" skipped="0" time="0.007144">
+        <testcase name="testInstrumentationSegment" class="Test_Instrumentation" classname="Test_Instrumentation" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-instrumentation.php" line="29" assertions="1" time="0.004807"/>
+        <testcase name="testHooks" class="Test_Instrumentation" classname="Test_Instrumentation" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-instrumentation.php" line="22" assertions="3" time="0.002338"/>
+      </testsuite>
+      <testsuite name="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" tests="8" assertions="16" errors="0" warnings="0" failures="0" skipped="0" time="0.198157">
+        <testcase name="testcheckisobject" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="104" assertions="2" time="0.070188"/>
+        <testcase name="testWebhookConstants" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="29" assertions="8" time="0.002295"/>
+        <testcase name="testPaymentFailed" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="49" assertions="1" time="0.002425"/>
+        <testcase name="testsubscriptionCancelled" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="56" assertions="1" time="0.002094"/>
+        <testcase name="testsubscriptionPaused" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="63" assertions="1" time="0.002087"/>
+        <testcase name="testsubscriptionResumed" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="70" assertions="1" time="0.002232"/>
+        <testcase name="testshouldConsumWebhook" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="78" assertions="1" time="0.061017"/>
+        <testcase name="testgetOrderAmountAsInteger" class="Test_Webhook" classname="Test_Webhook" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-webhookinit.php" line="91" assertions="1" time="0.055819"/>
+      </testsuite>
+      <testsuite name="Test_Class_Objects" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-class-properties.php" tests="3" assertions="8" errors="0" warnings="0" failures="0" skipped="0" time="0.198093">
+        <testcase name="testPropertiesNotEmpty" class="Test_Class_Objects" classname="Test_Class_Objects" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-class-properties.php" line="31" assertions="6" time="0.006361"/>
+        <testcase name="testClassInstance" class="Test_Class_Objects" classname="Test_Class_Objects" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-class-properties.php" line="16" assertions="1" time="0.006930"/>
+        <testcase name="testRazorpayIcon" class="Test_Class_Objects" classname="Test_Class_Objects" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-class-properties.php" line="21" assertions="1" time="0.184802"/>
+      </testsuite>
+      <testsuite name="Test_Constants" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-constants.php" tests="1" assertions="14" errors="0" warnings="0" failures="0" skipped="0" time="0.006153">
+        <testcase name="testPluginConstants" class="Test_Constants" classname="Test_Constants" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-constants.php" line="15" assertions="14" time="0.006153"/>
+      </testsuite>
+      <testsuite name="Test_FormFields" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-formfields.php" tests="1" assertions="6" errors="0" warnings="0" failures="0" skipped="0" time="0.005615">
+        <testcase name="testformfields" class="Test_FormFields" classname="Test_FormFields" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-formfields.php" line="15" assertions="6" time="0.005615"/>
+      </testsuite>
+      <testsuite name="Test_Maigc_Api" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-magic-api.php" tests="1" assertions="5" errors="0" warnings="0" failures="0" skipped="0" time="0.002868">
+        <testcase name="testMagicApi" class="Test_Maigc_Api" classname="Test_Maigc_Api" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-magic-api.php" line="7" assertions="5" time="0.002868"/>
+      </testsuite>
+      <testsuite name="Test_Plugin_Metadata" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-metadata.php" tests="1" assertions="6" errors="0" warnings="0" failures="0" skipped="0" time="0.005324">
+        <testcase name="testMetadata" class="Test_Plugin_Metadata" classname="Test_Plugin_Metadata" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-metadata.php" line="8" assertions="6" time="0.005324"/>
+      </testsuite>
+      <testsuite name="Test_Class_Fuctions" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-methods.php" tests="6" assertions="10" errors="1" warnings="0" failures="0" skipped="0" time="0.044167">
+        <testcase name="testwebhookAPI" class="Test_Class_Fuctions" classname="Test_Class_Fuctions" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-methods.php" line="25" assertions="4" time="0.006615"/>
+        <testcase name="testrzpThankYouMessage" class="Test_Class_Fuctions" classname="Test_Class_Fuctions" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-methods.php" line="40" assertions="1" time="0.005868"/>
+        <testcase name="testWoocommerceAddRazorpayGateway" class="Test_Class_Fuctions" classname="Test_Class_Fuctions" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-methods.php" line="66" assertions="1" time="0.007253">
+          <error type="PHPUnit\Framework\UnintentionallyCoveredCodeError">Test_Class_Fuctions::testWoocommerceAddRazorpayGateway
+This test executed code that is not listed as code to be covered or used:
+- woocommerce_add_razorpay_gateway
+
+phpvfscomposer:///Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/vendor/phpunit/phpunit/phpunit:97</error>
+        </testcase>
+        <testcase name="testgetErrorMessage" class="Test_Class_Fuctions" classname="Test_Class_Fuctions" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-methods.php" line="45" assertions="3" time="0.006886"/>
+        <testcase name="testInvalidverifySignature" class="Test_Class_Fuctions" classname="Test_Class_Fuctions" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-methods.php" line="82" assertions="1" time="0.010873"/>
+        <testcase name="testverifySignature" class="Test_Class_Fuctions" classname="Test_Class_Fuctions" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-methods.php" line="71" assertions="0" time="0.006671"/>
+      </testsuite>
+      <testsuite name="Test_Scripts_Styles" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-scripts-styles.php" tests="1" assertions="4" errors="0" warnings="0" failures="0" skipped="0" time="0.005294">
+        <testcase name="testRegisteredScripts" class="Test_Scripts_Styles" classname="Test_Scripts_Styles" file="/Applications/MAMP/htdocs/wordpress/wp-content/plugins/razorpay_woocommerce/tests/phpunit/tests/test-scripts-styles.php" line="7" assertions="4" time="0.005294"/>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

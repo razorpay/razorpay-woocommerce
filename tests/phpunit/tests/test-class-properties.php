@@ -1,4 +1,7 @@
 <?php
+/**
+ * @covers \WC_Razorpay
+ */
 
 class Test_Class_Objects extends WP_UnitTestCase
 {

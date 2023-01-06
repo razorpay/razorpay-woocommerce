@@ -1,0 +1,6 @@
+projectKey=Woocommerce
+serverUrl=https://sonar.razorpay.com
+serverVersion=8.9.1.44547
+dashboardUrl=https://sonar.razorpay.com/dashboard?id=Woocommerce
+ceTaskId=AYWGuf1-KhIYwc1pUQQO
+ceTaskUrl=https://sonar.razorpay.com/api/ce/task?id=AYWGuf1-KhIYwc1pUQQO

@@ -1,4 +1,7 @@
 <?php
+/**
+ * @covers \WC_Razorpay
+ */
 
 require_once __DIR__ . '/../mockfactory/Request.php';
 require_once __DIR__ . '/../../../includes/plugin-instrumentation.php';
@@ -31,6 +34,6 @@ class Test_Instrumentation extends WP_UnitTestCase
             ['key' => 'value']
         );
 
-        $this->assertSame('success', $response['status']);
+        $this->assertSame('tested', $response['status']);
     }
 }

@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * @covers \WC_Razorpay
+ */
 class Test_Constants extends WP_UnitTestCase
 {
     public $razorpayTests;
