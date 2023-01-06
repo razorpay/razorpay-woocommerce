@@ -38,7 +38,7 @@ function createWcOrder(WP_REST_Request $request)
         return new WP_REST_Response($response, $statusCode);
     }
 
-    intiCartCommon();
+    initCartCommon();
 
     if (empty($params['pdpCheckout']) === false) {
         $variations = [];

@@ -304,8 +304,6 @@ function btnCheckout() {
             rzp1cc.setDisabled('btn-1cc-mini-cart');
             rzp1cc.setDisabled('btn-1cc-pdp');
 
-            console.time('checkout_render');
-
             if (body.pdpCheckout) {
                 rzp1cc
                     .makeRequest(rzp1cc.createCartApi, body)
@@ -486,10 +484,6 @@ function btnCheckout() {
                         rzp1cc.enableCheckoutButtons();
                     }, 25000),
                 },
-            });
-
-            razorpayCheckout.on('render', () => {
-                console.timeEnd('checkout_render');
             });
 
             razorpayCheckout.open();

@@ -51,7 +51,7 @@ function createCartData(WP_REST_Request $request)
     //Get Cart line Item
     $data = getCartLineItem();
     $cartTotal = WC()->cart->subtotal;
-    $response['cart'] = ['line_items' => $data, 'promotions' => $couponCode,  'total_price' => $cartTotal*100];
+    $response['cart'] = ['line_items' => $data, 'promotions' => $couponCode,  'total_price' => round($cartTotal*100)];
 
     $razorpay = new WC_Razorpay(false);
     $response["_"] = $razorpay->getVersionMetaInfo($response);
