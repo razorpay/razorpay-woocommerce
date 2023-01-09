@@ -20,5 +20,5 @@ jobs:
       with:
         projectBaseDir: razorpay_woocommerce
       env:
-        GITHUB_TOKEN: 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
-        SONAR_TOKEN: ef499e9eb8ab3238e186e2cffbb25fec14372949
+        GITHUB_TOKEN: #Your git token here
+        SONAR_TOKEN: #Your sonartoken here
