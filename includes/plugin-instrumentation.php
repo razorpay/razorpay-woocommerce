@@ -95,6 +95,8 @@ class TrackPluginInstrumentation
             {
                 error_log($response->get_error_message());
             }
+
+            return $response;
         }
         catch (\Razorpay\Api\Errors\Error $e)
         {
