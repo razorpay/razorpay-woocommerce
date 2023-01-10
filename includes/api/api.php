@@ -14,8 +14,6 @@ require_once __DIR__ . '/cart.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../state-map.php';
 require_once __DIR__ . '/save-abandonment-data.php';
-require_once __DIR__ . '/fetch-cart.php';
-require_once __DIR__ . '/create-cart.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
@@ -93,7 +91,7 @@ function rzp1ccInitRestApi()
 
      // cart data
     register_rest_route(
-        RZP_1CC_ROUTES_BASE,
+        RZP_1CC_ROUTES_BASE. '/cart',
         'fetch-cart',
         array(
             'methods'             => 'POST',
@@ -103,7 +101,7 @@ function rzp1ccInitRestApi()
     );
 
     register_rest_route(
-        RZP_1CC_ROUTES_BASE,
+        RZP_1CC_ROUTES_BASE. '/cart',
         'create-cart',
         array(
             'methods'             => 'POST',
@@ -150,59 +148,6 @@ function initCartCommon()
         WC()->cart = new WC_Cart();
     }
 
-}
-
-function getCartLineItem()
-{
-    $cart = WC()->cart->get_cart();
-    $i = 0;
-
-    foreach($cart as $item_id => $item) { 
-        $product =  wc_get_product( $item['product_id']); 
-        $price = round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100);
-
-
-       $data[$i]['type'] = "e-commerce";
-       $data[$i]['sku'] = $product->get_sku();
-       $data[$i]['quantity'] = $item['quantity'];
-       $data[$i]['name'] = mb_substr($product->get_title(), 0, 125, "UTF-8");
-       $data[$i]['description'] = mb_substr($product->get_title(), 0, 250,"UTF-8");
-       $productImage = $product->get_image_id()?? null;
-       $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
-       $data[$i]['product_url'] = $product->get_permalink();
-       $data[$i]['price'] = (empty($product->get_price())=== false) ? $price/$item['quantity'] : 0;
-       $data[$i]['variant_id'] = $item['variation_id'];
-       $data[$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $price/$item['quantity'];
-       $i++;
-    } 
-
-    return $data;
-}
-
-function getPrefillCartData($couponCode){
-
-    $currentUser = wp_get_current_user();
-
-    if ($currentUser instanceof WP_User) {
-        update_post_meta($orderId, '_customer_user', $current_user->ID);
-        $prefillData['email']   = $current_user->user_email ?? '';
-        $contact                        = get_user_meta($current_user->ID, 'billing_phone', true);
-        $prefillData['contact'] = $contact ? $contact : '';
-        $prefillData['coupon_code'] = $couponCode ? $couponCode : '';
-    }
-
-    return $prefillData;
-}
-
-function checkCartEmpty($logObj){
-    if (WC()->cart->get_cart_contents_count() == 0) {
-        $response = ['message' => 'Cart cannot be empty', 'code' => 'BAD_REQUEST_EMPTY_CART'];
-
-        $logObj = ['status_code' => 400 , 'response' => $response];
-        rzpLogError(json_encode($logObj));
-
-        return new WP_REST_Response($response, $statusCode);
-    }
 }
 
 add_action('setup_extra_setting_fields', 'addMagicCheckoutSettingFields');

@@ -74,7 +74,12 @@ function createWcOrder(WP_REST_Request $request)
      // check if cart is empty
     checkCartEmpty($logObj);
 
-    $cartHash        = $params['cookies']['woocommerce_cart_hash'];
+    $cartHash = $params['cookies']['woocommerce_cart_hash'];
+
+    if ($cartHash == null) {
+        $cartHash  = WC()->cart->get_cart_hash();
+    }
+
     $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
 
     if ($orderIdFromHash == null) {

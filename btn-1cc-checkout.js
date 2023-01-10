@@ -211,8 +211,8 @@ function btnCheckout() {
     var rzp1cc = {
         order_id: null, // order id is filled post order creation
         orderApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/order/create',
-        cartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/fetch-cart',
-        createCartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/create-cart',
+        cartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/cart/fetch-cart',
+        createCartApi: rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/cart/create-cart',
         saveAbandonedCartApi:
             rzp1ccCheckoutData.siteurl + '/wp-json/1cc/v1/abandoned-cart',
         makeRequest: function (url, body) {
