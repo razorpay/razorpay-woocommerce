@@ -1930,7 +1930,7 @@ EOT;
                                 $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                             }else{
                                 //Deduct amount of gift card
-                               $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt);
+                               $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftcard['code']);
                             }
 
                         }else{
