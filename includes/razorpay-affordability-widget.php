@@ -371,7 +371,7 @@ function getAffordabilityWidgetSettings()
                 'title'                 => __('Test Mode Enable/Disable'),
                 'type'                  => 'checkbox',
                 'desc'                  => __('Enable Test Mode?'),
-                'default'               => 'yes',
+                'default'               => 'no',
                 'id'                    => 'rzp_afd_enable_test_mode'
             ),
             'enable_offers' => array(
@@ -602,7 +602,7 @@ function isAffordabilityWidgetTestModeEnabled()
 {
     if (empty(get_option('rzp_afd_enable_test_mode')) === true)
     {
-        return true;
+        return false;
     }
     return (
         empty(get_option('rzp_afd_enable_test_mode')) === false and
