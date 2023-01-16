@@ -5,13 +5,82 @@ use Razorpay\Api\Errors;
 
 class TrackPluginInstrumentation
 {
-    public $api;
-    public $mode;
+    protected $api;
+    protected $mode;
 
-    public function __construct($key_id, $key_secret)
+    public function __construct($api, $key_id)
     {
-        $this->api = new Api($key_id, $key_secret);
+        $this->api = $api;
         $this->mode = (substr($key_id, 0, 8) === 'rzp_live') ? 'live' : 'test';
+
+        register_activation_hook(PLUGIN_MAIN_FILE, [$this, 'razorpayPluginActivated'], 10, 2);
+
+        register_deactivation_hook(PLUGIN_MAIN_FILE, [$this, 'razorpayPluginDeactivated'], 10, 2);
+        add_action('upgrader_process_complete', [$this, 'razorpayPluginUpgraded'], 10, 2);
+    }
+
+    function razorpayPluginActivated()
+    {
+        $activateProperties = [
+            'page_url'            => $_SERVER['HTTP_REFERER'],
+            'redirect_to_page'    => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']
+        ];
+
+        $response = $this->rzpTrackSegment('plugin activate', $activateProperties);
+
+        $this->rzpTrackDataLake('plugin activate', $activateProperties);
+    }
+
+    function razorpayPluginDeactivated()
+    {
+        global $wpdb;
+        $isTransactingUser = false;
+
+        $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+
+        $arrayPost = json_decode(json_encode($rzpTrancationData), true);
+
+        if (empty($arrayPost) === false and
+            ($arrayPost == null) === false)
+        {
+            $isTransactingUser = true;
+        }
+
+        $deactivateProperties = [
+            'page_url'            => $_SERVER['HTTP_REFERER'],
+            'is_transacting_user' => $isTransactingUser
+        ];
+
+        $response = $this->rzpTrackSegment('plugin deactivate', $deactivateProperties);
+
+        $this->rzpTrackDataLake('plugin deactivate', $deactivateProperties);
+    }
+
+    function razorpayPluginUpgraded()
+    {
+        $upgradeProperties = [
+            'page_url'            => $_SERVER['HTTP_REFERER'],
+            'prev_version'        => get_option('rzp_woocommerce_current_version'),
+            'new_version'         => get_plugin_data(__FILE__)['Version'],
+        ];
+
+        $response = $this->rzpTrackSegment('plugin upgrade', $upgradeProperties);
+
+        $this->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
+
+        if ($response['status'] === 'success')
+        {
+            $existingVersion = get_option('rzp_woocommerce_current_version');
+
+            if(isset($existingVersion))
+            {
+                update_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+            }
+            else
+            {
+                add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+            }
+        }
     }
 
     public function rzpTrackSegment($event, $properties)
@@ -89,7 +158,7 @@ class TrackPluginInstrumentation
                 ),
             ];
 
-            $response = wp_remote_post( 'https://lumberjack.razorpay.com/v1/track', $requestArgs);
+            $response = wp_remote_post( 'https://lumberjack.razorpay.com/v1/trac', $requestArgs);
 
             if (is_wp_error($response))
             {
@@ -129,4 +198,12 @@ class TrackPluginInstrumentation
 
         return $defaultProperties;
     }
+}
+
+$paymentSettings = get_option('woocommerce_razorpay_settings');
+if ($paymentSettings !== false)
+{
+    $api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
+
+    new TrackPluginInstrumentation($api, $paymentSettings['key_id']);
 }
