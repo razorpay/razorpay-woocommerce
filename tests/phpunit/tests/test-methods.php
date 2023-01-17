@@ -94,7 +94,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
 
         $this->instance->shouldReceive('autoEnableWebhook');
         $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($orderId)->andReturn('order_test');
-        $this->instance->shouldReceive('getRazorpayApiPlublicInstance')->andReturnUsing(function () {
+        $this->instance->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(function () {
             return new MockApi('key_id', '');
         });
 
