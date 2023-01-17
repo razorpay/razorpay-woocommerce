@@ -1195,6 +1195,7 @@ function woocommerce_razorpay_init()
             {
                 wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                     null, null);
+                $data = array($data);
             }
             else
             {
@@ -1457,6 +1458,11 @@ EOT;
             }
 
             return new Api($key, $secret);
+        }
+
+        public function getRazorpayApiPublicInstance()
+        {
+            return new Api($this->getSetting('key_id'), "");
         }
 
         public function getRazorpayApiPublicInstance()
