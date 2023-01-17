@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../mockfactory/MockApi.php';
 require_once __DIR__ . '/../mockfactory/Request.php';
+require_once __DIR__ . '/../mockfactory/Order.php';
 
 use Razorpay\MockApi\MockApi;
 use Razorpay\Api\Errors\SignatureVerificationError;
@@ -14,8 +15,8 @@ class Test_Class_Fuctions extends WP_UnitTestCase
     public function setup(): void
     {
         parent::setup();
-        $this->instance = Mockery::mock('WC_Razorpay')->makePartial();
         $this->rzpPaymentObj = new WC_Razorpay();
+        $this->instance = Mockery::mock('WC_Razorpay')->makePartial()->shouldAllowMockingProtectedMethods();
         $_POST = array();
     }
 
@@ -85,5 +86,104 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $_POST['razorpay_order_id'] = 'razorpay_order_id';
 
         $this->instance->verifySignature('orderId');
+    }
+
+    public function testCreateRazorpayOrderId()
+    {
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+
+        $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function () {
+            return new MockApi('key_id', 'key_secret');
+        });
+        $this->instance->shouldReceive('autoEnableWebhook');
+
+        $response = $this->instance->createOrGetRazorpayOrderId($orderId);
+        $this->assertStringContainsString('razorpay_test_id', $response);
+    }
+
+    public function testGetRazorpayOrderId()
+    {
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+
+        set_transient('razorpay_order_id' . (string) $orderId , 'razorpay_test_id', 18000);
+
+        $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function () {
+            return new MockApi('key_id', 'key_secret');
+        });
+        $this->instance->shouldReceive('autoEnableWebhook');
+
+        $response = $this->instance->createOrGetRazorpayOrderId($orderId);
+        $this->assertStringContainsString('razorpay_test_id', $response);
+    }
+
+    public function testGenerateRazorpayFormException()
+    {
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+
+        $this->instance->shouldReceive('getRazorpayPaymentParams')->andReturnUsing(function () {
+            throw new \Exception('RAZORPAY ERROR: unable to process payment parameters');
+        });
+        $response = $this->instance->generate_razorpay_form($orderId);
+        $this->assertSame('RAZORPAY ERROR: unable to process payment parameters', $response);
+    }
+
+    public function testGenerateOrderForm()
+    {
+        $mockObj = Mockery::mock('WC_Razorpay')->makePartial()->shouldAllowMockingProtectedMethods();
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+
+        $mockObj->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_1', '');
+            });
+
+        $input = [
+            "key" => "rzp_test",
+            "name" => "mysite",
+            "currency" => "INR",
+            "description" => "Order " . $orderId,
+            "notes" => [
+                "woocommerce_order_id" => $orderId,
+                "woocommerce_order_number" => $orderId
+            ],
+            "order_id" => "order_test",
+            "callback_url" => "http://localhost:8888/wordpress",
+            "prefill" => [
+                "name" => "test",
+                "email" => "testing@razorpay.com",
+                "contact" => "00000000000"
+            ],
+            "_" => [
+                "integration" => "woocommerce",
+                "integration_version" => "4.3.3",
+                "integration_parent_version" => "6.9.4"
+            ],
+            "cancel_url" => "http://127.0.0.1"
+        ];
+
+        $response = $mockObj->generateOrderForm($input);
+
+        $this->assertStringContainsString('<form method="POST" action="https://api.razorpay.com/v1/checkout/embedded" id="checkoutForm">', $response);
+        $this->assertStringContainsString('<input type="hidden" name="key_id" value="rzp_test">', $response);
+        $this->assertStringContainsString('<input type="hidden" name="order_id" value="order_test">', $response);
+        $this->assertStringContainsString('<input type="hidden" name="name" value="mysite">', $response);
+        $this->assertStringContainsString('<input type="hidden" name="description" value="Order '.$orderId.'">', $response);
+        $this->assertStringContainsString('<input type="hidden" name="image" value="image.png">', $response);
+        $this->assertStringContainsString('<input type="hidden" name="callback_url" value="http://localhost:8888/wordpress">', $response);
+        $this->assertStringContainsString('<input type="hidden" name="cancel_url" value="http://127.0.0.1">', $response);
+        $this->assertStringContainsString("<input type='hidden' name='notes[woocommerce_order_id]' value='$orderId'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='notes[woocommerce_order_number]' value='$orderId'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='prefill[name]' value='test'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='prefill[email]' value='testing@razorpay.com'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='prefill[contact]' value='00000000000'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='_[integration]' value='woocommerce'>", $response);
+        $this->assertStringContainsString("name='_[integration_version]'", $response);
+        $this->assertStringContainsString("name='_[integration_parent_version]'", $response);
+        $this->assertStringContainsString("<input type='hidden' name='_[integration_type]' value='plugin'>", $response);
+        $this->assertStringContainsString("</form>", $response);
     }
 }

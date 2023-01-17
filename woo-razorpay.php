@@ -1167,6 +1167,7 @@ function woocommerce_razorpay_init()
             {
                 wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                     null, null);
+                $data = array($data);
             }
             else
             {
@@ -1227,7 +1228,7 @@ function woocommerce_razorpay_init()
 
             $data['cancel_url'] = wc_get_checkout_url();
 
-            $api = new Api($this->getSetting('key_id'),"");
+            $api = $this->getRazorpayApiPublicInstance();
 
             $merchantPreferences = $api->request->request("GET", "preferences");
 
@@ -1365,6 +1366,11 @@ EOT;
         public function getRazorpayApiInstance()
         {
             return new Api($this->getSetting('key_id'), $this->getSetting('key_secret'));
+        }
+
+        public function getRazorpayApiPublicInstance()
+        {
+            return new Api($this->getSetting('key_id'), "");
         }
 
         /**
