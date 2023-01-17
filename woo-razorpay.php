@@ -1255,7 +1255,7 @@ function woocommerce_razorpay_init()
 
             $data['cancel_url'] = wc_get_checkout_url();
 
-            $api = new Api($this->getSetting('key_id'),"");
+            $api = $this->getRazorpayApiPlublicInstance();
 
             $merchantPreferences = $api->request->request("GET", "preferences");
 
@@ -1457,6 +1457,11 @@ EOT;
             }
 
             return new Api($key, $secret);
+        }
+
+        public function getRazorpayApiPlublicInstance()
+        {
+            return new Api($this->getSetting('key_id'), "");
         }
 
         /**

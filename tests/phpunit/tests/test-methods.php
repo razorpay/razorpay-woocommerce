@@ -86,4 +86,31 @@ class Test_Class_Fuctions extends WP_UnitTestCase
 
         $this->instance->verifySignature('orderId');
     }
+
+    public function testReceiptPage()
+    {
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+
+        $this->instance->shouldReceive('autoEnableWebhook');
+        $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($orderId)->andReturn('order_test');
+        $this->instance->shouldReceive('getRazorpayApiPlublicInstance')->andReturnUsing(function () {
+            return new MockApi('key_id', '');
+        });
+
+        ob_start();
+        $this->instance->receipt_page($orderId);
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString("Thank you for your order, please click the button below to pay with Razorpay.", $result );
+        $this->assertStringContainsString("<form name='razorpayform'", $result );
+        $this->assertStringContainsString('<input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">', $result );
+        $this->assertStringContainsString('<input type="hidden" name="razorpay_signature"  id="razorpay_signature" >', $result );
+        $this->assertStringContainsString('<input type="hidden" name="razorpay_wc_form_submit" value="1">', $result );
+        $this->assertStringContainsString('</form>', $result );
+        $this->assertStringContainsString('Please wait while we are processing your payment.', $result );
+        $this->assertStringContainsString('<button id="btn-razorpay">Pay Now</button>', $result );
+        $this->assertStringContainsString('<button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>', $result );
+    }
 }
