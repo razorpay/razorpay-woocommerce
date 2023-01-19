@@ -41,6 +41,7 @@ class RZP_Webhook
     const VIRTUAL_ACCOUNT_CREDITED = 'virtual_account.credited';
     const SUBSCRIPTION_PAUSED      = 'subscription.paused';
     const SUBSCRIPTION_RESUMED     = 'subscription.resumed';
+    const SUBSCRIPTION_CHARGED     = 'subscription.charged';
 
     protected $eventsArray = [
         self::PAYMENT_AUTHORIZED,
@@ -51,6 +52,7 @@ class RZP_Webhook
         self::SUBSCRIPTION_CANCELLED,
         self::SUBSCRIPTION_PAUSED,
         self::SUBSCRIPTION_RESUMED,
+        self::SUBSCRIPTION_CHARGED,
     ];
 
     public function __construct()
@@ -145,7 +147,7 @@ class RZP_Webhook
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
-    
+
                 error_log("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
@@ -174,6 +176,9 @@ class RZP_Webhook
 
                     case self::SUBSCRIPTION_RESUMED:
                         return $this->subscriptionResumed($data);
+
+                    case self::SUBSCRIPTION_CHARGED:
+                        return $this->subscriptionCharged($data);
 
                     default:
                         return;
@@ -219,6 +224,15 @@ class RZP_Webhook
     }
 
     /**
+     * Handling next subscription charged webhook
+     * @param array $data Webook Data
+     */
+    protected function subscriptionCharged(array $data)
+    {
+        return;
+    }
+
+    /**
      * Handling the payment authorized webhook
      *
      * @param array $data Webook Data
@@ -245,7 +259,9 @@ class RZP_Webhook
         rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
 
         // If it is already marked as paid, ignore the event
-        if ($orderStatus != 'draft' && $order->needs_payment() === false) {
+        if ($orderStatus != 'draft' and
+            ($order->needs_payment() === false and
+                ($orderStatus === 'cancelled') === false)) {
             rzpLogInfo("Woocommerce orderId: $orderId webhook process exited with need payment status :" . $order->needs_payment());
 
             return;
