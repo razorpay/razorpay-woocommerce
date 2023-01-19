@@ -196,6 +196,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
 {
 
     $response = array();
+    $order   = wc_get_order($orderId);
 
     if (isset($vendorId)) {
         foreach ($vendorId as $id) {
@@ -224,7 +225,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
     }
     // we only consider the lowest shipping fee
     array_multisort($price, SORT_ASC, $response);
-
+   
     if (!empty($vendorId)) {
         foreach ($response as $key => $row) {
             $response['shipping_fee'] += isset($response[$key]['price']) ? $response[$key]['price'] : 0;
@@ -234,6 +235,15 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
         $response['shipping_fee']     = isset($response[0]['price']) ? $response[0]['price'] : 0;
         $response['shipping_fee_tax'] = !empty($response[0]['taxes']) ? 0 : 0; //By default tax is considered as zero.
     }
+
+    // check shipping fee for gift card product
+    if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
+        if(giftCardProduct($order)){
+          $response['shipping_fee'] = 0;
+        }
+    }
+    
+
     $response['cod'] = isset($response[0]['cod']) ? $response[0]['cod'] : false;
 
     return $response;
@@ -285,7 +295,6 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $rzpO
         return false;
     }
 
-    $order  = wc_get_order($orderId);
     $amount = floatval($order->get_total());
 
     //To verify the min order amount required to place COD order
@@ -326,6 +335,37 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $rzpO
         }
     }
     return false;
+}
+
+function giftCardProduct($order){
+    $items = $order->get_items();
+
+    $giftProductCount = 0;
+    $cartCount  = 0;
+    foreach ($order->get_items() as $itemId => $item)  {
+        $cartCount++;
+        $product = $item->get_product();
+
+        if($product->is_type('variation')){
+             $parentProductId = $product->get_parent_id();
+             $parentProduct = wc_get_product($parentProductId);
+             
+            if($parentProduct->get_type() == 'pw-gift-card' || $parentProduct->get_type() == 'gift-card'){
+                $giftProductCount++;
+            }
+       }else{
+            if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
+                $giftProductCount++;
+            }
+             
+       }
+    }
+
+    if($giftProductCount == $cartCount){
+        return true;
+    }
+
+  return false;
 }
 
 /**
