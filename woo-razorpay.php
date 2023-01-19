@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.3.5
- * Stable tag: 4.3.5
+ * Version: 4.3.6
+ * Stable tag: 4.3.6
  * Author: Team Razorpay
  * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
@@ -1149,7 +1149,7 @@ function woocommerce_razorpay_init()
                    if($product->is_type('variation')){
                         $parentProductId = $product->get_parent_id();
                         $parentProduct = wc_get_product($parentProductId);
-                     
+
                         if($parentProduct->get_type() == 'pw-gift-card' || $parentProduct->get_type() == 'gift-card'){
                             $type = 'gift_card';
                         }
@@ -1157,7 +1157,7 @@ function woocommerce_razorpay_init()
                    }else{
 
                        if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
-                              $type = 'gift_card'; 
+                              $type = 'gift_card';
                        }
                    }
 
@@ -1801,7 +1801,7 @@ EOT;
             }
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
-            
+
             $this->UpdateOrderAddress($razorpayData, $order);
 
             $gstNo             = $razorpayData['notes']['gstin']??'';
@@ -2009,7 +2009,7 @@ EOT;
                             wc_add_order_item_meta( $itemId, '_line_total', -$usedAmt );
 
                             $order->add_order_note( sprintf( esc_html__( 'Order paid with gift cards for a total amount of %s.', 'yith-woocommerce-gift-cards' ), wc_price( $usedAmt ) ) );
-                            
+
                             $orderTotal = $order->get_total() - $usedAmt;
                             $order->set_total($orderTotal);
                             $order->save();
@@ -2021,7 +2021,7 @@ EOT;
                         $result = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s", $promotion['code'] ) );
                         if($result != null){
                             $balance = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM {$wpdb->pimwick_gift_card_activity} WHERE pimwick_gift_card_id = %d", $result->pimwick_gift_card_id ) );
-                            
+
                             if($balance == null && $balance >= 0 && $usedAmt > $balance ){
                                 // initiate refund in case gift card faliure
                                 $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
@@ -2037,7 +2037,7 @@ EOT;
                     }else{
                        $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                     }
-                    
+
                 }else{
 
                     $couponKey = $promotion['code'];
@@ -2066,7 +2066,7 @@ EOT;
                         rzpLogInfo("Coupon details updated for orderId: $orderId");
                     }
                 }
-                
+
             }
         }
 
@@ -2074,7 +2074,7 @@ EOT;
 
             global $woocommerce;
             global $wpdb;
-           
+
             if ( ! is_a( $order, 'WC_Order' ) ) {
                 return;
             }
@@ -2095,7 +2095,7 @@ EOT;
 
             foreach( $order->get_items( 'pw_gift_card' ) as $order_item_id => $line ) {
                 $gift_card = new PW_Gift_Card( $giftCardNo );
-                
+
                 if ( $gift_card->get_id() ) {
                     if ( !$line->meta_exists( '_pw_gift_card_debited' ) ) {
                         if ( $line->get_amount() != 0 ) {
