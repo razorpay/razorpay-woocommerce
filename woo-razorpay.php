@@ -355,7 +355,8 @@ function woocommerce_razorpay_init()
                     update_option('rzp_afd_enable', 'no');
                     foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
-                        if ($preference['name'] === 'affordability_widget')
+                        if ($preference['name'] === 'affordability_widget' or
+                            $preference['name'] === 'affordability_widget_set')
                         {
                             add_action('woocommerce_sections_checkout', 'addSubSection');
                             add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
@@ -2483,7 +2484,8 @@ EOT;
                     update_option('rzp_afd_enable', 'no');
                     foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
-                        if ($preference['name'] === 'affordability_widget')
+                        if ($preference['name'] === 'affordability_widget' or
+                            $preference['name'] === 'affordability_widget_set')
                         {
                             update_option('rzp_afd_enable', 'yes');
                             break;
