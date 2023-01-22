@@ -397,6 +397,7 @@ function woocommerce_razorpay_init()
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
+
             $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
             $this->update_option('webhook_secret', $secret);
