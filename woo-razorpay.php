@@ -390,7 +390,7 @@ function woocommerce_razorpay_init()
             $enabled     = true;
             $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
-            $this->update_option('webhook_secret', $secret);
+            update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
 

@@ -16,7 +16,7 @@ class Test_AutoWebhook extends WP_UnitTestCase
     public function testEmptyKeyAndSecretValidation()
     {
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
-            if ($key == 'key_id')
+            if ($key === 'key_id')
             {
                 return null;
             }
@@ -37,7 +37,7 @@ class Test_AutoWebhook extends WP_UnitTestCase
     public function testInvalidKeyAndSecretValidation()
     {
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
-            if ($key == 'key_id')
+            if ($key === 'key_id')
             {
                 return 'key_id';
             }
@@ -48,7 +48,7 @@ class Test_AutoWebhook extends WP_UnitTestCase
         });
 
         $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function () {
-            return new MockApi('invalid_key_id', 'invalid_key_secret');
+            throw new \Exception('error');
         });
 
         ob_start();
@@ -62,7 +62,7 @@ class Test_AutoWebhook extends WP_UnitTestCase
     public function testWebhookFailedForLocalhost()
     {
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
-            if ($key == 'key_id')
+            if ($key === 'key_id')
             {
                 return 'key_id';
             }
@@ -87,7 +87,7 @@ class Test_AutoWebhook extends WP_UnitTestCase
     public function testAutoCreateWebhook()
     {
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
-            if ($key == 'key_id')
+            if ($key === 'key_id')
             {
                 return 'key_id';
             }
@@ -117,7 +117,7 @@ class Test_AutoWebhook extends WP_UnitTestCase
     public function testAutoUpdateWebhook()
     {
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
-            if ($key == 'key_id')
+            if ($key === 'key_id')
             {
                 return 'key_id_1';
             }
