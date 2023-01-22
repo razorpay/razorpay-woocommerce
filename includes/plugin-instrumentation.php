@@ -5,6 +5,7 @@ use Razorpay\Api\Errors;
 
 class TrackPluginInstrumentation
 {
+<<<<<<< HEAD
     public $api;
     public $mode;
 
@@ -95,6 +96,13 @@ class TrackPluginInstrumentation
             {
                 error_log($response->get_error_message());
             }
+=======
+    public function rzpTrackSegment($properties)
+    {
+        try
+        {
+
+>>>>>>> 8d339db (segment and datalake push data skeleton)
         }
         catch (\Razorpay\Api\Errors\Error $e)
         {
@@ -106,6 +114,7 @@ class TrackPluginInstrumentation
         }
     }
 
+<<<<<<< HEAD
     public function getDefaultProperties($timestamp = true)
     {
         global $wp_version;
@@ -126,5 +135,21 @@ class TrackPluginInstrumentation
         }
 
         return $defaultProperties;
+=======
+    public function rzpTrackDataLake($properties)
+    {
+        try
+        {
+
+        }
+        catch (\Razorpay\Api\Errors\Error $e)
+        {
+            error_log($e->getMessage());
+        }
+        catch (\Exception $e)
+        {
+            error_log($e->getMessage());
+        }
+>>>>>>> 8d339db (segment and datalake push data skeleton)
     }
 }
