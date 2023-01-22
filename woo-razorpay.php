@@ -1482,7 +1482,7 @@ EOT;
 
             if (!empty($arrayPost) and
                 $arrayPost != null)
-            {
+
                 $orderId = $postMetaData->post_id;
 
                 if ($postData->post_status === 'draft')
