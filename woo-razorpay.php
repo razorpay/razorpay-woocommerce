@@ -857,6 +857,7 @@ function woocommerce_razorpay_init()
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
+
             if (empty($getWebhookFlag) == false)
             {
                 if ($getWebhookFlag + 86400 < time())
