@@ -174,7 +174,7 @@ function woocommerce_razorpay_init()
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
-            $isDualCheckoutEnabled = true;
+            $isDualCheckoutEnabled = false;
 
             // Load preference API call only for administrative interface page.
             if (is_admin())
@@ -2551,7 +2551,7 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-    //wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
+
     $themeInfo=styleHandler(wp_get_theme()->name);
     wp_register_style(RZP_1CC_CSS_SCRIPT,$themeInfo, null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
