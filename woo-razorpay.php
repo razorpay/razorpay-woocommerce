@@ -375,17 +375,22 @@ function woocommerce_razorpay_init()
             }
         }
 
+        protected function getWebhookUrl()
+        {
+            return esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
+        }
+
         public function autoEnableWebhook()
         {
             $webhookExist = false;
-            $webhookUrl   = esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
+            $webhookUrl   = $this->getWebhookUrl();
 
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
             $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
 
-            $this->update_option('webhook_secret', $secret);
+            update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
 
@@ -519,12 +524,12 @@ function woocommerce_razorpay_init()
             if ($webhookExist)
             {
                 rzpLogInfo('Updating razorpay webhook');
-                $this->webhookAPI('PUT', "webhooks/".$webhookId, $data);
+                return $this->webhookAPI('PUT', "webhooks/" . $webhookId, $data);
             }
             else
             {
                 rzpLogInfo('Creating razorpay webhook');
-                $this->webhookAPI('POST', "webhooks/", $data);
+                return $this->webhookAPI('POST', "webhooks/", $data);
             }
 
         }
