@@ -2336,7 +2336,7 @@ EOT;
             );
         }
 
-        protected function handleErrorCase(& $order)
+        protected function handleErrorCase($order)
         {
             $orderId = $order->get_order_number();
             rzpLogInfo('handleErrorCase');
