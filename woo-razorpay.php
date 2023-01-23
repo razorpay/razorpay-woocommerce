@@ -27,6 +27,7 @@ require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
+require_once __DIR__.'/includes/stylehandler.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -2550,7 +2551,9 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-    wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
+    //wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
+    $themeInfo=styleHandler(wp_get_theme()->name);
+    wp_register_style(RZP_1CC_CSS_SCRIPT,$themeInfo, null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
     wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
@@ -2586,11 +2589,9 @@ function addCheckoutButton()
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-        //$tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
         load_template( $tempTest, false, array() );
       }
     } else {
-      //$tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
   }
@@ -2622,20 +2623,14 @@ function addMiniCheckoutButton()
 {
     add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
 
-    if (isDualMiniCartCheckoutEnabled()){
-        $tempTest = RZP_PATH . 'templates/rzp-dual-mini-checkout-btn.php';
-    } else {
-        $tempTest = RZP_PATH . 'templates/rzp-dual-mini-checkout-btn.php';
-    }
-
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-        //$tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
+        $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
         load_template( $tempTest, false, array() );
       }
     } else {
-      //$tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
+      $tempTest = RZP_PATH . 'templates/rzp-mini-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
 
