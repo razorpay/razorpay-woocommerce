@@ -136,8 +136,28 @@ function getCartLineItem()
         $product =  wc_get_product( $item['product_id']); 
         $price = round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100);
 
+        $type = "e-commerce";
 
-       $data[$i]['type'] = "e-commerce";
+       // check product type for gift card plugin
+       if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
+            $productDetails = $product->get_data();
+           if($product->is_type('variation')){
+                $parentProductId = $product->get_parent_id();
+                $parentProduct = wc_get_product($parentProductId);
+             
+                if($parentProduct->get_type() == 'pw-gift-card' || $parentProduct->get_type() == 'gift-card'){
+                    $type = 'gift_card';
+                }
+
+           }else{
+
+               if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
+                      $type = 'gift_card'; 
+               }
+           }
+       }
+
+       $data[$i]['type'] = $type;
        $data[$i]['sku'] = $product->get_sku();
        $data[$i]['quantity'] = $item['quantity'];
        $data[$i]['name'] = mb_substr($product->get_title(), 0, 125, "UTF-8");
