@@ -27,9 +27,9 @@ class Test_Instrumentation extends WP_UnitTestCase
 
     public function testHooks()
     {
-        $this->assertSame(10, has_action('activate_' . basename(PLUGIN_DIR) .'/woo-razorpay.php',
+        $this->assertSame(10, has_action('activate_' . basename(PLUGIN_DIR) . '/woo-razorpay.php',
             [$this->rzpInstrumentationObj, 'razorpayPluginActivated']));
-        $this->assertSame(10, has_action('deactivate_' . basename(PLUGIN_DIR) .'/woo-razorpay.php',
+        $this->assertSame(10, has_action('deactivate_' . basename(PLUGIN_DIR) . '/woo-razorpay.php',
             [$this->rzpInstrumentationObj, 'razorpayPluginDeactivated']));
         $this->assertSame(10, has_action('upgrader_process_complete',
             [$this->rzpInstrumentationObj, 'razorpayPluginUpgraded']));
@@ -157,7 +157,7 @@ class Test_Instrumentation extends WP_UnitTestCase
     public function testInstrumentationDataLake()
     {
         $response = $this->instrumentationMock->rzpTrackDataLake('testing', ['key' => 'value']);
-        $this->assertSame(404, $response['response']['code']);
+        $this->assertSame(200, $response['response']['code']);
     }
 
     public function testGetDefaultPropertiesWithTimeStamp()

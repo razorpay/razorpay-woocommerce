@@ -14,7 +14,6 @@ class TrackPluginInstrumentation
         $this->mode = (substr($key_id, 0, 8) === 'rzp_live') ? 'live' : 'test';
 
         register_activation_hook(PLUGIN_MAIN_FILE, [$this, 'razorpayPluginActivated'], 10, 2);
-
         register_deactivation_hook(PLUGIN_MAIN_FILE, [$this, 'razorpayPluginDeactivated'], 10, 2);
         add_action('upgrader_process_complete', [$this, 'razorpayPluginUpgraded'], 10, 2);
     }
@@ -23,7 +22,7 @@ class TrackPluginInstrumentation
     {
         $activateProperties = [
             'page_url'            => $_SERVER['HTTP_REFERER'],
-            'redirect_to_page'    => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']
+            'redirect_to_page'    => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']
         ];
 
         $response = $this->rzpTrackSegment('plugin activate', $activateProperties);
@@ -158,7 +157,7 @@ class TrackPluginInstrumentation
                 ),
             ];
 
-            $response = wp_remote_post( 'https://lumberjack.razorpay.com/v1/trac', $requestArgs);
+            $response = wp_remote_post('https://lumberjack.razorpay.com/v1/track', $requestArgs);
 
             if (is_wp_error($response))
             {
