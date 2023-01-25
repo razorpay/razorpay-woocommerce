@@ -28,6 +28,7 @@ function calculateShipping1cc(WP_REST_Request $request)
     $cartResponse = false;
     $orderId      = (int) sanitize_text_field($params['order_id']);
     $addresses    = $params['addresses'];
+    $rzpOrderId   = sanitize_text_field($params['razorpay_order_id']);
 
     initCustomerSessionAndCart();
     // Cleanup cart.
@@ -50,7 +51,7 @@ function calculateShipping1cc(WP_REST_Request $request)
         }
 
         if ($customerResponse) {
-            $response[] = shippingCalculatePackages1cc($address['id'], $orderId, $address);
+            $response[] = shippingCalculatePackages1cc($address['id'], $orderId, $address, $rzpOrderId);
         } else {
             $response['failure_reason'] = 'Set customer shipping information failed';
             $response['failure_code']   = 'VALIDATION_ERROR';
@@ -106,7 +107,7 @@ function shippingUpdateCustomerInformation1cc($params)
  *
  * @return mixed
  */
-function shippingCalculatePackages1cc($id, $orderId, $address)
+function shippingCalculatePackages1cc($id, $orderId, $address, $rzpOrderId)
 {
     // Get packages for the cart.
     $packages = WC()->cart->get_shipping_packages();
@@ -143,7 +144,7 @@ function shippingCalculatePackages1cc($id, $orderId, $address)
     }
     $calculatedPackages = wc()->shipping()->calculate_shipping($packages);
 
-    return getItemResponse1cc($calculatedPackages, $id, $vendorId, $orderId, $address);
+    return getItemResponse1cc($calculatedPackages, $id, $vendorId, $orderId, $address, $rzpOrderId);
 }
 
 /**
@@ -152,7 +153,7 @@ function shippingCalculatePackages1cc($id, $orderId, $address)
  * @param array $package WooCommerce shipping packages.
  * @return array
  */
-function getItemResponse1cc($package, $id, $vendorId, $orderId, $address)
+function getItemResponse1cc($package, $id, $vendorId, $orderId, $address, $rzpOrderId)
 {
 
     // Add product names and quantities.
@@ -168,7 +169,7 @@ function getItemResponse1cc($package, $id, $vendorId, $orderId, $address)
         }
     }
 
-    $shippingResponse = prepareRatesResponse1cc($package, $vendorId, $orderId, $address);
+    $shippingResponse = prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOrderId);
 
     $isServiceable = count($shippingResponse) > 0 ? true : false;
     // TODO: also return 'state'?
@@ -191,23 +192,24 @@ function getItemResponse1cc($package, $id, $vendorId, $orderId, $address)
  * @param array $package Shipping package complete with rates from WooCommerce.
  * @return array
  */
-function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
+function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOrderId)
 {
 
     $response = array();
+    $order   = wc_get_order($orderId);
 
     if (isset($vendorId)) {
         foreach ($vendorId as $id) {
             $rates = $package[$id]['rates'];
             foreach ($rates as $rate) {
-                $response[] = getRateResponse1cc($rate, $id, $orderId, $address);
+                $response[] = getRateResponse1cc($rate, $id, $orderId, $address, $rzpOrderId);
             }
         }
     }
 
     $rates = $package[0]['rates'];
     foreach ($rates as $val) {
-        $response[] = getRateResponse1cc($val, "", $orderId, $address);
+        $response[] = getRateResponse1cc($val, "", $orderId, $address, $rzpOrderId);
     }
 
     if (empty($response) === true) {
@@ -223,7 +225,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
     }
     // we only consider the lowest shipping fee
     array_multisort($price, SORT_ASC, $response);
-
+   
     if (!empty($vendorId)) {
         foreach ($response as $key => $row) {
             $response['shipping_fee'] += isset($response[$key]['price']) ? $response[$key]['price'] : 0;
@@ -233,6 +235,15 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
         $response['shipping_fee']     = isset($response[0]['price']) ? $response[0]['price'] : 0;
         $response['shipping_fee_tax'] = !empty($response[0]['taxes']) ? 0 : 0; //By default tax is considered as zero.
     }
+
+    // check shipping fee for gift card product
+    if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
+        if(giftCardProduct($order)){
+          $response['shipping_fee'] = 0;
+        }
+    }
+    
+
     $response['cod'] = isset($response[0]['cod']) ? $response[0]['cod'] : false;
 
     return $response;
@@ -245,7 +256,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address)
  * @return array
  */
 
-function getRateResponse1cc($rate, $vendorId, $orderId, $address)
+function getRateResponse1cc($rate, $vendorId, $orderId, $address, $rzpOrderId)
 {
 
     return array_merge(
@@ -260,7 +271,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId, $address)
             'method_id'     => getRateProp1cc($rate, 'method_id'),
             'meta_data'     => getRateMetaData1cc($rate),
             'vendor_id'     => $vendorId,
-            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId, $address),
+            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId, $address, $rzpOrderId),
         ),
         getStoreCurrencyResponse1cc()
     );
@@ -271,9 +282,8 @@ function getRateResponse1cc($rate, $vendorId, $orderId, $address)
  *
  * @returns bool
  */
-function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
+function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $rzpOrderId)
 {
-
     global $woocommerce;
 
     $availablePaymentMethods = WC()->payment_gateways->payment_gateways();
@@ -285,7 +295,6 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
         return false;
     }
 
-    $order  = wc_get_order($orderId);
     $amount = floatval($order->get_total());
 
     //To verify the min order amount required to place COD order
@@ -301,6 +310,11 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
     //product and product catgaroy restriction for smart COD plugin
     if (class_exists('Wc_Smart_Cod')) {
         return smartCodRestriction($address, $order);
+    }
+
+    // Restrict shipping and payment
+    if(is_plugin_active('woocommerce-conditional-shipping-and-payments/woocommerce-conditional-shipping-and-payments.php')){
+        return restictPaymentGetway($rzpOrderId);
     }
 
     if (isset($availablePaymentMethods['cod'])) {
@@ -321,6 +335,37 @@ function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address)
         }
     }
     return false;
+}
+
+function giftCardProduct($order){
+    $items = $order->get_items();
+
+    $giftProductCount = 0;
+    $cartCount  = 0;
+    foreach ($order->get_items() as $itemId => $item)  {
+        $cartCount++;
+        $product = $item->get_product();
+
+        if($product->is_type('variation')){
+             $parentProductId = $product->get_parent_id();
+             $parentProduct = wc_get_product($parentProductId);
+             
+            if($parentProduct->get_type() == 'pw-gift-card' || $parentProduct->get_type() == 'gift-card'){
+                $giftProductCount++;
+            }
+       }else{
+            if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
+                $giftProductCount++;
+            }
+             
+       }
+    }
+
+    if($giftProductCount == $cartCount){
+        return true;
+    }
+
+  return false;
 }
 
 /**
@@ -591,6 +636,51 @@ function smartCodRestriction($addresses, $order)
     }
 
     return true;
+}
+
+
+function restictPaymentGetway($rzpOrderId){
+
+    // fetch coupon detail from rzp object
+    $razorpay = new WC_Razorpay(false);
+    $api      = $razorpay->getRazorpayApiInstance();
+
+    try
+    {
+        $razorpayData = $api->order->fetch($rzpOrderId);
+
+    } catch (Exception $e) {
+
+        return true;
+    }
+
+    foreach($razorpayData['promotions'] as $promotion)
+    {
+        if($promotion['type'] != 'gift_card'){
+            $couponCode = $promotion['code'];
+        }
+    }
+
+    if(empty($couponCode) === false) {
+
+        $globalRes = new WC_CSP_Restrict_Payment_Gateways();
+        $globalRestrictionData = $globalRes->get_global_restriction_data();
+
+        if(in_array('cod', $globalRestrictionData[0]['gateways'])) {
+            foreach($globalRestrictionData[0]['conditions'] as $conditionData) {
+
+                if($conditionData['condition_id'] == 'coupon_code_used') {
+                    if(in_array($couponCode,$conditionData['value'])) {
+                        return false;
+                    }
+                    
+                }
+            }
+                
+        }
+    }
+    
+    return true; 
 }
 
 /**

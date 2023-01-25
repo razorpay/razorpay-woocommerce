@@ -5,8 +5,8 @@ use Razorpay\Api\Errors;
 
 class TrackPluginInstrumentation
 {
-    protected $api;
-    protected $mode;
+    public $api;
+    public $mode;
 
     public function __construct($key_id, $key_secret)
     {
