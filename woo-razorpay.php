@@ -2328,6 +2328,7 @@ function razorpay_webhook_init()
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
 define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js');
+define('BTN_CHECKOUTJS_URL', 'https://cdn.razorpay.com/static/wooc/magic-rzp.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
 
@@ -2353,7 +2354,7 @@ function enqueueScriptsFor1cc()
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
-    wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
+    wp_register_script('btn_1cc_checkout', BTN_CHECKOUTJS_URL, null, null);
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
       'nonce' => wp_create_nonce("wp_rest"),
       'siteurl' => $siteurl,
