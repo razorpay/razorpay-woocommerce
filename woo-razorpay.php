@@ -443,7 +443,6 @@ function woocommerce_razorpay_init()
 
             if (!filter_var($domain_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))
             {
-
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Could not enable webhook for localhost server.'); ?><b></p>
@@ -2386,7 +2385,7 @@ EOT;
          * @param $data
          * @return array
          */
-        public function getVersionMetaInfo($data)
+        public function getVersionMetaInfo($data = array())
         {
             if (isset($data['subscription_id']) && isset($data['recurring'])) {
                 $pluginRoot = WP_PLUGIN_DIR . '/razorpay-subscriptions-for-woocommerce';
@@ -2525,6 +2524,7 @@ function razorpay_webhook_init()
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
 define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js');
+define('BTN_CHECKOUTJS_URL', 'https://cdn.razorpay.com/static/wooc/magic-rzp.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
 
@@ -2541,12 +2541,16 @@ function enqueueScriptsFor1cc()
         $siteurl = str_replace('http://', 'https://', $siteurl);
     }
 
+    wp_register_script( '1cc_razorpay_config', '' );
+    wp_enqueue_script( '1cc_razorpay_config' );
+    wp_add_inline_script( '1cc_razorpay_config', '!function(){var o=document.querySelector("meta[name=rzp_merchant_key]");o&&(window.Razorpay||(window.Razorpay={}),"object"==typeof window.Razorpay&&(window.Razorpay.config||(window.Razorpay.config={}),window.Razorpay.config.merchant_key=o.getAttribute("value")))}();');
+
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
-    wp_register_script('btn_1cc_checkout', plugin_dir_url(__FILE__)  . 'btn-1cc-checkout.js', null, null);
+    wp_register_script('btn_1cc_checkout', BTN_CHECKOUTJS_URL, null, null);
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
       'nonce' => wp_create_nonce("wp_rest"),
       'siteurl' => $siteurl,
@@ -2561,6 +2565,7 @@ function enqueueScriptsFor1cc()
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 
 if(isRazorpayPluginEnabled() && is1ccEnabled()) {
+   add_action('wp_head', 'injectMerchantKeyMeta', 1);
    add_action('wp_head', 'addRzpSpinner');
 }
 
@@ -2624,6 +2629,10 @@ function addMiniCheckoutButton()
 if(isRazorpayPluginEnabled() && is1ccEnabled() && isPdpCheckoutEnabled())
 {
     add_action( 'woocommerce_after_add_to_cart_button', 'addPdpCheckoutButton');
+}
+
+function injectMerchantKeyMeta(){
+  echo "<meta name='rzp_merchant_key' value=" . get_option('woocommerce_razorpay_settings')['key_id'] . ">";
 }
 
 function addRzpSpinner()
