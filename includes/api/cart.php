@@ -194,7 +194,7 @@ function checkCartEmpty($logObj){
         $response = ['message' => 'Cart cannot be empty', 'code' => 'BAD_REQUEST_EMPTY_CART'];
 
         $logObj['status_code'] = 400;
-        $logObj['response'] = $response
+        $logObj['response'] = $response;
 
         rzpLogError(json_encode($logObj));
 
