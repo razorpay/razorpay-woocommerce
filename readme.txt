@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 6.1.1
-Stable tag: 4.3.5
+Stable tag: 4.3.6
 Requires PHP: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,16 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 4.3.6 =
+* Bug fix, razorpay routes calling private function.
+* Changed, default mode set to live for affordability widget.
+* Disable coupon feature for dynamic price plugin.
+* Fixed product category smart cod issue.
+* Conditional and shipping plugin coupon restriction.
+* Support for yith abandoned recovery plugin.
+* Support gift card for pw and yith gift card.
+* Support for Caddy and Xootix sidecarts.
 
 = 4.3.5 =
 * Fixed, multiple webhook API calls.
