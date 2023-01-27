@@ -32,13 +32,13 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $cart = $woocommerce->cart;
 
-        $woocommerce->cart->add_to_cart(14,25);
+        $woocommerce->cart->add_to_cart(14, 25);
 
         $order->set_payment_method('cod');
 
         $this->instance->updateOrder($order, true, "", 'razorpay_order_id');
 
-        $this->assertSame('processing', $order->get_status() );
+        $this->assertSame('processing', $order->get_status());
 
         $this->instance->updateOrder($order, false, "Error message", 'razorpay_order_id');
 
@@ -123,6 +123,6 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $this->assertSame($msg['message'], $actual);
 
-        $this->assertSame($msg['class'],'error');
+        $this->assertSame($msg['class'], 'error');
     }
 }
