@@ -26,6 +26,8 @@ class Test_OrderMethods extends WP_UnitTestCase
 
     public function testgetRazorpayPaymentParams()
     {    
+        global $woocommerce;
+        
         $order = wc_create_order();
 
         $wcOrderId = $order->get_id();
