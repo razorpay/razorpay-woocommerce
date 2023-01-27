@@ -218,7 +218,7 @@ function cartResponse($couponCode){
     $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
     $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
     
-    $response = ['redirect' => true, 'one_click_checkout' => true, 'mandatory_login' => false, 'key' => get_option('woocommerce_razorpay_settings')['key_id'], 'name' => html_entity_decode(get_bloginfo('name'), ENT_QUOTES), 'currency' => 'INR'];
+    $response += ['redirect' => true, 'one_click_checkout' => true, 'mandatory_login' => false, 'key' => get_option('woocommerce_razorpay_settings')['key_id'], 'name' => html_entity_decode(get_bloginfo('name'), ENT_QUOTES), 'currency' => 'INR'];
 
     return $response;
 }
