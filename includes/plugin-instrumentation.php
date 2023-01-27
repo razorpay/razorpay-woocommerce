@@ -28,6 +28,8 @@ class TrackPluginInstrumentation
         $response = $this->rzpTrackSegment('plugin activate', $activateProperties);
 
         $this->rzpTrackDataLake('plugin activate', $activateProperties);
+
+        return 'success';
     }
 
     function razorpayPluginDeactivated()
@@ -53,6 +55,8 @@ class TrackPluginInstrumentation
         $response = $this->rzpTrackSegment('plugin deactivate', $deactivateProperties);
 
         $this->rzpTrackDataLake('plugin deactivate', $deactivateProperties);
+
+        return 'success';
     }
 
     function razorpayPluginUpgraded()
@@ -79,6 +83,8 @@ class TrackPluginInstrumentation
             {
                 add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
             }
+
+            return 'success';
         }
     }
 

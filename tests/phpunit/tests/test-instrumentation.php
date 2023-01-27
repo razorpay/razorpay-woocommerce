@@ -58,7 +58,7 @@ class Test_Instrumentation extends WP_UnitTestCase
         $_SERVER['REQUEST_URI'] = 'wc-settings&tab=checkout=razorpay';
 
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
-            if ($key == 'enabled')
+            if ($key === 'enabled')
             {
                 return 'no';
             }
@@ -87,7 +87,7 @@ class Test_Instrumentation extends WP_UnitTestCase
         $_SERVER['REQUEST_URI'] = 'wc-settings&tab=checkout=razorpay';
 
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
-            if ($key == 'key_id')
+            if ($key === 'key_id')
             {
                 return 'key_id';
             }
@@ -95,7 +95,7 @@ class Test_Instrumentation extends WP_UnitTestCase
             {
                 return 'key_secret';
             }
-            else if ($key == 'enabled')
+            else if ($key === 'enabled')
             {
                 return 'yes';
             }
@@ -114,8 +114,6 @@ class Test_Instrumentation extends WP_UnitTestCase
 
     public function testInstrumentationPluginActivated()
     {
-        $this->expectNotToPerformAssertions();
-
         $_SERVER['HTTP_REFERER'] = 'razorpay.com';
         $_SERVER['REQUEST_SCHEME'] = 'https';
         $_SERVER['HTTP_HOST'] = 'razorpay.com';
@@ -124,28 +122,30 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->instrumentationMock->shouldReceive('rzpTrackSegment')->with('event', []);
         $this->instrumentationMock->shouldReceive('rzpTrackDataLake')->with('event', []);
         $response = $this->instrumentationMock->razorpayPluginActivated();
+
+        $this->assertSame('success', $response);
     }
 
     public function testInstrumentationPluginDeactivated()
     {
-        $this->expectNotToPerformAssertions();
-
         $_SERVER['HTTP_REFERER'] = 'razorpay.com';
 
         $this->instrumentationMock->shouldReceive('rzpTrackSegment')->with('event', []);
         $this->instrumentationMock->shouldReceive('rzpTrackDataLake')->with('event', []);
         $response = $this->instrumentationMock->razorpayPluginDeactivated();
+
+        $this->assertSame('success', $response);
     }
 
     public function testInstrumentationPluginUpgraded()
     {
-        $this->expectNotToPerformAssertions();
-
         $_SERVER['HTTP_REFERER'] = 'razorpay.com';
 
         $this->instrumentationMock->shouldReceive('rzpTrackSegment')->with('event', []);
         $this->instrumentationMock->shouldReceive('rzpTrackDataLake')->with('event', []);
         $response = $this->instrumentationMock->razorpayPluginUpgraded();
+
+        $this->assertSame('success', $response);
     }
 
     public function testInstrumentationSegment()
