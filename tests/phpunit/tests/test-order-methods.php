@@ -90,7 +90,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         
         $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(
             function () {
-                return new MockApi('key_id_2', 'key_secret2');
+                return new MockApi('key_id_3', 'key_secret3');
             });
 
         set_transient("razorpay_order_id".$wcOrderId, "razorpay_order_id", 18000);
