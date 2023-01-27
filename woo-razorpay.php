@@ -1464,11 +1464,6 @@ EOT;
             return new Api($this->getSetting('key_id'), "");
         }
 
-        public function getRazorpayApiPublicInstance()
-        {
-            return new Api($this->getSetting('key_id'), "");
-        }
-
         /**
          * Check for valid razorpay server callback
          * Called once payment is completed using redirect method
