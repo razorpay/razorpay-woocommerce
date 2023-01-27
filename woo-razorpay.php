@@ -2549,6 +2549,7 @@ define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 function enqueueScriptsFor1cc()
 {
     $siteurl = get_option('siteurl');
+    $pluginData = get_plugin_data( __FILE__ );
 
     $domain = parse_url($siteurl, PHP_URL_HOST);
     $domain_ip = gethostbyname($domain);
@@ -2575,6 +2576,7 @@ function enqueueScriptsFor1cc()
       'blogname' => get_bloginfo('name'),
       'cookies' => $_COOKIE,
       'requestData' => $_REQUEST,
+      'version' => $pluginData['Version'],
     ) );
     wp_enqueue_script('btn_1cc_checkout');
 }
