@@ -41,6 +41,9 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Changelog ==
 
+= 4.4.2 =
+* Bug fix, parameter missing in shipping call.
+
 = 4.4.1 =
 * Bug fix, razorpay cart response function.
 
