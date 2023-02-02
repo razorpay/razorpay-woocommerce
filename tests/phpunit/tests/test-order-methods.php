@@ -87,9 +87,9 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $this->instance->shouldReceive('getSetting')->with('order_success_message')->andReturn($message);
 
-        $response = $this->instance->getCustomOrdercreationMessage("Order Placed", $order);
+        $response = $this->instance->getCustomOrdercreationMessage("Order Placed",$order);
 
-        $this->assertSame($message, $response);
+        $this->assertSame($message,$response);
     }
 
     public function testgetDefaultCheckoutArguments()
