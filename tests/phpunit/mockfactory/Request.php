@@ -169,73 +169,73 @@ class Request
                             'payment.authorized' => true,
                             'order.paid' => true
                         ],
-                        'key_id_2' => [
-                            'GET' => [
-                                'webhooks' =>
-                                    [
-                                        "entity" => "collection",
-                                        "count" => 1,
-                                        "items" => [
-                                            [
-                                                "id" => "abcd",
-                                                "url" => "https://webhook.site/abcd",
-                                                "entity" => "webhook",
-                                                "active" => true,
-                                                "events" => [
-                                                    "payment.authorized" => false,
-                                                    "order.paid" => false,
-                                                ]
-                                            ],
-                                        ]
-                                    ],
-                                'preferences' => ['options'],
-                                'orders' => [
-                                    "entity" => "collection",
-                                    "count" => 1,
-                                    "items" => [
-                                        [
-                                            "id" => "order_test",
-                                            "entity" => "order",
-                                            "amount" => 0,
-                                            "amount_paid" => 0,
-                                            "amount_due" => 0,
-                                            "currency" => "USD",
-                                            "receipt" => "11",
-                                            "offer_id" => null,
-                                            "status" => "created",
-                                            "attempts" => 0,
-                                            "notes" => [
-                                                "woocommerce_order_number" => "11"
-                                            ],
-                                            "created_at" => 1666097548
-                                        ]
+                    ]
+                ]
+            ],
+            'key_id_2' => [
+                'GET' => [
+                    'webhooks' =>
+                        [
+                            "entity" => "collection",
+                            "count" => 1,
+                            "items" => [
+                                [
+                                    "id" => "abcd",
+                                    "url" => "https://webhook.site/abcd",
+                                    "entity" => "webhook",
+                                    "active" => true,
+                                    "events" => [
+                                        "payment.authorized" => false,
+                                        "order.paid" => false,
                                     ]
-                                ]
-                            ],
-                            'POST' => [
-                                'plugins/segment' => [
-                                    'status' => 'tested'
                                 ],
-                                'orders' => [
-                                    'id' => 'razorpay_order_id',
-                                    'entity' => 'order',
-                                    'amount' => 0,
-                                    'amount_paid' => 0,
-                                    'amount_due' => 0,
-                                    'currency' => 'USD',
-                                    'receipt' => '16',
+                            ]
+                        ],
+                    'preferences' => ['options'],
+                    'orders' => [
+                        "entity" => "collection",
+                        "count" => 1,
+                        "items" => [
+                            [
+                                "id" => "order_test",
+                                "entity" => "order",
+                                "amount" => 0,
+                                "amount_paid" => 0,
+                                "amount_due" => 0,
+                                "currency" => "USD",
+                                "receipt" => "11",
+                                "offer_id" => null,
+                                "status" => "created",
+                                "attempts" => 0,
+                                "notes" => [
+                                    "woocommerce_order_number" => "11"
                                 ],
-                                'orders/id' => [
-                                    'id' => 'razorpay_order_id',
-                                    'entity' => 'order',
-                                    'amount' => 0,
-                                    'amount_paid' => 0,
-                                    'amount_due' => 0,
-                                    'currency' => 'USD',
-                                    'receipt' => '16',
-                                ]
+                                "created_at" => 1666097548
                             ]
                         ]
+                    ]
+                ],
+                'POST' => [
+                    'plugins/segment' => [
+                        'status' => 'tested'
+                    ],
+                    'orders' => [
+                        'id' => 'razorpay_order_id',
+                        'entity' => 'order',
+                        'amount' => 0,
+                        'amount_paid' => 0,
+                        'amount_due' => 0,
+                        'currency' => 'USD',
+                        'receipt' => '16',
+                    ],
+                    'orders/id' => [
+                        'id' => 'razorpay_order_id',
+                        'entity' => 'order',
+                        'amount' => 0,
+                        'amount_paid' => 0,
+                        'amount_due' => 0,
+                        'currency' => 'USD',
+                        'receipt' => '16',
                     ]
                 ]
             ]

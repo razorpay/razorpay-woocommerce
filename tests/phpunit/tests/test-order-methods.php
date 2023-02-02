@@ -12,7 +12,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 {
     private $instance;
     private $rzpPaymentObj;
-
+    
     public function setup(): void
     {
         parent::setup();
@@ -53,14 +53,12 @@ class Test_OrderMethods extends WP_UnitTestCase
     public function testgetRazorpayPaymentParamsRzpidnull()
     {
         $order = wc_create_order();
-
         $wcOrderId = $order->get_id();
 
         $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
             });
-
         $this->instance->shouldReceive('autoEnableWebhook');
 
         $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($wcOrderId)->andReturn(null);
@@ -133,7 +131,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         );
 
         $this->instance->expects($this->once())->method('getRedirectUrl')->with($orderId)->andReturn($this->returnValue($callbackUrl));
-
+        
         $this->instance->shouldReceive('getOrderSessionKey')->with($orderId)->andReturn($sessionKey);
 
         $response = $this->instance->getDefaultCheckoutArguments($order);
