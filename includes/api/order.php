@@ -12,7 +12,7 @@ function createWcOrder(WP_REST_Request $request)
     $logObj           = array();
     $logObj['api']    = 'createWcOrder';
     $logObj['params'] = $params;
-    
+
     //Abandoment cart plugin decode the coupon code from token
     $couponCode = null;
     if (isset($params['token'])) {
@@ -23,20 +23,7 @@ function createWcOrder(WP_REST_Request $request)
         }
     }
 
-    $nonce     = $request->get_header('X-WP-Nonce');
-    $verifyReq = wp_verify_nonce($nonce, 'wp_rest');
 
-    if ($verifyReq === false) {
-        $response['status']  = false;
-        $response['message'] = 'Authentication failed';
-
-        $statusCode            = 401;
-        $logObj['status_code'] = $statusCode;
-        $logObj['response']    = $response;
-        rzpLogError(json_encode($logObj));
-
-        return new WP_REST_Response($response, $statusCode);
-    }
 
     initCartCommon();
 
@@ -109,7 +96,7 @@ function createWcOrder(WP_REST_Request $request)
     }
 
     $order = wc_get_order($orderId);
-    
+
     if($order){
 
         $disableCouponFlag = false;
@@ -121,7 +108,7 @@ function createWcOrder(WP_REST_Request $request)
                 $dynamicRules = $item->get_meta('_ywdpd_discounts');
 
                 if(empty($dynamicRules) == false){
-                    
+
                     foreach ($dynamicRules['applied_discounts'] as $appliedDiscount) {
                         if (isset( $appliedDiscount['set_id'])){
                             $ruleId = $appliedDiscount['set_id'];
