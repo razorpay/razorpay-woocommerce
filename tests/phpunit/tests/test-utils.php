@@ -7,9 +7,7 @@ use Razorpay\MockApi\MockApi;
 /**
  * @covers ::isRazorpayPluginEnabled
  * @covers ::validateInput
- *  
  */ 
-
 
 class Test_Utils extends \PHPUnit_Framework_TestCase
 {
