@@ -78,7 +78,8 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testgetCustomisation()
     {
-        add_option('rzp_afd_color','black');
+        add_option('rzp_afd_color', 'black');
+        
         $response = getCustomisation('rzp_afd_color');
 
         $this->assertSame('black', $response);
