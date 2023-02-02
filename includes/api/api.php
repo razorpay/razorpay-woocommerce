@@ -90,6 +90,27 @@ function rzp1ccInitRestApi()
         )
     );
 
+    // cart data
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE. '/cart',
+        'fetch-cart',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'fetchCartData',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
+
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE. '/cart',
+        'create-cart',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'createCartData',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
+
      /**
      * Gift Card APIs
      */
@@ -116,9 +137,18 @@ function initCustomerSessionAndCart()
 {
     if (defined('WC_ABSPATH')) {
         // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
-        include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion
         include_once WC_ABSPATH . 'includes/wc-notice-functions.php'; // nosemgrep: file-inclusion
         include_once WC_ABSPATH . 'includes/wc-template-hooks.php'; // nosemgrep: file-inclusion
+    }
+
+    initCartCommon();
+}
+
+function initCartCommon()
+{ 
+    if (defined('WC_ABSPATH')) {
+        // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
+        include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion
     }
 
     if (null === WC()->session) {
@@ -133,8 +163,8 @@ function initCustomerSessionAndCart()
 
     if (null === WC()->cart) {
         WC()->cart = new WC_Cart();
-        WC()->cart->get_cart();
     }
+
 }
 
 add_action('setup_extra_setting_fields', 'addMagicCheckoutSettingFields');

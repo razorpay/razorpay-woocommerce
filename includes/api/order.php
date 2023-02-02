@@ -12,7 +12,7 @@ function createWcOrder(WP_REST_Request $request)
     $logObj           = array();
     $logObj['api']    = 'createWcOrder';
     $logObj['params'] = $params;
-
+    
     //Abandoment cart plugin decode the coupon code from token
     $couponCode = null;
     if (isset($params['token'])) {
@@ -38,7 +38,7 @@ function createWcOrder(WP_REST_Request $request)
         return new WP_REST_Response($response, $statusCode);
     }
 
-    initCustomerSessionAndCart();
+    initCartCommon();
 
     if (empty($params['pdpCheckout']) === false) {
         $variations = [];
@@ -71,20 +71,10 @@ function createWcOrder(WP_REST_Request $request)
         WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variation_id, $variations);
     }
 
-    // check if cart is empty
-    if (WC()->cart->get_cart_contents_count() == 0) {
-        $response['message'] = 'Cart cannot be empty';
-        $response['code']    = 'BAD_REQUEST_EMPTY_CART';
+     // check if cart is empty
+    checkCartEmpty($logObj);
 
-        $statusCode            = 400;
-        $logObj['status_code'] = $statusCode;
-        $logObj['response']    = $response;
-        rzpLogError(json_encode($logObj));
-
-        return new WP_REST_Response($response, $statusCode);
-    }
-
-    $cartHash        = WC()->cart->get_cart_hash();
+    $cartHash  = WC()->cart->get_cart_hash();
     $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
 
     if ($orderIdFromHash == null) {
@@ -222,31 +212,14 @@ function createWcOrder(WP_REST_Request $request)
         // TODO: getDefaultCheckoutArguments() is already being called in L65 above
         $response = $razorpay->getDefaultCheckoutArguments($order);
 
-        $current_user = wp_get_current_user();
+        $fbAnalytics = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
 
-        if ($current_user instanceof WP_User) {
-            update_post_meta($orderId, '_customer_user', $current_user->ID);
-            $response['prefill']['email']   = $current_user->user_email ?? '';
-            $contact                        = get_user_meta($current_user->ID, 'billing_phone', true);
-            $response['prefill']['contact'] = $contact ? $contact : '';
-        }
-
-        $response["_"] = $razorpay->getVersionMetaInfo($response);
-
-        $response['prefill']['coupon_code'] = $couponCode;
-
-        $response['mandatory_login'] = false; // Removed the mandatory login option from admin config so sending bydefault false.
-
-        $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
-        $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
-        $response['redirect']            = true;
-        $response['one_click_checkout']  = true;
 
         if($disableCouponFlag == true){
            $response['show_coupons']  = false;
         }
 
-        if ($response['enable_fb_analytics'] === true) {
+        if ($fbAnalytics === true) {
             //Customer cart related data for FB analytics.
             $customer_cart['value']        = (string) WC()->cart->subtotal;
             $customer_cart['content_type'] = 'product';
