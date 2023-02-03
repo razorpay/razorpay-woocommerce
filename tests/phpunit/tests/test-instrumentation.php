@@ -112,6 +112,28 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->instance->pluginInstrumentation();
     }
 
+    public function testNewTrackPluginInstrumentation()
+    {
+        $response = $this->instance->newTrackPluginInstrumentation('key_id', 'key_secret');
+
+        $this->assertInstanceOf('TrackPluginInstrumentation', $response);
+    }
+
+    public function testTriggerValidationInstrumentation()
+    {
+        $this->instance->shouldReceive('newTrackPluginInstrumentation')->andReturnUsing(function ()
+        {
+            $mockObj = Mockery::mock('stdClass')->makePartial();
+            $mockObj->shouldReceive('rzpTrackSegment')->andReturn(null);
+            $mockObj->shouldReceive('rzpTrackDataLake')->andReturn(null);
+            return $mockObj;
+        });
+
+        $response  = $this->instance->triggerValidationInstrumentation([]);
+
+        $this->assertNull($response);
+    }
+
     public function testInstrumentationPluginActivated()
     {
         $_SERVER['HTTP_REFERER'] = 'razorpay.com';
