@@ -10,11 +10,17 @@ class Test_AutoWebhook extends WP_UnitTestCase
     {
         parent::setup();
         $this->instance = Mockery::mock('WC_Razorpay')->makePartial()->shouldAllowMockingProtectedMethods();
-        $_POST = array();
+//        $_POST = array();
+        $_SERVER['REQUEST_SCHEME'] = 'https';
+        $_SERVER['HTTP_HOST'] = 'razorpay.com';
+        $_SERVER['REQUEST_URI'] = 'wc-settings';
+        $_SERVER['HTTP_REFERER'] = 'razorpay.com';
     }
 
     public function testEmptyKeyAndSecretValidation()
     {
+        $this->instance->shouldReceive('triggerValidationInstrumentation')->andReturn(null);
+
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
             if ($key === 'key_id')
             {
@@ -36,6 +42,8 @@ class Test_AutoWebhook extends WP_UnitTestCase
 
     public function testInvalidKeyAndSecretValidation()
     {
+        $this->instance->shouldReceive('triggerValidationInstrumentation')->andReturn(null);
+
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
             if ($key === 'key_id')
             {
@@ -103,6 +111,14 @@ class Test_AutoWebhook extends WP_UnitTestCase
 
         $this->instance->shouldReceive('getWebhookUrl')->andReturn("https://webhook.site/create");
 
+        $this->instance->shouldReceive('newTrackPluginInstrumentation')->andReturnUsing(function ()
+        {
+            $mockObj = Mockery::mock('stdClass')->makePartial();
+            $mockObj->shouldReceive('rzpTrackSegment')->andReturn(null);
+            $mockObj->shouldReceive('rzpTrackDataLake')->andReturn(null);
+            return $mockObj;
+        });
+
         $response = $this->instance->autoEnableWebhook();
 
         $this->assertSame('create', $response['id']);
@@ -132,6 +148,14 @@ class Test_AutoWebhook extends WP_UnitTestCase
         });
 
         $this->instance->shouldReceive('getWebhookUrl')->andReturn("https://webhook.site/update");
+
+        $this->instance->shouldReceive('newTrackPluginInstrumentation')->andReturnUsing(function ()
+        {
+            $mockObj = Mockery::mock('stdClass')->makePartial();
+            $mockObj->shouldReceive('rzpTrackSegment')->andReturn(null);
+            $mockObj->shouldReceive('rzpTrackDataLake')->andReturn(null);
+            return $mockObj;
+        });
 
         $response = $this->instance->autoEnableWebhook();
 
