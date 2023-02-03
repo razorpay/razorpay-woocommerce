@@ -6,6 +6,8 @@ use Razorpay\MockApi\MockApi;
 
 class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 {
+    protected $backupGlobals = FALSE;
+    
     public function testaddAffordabilityWidgetHTML()
     {
         $current_user = wp_get_current_user();
