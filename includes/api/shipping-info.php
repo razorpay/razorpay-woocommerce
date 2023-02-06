@@ -202,14 +202,14 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
         foreach ($vendorId as $id) {
             $rates = $package[$id]['rates'];
             foreach ($rates as $rate) {
-                $response[] = getRateResponse1cc($rate, $id, $orderId, $address, $rzpOrderId);
+                $response[] = getRateResponse1cc($rate, $id, $orderId, $address, $order, $rzpOrderId);
             }
         }
     }
 
     $rates = $package[0]['rates'];
     foreach ($rates as $val) {
-        $response[] = getRateResponse1cc($val, "", $orderId, $address, $rzpOrderId);
+        $response[] = getRateResponse1cc($val, "", $orderId, $address, $order, $rzpOrderId);
     }
 
     if (empty($response) === true) {
@@ -256,7 +256,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
  * @return array
  */
 
-function getRateResponse1cc($rate, $vendorId, $orderId, $address, $rzpOrderId)
+function getRateResponse1cc($rate, $vendorId, $orderId, $address, $order, $rzpOrderId)
 {
 
     return array_merge(
@@ -271,7 +271,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId, $address, $rzpOrderId)
             'method_id'     => getRateProp1cc($rate, 'method_id'),
             'meta_data'     => getRateMetaData1cc($rate),
             'vendor_id'     => $vendorId,
-            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId, $address, $rzpOrderId),
+            'cod'           => getCodShippingInfo1cc(getRateProp1cc($rate, 'instance_id'), getRateProp1cc($rate, 'method_id'), $orderId, $address, $order, $rzpOrderId),
         ),
         getStoreCurrencyResponse1cc()
     );
@@ -282,7 +282,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId, $address, $rzpOrderId)
  *
  * @returns bool
  */
-function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $rzpOrderId)
+function getCodShippingInfo1cc($instanceId, $methodId, $orderId, $address, $order, $rzpOrderId)
 {
     global $woocommerce;
 
