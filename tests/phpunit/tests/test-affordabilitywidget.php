@@ -78,7 +78,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testgetCustomisation()
     {
-        add_option('rzp_afd_theme_color','#8BBFFF');
+        add_option('rzp_afd_theme_color', '#8BBFFF');
         
         $response = getCustomisation('rzp_afd_theme_color');
 
