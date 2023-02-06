@@ -25,13 +25,13 @@ class Test_Utils extends \PHPUnit_Framework_TestCase
 
     public function testvalidateInput()
     {
-        $this->assertSame(null, validateInput('',''));
+        $this->assertSame(null, validateInput('', ''));
 
         $this->assertSame(null, validateInput('list', array('amount' => '2407')));
 
         $this->assertSame('Field amount is required.', validateInput('list', array('amount' => '')));
 
-        $this->assertSame(null,validateInput('apply', array('code' => 'ABC2407', 'order_id' => '11')));
+        $this->assertSame(null, validateInput('apply', array('code' => 'ABC2407', 'order_id' => '11')));
 
         $this->assertSame('Field code is required.', validateInput('apply', array('code' => '', 'order_id' => '11')));
 
