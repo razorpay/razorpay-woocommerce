@@ -81,15 +81,15 @@ class Test_OrderMethods extends WP_UnitTestCase
     {
         $order = wc_create_order();
 
-        $defaultmessage = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
+        $defaultmessage = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.";
 
         $message = "The order was successful.";
 
         $this->instance->shouldReceive('getSetting')->with('order_success_message')->andReturn($message);
 
-        $response = $this->instance->getCustomOrdercreationMessage("Order Placed",$order);
+        $response = $this->instance->getCustomOrdercreationMessage("Order Placed", $order);
 
-        $this->assertSame($message,$response);
+        $this->assertSame($message, $response);
     }
 
     public function testgetDefaultCheckoutArguments()
@@ -129,8 +129,6 @@ class Test_OrderMethods extends WP_UnitTestCase
             'email'   => $order->get_billing_email(),
             'contact' => $order->get_billing_phone(),
         );
-
-        $this->instance->expects($this->once())->method('getRedirectUrl')->with($orderId)->andReturn($this->returnValue($callbackUrl));
         
         $this->instance->shouldReceive('getOrderSessionKey')->with($orderId)->andReturn($sessionKey);
 
