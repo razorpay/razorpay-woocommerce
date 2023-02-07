@@ -213,4 +213,41 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->assertStringContainsString("<input type='hidden' name='_[integration_type]' value='plugin'>", $response);
         $this->assertStringContainsString("</form>", $response);
     }
+ 
+    public function testGetShippingZone()
+    {
+        $response = $this->instance->getShippingZone(0);
+        $this->assertInstanceOf('WC_Shipping_Zone', $response);
+    }
+
+    public function testGetDescription()
+    {
+        $this->instance->shouldReceive('getSetting')->with('description')->andReturn('testing description');
+        $response = $this->instance->get_description();
+        $this->assertSame('testing description', $response);
+    }
+
+    public function testAdminOptions()
+    {
+        $this->instance->shouldReceive('generate_settings_html');
+        ob_start();
+        $this->instance->admin_options();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('Razorpay Payment Gateway', $result);
+        $this->assertStringContainsString('Allows payments by Credit/Debit Cards, NetBanking, UPI, and multiple Wallets', $result);
+        $this->assertStringContainsString('<table class="form-table">', $result);
+        $this->assertStringContainsString('</table>', $result);
+    }
+
+    public function testProcessPayment()
+    {
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+
+        $response = $this->instance->process_payment($orderId);
+        $this->assertSame('success', $response['result']);
+        $this->assertNotNull($response['redirect']);
+    }
 }
