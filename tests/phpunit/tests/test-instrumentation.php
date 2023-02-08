@@ -126,6 +126,7 @@ class Test_Instrumentation extends WP_UnitTestCase
             $mockObj = Mockery::mock('stdClass')->makePartial();
             $mockObj->shouldReceive('rzpTrackSegment')->andReturn(null);
             $mockObj->shouldReceive('rzpTrackDataLake')->andReturn(null);
+
             return $mockObj;
         });
 

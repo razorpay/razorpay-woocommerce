@@ -94,3 +94,4 @@ function rzpLoginClicked(e) {
 
 	rzpAjaxCall(data);
 }
+
