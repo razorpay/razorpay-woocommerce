@@ -110,6 +110,9 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testaddSubSection()
     {
+        global $current_section;
+        $current_section = 'affordability-widget';
+        
         ob_start();
 
         addSubSection();
