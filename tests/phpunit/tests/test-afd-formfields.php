@@ -28,6 +28,12 @@ class Test_AfdFormFields extends WP_UnitTestCase
 
         $this->instance->init_form_fields();
 
+        $this->assertTrue(has_action('woocommerce_sections_checkout'));
+
+        $this->assertTrue(has_action('woocommerce_settings_tabs_checkout'));
+
+        $this->assertTrue(has_action('woocommerce_update_options_checkout'));
+
         $this->assertSame('yes', get_option('rzp_afd_enable'));
 
         $this->assertSame('yes', get_option('rzp_afd_feature_checked'));
