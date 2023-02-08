@@ -33,13 +33,13 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         add_option('rzp_afd_show_discount_amount', 'yes');
 
         add_option('rzp_afd_enable_emi', 'yes');
-        add_option('rzp_afd_limited_emi_providers', '4');
+        add_option('rzp_afd_limited_emi_providers', 'HDFC,ICIC');
 
         add_option('rzp_afd_enable_cardless_emi', 'yes');
-        add_option('rzp_afd_limited_cardless_emi_providers', '4');
+        add_option('rzp_afd_limited_cardless_emi_providers', 'hdfc,icic');
 
         add_option('rzp_afd_enable_pay_later', 'yes');
-        add_option('rzp_afd_limited_pay_later_providers', '4');
+        add_option('rzp_afd_limited_pay_later_providers', 'getsimpl,icic');
 
         ob_start();
         addAffordabilityWidgetHTML();
@@ -52,11 +52,11 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         $this->assertStringContainsString('"offers": { "offerIds": ["offer_ABC","offer_XYZ",],"showDiscount": true}', $result);
 
-        $this->assertStringContainsString('"emi": { "issuers": ["4",] }', $result);
+        $this->assertStringContainsString('"emi": { "issuers": ["HDFC","ICIC",] }', $result);
 
-        $this->assertStringContainsString('"cardlessEmi": { "providers": ["4",] }', $result);
+        $this->assertStringContainsString('"cardlessEmi": { "providers": ["hdfc","icic",] }', $result);
 
-        $this->assertStringContainsString('"paylater": { "providers": ["4",] }', $result);
+        $this->assertStringContainsString('"paylater": { "providers": ["getsimpl","icic",] }', $result);
 
         delete_option('woocommerce_razorpay_settings');
     }
