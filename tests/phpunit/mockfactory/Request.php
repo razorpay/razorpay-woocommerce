@@ -168,7 +168,7 @@ class Request
                         'events' => [
                             'payment.authorized' => true,
                             'order.paid' => true
-                        ],
+                        ]
                     ]
                 ]
             ],
@@ -226,7 +226,7 @@ class Request
                         'amount_paid' => 0,
                         'amount_due' => 0,
                         'currency' => 'USD',
-                        'receipt' => '16',
+                        'receipt' => '13',
                     ],
                     'orders/id' => [
                         'id' => 'razorpay_order_id',
@@ -235,7 +235,7 @@ class Request
                         'amount_paid' => 0,
                         'amount_due' => 0,
                         'currency' => 'USD',
-                        'receipt' => '16',
+                        'receipt' => '13',
                     ]
                 ]
             ]
