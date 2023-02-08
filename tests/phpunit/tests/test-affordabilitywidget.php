@@ -22,35 +22,35 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testgetPayLater()
     {
-        add_option('rzp_afd_enable_pay_later', 'yes');
+        add_option('rzp_afd_enable_pay_later','yes');
 
-        add_option('rzp_afd_limited_pay_later_providers', '4');
+        add_option('rzp_afd_limited_pay_later_providers','getsimpl,icic');
 
         $response = getPayLater();
 
-        $this->assertStringContainsString('"providers": ["4",]', $response);
+        $this->assertStringContainsString('"providers": ["getsimpl","icic",]',$response);
     }
 
     public function testgetCardlessEmi()
     {
-        add_option('rzp_afd_enable_cardless_emi', 'yes');
+        add_option('rzp_afd_enable_cardless_emi','yes');
 
-        add_option('rzp_afd_limited_cardless_emi_providers', '4');
+        add_option('rzp_afd_limited_cardless_emi_providers','hdfc,icic');
 
         $response = getCardlessEmi();
 
-        $this->assertStringContainsString('"providers": ["4",]', $response);
+        $this->assertStringContainsString('"providers": ["hdfc","icic",]',$response);
     }
 
     public function testgetEmi()
     {
-        add_option('rzp_afd_enable_emi', 'yes');
+        add_option('rzp_afd_enable_emi','yes');
 
-        add_option('rzp_afd_limited_emi_providers', '4');
+        add_option('rzp_afd_limited_emi_providers','HDFC,ICIC');
 
         $response = getEmi();
 
-        $this->assertStringContainsString('"issuers": ["4",]', $response);
+        $this->assertStringContainsString('"issuers": ["HDFC","ICIC",]',$response);
     }
 
     public function testgetOffers()
