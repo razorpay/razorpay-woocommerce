@@ -28,6 +28,8 @@ class Test_AfdFormFields extends WP_UnitTestCase
 
         $this->instance->init_form_fields();
 
+        $this->assertSame('yes', get_option('rzp_afd_enable'));
+
         $this->assertSame('yes', get_option('rzp_afd_feature_checked'));
 
     }
