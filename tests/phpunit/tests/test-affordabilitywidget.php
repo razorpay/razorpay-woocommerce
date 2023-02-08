@@ -59,6 +59,8 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $this->assertStringContainsString('"paylater": { "providers": ["getsimpl","icic",] }', $result);
 
         delete_option('woocommerce_razorpay_settings');
+        
+        delete_option('rzp_afd_limited_offers');
     }
     
     public function testgetThemeColor()
