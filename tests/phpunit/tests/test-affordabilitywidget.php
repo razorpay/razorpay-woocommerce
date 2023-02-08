@@ -118,6 +118,10 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         ob_end_clean();
 
+        $this->assertStringContainsString(admin_url(), $result);
+
+        $this->assertStringContainsString("tab=checkout", $result);
+
         $this->assertStringContainsString('</ul><br class="clear" />', $result);
     }
 
