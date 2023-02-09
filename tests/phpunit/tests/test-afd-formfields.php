@@ -1,7 +1,4 @@
 <?php
-/**
- * @covers \WC_Razorpay
- */
 
 use Razorpay\MockApi\MockApi;
 
