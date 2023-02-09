@@ -90,19 +90,14 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         global $product;
 
         $product = new WC_Product_Simple();
-
         $product->set_regular_price(15);
-
         $product->set_sale_price(10);
-
         $product->save();
 
         $this->assertSame('10', getPrice());
 
         $product = new WC_Product_Variable();
-
         $product->set_price(20);
-
         $product->save();
 
         $this->assertSame('20', getPrice());
@@ -111,20 +106,22 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     public function testaddSubSection()
     {
         global $current_section;
-        
         $current_section = 'affordability-widget';
 
         ob_start();
-
         addSubSection();
-
         $result = ob_get_contents();
-
         ob_end_clean();
 
-        $this->assertStringContainsString(admin_url(), $result);
+        $pluginSubSection = '<li><a href="'.admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay').'" class="">Plugin Settings</a> | </li>';
+        
+        $affordabilitywidgetSubSection = '<li><a href="'.admin_url('admin.php?page=wc-settings&tab=checkout&section=affordability-widget').'" class="current">Affordability Widget</a>  </li>';
 
-        $this->assertStringContainsString("tab=checkout", $result);
+        $this->assertStringContainsString($pluginSubSection, $result);
+
+        $this->assertStringContainsString($affordabilitywidgetSubSection, $result);
+
+        $this->assertStringContainsString(admin_url(), $result);
 
         $this->assertStringContainsString('</ul><br class="clear" />', $result);
     }
