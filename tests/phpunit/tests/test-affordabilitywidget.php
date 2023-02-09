@@ -140,7 +140,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testgetOffers()
     {
-        add_option('rzp_afd_show_discount_amount','yes');
+        add_option('rzp_afd_show_discount_amount', 'yes');
 
         $response = getOffers();
 
