@@ -38,7 +38,8 @@ class Test_AfdFormFields extends WP_UnitTestCase
     }
 }
 
-class Globals {
+class Globals 
+{
     public function in_admin()
     {
         return true;
