@@ -87,10 +87,15 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testisEnabled()
     {
+        add_option('rzp_afd_enable_dark_logo', 'yes');
+        
         $this->assertSame('true', isEnabled('rzp_afd_enable_dark_logo'));
 
-        add_option('rzp_afd_enable_dark_logo', 'yes');
+        delete_option('rzp_afd_enable_dark_logo');
+    }
 
+    public function testisEnabledOption()
+    {
         $this->assertSame('true', isEnabled('rzp_afd_enable_dark_logo'));
     }
 
@@ -103,7 +108,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     {
         add_option('rzp_afd_enable_pay_later', 'yes');
         
-        $this->assertTrue(true,getPayLater());
+        $this->assertTrue(true, getPayLater());
 
         add_option('rzp_afd_limited_pay_later_providers', 'getsimpl,icic');
 
@@ -116,7 +121,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     {
         add_option('rzp_afd_enable_cardless_emi', 'yes');
         
-        $this->assertTrue(true,getCardlessEmi());
+        $this->assertTrue(true, getCardlessEmi());
 
         add_option('rzp_afd_limited_cardless_emi_providers', 'hdfc,icic');
 
@@ -129,7 +134,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     {
         add_option('rzp_afd_enable_emi', 'yes');
         
-        $this->assertTrue(true,getEmi());
+        $this->assertTrue(true, getEmi());
 
         add_option('rzp_afd_limited_emi_providers', 'HDFC,ICIC');
 
