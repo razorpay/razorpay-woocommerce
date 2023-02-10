@@ -115,7 +115,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         $pluginSubSection = '<li><a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay') . '" class="">Plugin Settings</a> | </li>';
         
-        $affordabilitywidgetSubSection = '<li><a href="'.admin_url('admin.php?page=wc-settings&tab=checkout&section=affordability-widget').'" class="current">Affordability Widget</a>  </li>';
+        $affordabilitywidgetSubSection = '<li><a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=affordability-widget') . '" class="current">Affordability Widget</a>  </li>';
 
         $this->assertStringContainsString($pluginSubSection, $result);
 
