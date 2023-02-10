@@ -174,6 +174,14 @@ class Request
             ],
             'key_id_2' => [
                 'GET' => [
+                    'accounts/me/features' =>
+                        [
+                            'assigned_features' => [
+                                'afd' => [
+                                    'name' => 'affordability_widget'
+                                ]
+                            ]
+                        ],
                     'webhooks' =>
                         [
                             "entity" => "collection",
