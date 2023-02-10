@@ -176,7 +176,7 @@ class Request
                 'GET' => [
                     'accounts/me/features' =>
                         [
-                            'assigned_features' =>[
+                            'assigned_features' => [
                                 'afd' => [
                                     'name' => 'affordability_widget'
                                 ]
