@@ -1,5 +1,3 @@
-
-
 <?php
 
 require_once __DIR__ . '/../../../includes/razorpay-affordability-widget.php';
