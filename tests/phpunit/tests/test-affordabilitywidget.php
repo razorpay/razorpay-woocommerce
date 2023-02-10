@@ -143,7 +143,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         delete_option('woocommerce_razorpay_settings');
     }
     
-     public function testgetPrice()
+    public function testgetPrice()
     {
         global $product;
 
