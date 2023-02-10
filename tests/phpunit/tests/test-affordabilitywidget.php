@@ -164,7 +164,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     {
         add_option('rzp_afd_enable_pay_later', 'yes');
         
-        $this->assertTrue(true, getPayLater());
+        $this->assertSame('true', getPayLater());
 
         add_option('rzp_afd_limited_pay_later_providers', 'getsimpl,icic');
 
@@ -177,7 +177,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     {
         add_option('rzp_afd_enable_cardless_emi', 'yes');
         
-        $this->assertTrue(true, getCardlessEmi());
+        $this->assertSame('true', getCardlessEmi());
 
         add_option('rzp_afd_limited_cardless_emi_providers', 'hdfc,icic');
 
@@ -190,7 +190,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     {
         add_option('rzp_afd_enable_emi', 'yes');
         
-        $this->assertTrue(true, getEmi());
+        $this->assertSame('true', getEmi());
 
         add_option('rzp_afd_limited_emi_providers', 'HDFC,ICIC');
 
