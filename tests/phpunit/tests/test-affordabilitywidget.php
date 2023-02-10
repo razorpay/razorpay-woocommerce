@@ -113,7 +113,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $result = ob_get_contents();
         ob_end_clean();
 
-        $pluginSubSection = '<li><a href="'.admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay').'" class="">Plugin Settings</a> | </li>';
+        $pluginSubSection = '<li><a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay') . '" class="">Plugin Settings</a> | </li>';
         
         $affordabilitywidgetSubSection = '<li><a href="'.admin_url('admin.php?page=wc-settings&tab=checkout&section=affordability-widget').'" class="current">Affordability Widget</a>  </li>';
 
@@ -128,10 +128,10 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testisAffordabilityWidgetTestModeEnabled()
     {
-        $this->assertSame(false, isAffordabilityWidgetTestModeEnabled());
+        $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
 
         add_option('rzp_afd_enable_test_mode', 'yes');
 
-        $this->assertSame(true, isAffordabilityWidgetTestModeEnabled());
+        $this->assertTrue(isAffordabilityWidgetTestModeEnabled());
     }
 }
