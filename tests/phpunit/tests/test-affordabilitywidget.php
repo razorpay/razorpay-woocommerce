@@ -166,15 +166,27 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $this->assertSame('true', getFooterDarkLogo());
     }
 
-    public function testgetPayLater()
+    public function testgetPayLaterOptionNo()
     {
         add_option('rzp_afd_enable_pay_later', 'no');
 
         $this->assertSame('false', getPayLater());
 
-        update_option('rzp_afd_enable_pay_later', 'yes');
+        delete_option('rzp_afd_enable_pay_later');
+    }
+
+    public function testgetPayLaterOptionYes()
+    {
+        add_option('rzp_afd_enable_pay_later', 'yes');
 
         $this->assertSame('true', getPayLater());
+
+        delete_option('rzp_afd_enable_pay_later');
+    }
+
+    public function testgetPayLaterOptionwithProvider()
+    {
+        add_option('rzp_afd_enable_pay_later', 'yes');
 
         add_option('rzp_afd_limited_pay_later_providers', 'getsimpl,icic');
 
@@ -182,18 +194,30 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         $this->assertStringContainsString('"providers": ["getsimpl","icic",]', $response);
 
-        delete_option('rzp_afd_enable_emi');
+        delete_option('rzp_afd_enable_pay_later');
     }
 
-    public function testgetCardlessEmi()
+    public function testgetCardlessEmiOptionNo()
     {
         add_option('rzp_afd_enable_cardless_emi', 'no');
 
         $this->assertSame('false', getCardlessEmi());
 
-        update_option('rzp_afd_enable_cardless_emi', 'yes');
+        delete_option('rzp_afd_enable_cardless_emi');
+    }
+
+    public function testgetCardlessEmiOptionYes()
+    {
+        add_option('rzp_afd_enable_cardless_emi', 'yes');
 
         $this->assertSame('true', getCardlessEmi());
+
+        delete_option('rzp_afd_enable_cardless_emi');
+    }
+
+    public function testgetCardlessEmiwithProvider()
+    {
+        add_option('rzp_afd_enable_cardless_emi', 'yes');
 
         add_option('rzp_afd_limited_cardless_emi_providers', 'hdfc,icic');
 
@@ -204,15 +228,27 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         delete_option('rzp_afd_enable_cardless_emi');
     }
 
-    public function testgetEmi()
+    public function testgetEmiOptionNo()
     {
         add_option('rzp_afd_enable_emi', 'no');
 
         $this->assertSame('false', getEmi());
 
-        update_option('rzp_afd_enable_emi', 'yes');
+        delete_option('rzp_afd_enable_emi');
+    }
+
+    public function testgetEmiOptionYes()
+    {
+        add_option('rzp_afd_enable_emi', 'yes');
 
         $this->assertSame('true', getEmi());
+
+        delete_option('rzp_afd_enable_emi');
+    }
+
+    public function testgetEmiwithIssuer()
+    {
+        add_option('rzp_afd_enable_emi', 'yes');
 
         add_option('rzp_afd_limited_emi_providers', 'HDFC,ICIC');
 
@@ -220,16 +256,21 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         $this->assertStringContainsString('"issuers": ["HDFC","ICIC",]', $response);
 
-        delete_option('rzp_afd_enable_pay_later');
+        delete_option('rzp_afd_enable_emi');
     }
 
-    public function testgetOffers()
+    public function testgetOffersOptionYes()
     {
         add_option('rzp_afd_show_discount_amount', 'yes');
 
         $response = getOffers();
 
         $this->assertStringContainsString('{"showDiscount": true}', $response);
+    }
+
+    public function testgetOfferswithOfferId()
+    {
+        add_option('rzp_afd_show_discount_amount', 'yes');
 
         add_option('rzp_afd_limited_offers', "offer_ABC,offer_XYZ");
 
