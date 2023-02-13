@@ -85,7 +85,8 @@ function createWcOrder(WP_REST_Request $request)
     checkCartEmpty($logObj);
 
     $cartHash  = WC()->cart->get_cart_hash();
-    $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
+    $hash = $sessionResult."_".$cartHash;
+    $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
 
     if ($orderIdFromHash == null) {
         $checkout = WC()->checkout();
