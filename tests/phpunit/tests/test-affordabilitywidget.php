@@ -30,13 +30,13 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         add_option('rzp_afd_limited_offers', "offer_ABC,offer_XYZ");
         add_option('rzp_afd_show_discount_amount', 'yes');
 
-        add_option('rzp_afd_enable_emi', 'yes');
+        update_option('rzp_afd_enable_emi', 'yes');
         add_option('rzp_afd_limited_emi_providers', 'HDFC,ICIC');
 
-        add_option('rzp_afd_enable_cardless_emi', 'yes');
+        update_option('rzp_afd_enable_cardless_emi', 'yes');
         add_option('rzp_afd_limited_cardless_emi_providers', 'hdfc,icic');
 
-        add_option('rzp_afd_enable_pay_later', 'yes');
+        update_option('rzp_afd_enable_pay_later', 'yes');
         add_option('rzp_afd_limited_pay_later_providers', 'getsimpl,icic');
 
         ob_start();
@@ -162,8 +162,12 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testgetPayLater()
     {
-        add_option('rzp_afd_enable_pay_later', 'yes');
-        
+        add_option('rzp_afd_enable_pay_later', 'no');
+
+        $this->assertSame('false', getPayLater());
+
+        update_option('rzp_afd_enable_pay_later', 'yes');
+
         $this->assertSame('true', getPayLater());
 
         add_option('rzp_afd_limited_pay_later_providers', 'getsimpl,icic');
@@ -175,8 +179,12 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testgetCardlessEmi()
     {
-        add_option('rzp_afd_enable_cardless_emi', 'yes');
-        
+        add_option('rzp_afd_enable_cardless_emi', 'no');
+
+        $this->assertSame('false', getCardlessEmi());
+
+        update_option('rzp_afd_enable_cardless_emi', 'yes');
+
         $this->assertSame('true', getCardlessEmi());
 
         add_option('rzp_afd_limited_cardless_emi_providers', 'hdfc,icic');
@@ -188,8 +196,12 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testgetEmi()
     {
-        add_option('rzp_afd_enable_emi', 'yes');
-        
+        add_option('rzp_afd_enable_emi', 'no');
+
+        $this->assertSame('false', getEmi());
+
+        update_option('rzp_afd_enable_emi', 'yes');
+
         $this->assertSame('true', getEmi());
 
         add_option('rzp_afd_limited_emi_providers', 'HDFC,ICIC');
