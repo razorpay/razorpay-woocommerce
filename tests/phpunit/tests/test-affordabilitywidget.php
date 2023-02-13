@@ -140,8 +140,8 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         
         delete_option('woocommerce_razorpay_settings');
     }
-    
-    public function testgetPrice()
+
+    public function testgetPriceSimpleProduct()
     {
         global $product;
 
@@ -151,7 +151,12 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $product->save();
 
         $this->assertSame('10', getPrice());
+    }
 
+    public function testgetPriceVariableProduct()
+    {
+        global $product;
+        
         $product = new WC_Product_Variable();
         $product->set_price(20);
         $product->save();
@@ -184,14 +189,20 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testisAffordabilityWidgetTestModeEnabled()
     {
-        $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
-
         add_option('rzp_afd_enable_test_mode', 'yes');
 
         $this->assertTrue(isAffordabilityWidgetTestModeEnabled());
-        
+    }
+
+    public function testisAffordabilityWidgetTestModeEnabledNo()
+    {   
         update_option('rzp_afd_enable_test_mode', 'no');
 
+        $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
+    }
+
+    public function testisAffordabilityWidgetTestModeNotEnabled()
+    {
         $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
     }
 }
