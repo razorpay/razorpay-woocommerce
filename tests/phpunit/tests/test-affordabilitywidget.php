@@ -30,13 +30,13 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         add_option('rzp_afd_limited_offers', "offer_ABC,offer_XYZ");
         add_option('rzp_afd_show_discount_amount', 'yes');
 
-        update_option('rzp_afd_enable_emi', 'yes');
+        add_option('rzp_afd_enable_emi', 'yes');
         add_option('rzp_afd_limited_emi_providers', 'HDFC,ICIC');
 
-        update_option('rzp_afd_enable_cardless_emi', 'yes');
+        add_option('rzp_afd_enable_cardless_emi', 'yes');
         add_option('rzp_afd_limited_cardless_emi_providers', 'hdfc,icic');
 
-        update_option('rzp_afd_enable_pay_later', 'yes');
+        add_option('rzp_afd_enable_pay_later', 'yes');
         add_option('rzp_afd_limited_pay_later_providers', 'getsimpl,icic');
 
         ob_start();
@@ -58,6 +58,12 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         delete_option('woocommerce_razorpay_settings');
         delete_option('rzp_afd_limited_offers');
+        delete_option('rzp_afd_enable_emi');
+        delete_option('rzp_afd_enable_cardless_emi');
+        delete_option('rzp_afd_enable_pay_later');
+        delete_option('rzp_afd_limited_emi_providers');
+        delete_option('rzp_afd_limited_cardless_emi_providers');
+        delete_option('rzp_afd_limited_pay_later_providers');
     }
     
     public function testgetThemeColor()
@@ -175,6 +181,8 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $response = getPayLater();
 
         $this->assertStringContainsString('"providers": ["getsimpl","icic",]', $response);
+
+        delete_option('rzp_afd_enable_emi');
     }
 
     public function testgetCardlessEmi()
@@ -192,6 +200,8 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $response = getCardlessEmi();
 
         $this->assertStringContainsString('"providers": ["hdfc","icic",]', $response);
+
+        delete_option('rzp_afd_enable_cardless_emi');
     }
 
     public function testgetEmi()
@@ -209,6 +219,8 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $response = getEmi();
 
         $this->assertStringContainsString('"issuers": ["HDFC","ICIC",]', $response);
+
+        delete_option('rzp_afd_enable_pay_later');
     }
 
     public function testgetOffers()
