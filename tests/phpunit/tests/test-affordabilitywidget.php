@@ -190,7 +190,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue(isAffordabilityWidgetTestModeEnabled());
         
-        update_option('rzp_afd_enable_test_mode','no');
+        update_option('rzp_afd_enable_test_mode', 'no');
 
         $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
     }
