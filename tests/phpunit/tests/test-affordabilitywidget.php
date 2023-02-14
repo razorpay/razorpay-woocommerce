@@ -137,7 +137,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('#8BBFFF', $response);
     }
-    
+
     public function testgetKeyID()
     {
         update_option('woocommerce_razorpay_settings', array('key_id' => 'key_id_2', 'key_secret' => 'key_secret2'));
@@ -145,6 +145,71 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $this->assertSame('key_id_2', getKeyId());
         
         delete_option('woocommerce_razorpay_settings');
+    }
+
+    public function testgetPriceSimpleProduct()
+    {
+        global $product;
+
+        $product = new WC_Product_Simple();
+        $product->set_regular_price(15);
+        $product->set_sale_price(10);
+        $product->save();
+
+        $this->assertSame('10', getPrice());
+    }
+
+    public function testgetPriceVariableProduct()
+    {
+        global $product;
+        
+        $product = new WC_Product_Variable();
+        $product->set_price(20);
+        $product->save();
+
+        $this->assertSame('20', getPrice());
+    }
+
+    public function testaddSubSection()
+    {
+        global $current_section;
+        $current_section = 'affordability-widget';
+
+        ob_start();
+        addSubSection();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $pluginSubSection = '<li><a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay') . '" class="">Plugin Settings</a> | </li>';
+
+        $affordabilitywidgetSubSection = '<li><a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=affordability-widget') . '" class="current">Affordability Widget</a>  </li>';
+
+        $this->assertStringContainsString($pluginSubSection, $result);
+
+        $this->assertStringContainsString($affordabilitywidgetSubSection, $result);
+
+        $this->assertStringContainsString(admin_url(), $result);
+
+        $this->assertStringContainsString('</ul><br class="clear" />', $result);
+    }
+
+    public function testisAffordabilityWidgetTestModeEnabledYes()
+    {
+        add_option('rzp_afd_enable_test_mode', 'yes');
+
+        $this->assertTrue(isAffordabilityWidgetTestModeEnabled());
+    }
+
+    public function testisAffordabilityWidgetTestModeEnabledNo()
+    {   
+        update_option('rzp_afd_enable_test_mode', 'no');
+
+        $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
+    }
+
+    public function testisAffordabilityWidgetTestModeNotEnabled()
+    {
+        $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
     }
     
     public function testisEnabledYes()

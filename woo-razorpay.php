@@ -377,6 +377,22 @@ function woocommerce_razorpay_init()
             return esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
         }
 
+        protected function triggerValidationInstrumentation($data)
+        {
+            $properties = [
+                'page_url'            => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                'field_type'          => 'text',
+                'field_name'          => 'key_id or key_secret',
+                'is_plugin_activated' => ($this->getSetting('enabled') === 'yes') ? true : false
+            ];
+
+            $properties = array_merge($properties, $data);
+
+            $trackObject = $this->newTrackPluginInstrumentation($this->getSetting('key_id'), '');
+            $response = $trackObject->rzpTrackSegment('formfield.validation.error', $properties);
+            $trackObject->rzpTrackDataLake('formfield.validation.error', $properties);
+        }
+
         public function autoEnableWebhook()
         {
             $webhookExist = false;
@@ -402,6 +418,8 @@ function woocommerce_razorpay_init()
             //validating the key id and key secret set properly or not.
             if($key_id == null || $key_secret == null)
             {
+                $validationErrorProperties = $this->triggerValidationInstrumentation(
+                    ['error_message' => 'Key Id and or Key Secret is null']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
@@ -419,6 +437,8 @@ function woocommerce_razorpay_init()
             }
             catch (Exception $e)
             {
+                $validationErrorProperties = $this->triggerValidationInstrumentation(
+                    ['error_message' => 'Invalid Key Id and Key Secret']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Please check Key Id and Key Secret.'); ?></b></p>
@@ -517,17 +537,32 @@ function woocommerce_razorpay_init()
                     }
                 }
             }
+
+            $webhookProperties = [
+                'page_url'       => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                'prev_page_url'  => $_SERVER['HTTP_REFERER'],
+                'is_plugin_activated' => ($this->getSetting('enabled') === 'yes') ? true : false,
+                'events_selected'     => $this->defaultWebhookEvents,
+            ];
+
             if ($webhookExist)
             {
+                $trackObject = $this->newTrackPluginInstrumentation($this->getSetting('key_id'), '');
+                $response = $trackObject->rzpTrackSegment('autowebhook.updated', $webhookProperties);
+                $trackObject->rzpTrackDataLake('autowebhook.updated', $webhookProperties);
+
                 rzpLogInfo('Updating razorpay webhook');
                 return $this->webhookAPI('PUT', "webhooks/" . $webhookId, $data);
             }
             else
             {
+                $trackObject = $this->newTrackPluginInstrumentation($this->getSetting('key_id'), '');
+                $response = $trackObject->rzpTrackSegment('autowebhook.created', $webhookProperties);
+                $trackObject->rzpTrackDataLake('autowebhook.created', $webhookProperties);
+
                 rzpLogInfo('Creating razorpay webhook');
                 return $this->webhookAPI('POST', "webhooks/", $data);
             }
-
         }
 
         public function newTrackPluginInstrumentation($key, $secret)
@@ -708,8 +743,8 @@ function woocommerce_razorpay_init()
         {
             echo '<h3>'.__('Razorpay Payment Gateway', $this->id) . '</h3>';
             echo '<p>'.__('Allows payments by Credit/Debit Cards, NetBanking, UPI, and multiple Wallets') . '</p>';
-            echo '<p>'.__('First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank">signup</a> for a Razorpay account or
-            <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=woocommerce" target="_blank">login</a> if you have an existing account.'). '</p>';
+            echo '<p>'.__('First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank" onclick="rzpSignupClicked(event)">signup</a> for a Razorpay account or
+            <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=woocommerce" target="_blank" onclick="rzpLoginClicked(event)">login</a> if you have an existing account.'). '</p>';
             echo '<table class="form-table">';
 
             // Generate the HTML For the settings form.
