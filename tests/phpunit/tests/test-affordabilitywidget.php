@@ -147,7 +147,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         delete_option('woocommerce_razorpay_settings');
     }
     
-    public function testisEnabled()
+    public function testisEnabledYes()
     {
         add_option('rzp_afd_enable_dark_logo', 'yes');
         
@@ -156,7 +156,16 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         delete_option('rzp_afd_enable_dark_logo');
     }
 
-    public function testisEnabledOption()
+    public function testisEnabledNo()
+    {
+        add_option('rzp_afd_enable_dark_logo', 'no');
+        
+        $this->assertSame('false', isEnabled('rzp_afd_enable_dark_logo'));
+
+        delete_option('rzp_afd_enable_dark_logo');
+    }
+
+    public function testisEnabledwithoutfeature()
     {
         $this->assertSame('true', isEnabled('rzp_afd_enable_dark_logo'));
     }
