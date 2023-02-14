@@ -187,7 +187,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $this->assertStringContainsString('</ul><br class="clear" />', $result);
     }
 
-    public function testisAffordabilityWidgetTestModeEnabled()
+    public function testisAffordabilityWidgetTestModeEnabledYes()
     {
         add_option('rzp_afd_enable_test_mode', 'yes');
 
