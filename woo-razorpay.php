@@ -29,6 +29,7 @@ require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
+require_once __DIR__.'/includes/stylehandler.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -169,6 +170,7 @@ function woocommerce_razorpay_init()
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
+            $isDualCheckoutEnabled = false;
 
             // Load preference API call only for administrative interface page.
             if (is_admin())
@@ -187,6 +189,11 @@ function woocommerce_razorpay_init()
                       if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
                         $isAccCreationAvailable = true;
                       }
+
+                      if (!empty($merchantPreferences['features']['one_cc_dual_checkout'])) {
+                        $isDualCheckoutEnabled = true;
+                      }
+
 
                     } catch (\Exception $e) {
                       rzpLogError($e->getMessage());
@@ -214,6 +221,14 @@ function woocommerce_razorpay_init()
                     '1cc_account_creation',
                 ));
               }
+
+               if ($isDualCheckoutEnabled) {
+                  $this->visibleSettings = array_merge($this->visibleSettings, array(
+                    'enable_dual_checkout_oncart',
+                    'enable_dual_checkout_onpdp',
+                    'enable_dual_checkout_minicart',
+                  ));
+                }
 
             }
 
@@ -2602,7 +2617,9 @@ function enqueueScriptsFor1cc()
 
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-    wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
+
+    $themeInfo=styleHandler(wp_get_theme()->name);
+    wp_register_style(RZP_1CC_CSS_SCRIPT,$themeInfo, null, null);
     wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
     wp_register_script('btn_1cc_checkout', BTN_CHECKOUTJS_URL, null, null);
@@ -2631,14 +2648,18 @@ function addCheckoutButton()
 
   if (isRazorpayPluginEnabled() && is1ccEnabled() )
   {
+    if (isDualCartCheckoutEnabled()){
+        $tempTest = RZP_PATH . 'templates/rzp-dual-checkout-btn.php';
+    } else {
+        $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
+    }
+
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
-        $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
         load_template( $tempTest, false, array() );
       }
     } else {
-      $tempTest = RZP_PATH . 'templates/rzp-cart-checkout-btn.php';
       load_template( $tempTest, false, array() );
     }
   }
@@ -2655,8 +2676,10 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
     add_action( 'woocommerce_widget_shopping_cart_buttons', function()
     {
         // Removing Buttons
-        remove_action( 'woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20 );
-
+       if(isDualMiniCartCheckoutEnabled() === false){
+            // Removing Buttons
+            remove_action( 'woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20 );
+        }
         add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
 
         add_action( 'woocommerce_widget_shopping_cart_buttons', 'addMiniCheckoutButton', 20 );

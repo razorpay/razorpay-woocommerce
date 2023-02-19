@@ -255,6 +255,27 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'      =>  __('Allow customers to create store Account'),
             'default' => 'No',
         ),
+        'enable_dual_checkout_oncart'   => array(
+            'title'       => __('Activate Dual checkout on cart'),
+            'type'        => 'checkbox',
+            'description' => "Activate Dual checkout on cart page",
+            'label'       => __('Activate Dual checkout on cart'),
+            'default'     => 'yes',
+        ),
+        'enable_dual_checkout_onpdp'    => array(
+            'title'       => __('Activate Dual checkout on Buynow'),
+            'type'        => 'checkbox',
+            'description' => "Activate Dual checkout on Product description Page",
+            'label'       => __('Activate Dual checkout on Buynow'),
+            'default'     => 'yes',
+        ),
+        'enable_dual_checkout_minicart' => array(
+            'title'       => __('Activate Dual checkout on minicart'),
+            'type'        => 'checkbox',
+            'description' => 'Activate Dual checkout on minicart',
+            'label'       => __('Activate Dual checkout on minicart'),
+            'default'     => 'yes',
+        ),
     );
 
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);
