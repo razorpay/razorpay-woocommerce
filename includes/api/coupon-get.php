@@ -229,14 +229,14 @@ function getCouponList($request)
                 // Cleanup cart.
                 WC()->cart->empty_cart();
                 create1ccCart($orderId);
-                $smartCoupon = new Wt_Smart_Coupon_Public(" ", " ");
+                $smartCoupon = new Wt_Smart_Coupon_Restriction_Public(" ", " ");
 
                 // Quantity of matching Products
                 $minMatchingProductQty = get_post_meta($coupon->get_id(), '_wt_min_matching_product_qty', true);
                 $maxMatchingProductQty = get_post_meta($coupon->get_id(), '_wt_max_matching_product_qty', true);
 
                 if ($minMatchingProductQty > 0 || $maxMatchingProductQty > 0) {
-                    $quantityMatchingProduct = $smartCoupon->get_quantity_of_matching_product($coupon);
+                    $quantityMatchingProduct = $smartCoupon->get_quantity_of_matching_product($coupon, [], []);
                     if ($minMatchingProductQty > 0 && $quantityMatchingProduct < $minMatchingProductQty) {
                         continue;
                     }
@@ -250,7 +250,7 @@ function getCouponList($request)
                 $maxMatchingProductSubtotal = get_post_meta($coupon->get_id(), '_wt_max_matching_product_subtotal', true);
 
                 if ($minMatchingProductSubtotal !== 0 || $maxMatchingProductSubtotal !== 0) {
-                    $subtotalMatchingProduct = $smartCoupon->get_sub_total_of_matching_products($coupon);
+                    $subtotalMatchingProduct = $smartCoupon->get_sub_total_of_matching_products($coupon, [], []);
                     if ($minMatchingProductSubtotal > 0 && $subtotalMatchingProduct < $minMatchingProductSubtotal) {
                         continue;
                     }
