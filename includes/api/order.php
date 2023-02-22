@@ -12,6 +12,16 @@ function createWcOrder(WP_REST_Request $request)
     $logObj           = array();
     $logObj['api']    = 'createWcOrder';
     $logObj['params'] = $params;
+
+    // fetching wp_woocommerce_session_ from cookies
+    $sessionVal = array_filter($params['cookies'], function($key) {
+       return strpos($key, 'wp_woocommerce_session_') === 0;
+    }, ARRAY_FILTER_USE_KEY);
+
+    foreach($sessionVal as $key => $value){
+        $expKey = explode('wp_woocommerce_session_', $key);
+        $sessionResult = $expKey[1];
+    }
     
     //Abandoment cart plugin decode the coupon code from token
     $couponCode = null;
@@ -75,7 +85,8 @@ function createWcOrder(WP_REST_Request $request)
     checkCartEmpty($logObj);
 
     $cartHash  = WC()->cart->get_cart_hash();
-    $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $cartHash);
+    $hash = $sessionResult."_".$cartHash;
+    $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
 
     if ($orderIdFromHash == null) {
         $checkout = WC()->checkout();
@@ -241,9 +252,10 @@ function createWcOrder(WP_REST_Request $request)
             $response['customer_cart'] = $customer_cart ?? '';
         }
 
-        $woocommerce->session->set(RZP_1CC_CART_HASH . $cartHash, $orderId);
-        set_transient(RZP_1CC_CART_HASH . $orderId, $cartHash, 14400);
-        set_transient(RZP_1CC_CART_HASH . $cartHash, $orderId, 14400);
+        $hash = $sessionResult."_".$cartHash;
+        $woocommerce->session->set(RZP_1CC_CART_HASH . $hash, $orderId);
+        set_transient(RZP_1CC_CART_HASH . $orderId, $hash, 14400);
+        set_transient(RZP_1CC_CART_HASH . $hash, $orderId, 14400);
         set_transient($razorpay::SESSION_KEY, $orderId, 14400);
 
         $logObj['response'] = $response;
