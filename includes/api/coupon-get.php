@@ -237,7 +237,7 @@ function getCouponList($request)
                 $maxMatchingProductQty = get_post_meta($coupon->get_id(), '_wt_max_matching_product_qty', true);
 
                 if ($minMatchingProductQty > 0 || $maxMatchingProductQty > 0) {
-                    $quantityMatchingProduct = get_quantity_of_product($coupon, $items,[], []);
+                    $quantityMatchingProduct = getQuantityOfProduct($coupon, $items,[], []);
                     if ($minMatchingProductQty > 0 && $quantityMatchingProduct < $minMatchingProductQty) {
                         continue;
                     }
@@ -251,7 +251,7 @@ function getCouponList($request)
                 $maxMatchingProductSubtotal = get_post_meta($coupon->get_id(), '_wt_max_matching_product_subtotal', true);
 
                 if ($minMatchingProductSubtotal !== 0 || $maxMatchingProductSubtotal !== 0) {
-                    $subtotalMatchingProduct = get_sub_total_of_products($coupon, $items, [], []);
+                    $subtotalMatchingProduct = getSubTotalOfProducts($coupon, $items, [], []);
                     if ($minMatchingProductSubtotal > 0 && $subtotalMatchingProduct < $minMatchingProductSubtotal) {
                         continue;
                     }
@@ -307,7 +307,7 @@ function transformAmountForRzp($amount)
     return wc_format_decimal($amount, 2) * 100;
 }
 
-function get_quantity_of_product($coupon, $items, $couponProducts, $couponCategories, $couponExcludeProducts = array(), $couponExcludeCategories = array())
+function getQuantityOfProduct($coupon, $items, $couponProducts, $couponCategories, $couponExcludeProducts = array(), $couponExcludeCategories = array())
 {
     global $woocommerce;        
     $qty = 0;
@@ -315,17 +315,14 @@ function get_quantity_of_product($coupon, $items, $couponProducts, $couponCatego
     $isProductRestrictionEnabled=count($couponProducts)>0;
     $isCategoryRestrictionEnabled=count($couponCategories)>0;
 
-    foreach($items as $item)
-    {
-        if(isset($item['free_product']) && "wt_give_away_product"===$item['free_product'])
-        {
+    foreach($items as $item) {
+        if(isset($item['free_product']) && "wt_give_away_product"===$item['free_product']) {
             continue;
         }
 
         $itemQuantity=0; //always reset to zero on loop start
         
-        if($isProductRestrictionEnabled)
-        {
+        if($isProductRestrictionEnabled) {
             if(in_array($item['product_id'], $couponProducts) || in_array($item['variation_id'], $couponProducts))
             {
                 $itemQuantity = $item['quantity'];
@@ -336,38 +333,31 @@ function get_quantity_of_product($coupon, $items, $couponProducts, $couponCatego
         {
             $productCats = wc_get_product_cat_ids($item['product_id']);
 
-            if(count(array_intersect($couponCategories, $productCats))>0)
-            { 
-                if(0 === count(array_intersect($couponExcludeCategories, $productCats)))
-                {
+            if(count(array_intersect($couponCategories, $productCats))>0) { 
+                if(0 === count(array_intersect($couponExcludeCategories, $productCats))) {
                     $itemQuantity = $item['quantity'];
                 }     
             }
         }
 
 
-        if(!$isProductRestrictionEnabled && !$isCategoryRestrictionEnabled)
-        {
+        if(!$isProductRestrictionEnabled && !$isCategoryRestrictionEnabled) {
             $productCats = wc_get_product_cat_ids($item['product_id']);
             
-            if(!empty($couponExcludeCategories) || !empty($couponExcludeProducts))
-            {
+            if(!empty($couponExcludeCategories) || !empty($couponExcludeProducts)) {
 
                 if(in_array($item['product_id'], $couponExcludeProducts) || in_array($item['variation_id'], $couponExcludeProducts))
                 {
                     continue;
 
-                }elseif(0 < count(array_intersect($couponExcludeCategories, $productCats)))
-                {
+                } elseif (0 < count(array_intersect($couponExcludeCategories, $productCats))) {
                     continue;
-                }else
-                {
+                } else {
                     //not included in excluded product/category
                     $itemQuantity = $item['quantity'];
                 }
 
-            }else
-            {
+            } else {
                 $itemQuantity = $item['quantity'];
             }
 
@@ -379,7 +369,7 @@ function get_quantity_of_product($coupon, $items, $couponProducts, $couponCatego
     return $qty;
 }
 
-function get_sub_total_of_products($coupon,$items, $couponProducts, $couponCategories)
+function getSubTotalOfProducts($coupon,$items, $couponProducts, $couponCategories)
 {
     global $woocommerce;
     $total = 0;
@@ -389,25 +379,21 @@ function get_sub_total_of_products($coupon,$items, $couponProducts, $couponCateg
 
     if($isProductRestrictionEnabled || $isCategoryRestrictionEnabled) // check with matching products by include condition.
     { 
-        foreach($items as $item)
-        {             
-            if(isset($item['free_product']) && "wt_give_away_product" === $item['free_product'])
-            {
+        foreach($items as $item) {   
+
+            if(isset($item['free_product']) && "wt_give_away_product" === $item['free_product']) {
                 continue;
             }
             
             $productCats = wc_get_product_cat_ids($item['product_id']);
 
-            if(($isProductRestrictionEnabled && in_array($item['product_id'], $couponProducts)) ||  ($isCategoryRestrictionEnabled && count(array_intersect($couponCategories,$productCats)) > 0))
-            {                  
+            if(($isProductRestrictionEnabled && in_array($item['product_id'], $couponProducts)) ||  ($isCategoryRestrictionEnabled && count(array_intersect($couponCategories,$productCats)) > 0)) {                  
                 $total += (float) $item['data']->get_price() * (int) $item['quantity'];
             }          
         }
 
-    }else
-    {
-        foreach( $items as $item )
-        {
+    } else {
+        foreach($items as $item) {
             $total += (float) $item['data']->get_price() * (int) $item['quantity'];
         }
     }
