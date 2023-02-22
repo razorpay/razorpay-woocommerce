@@ -2086,7 +2086,7 @@ EOT;
                                 $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
                             }else{
                                 //Deduct amount of gift card
-                               $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftcard['code']);
+                               $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftCode);
                             }
 
                         }else{
@@ -2107,7 +2107,7 @@ EOT;
                         $order->remove_coupon($couponKey);
 
                         //TODO: Convert all razorpay amount in paise to rupees
-                        $discount_total = $giftcard['value']/100;
+                        $discount_total = $promotion['value']/100;
 
                         //TODO: Verify source code implementation
                         // Loop through products and apply the coupon discount
