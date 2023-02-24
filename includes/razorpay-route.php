@@ -91,6 +91,15 @@ class RZP_Route extends WP_List_Table
         );
     }
 
+    protected function fetchRazorpayApiInstance()
+    {
+        $Wc_Razorpay_Loader = new WC_Razorpay();
+
+        $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
+
+        return $api;
+    }
+
     function rzpTransfers()
     {
         echo '<div>
@@ -251,9 +260,7 @@ class RZP_Route extends WP_List_Table
     {
         $items = array();
 
-        $Wc_Razorpay_Loader = new WC_Razorpay();
-
-        $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
+        $api = $this->fetchRazorpayApiInstance();
 
         try {
             $transfers = $api->transfer->all(['count' => 100, 'expand[]' => 'recipient_settlement']);
@@ -295,9 +302,9 @@ class RZP_Route extends WP_List_Table
         } else {
 
             $transferId = sanitize_text_field($_REQUEST['id']);
-            $Wc_Razorpay_Loader = new WC_Razorpay();
+            
+            $api = $this->fetchRazorpayApiInstance();
 
-            $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
             $url = "transfers/" . $transferId . "/?expand[]=recipient_settlement";
 
             $transferDetail = $api->request->request("GET", $url);
@@ -587,8 +594,8 @@ class RZP_Route extends WP_List_Table
     function getReversalItems($count)
     {
         $result = array();
-        $Wc_Razorpay_Loader = new WC_Razorpay();
-        $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
+        
+        $api = $this->fetchRazorpayApiInstance();
 
         try {
             $url = "reversals";
@@ -695,8 +702,8 @@ class RZP_Route extends WP_List_Table
     function getPaymentItems($count, $accId)
     {
         $result = array();
-        $Wc_Razorpay_Loader = new WC_Razorpay();
-        $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
+        
+        $api = $this->fetchRazorpayApiInstance();
 
         try {
             $url = "payments/";
@@ -743,9 +750,9 @@ class RZP_Route extends WP_List_Table
         } else {
 
             $settlementId = sanitize_text_field($_REQUEST['id']);
-            $Wc_Razorpay_Loader = new WC_Razorpay();
+            
+            $api = $this->fetchRazorpayApiInstance();
 
-            $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
             try {
                 $data = array(
                     'recipient_settlement_id' => $settlementId
@@ -812,9 +819,9 @@ class RZP_Route extends WP_List_Table
         } else {
 
             $paymentId = sanitize_text_field($_REQUEST['id']);
-            $Wc_Razorpay_Loader = new WC_Razorpay();
+            
+            $api = $this->fetchRazorpayApiInstance();
 
-            $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
             $paymentDetail = $api->payment->fetch($paymentId);
 
             $paymentTransfers = $api->payment->fetch($paymentId)->transfers();
@@ -971,8 +978,7 @@ class RZP_Route extends WP_List_Table
 
     function  checkDirectTransferFeature(){
 
-        $Wc_Razorpay_Loader = new WC_Razorpay();
-        $api = $Wc_Razorpay_Loader->getRazorpayApiInstance();
+        $api = $this->fetchRazorpayApiInstance();
 
         $base_url = $api->getBaseUrl();
 
