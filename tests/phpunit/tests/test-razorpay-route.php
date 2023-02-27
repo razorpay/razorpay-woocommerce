@@ -97,6 +97,5 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $this->assertSame('razorpaySettlementTransfers', $GLOBALS['submenu'][''][3][2]);
 
         $this->assertSame('razorpayPaymentsView', $GLOBALS['submenu'][''][4][2]);
-
     }
 }
