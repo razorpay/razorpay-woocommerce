@@ -166,7 +166,11 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
             });
         </script>';
 
-        $this->assertStringContainsString($directTransferModal, $result);
+        $this->assertStringContainsString('<button type="button" class="close" data-dismiss="modal" onclick="' . $hide . '">&times;</button>', $result);
+
+        $this->assertStringContainsString('<form method="POST" action="' . esc_url(admin_url('admin-post.php')) . '">', $result);
+
+        $this->assertStringContainsString('<button type="submit" onclick="' . $hide . '" name="trf_create" class="btn btn-primary">Create</button>', $result);
     }
 
     public function testget_columns()
