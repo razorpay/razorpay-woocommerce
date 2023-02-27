@@ -23,6 +23,78 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $_SERVER = array();
     }
 
+    public function testaddRouteModuleSettingFields()
+    {
+        update_option('woocommerce_currency', 'INR');
+        
+        $defaultFormFields = array(
+            'key_id' => array(
+                'title' => __('Key ID', 11),
+                'type' => 'text',
+                'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.', 11)
+            ),
+            'key_secret' => array(
+                'title' => __('Key Secret', 11),
+                'type' => 'text',
+                'description' => __('The key Id and key secret can be generated from "API Keys" section of Razorpay Dashboard. Use test or live for test or live mode.', 11)
+            ),
+        );
+
+        addRouteModuleSettingFields($defaultFormFields);
+
+        $description = "<span>For Route payments / transfers, first create a linked account <a href='https://dashboard.razorpay.com/app/route/payments' target='_blank'>here</a></span><br/><br/>Route Documentation - <a href='https://razorpay.com/docs/route/' target='_blank'>View</a>";
+
+        $this->assertSame('Route Module', $defaultFormFields['route_enable']['title']);
+
+        $this->assertSame('checkbox', $defaultFormFields['route_enable']['type']);
+
+        $this->assertSame('Enable route module?', $defaultFormFields['route_enable']['label']);
+
+        $this->assertSame($description, $defaultFormFields['route_enable']['description']);
+
+        $this->assertSame('no', $defaultFormFields['route_enable']['default']);
+
+        update_option('woocommerce_currency', 'USD');
+    }
+
+    public function testrazorpayRouteModule()
+    {
+        add_option('woocommerce_razorpay_settings', array('route_enable' => 'yes'));
+
+        razorpayRouteModule();
+
+        $this->assertTrue(has_action('admin_menu'));
+
+        $this->assertTrue(has_action('admin_enqueue_scripts'));
+
+        $this->assertTrue(has_action('woocommerce_product_data_panels'));
+
+        $this->assertTrue(has_action('woocommerce_process_product_meta'));
+
+        $this->assertTrue(has_action('add_meta_boxes'));
+
+        $this->assertTrue(has_filter('woocommerce_product_data_tabs'));
+    }
+
+    public function testrzpAddPluginPage()
+    {
+        global $submenu;
+
+        rzpAddPluginPage();
+
+        $this->assertSame('razorpay-route-woocommerce', $GLOBALS['admin_page_hooks']['razorpayRouteWoocommerce']);
+
+        $this->assertSame('razorpayTransfers', $GLOBALS['submenu'][''][0][2]);
+
+        $this->assertSame('razorpayRouteReversals', $GLOBALS['submenu'][''][1][2]);
+
+        $this->assertSame('razorpayRoutePayments', $GLOBALS['submenu'][''][2][2]);
+
+        $this->assertSame('razorpaySettlementTransfers', $GLOBALS['submenu'][''][3][2]);
+
+        $this->assertSame('razorpayPaymentsView', $GLOBALS['submenu'][''][4][2]);
+    }
+    
     public function testrzpTransfers()
     {
         $this->instance->shouldReceive('routeHeader');
@@ -47,9 +119,9 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $this->assertStringContainsString('<input type="hidden" name="section" value="issues" />', $result);
 
         $this->assertStringContainsString('<form method="get">', $result);
-        
+
         $this->assertStringContainsString('<input type="hidden" name="page" value="razorpayRouteWoocommerce">', $result);
-        
+
         $hide = "jQuery('.overlay').hide()";
 
         $directTransferModal = '<div class="overlay">
@@ -60,7 +132,6 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
                         <div class="modal-header">
                         <h4 class="modal-title">Direct Transfer</h4>
                             <button type="button" class="close" data-dismiss="modal" onclick="' . $hide . '">&times;</button>
-
                         </div>
                         <div class="modal-body">
                         <form method="POST" action="' . esc_url(admin_url('admin-post.php')) . '">
@@ -82,7 +153,6 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
                             </div>
                             </form>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -175,7 +245,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $this->assertSame('0987654321', $this->instance->column_default($item, 'la_number'));
 
         $result = $this->instance->column_default($item, 'Razorpay');
-        
+
         $this->assertStringContainsString('[email] => abc.xyz@razorpay.com', $result);
     }
 }
