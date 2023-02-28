@@ -222,7 +222,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
             'source' => 'Direct Transfer',
             'recipient' => 'Razorpay',
             'amount' => '2400',
-            '16/2/23',
+            'created_at' => '16/2/23',
             'transfer_status' => 'Pending',
             'settlement_status' => 'Pending',
             'settlement_id' => '1234' 
@@ -248,7 +248,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
             'source' => 'Direct Transfer',
             'recipient' => 'Razorpay',
             'amount' => '2400',
-            '16/2/23',
+            'created_at' => '16/2/23',
             'transfer_status' => 'Pending',
             'settlement_status' => 'Pending',
             'settlement_id' => '1234' 
