@@ -218,6 +218,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $_REQUEST = array('s' => 'ABC123');
 
         $reversalPage = array(
+            0 => array(
             'transfer_id' => '2345',
             'source' => 'Direct Transfer',
             'recipient' => 'Razorpay',
@@ -226,6 +227,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
             'transfer_status' => 'Pending',
             'settlement_status' => 'Pending',
             'settlement_id' => '1234' 
+            )
         );
 
         $this->instance->shouldReceive('getItems')->with(10)->andReturn($reversalPage);
@@ -244,6 +246,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $_REQUEST = array('s' => 'ABC123');
 
         $reversalPage = array(
+            0 => array(
             'transfer_id' => '2345',
             'source' => 'Direct Transfer',
             'recipient' => 'Razorpay',
@@ -252,6 +255,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
             'transfer_status' => 'Pending',
             'settlement_status' => 'Pending',
             'settlement_id' => '1234' 
+            )
         );
 
         $this->instance->shouldReceive('getItems')->with(10)->andReturn($reversalPage);
@@ -280,7 +284,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('<span class="rzp-currency">₹</span> 12', $response[0]['amount']);
 
-        $this->assertSame(date("d F Y h:i A", strtotime('+5 hour +30 minutes', '02/19/2023')), $response[0]['created_at']);
+        $this->assertSame(date("d F Y h:i A", strtotime('+5 hour +30 minutes', 1677542400)), $response[0]['created_at']);
 
         $this->assertSame('Pending', $response[0]['transfer_status']);
 
