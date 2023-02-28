@@ -100,6 +100,15 @@ class RZP_Route extends WP_List_Table
         return $api;
     }
 
+    protected function fetchSetting()
+    {
+        $Wc_Razorpay_Loader = new WC_Razorpay();
+
+        $setting = $Wc_Razorpay_Loader->getSetting('key_id') . ":" . $Wc_Razorpay_Loader->getSetting('key_secret');
+
+        return $setting;
+    }
+
     function rzpTransfers()
     {
         echo '<div>
@@ -985,7 +994,7 @@ class RZP_Route extends WP_List_Table
         $url = $base_url.'accounts/me/features';
         $context = stream_context_create(array(
             'http' => array(
-                'header'  => "Authorization: Basic " . base64_encode($Wc_Razorpay_Loader->getSetting('key_id').":".$Wc_Razorpay_Loader->getSetting('key_secret'))
+                'header'  => "Authorization: Basic " . base64_encode($this->fetchSetting())
             ),
             "ssl"=>array(
                 "verify_peer"=>false,
