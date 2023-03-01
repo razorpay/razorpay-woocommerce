@@ -171,7 +171,7 @@ function woocommerce_razorpay_init()
             $isAccCreationAvailable = false;
 
             // Load preference API call only for administrative interface page.
-            if (is_admin())
+            if (current_user_can('administrator'))
             {
                 if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                 {
