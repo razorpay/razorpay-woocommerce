@@ -174,6 +174,76 @@ class Request
             ],
             'key_id_2' => [
                 'GET' => [
+                    'payments/Abc123/transfers' =>
+                        [
+                            'recipient_settlement_id' => 'Rzp123',
+                            'items' => [
+                                [
+                                    'id' => 'abcd',
+                                    'source' => 'order',
+                                    'recipient' => 'pay',
+                                    'amount' => 1200,
+                                    'created_at' => 1677542400,
+                                    'status' => 'Pending',
+                                    'settlement_status' => 'pending',
+                                    'recipient_settlement_id' => 'Rzp123'
+                                ],
+                            ]
+                        ],
+                    'payments/Abc123/?expand[]=recipient_settlement' =>
+                        [
+                            'recipient_settlement_id' => 'Rzp123',
+                            'items' => [
+                                [
+                                    'id' => 'abcd',
+                                    'source' => 'order',
+                                    'recipient' => 'pay',
+                                    'amount' => 1200,
+                                    'amount_reversed' => 800,
+                                    'created_at' => 1677542400
+                                ],
+                            ]
+                        ],
+                    'reversals' =>
+                        [
+                            'items' => [
+                                [
+                                    'id' => 'abcd',
+                                    'transfer_id' => 'pqrs',
+                                    'recipient' => 'pay',
+                                    'amount' => 1200,
+                                    'created_at' => 1677542400
+                                ],
+                            ]
+                        ],
+                    'payments/' =>
+                        [
+                            'items' => [
+                                [
+                                    'id' => 'abcd',
+                                    'order_id' => 11,
+                                    'email' => 'abc.xyz@razorpay.com',
+                                    'amount' => 1200,
+                                    'created_at' => 1677542400,
+                                    'contact' => '9087654321',
+                                    'status' => 'Pending'
+                                ],
+                            ]
+                        ],
+                    'transfers/Abc123/?expand[]=recipient_settlement' =>
+                        [
+                            'id' => 'abcd',
+                            'source' => 'order',
+                            'recipient' => 'pay',
+                            'amount' => 1200,
+                            'amount_reversed' => 800,
+                            'created_at' => 1677542400,
+                            'status' => 'Pending',
+                            'settlement_status' => 'pending',
+                            'recipient_settlement_id' => 'Rzp123',
+                            'on_hold_until' => '',
+                            'on_hold' => 1
+                        ],
                     'accounts/me/features' =>
                         [
                             'assigned_features' => [
