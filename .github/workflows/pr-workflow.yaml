@@ -8,8 +8,8 @@ jobs:
   run_AutoWooc:
     runs-on: [self-hosted]
     steps:
-    - uses: actions/checkout@v2
-    - name: Run AutoWooc suite if PR approved
+    - uses: ExpediaGroup/spinnaker-pipeline-trigger@v1.0.1
+    - name: spinnaker-pipeline-trigger
       env:
         SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
         GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
@@ -25,8 +25,8 @@ jobs:
   run_bvt_on_devstack:
     runs-on: [self-hosted]
     steps:
-    - uses: actions/checkout@v2
-    - name: Run AutoWooc suite on devstack if PR approved
+    - uses: ExpediaGroup/spinnaker-pipeline-trigger@v1.0.1
+    - name: spinnaker-pipeline-trigger
       env:
         SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
         GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
