@@ -21,6 +21,7 @@ jobs:
         WEBHOOK_TRIGGER: mozart-pr
         GITHUB_TOKEN: ${{ github.token }}
       run: |
+        echo Hi
         echo $(curl -c /tmp/cookies -o -s -w "%{http_code}" --location --request GET 'https://deploy-api.razorpay.com/login' \--header "Authorization: Bearer ${GIT_TOKEN}")
         echo ${{ github.event.review.state }}
         sh ./.github/actions/triggerWoocSuite.sh
