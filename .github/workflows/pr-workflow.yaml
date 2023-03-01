@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: ExpediaGroup/spinnaker-pipeline-trigger@v1
     - name: Spinnaker
-      parameters: |
+      env: |
           SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
           GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
           COMMIT_SHA: ${{ github.event.review.commit_id }}
