@@ -11,11 +11,15 @@ jobs:
     steps:
     - uses: ExpediaGroup/spinnaker-pipeline-trigger@v1
     - name: Spinnaker
-      env: |
-          SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
-          GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
-          COMMIT_SHA: ${{ github.event.review.commit_id }}
-          GITHUB_TOKEN: ${{ github.token }}
+      env: 
+        SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
+        GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+        COMMIT_SHA: ${{ github.event.review.commit_id }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_STATE: ${{ github.event.pull_request.state }}
+        WEBHOOK_TRIGGER: mozart-pr
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         echo ${{ github.event.review.state }}
         sh ./.github/actions/triggerWoocSuite.sh
