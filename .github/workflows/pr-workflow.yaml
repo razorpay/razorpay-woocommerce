@@ -1,0 +1,42 @@
+name: PR Workflow
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  run_AutoWooc:
+    runs-on: [self-hosted]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run AutoWooc suite if PR approved
+      env:
+        SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
+        GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+        COMMIT_SHA: ${{ github.event.review.commit_id }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_STATE: ${{ github.event.pull_request.state }}
+        WEBHOOK_TRIGGER: razorpay-woocommerce-pr
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        echo ${{ github.event.review.state }}
+        sh ./.github/actions/triggerWoocSuite.sh
+  run_bvt_on_devstack:
+    runs-on: [self-hosted]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run AutoWooc suite on devstack if PR approved
+      env:
+        SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
+        GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+        COMMIT_SHA: ${{ github.event.review.commit_id }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_STATE: ${{ github.event.pull_request.state }}
+        WEBHOOK_TRIGGER: razorpay-woocommerce-pr-autowooc-devstack
+        GITHUB_TOKEN: ${{ github.token }}
+        RUN_AutoWooc_DEVSTACK: true
+      run: |
+        echo ${{ github.event.review.state }}
+        sh ./.github/actions/triggerWoocSuite.sh
