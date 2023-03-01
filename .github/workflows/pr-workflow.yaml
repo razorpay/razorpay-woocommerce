@@ -7,7 +7,7 @@ on:
 
 jobs:
   steps:
-  - name: Spinnaker
+    name: Spinnaker
     uses: ExpediaGroup/spinnaker-pipeline-trigger@v1
     parameters: |
         SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
