@@ -1,7 +1,9 @@
 name: PR Workflow
 
 on:
-  pull_request_review:
+  push:
+    branches:
+    - Automation-Woocommerce
     types: [submitted]
 
 jobs:
