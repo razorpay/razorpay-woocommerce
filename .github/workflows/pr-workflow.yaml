@@ -6,11 +6,16 @@ on:
     - Automation-Woocommerce
 
 jobs:
-  steps:
-    name: Spinnaker
-    uses: ExpediaGroup/spinnaker-pipeline-trigger@v1
-    parameters: |
-        SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
-        GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
-        COMMIT_SHA: ${{ github.event.review.commit_id }}
-        GITHUB_TOKEN: ${{ github.token }}
+  release:
+    runs-on: [self-hosted]
+    steps:
+    - uses: ExpediaGroup/spinnaker-pipeline-trigger@v1
+    - name: Spinnaker
+      parameters: |
+          SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
+          GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+          COMMIT_SHA: ${{ github.event.review.commit_id }}
+          GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        echo ${{ github.event.review.state }}
+        sh ./.github/actions/triggerWoocSuite.sh
