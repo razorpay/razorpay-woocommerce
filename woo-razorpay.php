@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.4.2
- * Stable tag: 4.4.2
+ * Version: 4.4.3
+ * Stable tag: 4.4.3
  * Author: Team Razorpay
  * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
@@ -1187,9 +1187,10 @@ function woocommerce_razorpay_init()
             {
                $product = $item->get_product();
 
+               $productDetails = $product->get_data();
+
                // check product type for gift card plugin
                if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
-                    $productDetails = $product->get_data();
                    if($product->is_type('variation')){
                         $parentProductId = $product->get_parent_id();
                         $parentProduct = wc_get_product($parentProductId);
