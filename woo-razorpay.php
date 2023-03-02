@@ -763,9 +763,10 @@ function woocommerce_razorpay_init()
          **/
         function receipt_page($orderId)
         {
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value){
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value)
+            {
                 if ($value['function'] === 'output' and
-                    stripos($value['file'], 'divi') !== false and
+                    stripos($value['file'], 'themes/divi') !== false and
                     basename($value['file'], ".php") !== 'CheckoutPaymentInfo')
                 {
                     return;
