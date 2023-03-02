@@ -22,7 +22,7 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
         echo ${{ github.event.review.state }}
-        sh ./.github/actions/triggerBvtSuite.sh
+        sh ./.github/actions/triggerWoocSuite.sh
 
   run_bvt_on_devstack:
     runs-on: [self-hosted]
