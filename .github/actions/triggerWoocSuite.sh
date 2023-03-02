@@ -121,6 +121,7 @@ run_autowooc_suite_devstack_when_approved() {
 }
 
 if [ "${RUN_AutoWooc_DEVSTACK}" = "true" ]; then
+  echo "Hi"
   run_autowooc_suite_devstack_when_approved
 else
   run_autowooc_suite_when_approved

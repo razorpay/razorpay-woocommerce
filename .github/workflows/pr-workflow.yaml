@@ -6,16 +6,39 @@ on:
     - Automation-Woocommerce
 
 jobs:
-  release:
+  run_bvt:
     runs-on: ubuntu-latest
     steps:
-    - uses: ExpediaGroup/spinnaker-pipeline-trigger@v1
-    - name: Spinnaker
-      env: 
+    - uses: actions/checkout@v2
+    - name: Run bvt suite if PR approved
+      env:
         SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
         GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
         COMMIT_SHA: ${{ github.event.review.commit_id }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_STATE: ${{ github.event.pull_request.state }}
+        WEBHOOK_TRIGGER: mozart-pr
         GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        echo ${{ github.event.review.state }}
+        sh ./.github/actions/triggerBvtSuite.sh
+
+  run_bvt_on_devstack:
+    runs-on: [self-hosted]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run bvt suite on devstack if PR approved
+      env:
+        SPINNAKER_PASSWORD: ${{ secrets.SPINNAKER_PASSWORD }}
+        GIT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+        COMMIT_SHA: ${{ github.event.review.commit_id }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_STATE: ${{ github.event.pull_request.state }}
+        WEBHOOK_TRIGGER: mozart-pr-bvt-devstack
+        GITHUB_TOKEN: ${{ github.token }}
+        RUN_BVT_DEVSTACK: true
       run: |
         echo ${{ github.event.review.state }}
         sh ./.github/actions/triggerWoocSuite.sh
