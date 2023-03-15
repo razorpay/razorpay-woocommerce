@@ -292,4 +292,132 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('<a href="?page=razorpaySettlementTransfers&id=Rzp123">Rzp123</a>', $response[0]['settlement_id']);
     }
+
+    public function testrzpTransferDetails()
+    {
+        $_REQUEST = array('id' => 'Abc123');
+        
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_2', 'key_secret2');
+            }
+        );
+
+        ob_start();
+        $this->instance->rzpTransferDetails();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringcontainsString('<a href="http://127.0.0.1/wp-admin/admin.php?page=razorpayRouteWoocommerce">', $result);
+
+        $this->assertStringcontainsString('<div class="col-sm-8 panel-value">abcd</div>', $result);
+
+        $this->assertStringcontainsString('<div class="col-sm-8 panel-value">order</div>', $result);
+
+        $this->assertStringcontainsString('<div class="col-sm-8 panel-value">pay</div>', $result);
+
+        $this->assertStringcontainsString('<div class="col-sm-8 panel-value"><span class="rzp-currency">₹ </span>12</div>', $result);
+
+        $this->assertStringcontainsString('Pending', $result);
+
+        $this->assertStringcontainsString('<span class="text-success trf-status">Pending</span>', $result);
+
+        $this->assertStringcontainsString('<button onclick="' . "jQuery('.rev_trf_overlay').show()" . '" class="btn btn-primary">Create Reversal</button>', $result);
+
+        $this->assertStringcontainsString(date("d F Y h:i A", strtotime('+5 hour +30 minutes', 1677542400)), $result);
+
+        $this->assertStringcontainsString('<button type="button" class="close" data-dismiss="modal" onclick="' . "jQuery('.rev_trf_overlay').hide()" . '">&times;</button>', $result);
+
+        $this->assertStringcontainsString('<form method="POST" action="' . esc_url(admin_url('admin-post.php')) . '">', $result);
+        
+        $this->assertStringcontainsString('<input type="hidden" name="transfer_id" value="abcd">', $result);
+
+        $this->assertStringcontainsString('<input type="hidden" name="transfer_amount" value="1200">', $result);
+
+        $this->assertStringcontainsString('<label><input type="radio" name="on_hold" class="enable_hold_until" value="on_hold_until" ', $result);
+
+        $this->assertStringcontainsString('<input type="date" name="hold_until" id="hold_until"  min="' . date('Y-m-d', strtotime('+4 days')) . '" value="" disabled >', $result);
+
+        $this->assertStringcontainsString('<label><input type="radio" name="on_hold" class="disable_hold_until" value="0"  >', $result);
+
+        $this->assertStringcontainsString('<button type="submit" onclick="' . "jQuery('.trf_settlement_overlay').hide()" . '" name="update_setl_status"  class="btn btn-primary">Save</button>', $result);
+
+        $this->assertStringcontainsString('<input type="hidden" name="transfer_id" value="abcd">', $result);
+    }
+
+    public function testrzpTransferDetailsOnholdwithholdunit()
+    {
+        $_REQUEST = array('id' => 'Abc123');
+        
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_3', 'key_secret3');
+            }
+        );
+
+        ob_start();
+        $this->instance->rzpTransferDetails();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringcontainsString('<span class="text-warning trf-status">Scheduled for ' . date("d M Y", 1677542400) . '</span>', $result);
+
+        $this->assertStringcontainsString('<input type="date" name="hold_until" id="hold_until"  min="' . date('Y-m-d', strtotime('+4 days')) . '" value="' . date("Y-m-d", 1677542400), $result);
+    }
+
+    public function testrzpTransferDetailsOnholdwithoutsettlementid()
+    {
+        $_REQUEST = array('id' => 'Abc123');
+        
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_4', 'key_secret4');
+            }
+        );
+
+        ob_start();
+        $this->instance->rzpTransferDetails();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringcontainsString('<span><a href="javascript:void(0);" onclick="' . "jQuery('.trf_settlement_overlay').show()" . '" >Change</a></span>', $result);
+
+        $this->assertStringcontainsString('<label><input type="radio" name="on_hold" class="disable_hold_until" value="0" checked >', $result);
+    }
+
+    public function testrzpTransferDetailsWithoutSettlementStatus()
+    {
+        $_REQUEST = array('id' => 'Abc123');
+        
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_5', 'key_secret5');
+            }
+        );
+
+        ob_start();
+        $this->instance->rzpTransferDetails();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringcontainsString('<span>Not Applicable</span>', $result);
+    }
+
+    public function testrzpTransferDetailsStatusComplete()
+    {
+        $_REQUEST = array('id' => 'Abc123');
+        
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_6', 'key_secret6');
+            }
+        );
+
+        ob_start();
+        $this->instance->rzpTransferDetails();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringcontainsString('<span>' . ucwords('Complete') . '</span>', $result);
+    }
 }
