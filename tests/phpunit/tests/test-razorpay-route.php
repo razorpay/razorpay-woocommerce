@@ -292,4 +292,79 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('<a href="?page=razorpaySettlementTransfers&id=Rzp123">Rzp123</a>', $response[0]['settlement_id']);
     }
+
+    public function testprepareReversalItems()
+    {
+        $this->instance->shouldReceive('get_pagenum')->andReturn(12);
+
+        $_REQUEST = array('s' => 'ABC123');
+
+        $reversalPage = array(
+            'reversal_id' => '9654',
+            'transfer_id' => '1234',
+            'amount' => '2500',
+            'created_at' => 1677542400
+        );
+
+        $this->instance->shouldReceive('getReversalItems')->with(10)->andReturn($reversalPage);
+
+        $this->instance->shouldReceive('set_pagination_args');
+
+        $this->instance->prepareReversalItems();
+
+        $this->assertTrue(true);
+    }
+
+    public function testprepareReversalItemswithoutOffet()
+    {
+        $this->instance->shouldReceive('get_pagenum')->andReturn(0);
+
+        $_REQUEST = array('s' => 'ABC123');
+
+        $reversalPage = array(
+            'reversal_id' => '9654',
+            'transfer_id' => '1234',
+            'amount' => '2500',
+            'created_at' => 1677542400
+        );
+
+        $this->instance->shouldReceive('getReversalItems')->with(10)->andReturn($reversalPage);
+
+        $this->instance->shouldReceive('set_pagination_args');
+
+        $this->instance->prepareReversalItems();
+
+        $this->assertTrue(true);
+    }
+
+    public function testgetReversalColumns()
+    {
+        $response = $this->instance->getReversalColumns();
+
+        $this->assertSame('Reversal Id', $response['reversal_id']);
+
+        $this->assertSame('Transfer Id', $response['transfer_id']);
+
+        $this->assertSame('Amount', $response['amount']);
+
+        $this->assertSame('Created At', $response['created_at']);
+    }
+
+    public function testgetReversalItems()
+    {
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_2', 'key_secret2');
+            });
+        
+        $response = $this->instance->getReversalItems(5);
+
+        $this->assertSame('abcd', $response[0]['reversal_id']);
+
+        $this->assertSame('pqrs', $response[0]['transfer_id']);
+
+        $this->assertSame('<span class="rzp-currency">₹</span> 12', $response[0]['amount']);
+
+        $this->assertSame(date("d M Y h:i A", strtotime('+5 hour +30 minutes', 1677542400)), $response[0]['created_at']);
+    }
 }
