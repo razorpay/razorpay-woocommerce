@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.4.2
- * Stable tag: 4.4.2
+ * Version: 4.4.3
+ * Stable tag: 4.4.3
  * Author: Team Razorpay
  * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
@@ -174,7 +174,7 @@ function woocommerce_razorpay_init()
             $isAccCreationAvailable = false;
 
             // Load preference API call only for administrative interface page.
-            if (is_admin())
+            if (current_user_can('administrator'))
             {
                 if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                 {
@@ -768,9 +768,10 @@ function woocommerce_razorpay_init()
          **/
         function receipt_page($orderId)
         {
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value){
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value)
+            {
                 if ($value['function'] === 'output' and
-                    stripos($value['file'], 'divi') !== false and
+                    stripos($value['file'], 'themes/divi') !== false and
                     basename($value['file'], ".php") !== 'CheckoutPaymentInfo')
                 {
                     return;
@@ -1191,9 +1192,10 @@ function woocommerce_razorpay_init()
             {
                $product = $item->get_product();
 
+               $productDetails = $product->get_data();
+
                // check product type for gift card plugin
                if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
-                    $productDetails = $product->get_data();
                    if($product->is_type('variation')){
                         $parentProductId = $product->get_parent_id();
                         $parentProduct = wc_get_product($parentProductId);
