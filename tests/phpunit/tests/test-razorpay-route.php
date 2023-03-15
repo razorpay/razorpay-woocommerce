@@ -292,4 +292,72 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('<a href="?page=razorpaySettlementTransfers&id=Rzp123">Rzp123</a>', $response[0]['settlement_id']);
     }
+
+    public function testrouteHeaderrazorpayRouteWoocommerce()
+    {
+        $_GET['page'] = 'razorpayRouteWoocommerce';
+
+        ob_start();
+        $this->instance->routeHeader();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('<a  class="active"                 href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
+
+        $this->assertStringContainsString('<a                 href="?page=razorpayRoutePayments">Payments</a>', $result);
+
+        $this->assertStringContainsString('<a                 href="?page=razorpayRouteReversals">Reversals</a>', $result);
+    }
+
+    public function testrouteHeaderrazorpayRoutePayments()
+    {
+        $_GET['page'] = 'razorpayRoutePayments';
+
+        ob_start();
+        $this->instance->routeHeader();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('<a                 href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
+
+        $this->assertStringContainsString('<a  class="active"                 href="?page=razorpayRoutePayments">Payments</a>', $result);
+
+        $this->assertStringContainsString('<a                 href="?page=razorpayRouteReversals">Reversals</a>', $result);
+    }
+
+    public function testrouteHeaderrazorpayRouteReversals()
+    {
+        $_GET['page'] = 'razorpayRouteReversals';
+
+        ob_start();
+        $this->instance->routeHeader();
+        $result = ob_get_contents();
+        ob_end_clean();
+        
+        $this->assertStringContainsString('<a                 href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
+
+        $this->assertStringContainsString('<a                 href="?page=razorpayRoutePayments">Payments</a>', $result);
+
+        $this->assertStringContainsString('<a  class="active"                 href="?page=razorpayRouteReversals">Reversals</a>', $result);
+    }
+
+    public function testrzpTransferReversals()
+    {
+        $this->instance->shouldReceive('routeHeader');
+
+        $this->instance->shouldReceive('prepareReversalItems');
+
+        $this->instance->shouldReceive('display');
+
+        ob_start();
+        $this->instance->rzpTransferReversals();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('<div class="wrap route-container">', $result);
+
+        $this->assertStringContainsString('<form method="get">', $result);
+
+        $this->assertStringContainsString('<input type="hidden" name="page" value="razorpayRouteReversals">', $result);
+    }
 }
