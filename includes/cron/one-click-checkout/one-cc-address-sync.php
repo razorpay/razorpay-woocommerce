@@ -398,7 +398,7 @@ function createOneCCAddressSyncCron()
     if (!$isValidOneCCMerchant)
     {
         rzpLogInfo('Failed to create one_cc_address_sync_cron as invalid one cc merchant');
-        deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::INVALID_1CC_MERCHANT);
+        deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::INVALID_1CC_MERCHANT, true);
         return;
     }
 
@@ -443,11 +443,11 @@ function isCronFailingForMoreThan7Days($data, $status, $message): bool
     return false;
 }
 
-function deleteOneCCAddressSyncCron($status='', $message='')
+function deleteOneCCAddressSyncCron($status='', $message='', $isWooCConfig=false)
 {
     rzpLogInfo("Attempting to delete one_cc_address_sync_cron, status: " . $status . ", message: " . $message);
     $data = get_option(Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK);
-    if($status === Constants::COMPLETED || $status === Constants::DEACTIVATED ||
+    if($status === Constants::COMPLETED || $status === Constants::DEACTIVATED || $isWooCConfig ||
         isCronFailingForMoreThan7Days($data, $status, $message))
     {
         deleteCron(Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK);
@@ -506,7 +506,7 @@ function one_cc_address_sync_cron_exec()
         if (!isValidOneCCMerchant($paymentSettings))
         {
             rzpLogInfo("one_cc_address_sync_cron_exec: invalid one cc merchant");
-            deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::INVALID_1CC_MERCHANT);
+            deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::INVALID_1CC_MERCHANT, true);
             return;
         }
 
