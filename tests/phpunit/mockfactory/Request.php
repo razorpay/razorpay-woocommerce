@@ -316,6 +316,78 @@ class Request
                         'receipt' => '16',
                     ]
                 ]
+            ],
+            'key_id_3' => [
+                'GET' => [
+                    'transfers/Abc123/?expand[]=recipient_settlement' =>
+                        [
+                            'id' => 'abcd',
+                            'source' => 'order',
+                            'recipient' => 'pay',
+                            'amount' => 1200,
+                            'amount_reversed' => 800,
+                            'created_at' => 1677542400,
+                            'status' => 'Pending',
+                            'settlement_status' => 'on_hold',
+                            'recipient_settlement_id' => 'Rzp123',
+                            'on_hold_until' => 1677542400,
+                            'on_hold' => 1
+                        ],
+                ]
+            ],
+            'key_id_4' => [
+                'GET' => [
+                    'transfers/Abc123/?expand[]=recipient_settlement' =>
+                        [
+                            'id' => 'abcd',
+                            'source' => 'order',
+                            'recipient' => 'pay',
+                            'amount' => 1200,
+                            'amount_reversed' => 800,
+                            'created_at' => 1677542400,
+                            'status' => 'Pending',
+                            'settlement_status' => 'on_hold',
+                            'recipient_settlement_id' => '',
+                            'on_hold_until' => '',
+                            'on_hold' => 0
+                        ],
+                ]
+            ],
+            'key_id_5' => [
+                'GET' => [
+                    'transfers/Abc123/?expand[]=recipient_settlement' =>
+                        [
+                            'id' => 'abcd',
+                            'source' => 'order',
+                            'recipient' => 'pay',
+                            'amount' => 1200,
+                            'amount_reversed' => 800,
+                            'created_at' => 1677542400,
+                            'status' => 'Pending',
+                            'settlement_status' => '',
+                            'recipient_settlement_id' => '',
+                            'on_hold_until' => '',
+                            'on_hold' => 0
+                        ],
+                ]
+            ],
+            'key_id_6' => [
+                'GET' => [
+                    'transfers/Abc123/?expand[]=recipient_settlement' =>
+                        [
+                            'id' => 'abcd',
+                            'source' => 'order',
+                            'recipient' => 'pay',
+                            'amount' => 1200,
+                            'amount_reversed' => 800,
+                            'created_at' => 1677542400,
+                            'status' => 'Pending',
+                            'settlement_status' => 'Complete',
+                            'recipient_settlement_id' => '',
+                            'on_hold_until' => '',
+                            'on_hold' => 0
+                        ],
+                ]
             ]
         ];
     }
