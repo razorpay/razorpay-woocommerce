@@ -321,11 +321,12 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $_REQUEST = array('s' => 'ABC123');
 
-        $reversalPage = array(0 => array(
-            'reversal_id' => '9654',
-            'transfer_id' => '1234',
-            'amount' => '2500',
-            'created_at' => 1677542400
+        $reversalPage = array(
+            0 => array(
+                'reversal_id' => '9654',
+                'transfer_id' => '1234',
+                'amount' => '2500',
+                'created_at' => 1677542400
             )
         );
 
