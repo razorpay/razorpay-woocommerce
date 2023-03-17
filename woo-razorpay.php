@@ -1315,7 +1315,7 @@ function woocommerce_razorpay_init()
     <!-- This distinguishes all our various wordpress plugins -->
     <input type="hidden" name="razorpay_wc_form_submit" value="1">
 </form>
-<p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
+<p id="msg-razorpay-success" class="woocommerce-info" style="display:none">
 Please wait while we are processing your payment.
 </p>
 <p>
