@@ -302,11 +302,11 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $result = ob_get_contents();
         ob_end_clean();
 
-        $this->assertStringContainsString('<a  class="active"                 href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
+        $this->assertStringContainsString('<a  class="active"  href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
 
-        $this->assertStringContainsString('<a                 href="?page=razorpayRoutePayments">Payments</a>', $result);
+        $this->assertStringContainsString('<a  href="?page=razorpayRoutePayments">Payments</a>', $result);
 
-        $this->assertStringContainsString('<a                 href="?page=razorpayRouteReversals">Reversals</a>', $result);
+        $this->assertStringContainsString('<a  href="?page=razorpayRouteReversals">Reversals</a>', $result);
     }
 
     public function testrouteHeaderrazorpayRoutePayments()
@@ -318,11 +318,11 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $result = ob_get_contents();
         ob_end_clean();
 
-        $this->assertStringContainsString('<a                 href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
+        $this->assertStringContainsString('<a  href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
 
-        $this->assertStringContainsString('<a  class="active"                 href="?page=razorpayRoutePayments">Payments</a>', $result);
+        $this->assertStringContainsString('<a  class="active"  href="?page=razorpayRoutePayments">Payments</a>', $result);
 
-        $this->assertStringContainsString('<a                 href="?page=razorpayRouteReversals">Reversals</a>', $result);
+        $this->assertStringContainsString('<a  href="?page=razorpayRouteReversals">Reversals</a>', $result);
     }
 
     public function testrouteHeaderrazorpayRouteReversals()
@@ -334,11 +334,11 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $result = ob_get_contents();
         ob_end_clean();
         
-        $this->assertStringContainsString('<a                 href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
+        $this->assertStringContainsString('<a  href="?page=razorpayRouteWoocommerce">Transfers</a>', $result);
 
-        $this->assertStringContainsString('<a                 href="?page=razorpayRoutePayments">Payments</a>', $result);
+        $this->assertStringContainsString('<a  href="?page=razorpayRoutePayments">Payments</a>', $result);
 
-        $this->assertStringContainsString('<a  class="active"                 href="?page=razorpayRouteReversals">Reversals</a>', $result);
+        $this->assertStringContainsString('<a  class="active"  href="?page=razorpayRouteReversals">Reversals</a>', $result);
     }
 
     public function testrzpTransferReversals()
