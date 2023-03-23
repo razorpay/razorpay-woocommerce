@@ -674,7 +674,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('9087654321', $response[0]['contact']);
 
-        $this->assertSame(date("d F Y h:i A", strtotime('+5 hour +30 minutes', '02/19/2023')), $response[0]['created_at']);
+        $this->assertSame(date("d F Y h:i A", strtotime('+5 hour +30 minutes', 1677542400)), $response[0]['created_at']);
 
         $this->assertSame('Pending', $response[0]['status']);
     }
