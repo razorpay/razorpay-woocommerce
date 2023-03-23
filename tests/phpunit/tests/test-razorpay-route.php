@@ -594,7 +594,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertStringContainsString('<div class="col"><span class="rzp-currency">₹ </span>12</div>', $result);
 
-        $this->assertStringContainsString('<div class="col">02/19/2023</div>', $result);
+        $this->assertStringContainsString('<div class="col">1677542400</div>', $result);
         
     }
 
