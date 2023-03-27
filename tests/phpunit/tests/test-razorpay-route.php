@@ -585,7 +585,7 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertStringContainsString('<input type="hidden" name="page" value="razorpayRoutePayments">',$result);
 
-        $this->assertStringContainsString('<p class="pay_search_label">Search here for payments of linked account</p>',$result);
+        $this->assertStringContainsString('<p class="pay_search_label">Search here for payments of linked account</p>', $result);
     }
 
     public function testpreparePaymentItems()
@@ -619,13 +619,15 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $_REQUEST = array('s' => 'ABC123');
 
         $paymentItems = array(
+            0 => array(
             'payment_id' => 'pay_LEkixKpTE1Mvrk',
             'order_id' => 11,
             'amount' => '2500',
             'email' => 'abc.xyz@razorpay.com',
             'contact' => '0987654321',
             'created_at' => '16/02/2023',
-            'status' => 'Pending');
+            'status' => 'Pending'
+        ));
 
         $this->instance->shouldReceive('getPaymentItems')->with(10, 'ABC123')->andReturn($paymentItems);
 
