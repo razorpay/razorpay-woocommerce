@@ -581,9 +581,9 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
         $result = ob_get_contents();
         ob_end_clean();
 
-        $this->assertStringContainsString('<div class="wrap route-container"><form method="get">',$result);
+        $this->assertStringContainsString('<div class="wrap route-container"><form method="get">', $result);
 
-        $this->assertStringContainsString('<input type="hidden" name="page" value="razorpayRoutePayments">',$result);
+        $this->assertStringContainsString('<input type="hidden" name="page" value="razorpayRoutePayments">', $result);
 
         $this->assertStringContainsString('<p class="pay_search_label">Search here for payments of linked account</p>', $result);
     }
