@@ -12,7 +12,7 @@ class OneCCAddressSync
     private int $apiRequestRetryCount = 5;
     private int $apiRequestRetryDelay = 2; //in seconds
     private int $postAddressDelay = 3;
-    private int $backOffRetryCount = 8;
+    private int $backOffRetryCount = 10;
     private int $batchSize = 50;
 
     protected Api $api;
@@ -64,7 +64,10 @@ class OneCCAddressSync
     private function postAddresses($body): array
     {
         $body[Constants::SOURCE] = Constants::WOOCOMMERCE;
-        $body[Constants::CHECKPOINT] = $this->checkpoint;
+        if (isset($body[Constants::ADDRESSES]))
+        {
+            $body[Constants::CHECKPOINT] = $this->checkpoint;
+        }
         return $this->makeAPICall(self::POST_ADDRESSES_API, self::POST, $body);
     }
 
@@ -118,7 +121,7 @@ class OneCCAddressSync
         }
 
         // check if addresses are already synced
-        if(isset($configs) && isset($configs[Constants::JOB]))
+        if(isset($configs) && isset($configs[Constants::JOB]) && isset($configs[Constants::ONE_CC_ONBOARDED_TIMESTAMP]))
         {
             if( $configs[Constants::JOB][Constants::STATUS] === Constants::COMPLETED )
             {
@@ -127,9 +130,9 @@ class OneCCAddressSync
             }
             $this->jobConfig = $configs[Constants::JOB];
             $this->oneCCOnboardedTimestamp = $configs[Constants::ONE_CC_ONBOARDED_TIMESTAMP];
+            return true;
         }
-
-        return true;
+        return false;
     }
 
     private function isValidAddress($address): bool
@@ -320,23 +323,20 @@ class OneCCAddressSync
                 return false;
             }
         }
-        if (time() > $endTime)
+        rzpLogInfo("syncAddresses: " . Constants::MAX_RUNNING_TIME_REACHED);
+        $response = $this->postAddresses([
+            Constants::META_DATA => [
+                Constants::STATUS => Constants::PAUSED,
+                Constants::MESSAGE => Constants::MAX_RUNNING_TIME_REACHED,
+            ]
+        ]);
+        if (!$response[Constants::IS_SUCCESS])
         {
-            rzpLogInfo("syncAddresses: " . Constants::MAX_RUNNING_TIME_REACHED);
-            $response = $this->postAddresses([
-                Constants::META_DATA => [
-                    Constants::STATUS => Constants::PAUSED,
-                    Constants::MESSAGE => Constants::MAX_RUNNING_TIME_REACHED,
-                ]
-            ]);
-            if (!$response[Constants::IS_SUCCESS])
-            {
-                $this->handleCronFailure(Constants::POST_ADDRESS_MARK_PAUSED_MAX_RUNNING_TIME_REACHED_ERROR);
-            }
-            else
-            {
-                updateAddressSyncCronData(Constants::PAUSED, Constants::MAX_RUNNING_TIME_REACHED);
-            }
+            $this->handleCronFailure(Constants::POST_ADDRESS_MARK_PAUSED_MAX_RUNNING_TIME_REACHED_ERROR);
+        }
+        else
+        {
+            updateAddressSyncCronData(Constants::PAUSED, Constants::MAX_RUNNING_TIME_REACHED);
         }
         return false;
     }
@@ -402,8 +402,15 @@ function createOneCCAddressSyncCron()
         return;
     }
 
-    createCron(Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK, strtotime("today 18:30"), 'daily');
-    rzpLogInfo('create one_cc_address_sync_cron successful');
+    try
+    {
+        createCron(Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK, strtotime("today 18:30"), 'daily');
+        rzpLogInfo('create one_cc_address_sync_cron successful');
+    }
+    catch (Exception $e)
+    {
+        rzpLogError($e->getMessage());
+    }
     if ($addressSyncCronData !== false)
     {
         updateAddressSyncCronData(Constants::PROCESSING);
@@ -451,7 +458,7 @@ function deleteOneCCAddressSyncCron($status='', $message='', $isWooCConfig=false
         isCronFailingForMoreThan7Days($data, $status, $message))
     {
         deleteCron(Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK);
-        rzpLogInfo("Deleted one_cc_address_sync_cron");
+        rzpLogInfo("Deleted one_cc_address_sync_cron  if exists");
         updateAddressSyncCronData($status, $message, $data, Constants::DELETED);
         return;
     }

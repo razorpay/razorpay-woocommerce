@@ -4,10 +4,12 @@ add_action(Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK, Constants::ONE_CC_ADDRESS_S
 
 function createCron(string $hookName, int $startTime, string $recurrence)
 {
-    if (!wp_next_scheduled($hookName))
+    if (wp_next_scheduled($hookName))
     {
-        wp_schedule_event($startTime, $recurrence, $hookName);
+        throw new Exception($hookName . " already exists");
     }
+
+    wp_schedule_event($startTime, $recurrence, $hookName);
 
 }
 
