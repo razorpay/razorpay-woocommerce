@@ -524,12 +524,9 @@ class RZP_Route extends WP_List_Table
 
         ?>
         <header id="rzp-route-header" class="rzp-route-header">
-            <a <?php if ($_GET['page'] == "razorpayRouteWoocommerce") { ?> class="active" <?php } ?>
-                href="?page=razorpayRouteWoocommerce">Transfers</a>
-            <a <?php if ($_GET['page'] == "razorpayRoutePayments") { ?> class="active" <?php } ?>
-                href="?page=razorpayRoutePayments">Payments</a>
-            <a <?php if ($_GET['page'] == "razorpayRouteReversals") { ?> class="active" <?php } ?>
-                href="?page=razorpayRouteReversals">Reversals</a>
+            <a <?php if ($_GET['page'] == "razorpayRouteWoocommerce") { ?> class="active" <?php } ?> href="?page=razorpayRouteWoocommerce">Transfers</a>
+            <a <?php if ($_GET['page'] == "razorpayRoutePayments") { ?> class="active" <?php } ?> href="?page=razorpayRoutePayments">Payments</a>
+            <a <?php if ($_GET['page'] == "razorpayRouteReversals") { ?> class="active" <?php } ?> href="?page=razorpayRouteReversals">Reversals</a>
 
         </header>
         <?php
