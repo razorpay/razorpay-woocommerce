@@ -109,7 +109,7 @@ class RZP_Route extends WP_List_Table
         return $setting;
     }
 
-    protected function fetchFileContents()
+    protected function fetchFileContents($url, $context)
     {
         return @file_get_contents($url, false, $context);
     }
@@ -1005,7 +1005,7 @@ class RZP_Route extends WP_List_Table
         ));
 
         $directTransferBtn = '';
-        $featuresData = $this->fetchFileContents();
+        $featuresData = $this->fetchFileContents($url, $context);
         if($featuresData !== false) {
             $apiResponse = json_decode($featuresData, true);
             foreach ($apiResponse['assigned_features'] as $features) {
