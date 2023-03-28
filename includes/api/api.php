@@ -145,7 +145,7 @@ function initCustomerSessionAndCart()
 }
 
 function initCartCommon()
-{
+{ 
     if (defined('WC_ABSPATH')) {
         // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
         include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion
