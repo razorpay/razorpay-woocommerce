@@ -576,7 +576,6 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
                 return new MockApi('key_id_2', 'key_secret2');
             });
 
-        
         ob_start();
         $this->instance->rzpSettlementTransfers();
         $result = ob_get_contents();
