@@ -109,11 +109,6 @@ class RZP_Route extends WP_List_Table
         return $setting;
     }
 
-    protected function fetchFileContents()
-    {
-        return @file_get_contents($url, false, $context);
-    }
-
     function rzpTransfers()
     {
         echo '<div>
@@ -1005,7 +1000,7 @@ class RZP_Route extends WP_List_Table
         ));
 
         $directTransferBtn = '';
-        $featuresData = $this->fetchFileContents();
+        $featuresData = @file_get_contents($url, false, $context);
         if($featuresData !== false) {
             $apiResponse = json_decode($featuresData, true);
             foreach ($apiResponse['assigned_features'] as $features) {
