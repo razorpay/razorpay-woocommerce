@@ -29,6 +29,9 @@ require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
+require_once __DIR__.'/includes/cron/one-click-checkout/Constants.php';
+require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php';
+require_once __DIR__.'/includes/cron/cron.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -244,6 +247,7 @@ function woocommerce_razorpay_init()
                 add_action("woocommerce_update_options_payment_gateways_{$this->id}", $cb);
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
             }
             else
             {
@@ -251,6 +255,7 @@ function woocommerce_razorpay_init()
                 add_action('woocommerce_update_options_payment_gateways', $cb);
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
+                add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
             }
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
