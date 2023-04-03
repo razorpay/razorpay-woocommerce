@@ -1232,7 +1232,7 @@ function woocommerce_razorpay_init()
             {
                 wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                     null, null);
-                $data = array($data);
+                // $data = array($data);
             }
             else
             {
