@@ -1,6 +1,6 @@
 (function() {
   var data = razorpay_wc_checkout_vars;
-  if(data === 'checkoutForm') {
+  if(data === 'checkoutForm' || data[0] === 'checkoutForm') {
     document.getElementById("checkoutForm").submit();
   } else if(data === 'routeAnalyticsForm'){
     document.getElementById("routeAnalyticsForm").submit();
