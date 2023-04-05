@@ -565,4 +565,256 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(date("d M Y h:i A", strtotime('+5 hour +30 minutes', 1677542400)), $response[0]['created_at']);
     }
+
+    public function testrzpRoutePayments()
+    {
+        $this->instance->shouldReceive('routeHeader');
+
+        $this->instance->shouldReceive('preparePaymentItems');
+
+        $this->instance->shouldReceive('search_box')->with('search', 'search_id');
+
+        $this->instance->shouldReceive('display');
+
+        ob_start();
+        $this->instance->rzpRoutePayments();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('<div class="wrap route-container"><form method="get">', $result);
+
+        $this->assertStringContainsString('<input type="hidden" name="page" value="razorpayRoutePayments">', $result);
+
+        $this->assertStringContainsString('<p class="pay_search_label">Search here for payments of linked account</p>', $result);
+    }
+
+    public function testpreparePaymentItems()
+    {
+        $this->instance->shouldReceive('get_pagenum')->andReturn(12);
+
+        $_REQUEST = array('s' => 'ABC123');
+
+        $paymentItems = array(
+            'payment_id' => 'pay_LEkixKpTE1Mvrk',
+            'order_id' => 11,
+            'amount' => '2500',
+            'email' => 'abc.xyz@razorpay.com',
+            'contact' => '0987654321',
+            'created_at' => '16/02/2023',
+            'status' => 'Pending');
+
+        $this->instance->shouldReceive('getPaymentItems')->with(10, 'ABC123')->andReturn($paymentItems);
+
+        $this->instance->shouldReceive('set_pagination_args');
+
+        $this->instance->preparePaymentItems();
+
+        $this->assertTrue(true);
+    }
+
+    public function testpreparePaymentItemswithouroffset()
+    {
+        $this->instance->shouldReceive('get_pagenum')->andReturn(0);
+
+        $_REQUEST = array('s' => 'ABC123');
+
+        $paymentItems = array(
+            0 => array(
+            'payment_id' => 'pay_LEkixKpTE1Mvrk',
+            'order_id' => 11,
+            'amount' => '2500',
+            'email' => 'abc.xyz@razorpay.com',
+            'contact' => '0987654321',
+            'created_at' => '16/02/2023',
+            'status' => 'Pending'
+        ));
+
+        $this->instance->shouldReceive('getPaymentItems')->with(10, 'ABC123')->andReturn($paymentItems);
+
+        $this->instance->shouldReceive('set_pagination_args');
+
+        $this->instance->preparePaymentItems();
+
+        $this->assertTrue(true);
+    }
+
+    public function testgetPaymentColumns()
+    {
+        $response = $this->instance->getPaymentColumns();
+
+        $this->assertSame('Payment Id', $response['payment_id']);
+
+        $this->assertSame('Order Id', $response['order_id']);
+
+        $this->assertSame('Amount', $response['amount']);
+
+        $this->assertSame('Email', $response['email']);
+
+        $this->assertSame('Contact', $response['contact']);
+
+        $this->assertSame('Created At', $response['created_at']);
+
+        $this->assertSame('Status', $response['status']);
+    }
+
+    public function testgetPaymentItems()
+    {
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_2', 'key_secret2');
+            });
+        
+        $response = $this->instance->getPaymentItems(5, '');
+
+        $this->assertSame('<a href="?page=razorpayPaymentsView&id=abcd">abcd</a>', $response[0]['payment_id']);
+
+        $this->assertSame(11, $response[0]['order_id']);
+
+        $this->assertSame('<span class="rzp-currency">₹</span> 12', $response[0]['amount']);
+
+        $this->assertSame('abc.xyz@razorpay.com', $response[0]['email']);
+
+        $this->assertSame('9087654321', $response[0]['contact']);
+
+        $this->assertSame(date("d F Y h:i A", strtotime('+5 hour +30 minutes', 1677542400)), $response[0]['created_at']);
+
+        $this->assertSame('Pending', $response[0]['status']);
+    }
+    
+    public function testrzpSettlementTransfers()
+    {
+        $_REQUEST = array('id' => 'Rzp123');
+        $_SERVER = array('HTTP_REFERER' => 'razorpay.com');
+
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_2', 'key_secret2');
+            });
+
+        ob_start();
+        $this->instance->rzpSettlementTransfers();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('<a href="razorpay.com">', $result);
+
+        $this->assertStringContainsString('Settlement ID :  <strong>Rzp123</strong>', $result);
+
+        $this->assertStringContainsString('<div class="col">abcd</div>', $result);
+
+        $this->assertStringContainsString('<div class="col">order</div>', $result);
+
+        $this->assertStringContainsString('<div class="col">pay </div>', $result);
+
+        $this->assertStringContainsString('<div class="col"><span class="rzp-currency">₹ </span>12</div>', $result);
+
+        $this->assertStringContainsString('<div class="col">1677542400</div>', $result);
+
+    }
+
+    public function testcheckDirectTransferFeature()
+    {
+        add_option('key_id', 'key_id_2');
+        add_option('key_secret', 'key_secret2');
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_2', 'key_secret2');
+            });
+
+        $data = array('assigned_features' => array('callback' => array('name' => 'direct_transfer')));
+
+        $this->instance->shouldReceive('fetchFileContents')->andReturn(json_encode($data));
+
+        ob_start();
+        $this->instance->checkDirectTransferFeature();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('<button class="btn btn-primary" onclick="' . "jQuery('.overlay').show()" . '">Create Direct Transfer</button>', $result);
+    }
+
+    public function testadminEnqueueScriptsFunc()
+    {
+        adminEnqueueScriptsFunc();
+
+        $this->assertTrue(wp_script_is('route-script', 'enqueued'));
+
+        $this->assertTrue(wp_script_is('bootstrap-script', 'enqueued'));
+
+        $this->assertTrue(wp_style_is('bootstrap-css', 'enqueued'));
+
+        $this->assertTrue(wp_style_is('woo_route-css', 'enqueued'));
+
+        $this->assertTrue(wp_script_is('jquery', 'enqueued'));
+
+        $this->assertTrue(wp_style_is('bootstrap-css', 'registered'));
+
+        $this->assertTrue(wp_style_is('woo_route-css', 'registered'));
+    }
+
+    public function testtransferDataTab()
+    {
+        $response = transferDataTab([]);
+
+        $this->assertSame('Razorpay Route', $response['route']['label']);
+
+        $this->assertSame('rzp_transfer_product_data', $response['route']['target']);
+
+        $this->assertSame(11, $response['route']['priority']);
+    }
+
+    public function testwoocommerce_process_transfer_meta_fields_save()
+    {
+        $_POST = array('rzp_transfer_from' => 'ABC', 'LA_number' => '123', 'LA_transfer_amount' => '2500', 'LA_transfer_status' => 'Pending');
+
+        $postid = 24;
+
+        woocommerce_process_transfer_meta_fields_save($postid);
+
+        $this->assertSame('ABC', get_post_meta($postid, 'rzp_transfer_from', true));
+
+        $this->assertSame('123', get_post_meta($postid, 'LA_number', true));
+
+        $this->assertSame('2500', get_post_meta($postid, 'LA_transfer_amount', true));
+
+        $this->assertSame('Pending', get_post_meta($postid, 'LA_transfer_status', true));
+    }
+
+    public function testpaymentTransferMetaBox()
+    {
+        paymentTransferMetaBox();
+
+        $this->assertSame('Razorpay transfers from Order / Payment', ($GLOBALS['wp_meta_boxes']['shop_order']['normal']['low']['rzp_trf_payment_meta']['title']));
+
+        $this->assertSame('Razorpay Payment ID', ($GLOBALS['wp_meta_boxes']['shop_order']['normal']['low']['rzp_payment_meta']['title']));
+    }
+
+    public function testrenderPaymentMetaBox()
+    {
+        global $post;
+
+        $wordpress_post = array(
+        'id' => 11,
+        'post_title' => 'Post title',
+        'post_content' => 'Post Content',
+        'post_status' => 'publish',
+        'post_author' => 1,
+        'post_type' => 'page'
+        );
+
+        $postid = wp_insert_post($wordpress_post);
+
+        $post = get_post($postid);
+
+        $paymentID = 'pay_LEkixKpTE1Mvrk';
+        update_post_meta($postid, '_transaction_id', $paymentID);
+
+        ob_start();
+        renderPaymentMetaBox();
+        $result = ob_get_contents();
+        ob_end_clean();
+
+        $expected = '<p>' . $paymentID . ' <span><a href="?page=razorpayPaymentsView&id=' . $paymentID . '"><input type="button" class="button" value="View"></a></span></p>';
+        $this->assertStringContainsString($expected, $result);
+    }
 }

@@ -29,7 +29,15 @@ class TrackPluginInstrumentation
 
         $this->rzpTrackDataLake('plugin activate', $activateProperties);
 
+        $this->initRzpCronJobs();
+
         return 'success';
+    }
+
+    // initCronJobs initialize all cron jobs needed for this Plugin
+    function initRzpCronJobs()
+    {
+        createOneCCAddressSyncCron();
     }
 
     function razorpayPluginDeactivated()
@@ -56,20 +64,35 @@ class TrackPluginInstrumentation
 
         $this->rzpTrackDataLake('plugin deactivate', $deactivateProperties);
 
+        $this->deleteRzpCronJobs();
+
         return 'success';
+    }
+
+    // deleteRzpCronJobs deletes all Cron jobs created for this Plugin
+    function deleteRzpCronJobs()
+    {
+        deleteOneCCAddressSyncCron('deactivated');
     }
 
     function razorpayPluginUpgraded()
     {
+        $prevVersion = get_option('rzp_woocommerce_current_version');
         $upgradeProperties = [
             'page_url'            => $_SERVER['HTTP_REFERER'],
-            'prev_version'        => get_option('rzp_woocommerce_current_version'),
+            'prev_version'        => $prevVersion,
             'new_version'         => get_plugin_data(__FILE__)['Version'],
         ];
 
         $response = $this->rzpTrackSegment('plugin upgrade', $upgradeProperties);
 
         $this->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
+
+        // TODO: Update correct version
+        if (isset($prevVersion) && strcmp($prevVersion, '4.4.3') <= 0)
+        {
+            createOneCCAddressSyncCron();
+        }
 
         if ($response['status'] === 'success')
         {
