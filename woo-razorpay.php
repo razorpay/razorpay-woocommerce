@@ -1393,7 +1393,7 @@ EOT;
         }
 
         // process refund for gift card
-        function processGiftCardRefund($orderId, $amount = null, $reason = '', $razorpayPaymentId)
+        function processGiftCardRefund($orderId, $razorpayPaymentId, $amount = null, $reason = '')
         {
             $order = wc_get_order($orderId);
 
@@ -2054,7 +2054,7 @@ EOT;
 
                         if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance && 'trash' == $status && !$yithCard->exists()){
                             // initiate refund in case gift card faliure
-                            $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                            $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }else{
                             //Deduct amount of gift card
                             $yithCard->update_balance( $yithCard->get_balance() - $usedAmt );
@@ -2090,18 +2090,18 @@ EOT;
 
                             if($balance == null && $balance >= 0 && $usedAmt > $balance ){
                                 // initiate refund in case gift card faliure
-                                $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                                $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                             }else{
                                 //Deduct amount of gift card
                                $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftCode);
                             }
 
                         }else{
-                            $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                            $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }
 
                     }else{
-                       $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                       $this->processGiftCardRefund($orderId,  $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                     }
 
                 }else{
