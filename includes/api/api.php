@@ -133,11 +133,11 @@ function rzp1ccInitRestApi()
 
      // validate gift card data
     register_rest_route(
-        RZP_1CC_ROUTES_BASE.'/alert',
-        'monitor',
+        RZP_1CC_ROUTES_BASE.'/magic',
+        'toggle',
         array(
             'methods'             => 'POST',
-            'callback'            => 'monitorAlertingData',
+            'callback'            => 'update1ccConfig',
             'permission_callback' => 'checkAuthCredentials',
         )
     );
