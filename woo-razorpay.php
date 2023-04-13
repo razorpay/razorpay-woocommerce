@@ -330,7 +330,7 @@ function woocommerce_razorpay_init()
             }
 
             //Affordability Widget Code
-            if (is_admin())
+            if (current_user_can('administrator'))
             {
                 try
                 {
