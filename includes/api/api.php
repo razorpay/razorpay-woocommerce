@@ -15,6 +15,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../state-map.php';
 require_once __DIR__ . '/save-abandonment-data.php';
 require_once __DIR__ . '/giftcard-apply.php';
+require_once __DIR__ . '/alert-monitor.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
@@ -126,6 +127,21 @@ function rzp1ccInitRestApi()
         )
     );
 
+     /**
+     * Alerting and Monitoring on merchant disable magic
+     */
+
+     // validate gift card data
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE.'/magic',
+        'toggle',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'update1ccConfig',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
+
 }
 
 add_action('rest_api_init', 'rzp1ccInitRestApi');
@@ -173,33 +189,12 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
 {
     $magicCheckoutConfigFields = array(
 
-        'enable_1cc'                    => array(
-            'title'       => __('Activate Magic Checkout'),
-            'type'        => 'checkbox',
-            'description' => "",
-            'label'       => __('Activate Magic Checkout'),
-            'default'     => 'no',
-        ),
         'enable_1cc_test_mode'          => array(
             'title'       => __('Activate test mode'),
             'type'        => 'checkbox',
             'description' => 'When test mode is active, only logged-in admin users will see the Razorpay Magic Checkout button',
             'label'       => __('Activate test mode for Magic Checkout'),
             'default'     => 'no',
-        ),
-        'enable_1cc_pdp_checkout'       => array(
-            'title'       => __('Activate Buy Now Button'),
-            'type'        => 'checkbox',
-            'description' => 'By enabling the Buy Now button, user will be able to see the Razorpay Magic Checkout button on Product display page. ',
-            'label'       => __('Activate Buy Now for Magic Checkout'),
-            'default'     => 'yes',
-        ),
-        'enable_1cc_mini_cart_checkout' => array(
-            'title'       => __('Activate Mini Cart Checkout'),
-            'type'        => 'checkbox',
-            'description' => 'By enabling the Mini Cart checkout button, user will be able to see the Razorpay Magic Checkout on click of checkout button. ',
-            'label'       => __('Activate Mini Cart for Magic Checkout'),
-            'default'     => 'yes',
         ),
         '1cc_min_cart_amount'           => array(
             'title'             => __('Set minimum cart amount (INR)'),
