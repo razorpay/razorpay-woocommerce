@@ -123,7 +123,7 @@ class OneCCAddressSync
         // check if addresses are already synced
         if(isset($configs) && isset($configs[Constants::JOB]) && isset($configs[Constants::ONE_CC_ONBOARDED_TIMESTAMP]))
         {
-            if( $configs[Constants::JOB][Constants::STATUS] === Constants::COMPLETED )
+            if( isset($configs[Constants::JOB][Constants::STATUS]) && $configs[Constants::JOB][Constants::STATUS] === Constants::COMPLETED )
             {
                 deleteOneCCAddressSyncCron(Constants::COMPLETED);
                 return false;
