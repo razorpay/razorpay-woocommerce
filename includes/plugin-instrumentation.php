@@ -89,7 +89,7 @@ class TrackPluginInstrumentation
         $this->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
 
         // TODO: Update correct version
-        if (isset($prevVersion) && strcmp($prevVersion, '4.4.3') <= 0)
+        if (isset($prevVersion) && strcmp($prevVersion, '4.5.0') <= 0)
         {
             createOneCCAddressSyncCron();
         }

@@ -9,16 +9,16 @@ class OneCCAddressSync
     const GET = 'GET';
     const POST = 'POST';
 
-    private int $apiRequestRetryCount = 5;
-    private int $apiRequestRetryDelay = 2; //in seconds
-    private int $postAddressDelay = 3;
-    private int $backOffRetryCount = 10;
-    private int $batchSize = 50;
+    private $apiRequestRetryCount = 5;
+    private $apiRequestRetryDelay = 2; //in seconds
+    private $postAddressDelay = 3;
+    private $backOffRetryCount = 10;
+    private $batchSize = 50;
 
-    protected Api $api;
-    private array $jobConfig;
-    private int $oneCCOnboardedTimestamp;
-    private int $checkpoint;
+    protected $api;
+    private $jobConfig;
+    private $oneCCOnboardedTimestamp;
+    private $checkpoint;
 
     public function __construct($api)
     {
@@ -26,7 +26,7 @@ class OneCCAddressSync
     }
 
     // makeAPICall to make http api call
-    private function makeAPICall($url, $method, $body): array
+    private function makeAPICall($url, $method, $body)
     {
         $retryCount = 0;
         $statusCode = 0;
@@ -55,13 +55,13 @@ class OneCCAddressSync
     }
 
     // getAddressSyncConfigs -> to get address sync respective configs
-    private function getAddressSyncConfigs($keys = []): array
+    private function getAddressSyncConfigs($keys = [])
     {
         $body = [Constants::PLATFORM => Constants::WOOCOMMERCE, Constants::KEYS => $keys];
         return $this->makeAPICall(self::GET_CONFIGS_API, self::GET, $body);
     }
 
-    private function postAddresses($body): array
+    private function postAddresses($body)
     {
         $body[Constants::SOURCE] = Constants::WOOCOMMERCE;
         if (isset($body[Constants::ADDRESSES]))
@@ -71,7 +71,7 @@ class OneCCAddressSync
         return $this->makeAPICall(self::POST_ADDRESSES_API, self::POST, $body);
     }
 
-    private function isMerchantEligible(): bool
+    private function isMerchantEligible()
     {
         //get address sync configs
         $response = $this->getAddressSyncConfigs();
@@ -123,7 +123,7 @@ class OneCCAddressSync
         // check if addresses are already synced
         if(isset($configs) && isset($configs[Constants::JOB]) && isset($configs[Constants::ONE_CC_ONBOARDED_TIMESTAMP]))
         {
-            if( $configs[Constants::JOB][Constants::STATUS] === Constants::COMPLETED )
+            if( isset($configs[Constants::JOB][Constants::STATUS]) && $configs[Constants::JOB][Constants::STATUS] === Constants::COMPLETED )
             {
                 deleteOneCCAddressSyncCron(Constants::COMPLETED);
                 return false;
@@ -135,7 +135,7 @@ class OneCCAddressSync
         return false;
     }
 
-    private function isValidAddress($address): bool
+    private function isValidAddress($address)
     {
         if($this->isEmpty($address['line1']) && $this->isEmpty($address['line2']))
         {
@@ -154,7 +154,7 @@ class OneCCAddressSync
         return true;
     }
 
-    private function isEmpty($data): bool
+    private function isEmpty($data)
     {
         return strlen($data) == 0;
     }
@@ -174,7 +174,7 @@ class OneCCAddressSync
     }
 
     // getAddressFromOrders -> get address from orders array
-    private function getAddressFromOrders($orders): array
+    private function getAddressFromOrders($orders)
     {
         $addresses = array();
         foreach ($orders as $order) {
@@ -197,7 +197,7 @@ class OneCCAddressSync
 
     // getAddresses -> Iterate woocommerce completed orders for getting customer
     // address and return Indian addresses
-    private function getAddresses(): array
+    private function getAddresses()
     {
         $addresses = array();
         while(sizeof($addresses) === 0)
@@ -254,7 +254,7 @@ class OneCCAddressSync
         }
     }
 
-    private function syncAddresses($endTime): bool
+    private function syncAddresses($endTime)
     {
         $addressData = $this->getAddresses();
 
@@ -429,7 +429,7 @@ function createOneCCAddressSyncCron()
     }
 }
 
-function isCronFailingForMoreThan7Days($data, $status, $message): bool
+function isCronFailingForMoreThan7Days($data, $status, $message)
 {
     if($data === false || sizeof($data) === 0)
     {
@@ -466,7 +466,7 @@ function deleteOneCCAddressSyncCron($status='', $message='', $isWooCConfig=false
     updateAddressSyncCronData($status, $message, $data);
 }
 
-function isValidOneCCMerchant($paymentSettings): bool
+function isValidOneCCMerchant($paymentSettings)
 {
     if ($paymentSettings === false)
     {
@@ -475,7 +475,11 @@ function isValidOneCCMerchant($paymentSettings): bool
 
     $keyId = $paymentSettings[Constants::KEY_ID];
     $keySecret = $paymentSettings[Constants::KEY_SECRET];
-    $enable1cc = $paymentSettings[Constants::ENABLE_1CC];
+    $enable1cc = '';
+    if (array_key_exists(Constants::ENABLE_1CC, $paymentSettings))
+    {
+        $enable1cc = $paymentSettings[Constants::ENABLE_1CC];
+    }
 
     return $enable1cc === 'yes' && strlen($keyId) !== 0 && strlen($keySecret) !== 0;
 }
@@ -529,7 +533,7 @@ function one_cc_address_sync_cron_exec()
     }
 }
 
-function isAddressSynced($oneCCAddressSyncCronData): bool
+function isAddressSynced($oneCCAddressSyncCronData)
 {
     if ($oneCCAddressSyncCronData === false)
     {
