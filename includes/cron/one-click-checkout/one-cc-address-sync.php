@@ -9,16 +9,16 @@ class OneCCAddressSync
     const GET = 'GET';
     const POST = 'POST';
 
-    private int $apiRequestRetryCount = 5;
-    private int $apiRequestRetryDelay = 2; //in seconds
-    private int $postAddressDelay = 3;
-    private int $backOffRetryCount = 10;
-    private int $batchSize = 50;
+    private $apiRequestRetryCount = 5;
+    private $apiRequestRetryDelay = 2; //in seconds
+    private $postAddressDelay = 3;
+    private $backOffRetryCount = 10;
+    private $batchSize = 50;
 
-    protected Api $api;
-    private array $jobConfig;
-    private int $oneCCOnboardedTimestamp;
-    private int $checkpoint;
+    protected $api;
+    private $jobConfig;
+    private $oneCCOnboardedTimestamp;
+    private $checkpoint;
 
     public function __construct($api)
     {
