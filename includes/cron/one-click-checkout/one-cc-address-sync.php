@@ -475,7 +475,11 @@ function isValidOneCCMerchant($paymentSettings)
 
     $keyId = $paymentSettings[Constants::KEY_ID];
     $keySecret = $paymentSettings[Constants::KEY_SECRET];
-    $enable1cc = $paymentSettings[Constants::ENABLE_1CC];
+    $enable1cc = '';
+    if (array_key_exists(Constants::ENABLE_1CC, $paymentSettings))
+    {
+        $enable1cc = $paymentSettings[Constants::ENABLE_1CC];
+    }
 
     return $enable1cc === 'yes' && strlen($keyId) !== 0 && strlen($keySecret) !== 0;
 }
