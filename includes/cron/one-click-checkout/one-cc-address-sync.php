@@ -501,21 +501,6 @@ function updateAddressSyncCronData(string $status, string $message = '', $data =
             Constants::MESSAGE => '',
             Constants::CREATED_AT => time(),
             Constants::CRON_STATUS => 'created'];
-        if(strlen($status) > 0)
-        {
-            $data[Constants::STATUS] = $status;
-        }
-        if(strlen($message) > 0)
-        {
-            $data[Constants::MESSAGE] = $message;
-        }
-        rzpLogInfo("updateAddressSyncCronData:508 - Adding option: ONE_CC_ADDRESS_SYNC_CRON_HOOK");
-        add_option(
-            Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK,
-            $data,
-        );
-        rzpLogInfo("updateAddressSyncCronData:513 - Successfully Added option: ONE_CC_ADDRESS_SYNC_CRON_HOOK");
-        return;
     }
     if ($status === $data[Constants::STATUS] && $message === $data[Constants::MESSAGE] && $cronStatus === $data[Constants::CRON_STATUS])
     {
