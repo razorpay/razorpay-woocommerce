@@ -1881,7 +1881,7 @@ EOT;
             }
 
             // update gift card and coupons
-            $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
+            $rzpPromotionAmount = $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -2021,6 +2021,24 @@ EOT;
                 $order->save();
             }
 
+            if(!empty($razorpayData['offers']))
+             {
+               $discount = $razorpayData['line_items_total']+100  + $razorpayData['shipping_fee'] - $razorpayData['amount'] - $rzpPromotionAmount;
+                $applyDiscount = - $discount/100;
+                
+                $title = "rzp_offer";
+                $item     = new WC_Order_Item_Fee();
+                $item->set_name( $title );
+                $item->set_amount( $applyDiscount );
+                $item->set_total( $applyDiscount );
+                $item->save();
+                $order->add_item( $item );
+                $order->calculate_totals();
+                $order->save();
+
+            }
+
+
             //For abandon cart Lite recovery plugin recovery function
             if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
             {
@@ -2038,6 +2056,8 @@ EOT;
 
             foreach($razorpayData['promotions'] as $promotion)
             {
+                $rzpGiftAndCouponAmount += $promotion['value'];
+
                 if($promotion['type'] == 'gift_card'){
 
                     $usedAmt = $promotion['value']/100;
@@ -2134,6 +2154,7 @@ EOT;
                 }
 
             }
+            return $rzpGiftAndCouponAmount;
         }
 
         protected function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
