@@ -1989,6 +1989,7 @@ EOT;
 
             $paymentDoneBy = $razorpayPaymentData['method'];
 
+            $codKey = 0;  
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
             {
                 $codKey = $razorpayData['cod_fee']/100;
@@ -2022,20 +2023,20 @@ EOT;
             }
 
             if(!empty($razorpayData['offers']))
-             {
-               $discount = $razorpayData['line_items_total']+100  + $razorpayData['shipping_fee'] - $razorpayData['amount'] - $rzpPromotionAmount;
-                $applyDiscount = - $discount/100;
+            {
+                $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codKey*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
+
+                $offerDiscount = - ($offerDiff/100);
                 
-                $title = "rzp_offer";
-                $item     = new WC_Order_Item_Fee();
+                $title = "Razorpay offer";
+                $item  = new WC_Order_Item_Fee();
                 $item->set_name( $title );
-                $item->set_amount( $applyDiscount );
-                $item->set_total( $applyDiscount );
+                $item->set_amount( $offerDiscount );
+                $item->set_total( $offerDiscount );
                 $item->save();
                 $order->add_item( $item );
                 $order->calculate_totals();
                 $order->save();
-
             }
 
 

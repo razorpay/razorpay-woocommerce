@@ -50,38 +50,7 @@ function createWcOrder(WP_REST_Request $request)
 
     initCartCommon();
 
-    if (empty($params['pdpCheckout']) === false) {
-        $variations = [];
-        // Cleanup cart.
-        WC()->cart->empty_cart();
-
-        $variation_id = (empty($params['variationId']) === false) ? (int) $params['variationId'] : 0;
-
-        if (empty($params['variations']) === false) {
-            $variations_arr = json_decode($params['variations'], true);
-
-            foreach ($variations_arr as $key => $value) {
-                $var_key          = explode('_', $key);
-                $variations_key[] = ucwords(end($var_key));
-                $variations_val[] = ucwords($value);
-            }
-
-            $variations = array_combine($variations_key, $variations_val);
-        }
-
-        //To add custom fields to buy now orders
-        if (empty($params['fieldObj']) === false) {
-            foreach ($params['fieldObj'] as $key => $value) {
-                if (!empty($value)) {
-                    $variations[$key] = $value;
-                }
-            }
-        }
-
-        WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variation_id, $variations);
-    }
-
-     // check if cart is empty
+    // check if cart is empty
     checkCartEmpty($logObj);
 
     $cartHash  = WC()->cart->get_cart_hash();
