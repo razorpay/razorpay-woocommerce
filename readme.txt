@@ -44,6 +44,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 = 4.5.2 =
 * Bug fix, One cc cron db update fix for php v8.2
 * Bug fix, remove duplicate order creation
+* Updated Razorpay SDK to 2.8.5
 
 = 4.5.1 =
 * Bug fix, typed params, 1cc_enabled flag check
