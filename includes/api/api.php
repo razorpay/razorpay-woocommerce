@@ -126,9 +126,25 @@ function rzp1ccInitRestApi()
         )
     );
 
+    // prepay cod order
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE.'/cod/order',
+        'prepay',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'prepayCODOrder',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
 }
 
 add_action('rest_api_init', 'rzp1ccInitRestApi');
+
+function prepayCODOrder(WP_REST_Request $request) {
+    $params = $request->get_params();
+    $wcRazorpay = new WC_Razorpay(false);
+    return $wcRazorpay->prepayCODOrder($params);
+}
 
 /**
  * Check any prerequisites for our REST request
@@ -145,7 +161,7 @@ function initCustomerSessionAndCart()
 }
 
 function initCartCommon()
-{ 
+{
     if (defined('WC_ABSPATH')) {
         // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
         include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion

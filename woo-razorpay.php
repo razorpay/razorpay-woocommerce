@@ -1766,7 +1766,7 @@ EOT;
                         {
                             rzpLogInfo("Order details update initiated step 2 for the orderId: $wcOrderId");
 
-                            $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId);
+                            $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId, $webhook);
                         }
 
                     }
@@ -1843,7 +1843,7 @@ EOT;
             }
         }
 
-        public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
+        public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId, $webhook)
         {
             global $woocommerce;
 
@@ -2029,6 +2029,24 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
+
+            if (!$webhook && $paymentDoneBy === 'cod' && strlen($razorpayOrderId) > 0)
+            {
+                try
+                {
+                    $body = ['order_id' => $razorpayOrderId];
+                    rzpLogInfo("making prepay API Call for order : $razorpayOrderId");
+                    $url = '1cc/process/prepay/cod/orders';
+                    $response = $api->request->request('POST', $url , $body);
+                    rzpLogInfo("makeAPICall: url: ". $url . " is success");
+                }
+                catch (\Razorpay\Api\Errors\Error $e)
+                {
+                    error_log($e->getMessage());
+                    $statusCode = $e->getHttpStatusCode();
+                    rzpLogError("makeAPICall: message:" . $e->getMessage() . ", url: " . $url . ", statusCode : " . $statusCode . ", stacktrace : " . $e->getTraceAsString());
+                }
+            }
         }
 
         public function updateGiftAndCoupon($razorpayData, $order, $orderId, $razorpayPaymentId)
@@ -2110,25 +2128,7 @@ EOT;
 
                     if (empty($couponKey) === false)
                     {
-                        // Remove the same coupon, if already being added to order.
-                        $order->remove_coupon($couponKey);
-
-                        //TODO: Convert all razorpay amount in paise to rupees
-                        $discount_total = $promotion['value']/100;
-
-                        //TODO: Verify source code implementation
-                        // Loop through products and apply the coupon discount
-                        foreach($order->get_items() as $order_item)
-                        {
-                            $total = $order_item->get_total();
-                            $order_item->set_subtotal($total);
-                            $order_item->set_total($total - $discount_total);
-                            $order_item->save();
-                        }
-                        // TODO: Test if individual use coupon fails by hardcoding here
-                        $isApplied = $order->apply_coupon($couponKey);
-                        $order->save();
-
+                        $this->applyCoupon($order, $couponKey, $promotion['value']);
                         rzpLogInfo("Coupon details updated for orderId: $orderId");
                     }
                 }
@@ -2465,6 +2465,95 @@ EOT;
                     'integration_type' => 'plugin',
                 );
             }
+        }
+
+        public function prepayCODOrder(array $payload): WP_REST_Response
+        {
+
+            $orderId = $payload[self::WC_ORDER_ID];
+            $razorpayPaymentId = $payload[self::RAZORPAY_PAYMENT_ID];
+            $razorpayOrderId = $payload[self::RAZORPAY_ORDER_ID];
+            $signature = $payload[self::RAZORPAY_SIGNATURE];
+            $attributes = array(
+                self::RAZORPAY_ORDER_ID => $razorpayOrderId,
+                self::RAZORPAY_PAYMENT_ID => $razorpayPaymentId,
+                self::RAZORPAY_SIGNATURE  => $signature,
+            );
+            try
+            {
+                $api = $this->getRazorpayApiInstance();
+                $api->utility->verifyPaymentSignature($attributes);
+            }
+            catch (Exception $e)
+            {
+                return new WP_REST_Response(["code" => 'woocommerce_order_payment_signature_verfication_failed'], 400);
+            }
+            $order = wc_get_order($orderId);
+            if ('on-hold' != $order->get_status())
+            {
+                return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
+			}
+
+
+            $order->set_status('pending');
+            $order->save();
+
+            if (isset($payload['coupon']))
+            {
+                $couponKey = $payload['coupon']['code'];
+                $amount = $payload['coupon']['amount'];
+                $this->createCoupon($couponKey, $amount/100);
+                $this->applyCoupon($order, $couponKey, $amount);
+                rzpLogInfo("Coupon details updated for orderId: $orderId, razorpayOrderId: $razorpayOrderId, couponKey: $couponKey");
+            }
+            $order->set_payment_method($this->id);
+            $order->set_payment_method_title($this->title);
+            $order->payment_complete($razorpayPaymentId);
+            $order->set_status("processing");
+            $order->save();
+            $order->add_order_note("COD Order Converted to Prepaid <br/> Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
+            return new WP_REST_Response([], 200);
+        }
+
+        private function createCoupon($couponKey, $amount) {
+            $coupon_code = $couponKey;
+            $discount_type = 'fixed_cart'; // Type: fixed_cart, percent, fixed_product, percent_product
+
+            $coupon = array(
+                'post_title' => $coupon_code,
+                'post_content' => '',
+                'post_status' => 'publish',
+                'post_author' => 1,
+                'post_type' => 'shop_coupon');
+
+            $new_coupon_id = wp_insert_post( $coupon );
+
+            update_post_meta( $new_coupon_id, 'discount_type', $discount_type );
+            update_post_meta( $new_coupon_id, 'coupon_amount', $amount );
+            update_post_meta( $new_coupon_id, 'usage_limit', '1' );
+            update_post_meta( $new_coupon_id, 'minimum_amount', $amount );
+
+        }
+
+        private function applyCoupon($order, $couponKey, $couponValue) {
+            // Remove the same coupon, if already being added to order.
+            $order->remove_coupon($couponKey);
+
+            //TODO: Convert all razorpay amount in paise to rupees
+            $discount_total = $couponValue/100;
+
+            //TODO: Verify source code implementation
+            // Loop through products and apply the coupon discount
+            foreach($order->get_items() as $order_item)
+            {
+                $total = $order_item->get_total();
+                $order_item->set_subtotal($total);
+                $order_item->set_total($total - $discount_total);
+                $order_item->save();
+            }
+            // TODO: Test if individual use coupon fails by hardcoding here
+            $isApplied = $order->apply_coupon($couponKey);
+            $order->save();
         }
 
     }
