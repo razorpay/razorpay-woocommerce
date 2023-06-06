@@ -168,7 +168,7 @@ function woocommerce_razorpay_init()
          */
         public function __construct($hooks = true)
         {
-            $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
+            $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment_icon.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
