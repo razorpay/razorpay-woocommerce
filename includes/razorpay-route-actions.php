@@ -229,10 +229,11 @@ class RZP_Route_Action
 
     function addRouteAnalyticsScript() {
 
-        $mod_version = get_plugin_data(plugin_dir_path(__FILE__) . 'woo-razorpay.php')['Version'];
+        $mod_version = get_plugin_data(PLUGIN_DIR . '/woo-razorpay.php')['Version'];
+        $Wc_Razorpay_Loader = new WC_Razorpay();
 
         $data = array(
-            'key'          => $this->Wc_Razorpay_Loader->getSetting('key_id'),
+            'key'          => $Wc_Razorpay_Loader->getSetting('key_id'),
             'name'         => get_bloginfo('name'),
             '_'            => array(
                 'x-integration'                   => 'Woocommerce',
@@ -242,7 +243,7 @@ class RZP_Route_Action
             ),
         );
 
-        $this->Wc_Razorpay_Loader->enqueueCheckoutScripts('routeAnalyticsForm');
+        $Wc_Razorpay_Loader->enqueueCheckoutScripts('routeAnalyticsForm');
 
         $url = Api::getFullUrl("checkout/embedded");
 

@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.4.2
- * Stable tag: 4.4.2
+ * Version: 4.5.2
+ * Stable tag: 4.5.2
  * Author: Team Razorpay
  * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
@@ -30,6 +30,9 @@ require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
 require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 require_once __DIR__.'/includes/stylehandler.php';
+require_once __DIR__.'/includes/cron/one-click-checkout/Constants.php';
+require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php';
+require_once __DIR__.'/includes/cron/cron.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -166,14 +169,14 @@ function woocommerce_razorpay_init()
          */
         public function __construct($hooks = true)
         {
-            $this->icon =  "https://cdn.razorpay.com/static/assets/logo/payment.svg";
+            $this->icon =  "https://cdn.razorpay.com/static/assets/logo/rzp_payment_icon.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
             $isDualCheckoutEnabled = false;
 
             // Load preference API call only for administrative interface page.
-            if (is_admin())
+            if (current_user_can('administrator'))
             {
                 if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                 {
@@ -259,6 +262,7 @@ function woocommerce_razorpay_init()
                 add_action("woocommerce_update_options_payment_gateways_{$this->id}", $cb);
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
             }
             else
             {
@@ -266,6 +270,7 @@ function woocommerce_razorpay_init()
                 add_action('woocommerce_update_options_payment_gateways', $cb);
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
+                add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
             }
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
@@ -392,6 +397,22 @@ function woocommerce_razorpay_init()
             return esc_url(admin_url('admin-post.php')) . '?action=rzp_wc_webhook';
         }
 
+        protected function triggerValidationInstrumentation($data)
+        {
+            $properties = [
+                'page_url'            => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                'field_type'          => 'text',
+                'field_name'          => 'key_id or key_secret',
+                'is_plugin_activated' => ($this->getSetting('enabled') === 'yes') ? true : false
+            ];
+
+            $properties = array_merge($properties, $data);
+
+            $trackObject = $this->newTrackPluginInstrumentation($this->getSetting('key_id'), '');
+            $response = $trackObject->rzpTrackSegment('formfield.validation.error', $properties);
+            $trackObject->rzpTrackDataLake('formfield.validation.error', $properties);
+        }
+
         public function autoEnableWebhook()
         {
             $webhookExist = false;
@@ -417,6 +438,8 @@ function woocommerce_razorpay_init()
             //validating the key id and key secret set properly or not.
             if($key_id == null || $key_secret == null)
             {
+                $validationErrorProperties = $this->triggerValidationInstrumentation(
+                    ['error_message' => 'Key Id and or Key Secret is null']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
@@ -434,6 +457,8 @@ function woocommerce_razorpay_init()
             }
             catch (Exception $e)
             {
+                $validationErrorProperties = $this->triggerValidationInstrumentation(
+                    ['error_message' => 'Invalid Key Id and Key Secret']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Please check Key Id and Key Secret.'); ?></b></p>
@@ -532,17 +557,32 @@ function woocommerce_razorpay_init()
                     }
                 }
             }
+
+            $webhookProperties = [
+                'page_url'       => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                'prev_page_url'  => $_SERVER['HTTP_REFERER'],
+                'is_plugin_activated' => ($this->getSetting('enabled') === 'yes') ? true : false,
+                'events_selected'     => $this->defaultWebhookEvents,
+            ];
+
             if ($webhookExist)
             {
+                $trackObject = $this->newTrackPluginInstrumentation($this->getSetting('key_id'), '');
+                $response = $trackObject->rzpTrackSegment('autowebhook.updated', $webhookProperties);
+                $trackObject->rzpTrackDataLake('autowebhook.updated', $webhookProperties);
+
                 rzpLogInfo('Updating razorpay webhook');
                 return $this->webhookAPI('PUT', "webhooks/" . $webhookId, $data);
             }
             else
             {
+                $trackObject = $this->newTrackPluginInstrumentation($this->getSetting('key_id'), '');
+                $response = $trackObject->rzpTrackSegment('autowebhook.created', $webhookProperties);
+                $trackObject->rzpTrackDataLake('autowebhook.created', $webhookProperties);
+
                 rzpLogInfo('Creating razorpay webhook');
                 return $this->webhookAPI('POST', "webhooks/", $data);
             }
-
         }
 
         public function newTrackPluginInstrumentation($key, $secret)
@@ -723,8 +763,8 @@ function woocommerce_razorpay_init()
         {
             echo '<h3>'.__('Razorpay Payment Gateway', $this->id) . '</h3>';
             echo '<p>'.__('Allows payments by Credit/Debit Cards, NetBanking, UPI, and multiple Wallets') . '</p>';
-            echo '<p>'.__('First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank">signup</a> for a Razorpay account or
-            <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=woocommerce" target="_blank">login</a> if you have an existing account.'). '</p>';
+            echo '<p>'.__('First <a href="https://easy.razorpay.com/onboarding?recommended_product=payment_gateway&source=woocommerce" target="_blank" onclick="rzpSignupClicked(event)">signup</a> for a Razorpay account or
+            <a href="https://dashboard.razorpay.com/signin?screen=sign_in&source=woocommerce" target="_blank" onclick="rzpLoginClicked(event)">login</a> if you have an existing account.'). '</p>';
             echo '<table class="form-table">';
 
             // Generate the HTML For the settings form.
@@ -743,9 +783,10 @@ function woocommerce_razorpay_init()
          **/
         function receipt_page($orderId)
         {
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value){
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $value)
+            {
                 if ($value['function'] === 'output' and
-                    stripos($value['file'], 'divi') !== false and
+                    stripos($value['file'], 'themes/divi') !== false and
                     basename($value['file'], ".php") !== 'CheckoutPaymentInfo')
                 {
                     return;
@@ -1166,9 +1207,10 @@ function woocommerce_razorpay_init()
             {
                $product = $item->get_product();
 
+               $productDetails = $product->get_data();
+
                // check product type for gift card plugin
                if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
-                    $productDetails = $product->get_data();
                    if($product->is_type('variation')){
                         $parentProductId = $product->get_parent_id();
                         $parentProduct = wc_get_product($parentProductId);
@@ -1210,6 +1252,7 @@ function woocommerce_razorpay_init()
             {
                 wp_register_script('razorpay_wc_script', plugin_dir_url(__FILE__)  . 'script.js',
                     null, null);
+                $data = array($data);
             }
             else
             {
@@ -1292,7 +1335,7 @@ function woocommerce_razorpay_init()
     <!-- This distinguishes all our various wordpress plugins -->
     <input type="hidden" name="razorpay_wc_form_submit" value="1">
 </form>
-<p id="msg-razorpay-success" class="woocommerce-info woocommerce-message" style="display:none">
+<p id="msg-razorpay-success" class="woocommerce-info" style="display:none;background-color:rgba(176,176,176,.6);padding:1rem 1.5rem 1rem 3.5rem;border-top-style:solid;border-top-width:2px;">
 Please wait while we are processing your payment.
 </p>
 <p>
@@ -1365,7 +1408,7 @@ EOT;
         }
 
         // process refund for gift card
-        function processGiftCardRefund($orderId, $amount = null, $reason = '', $razorpayPaymentId)
+        function processGiftCardRefund($orderId, $razorpayPaymentId, $amount = null, $reason = '')
         {
             $order = wc_get_order($orderId);
 
@@ -2026,7 +2069,7 @@ EOT;
 
                         if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance && 'trash' == $status && !$yithCard->exists()){
                             // initiate refund in case gift card faliure
-                            $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                            $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }else{
                             //Deduct amount of gift card
                             $yithCard->update_balance( $yithCard->get_balance() - $usedAmt );
@@ -2062,18 +2105,18 @@ EOT;
 
                             if($balance == null && $balance >= 0 && $usedAmt > $balance ){
                                 // initiate refund in case gift card faliure
-                                $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                                $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                             }else{
                                 //Deduct amount of gift card
-                               $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftcard['code']);
+                               $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftCode);
                             }
 
                         }else{
-                            $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                            $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }
 
                     }else{
-                       $this->processGiftCardRefund($orderId, $razorpayData['amount_paid'], $reason = '', $razorpayPaymentId);
+                       $this->processGiftCardRefund($orderId,  $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                     }
 
                 }else{
@@ -2086,7 +2129,7 @@ EOT;
                         $order->remove_coupon($couponKey);
 
                         //TODO: Convert all razorpay amount in paise to rupees
-                        $discount_total = $giftcard['value']/100;
+                        $discount_total = $promotion['value']/100;
 
                         //TODO: Verify source code implementation
                         // Loop through products and apply the coupon discount
@@ -2374,7 +2417,7 @@ EOT;
             );
         }
 
-        protected function handleErrorCase(& $order)
+        protected function handleErrorCase($order)
         {
             $orderId = $order->get_order_number();
             rzpLogInfo('handleErrorCase');
@@ -2556,7 +2599,7 @@ function razorpay_webhook_init()
 }
 
 define('RZP_PATH', plugin_dir_path( __FILE__ ));
-define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/checkout-1cc.js');
+define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/magic-checkout.js');
 define('BTN_CHECKOUTJS_URL', 'https://cdn.razorpay.com/static/wooc/magic-rzp.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 

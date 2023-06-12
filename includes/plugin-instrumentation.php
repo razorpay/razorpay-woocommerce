@@ -29,7 +29,15 @@ class TrackPluginInstrumentation
 
         $this->rzpTrackDataLake('plugin activate', $activateProperties);
 
+        $this->initRzpCronJobs();
+
         return 'success';
+    }
+
+    // initCronJobs initialize all cron jobs needed for this Plugin
+    function initRzpCronJobs()
+    {
+        createOneCCAddressSyncCron();
     }
 
     function razorpayPluginDeactivated()
@@ -56,20 +64,35 @@ class TrackPluginInstrumentation
 
         $this->rzpTrackDataLake('plugin deactivate', $deactivateProperties);
 
+        $this->deleteRzpCronJobs();
+
         return 'success';
+    }
+
+    // deleteRzpCronJobs deletes all Cron jobs created for this Plugin
+    function deleteRzpCronJobs()
+    {
+        deleteOneCCAddressSyncCron('deactivated');
     }
 
     function razorpayPluginUpgraded()
     {
+        $prevVersion = get_option('rzp_woocommerce_current_version');
         $upgradeProperties = [
             'page_url'            => $_SERVER['HTTP_REFERER'],
-            'prev_version'        => get_option('rzp_woocommerce_current_version'),
+            'prev_version'        => $prevVersion,
             'new_version'         => get_plugin_data(__FILE__)['Version'],
         ];
 
         $response = $this->rzpTrackSegment('plugin upgrade', $upgradeProperties);
 
         $this->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
+
+        // TODO: Update correct version
+        if (isset($prevVersion) && strcmp($prevVersion, '4.5.0') <= 0)
+        {
+            createOneCCAddressSyncCron();
+        }
 
         if ($response['status'] === 'success')
         {
@@ -212,3 +235,40 @@ if ($paymentSettings !== false)
 
     new TrackPluginInstrumentation($api, $paymentSettings['key_id']);
 }
+
+function rzpInstrumentation()
+{
+    $paymentSettings = get_option('woocommerce_razorpay_settings');
+
+    if ($paymentSettings === false)
+    {
+        return;
+    }
+
+    $api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
+
+    $trackObject = new TrackPluginInstrumentation($api, $paymentSettings['key_id']);
+    $properties = $_POST['properties'];
+
+    if ($_POST['event'] === "signup.initiated" or
+        $_POST['event'] === "login.initiated")
+    {
+        if (empty($paymentSettings['key_id']) === false and
+            empty($paymentSettings['key_secret']) === false)
+        {
+            $properties['is_plugin_merchant'] = true;
+            $properties['is_registered_on_razorpay'] = true;
+        }
+        else
+        {
+            $properties['is_plugin_merchant'] = false;
+            $properties['is_registered_on_razorpay'] = false;
+        }
+    }
+
+    $trackObject->rzpTrackSegment($_POST['event'], $properties);
+    $trackObject->rzpTrackDataLake($_POST['event'], $properties);
+
+    wp_die();
+}
+add_action("wp_ajax_rzpInstrumentation", "rzpInstrumentation");
