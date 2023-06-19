@@ -2029,14 +2029,13 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
-
-            if (!$webhook && $paymentDoneBy === 'cod' && strlen($razorpayOrderId) > 0)
+            if (!$webhook && $paymentDoneBy === 'cod')
             {
                 try
                 {
                     $body = ['order_id' => $razorpayOrderId];
                     rzpLogInfo("making prepay API Call for order : $razorpayOrderId");
-                    $url = '1cc/process/prepay/cod/orders';
+                    $url = '1cc/orders/cod/convert';
                     $response = $api->request->request('POST', $url , $body);
                     rzpLogInfo("makeAPICall: url: ". $url . " is success");
                 }
@@ -2044,7 +2043,7 @@ EOT;
                 {
                     error_log($e->getMessage());
                     $statusCode = $e->getHttpStatusCode();
-                    rzpLogError("makeAPICall: message:" . $e->getMessage() . ", url: " . $url . ", statusCode : " . $statusCode . ", stacktrace : " . $e->getTraceAsString());
+                    rzpLogError("make prepayAPICall failed: message:" . $e->getMessage() . ", url: " . $url . ", statusCode : " . $statusCode . ", stacktrace : " . $e->getTraceAsString());
                 }
             }
         }
@@ -2469,7 +2468,6 @@ EOT;
 
         public function prepayCODOrder(array $payload): WP_REST_Response
         {
-
             $orderId = $payload[self::WC_ORDER_ID];
             $razorpayPaymentId = $payload[self::RAZORPAY_PAYMENT_ID];
             $razorpayOrderId = $payload[self::RAZORPAY_ORDER_ID];
@@ -2516,6 +2514,10 @@ EOT;
         }
 
         private function createCoupon($couponKey, $amount) {
+
+            /**
+             * Create a coupon programatically
+             */
             $coupon_code = $couponKey;
             $discount_type = 'fixed_cart'; // Type: fixed_cart, percent, fixed_product, percent_product
 
