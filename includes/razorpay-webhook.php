@@ -80,7 +80,7 @@ class RZP_Webhook
      */
     public function process()
     {
-        $post = file_get_contents('php://input');
+        $post = $this->getContents();
 
         $data = json_decode($post, true);
 
@@ -100,7 +100,7 @@ class RZP_Webhook
                 return;
             }
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
-                $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
+                $razorpayWebhookSecret = $this->fetchSettings();
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
@@ -117,9 +117,7 @@ class RZP_Webhook
 
                 try
                 {
-                    $this->api->utility->verifyWebhookSignature($post,
-                        $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'],
-                        $razorpayWebhookSecret);
+                    $this->verifyWebhookSignature($post);
                 } catch (Errors\SignatureVerificationError $e) {
                     $log = array(
                         'message' => $e->getMessage(),
@@ -316,13 +314,13 @@ class RZP_Webhook
             }
         }
 
-        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
+        $this->fetchupdateOrder($order, $success, $errorMessage, $razorpayPaymentId, null);
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the update order function");
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the updateOrder function");
 
         // Graceful exit since payment is now processed.
-        exit;
+        $this->exitfunction();
     }
 
     /**
@@ -376,12 +374,12 @@ class RZP_Webhook
         if ($payment['status'] === 'pending' && $data['payload']['payment']['entity']['method'] == 'cod' && !empty($razorpayPaymentId)) {
             $success = true;
 
-            $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
+            $this->fetchupdateOrder($order, $success, $errorMessage, $razorpayPaymentId, null);
             rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the update order function for COD");
         }
 
         // Graceful exit since payment is now processed.
-        exit;
+        $this->exitfunction();
     }
 
     /**
@@ -456,17 +454,17 @@ class RZP_Webhook
             }
         }
 
-        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId, true);
+        $this->fetchupdateOrder($order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId);
 
         // Graceful exit since payment is now processed.
-        exit;
+        $this->exitfunction();
     }
 
     protected function getPaymentEntity($razorpayPaymentId, $data)
     {
         try
         {
-            $payment = $this->api->payment->fetch($razorpayPaymentId);
+            $payment = $this->fetchPayment();
         } catch (Exception $e) {
             $log = array(
                 'message'    => $e->getMessage(),
@@ -476,7 +474,7 @@ class RZP_Webhook
 
             error_log(json_encode($log));
 
-            exit;
+            $this->exitfunction();
         }
 
         return $payment;
@@ -597,7 +595,7 @@ class RZP_Webhook
         }
 
         // Graceful exit since payment is now refunded.
-        exit();
+        $this->exitfunction();
     }
 
     public function checkIsObject($orderId)
@@ -607,7 +605,39 @@ class RZP_Webhook
             return wc_get_order($orderId);
         } else {
             rzpLogInfo("Woocommerce order Object does not exist");
-            exit();
+            $this->exitfunction();
         }
+    }
+
+    protected function getContents()
+    {
+        return file_get_contents('php://input');
+    }
+
+    protected function fetchSettings()
+    {
+        return $this->razorpay->getSetting('webhook_secret');
+    }
+
+    public function verifyWebhookSignature($post)
+    {
+        $this->api->utility->verifyWebhookSignature($post,
+                        $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'],
+                        $razorpayWebhookSecret);
+    }
+
+    protected function fetchPayment()
+    {
+        return $this->api->payment->fetch($razorpayPaymentId);
+    }
+
+    protected function exitfunction()
+    {
+        exit;
+    }
+
+    protected function fetchupdateOrder($order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId)
+    {
+        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId, true);
     }
 }

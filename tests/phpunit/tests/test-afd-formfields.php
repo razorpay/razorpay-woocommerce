@@ -1,4 +1,8 @@
 <?php
+/**
+ * @covers \WC_Razorpay
+ * @covers ::addRouteModuleSettingFields
+ */
 
 use Razorpay\MockApi\MockApi;
 

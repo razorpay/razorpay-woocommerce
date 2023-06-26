@@ -1,4 +1,7 @@
 <?php
+/**
+ * @covers \WC_Razorpay
+ */
 
 class Test_Plugin_Metadata extends WP_UnitTestCase
 {

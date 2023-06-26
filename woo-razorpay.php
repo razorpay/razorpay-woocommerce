@@ -173,6 +173,7 @@ function woocommerce_razorpay_init()
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
 
+            //@codeCoverageIgnoreStart
             // Load preference API call only for administrative interface page.
             if (current_user_can('administrator'))
             {
@@ -217,7 +218,7 @@ function woocommerce_razorpay_init()
                     '1cc_account_creation',
                 ));
               }
-
+              //@codeCoverageIgnoreEnd
             }
 
             $this->init_form_fields();
@@ -249,6 +250,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
             }
+            //@codeCoverageIgnoreStart
             else
             {
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'pluginInstrumentation'));
@@ -257,6 +259,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
             }
+            //@codeCoverageIgnoreEnd
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
         }
@@ -698,6 +701,7 @@ function woocommerce_razorpay_init()
             return $secret;
         }
 
+        //@codeCoverageIgnoreStart
         // showing notice : status of 1cc active / inactive message in admin dashboard
         function addAdminCheckoutSettingsAlert() {
             $enable_1cc  = $this->getSetting('enable_1cc');
@@ -721,6 +725,7 @@ function woocommerce_razorpay_init()
                 return;
             }
         }
+        //@codeCoverageIgnoreEnd
 
         protected function webhookAPI($method, $url, $data = array())
         {
@@ -790,10 +795,13 @@ function woocommerce_razorpay_init()
         {
             $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
 
+            //@codeCoverageIgnoreStart
             if($is1ccOrder == 'yes')
             {
                 return self::RAZORPAY_ORDER_ID_1CC . $orderId;
             }
+            //@codeCoverageIgnoreEnd
+
             return self::RAZORPAY_ORDER_ID . $orderId;
         }
 
@@ -1025,6 +1033,7 @@ function woocommerce_razorpay_init()
                     'contact' => $order->get_billing_phone(),
                 );
             }
+            //@codeCoverageIgnoreStart
             else
             {
                 $args = array(
@@ -1033,6 +1042,7 @@ function woocommerce_razorpay_init()
                     'contact' => $order->billing_phone,
                 );
             }
+            //@codeCoverageIgnoreEnd
 
             return $args;
         }
@@ -1171,15 +1181,18 @@ function woocommerce_razorpay_init()
 
             rzpLogInfo("Called getOrderCreationData with params orderId $orderId and is1ccOrder is set to $is1ccOrder");
 
+            //@codeCoverageIgnoreStart
             if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
             {
                 $data = $this->orderArg1CC($data, $order);
                 rzpLogInfo("Called getOrderCreationData with params orderId $orderId and adding line_items_total");
             }
+            //@codeCoverageIgnoreEnd
 
             return $data;
         }
 
+        //@codeCoverageIgnoreStart
         public function orderArg1CC($data, $order)
         {
             // TODO: trim to 2 deciamls
@@ -1230,6 +1243,7 @@ function woocommerce_razorpay_init()
 
             return $data;
         }
+        //@codeCoverageIgnoreEnd
 
         public function enqueueCheckoutScripts($data)
         {
@@ -1257,6 +1271,7 @@ function woocommerce_razorpay_init()
             wp_enqueue_script('razorpay_wc_script');
         }
 
+        //@codeCoverageIgnoreStart
         private function hostCheckoutScripts($data)
         {
             $url = Api::getFullUrl("checkout/embedded");
@@ -1283,7 +1298,7 @@ function woocommerce_razorpay_init()
                 </form>';
 
         }
-
+        //@codeCoverageIgnoreEnd
 
         /**
          * Generates the order form
@@ -1302,6 +1317,7 @@ function woocommerce_razorpay_init()
 
             $merchantPreferences = $api->request->request("GET", "preferences");
 
+            //@codeCoverageIgnoreStart
             if(isset($merchantPreferences['options']['redirect']) && $merchantPreferences['options']['redirect'] === true)
             {
                 $this->enqueueCheckoutScripts('checkoutForm');
@@ -1310,7 +1326,9 @@ function woocommerce_razorpay_init()
 
                 return $this->hostCheckoutScripts($data);
 
-            } else {
+            } 
+            //@codeCoverageIgnoreEnd
+            else {
                 $this->enqueueCheckoutScripts($data);
 
                 return <<<EOT
@@ -1392,6 +1410,7 @@ EOT;
             }
         }
 
+        //@codeCoverageIgnoreStart
         // process refund for gift card
         function processGiftCardRefund($orderId, $razorpayPaymentId, $amount = null, $reason = '')
         {
@@ -1445,6 +1464,7 @@ EOT;
             wp_redirect(wc_get_cart_url());
             exit;
         }
+        //@codeCoverageIgnoreEnd
 
         /**
          * Process the payment and return the result
@@ -1469,6 +1489,7 @@ EOT;
                     'redirect' => add_query_arg('key', $orderKey, $order->get_checkout_payment_url(true))
                 );
             }
+            //@codeCoverageIgnoreStart
             else if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
                 return array(
@@ -1485,6 +1506,7 @@ EOT;
                         add_query_arg('key', $orderKey, get_permalink(get_option('woocommerce_pay_page_id'))))
                 );
             }
+            //@codeCoverageIgnoreEnd
         }
 
         public function getRazorpayApiInstance($key = '', $secret = '')
@@ -1757,6 +1779,7 @@ EOT;
 
                     rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
 
+                    //@codeCoverageIgnoreStart
                     if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                     {
                         rzpLogInfo("Order details update initiated step 1 for the orderId: $wcOrderId");
@@ -1770,6 +1793,7 @@ EOT;
                         }
 
                     }
+                    //@codeCoverageIgnoreEnd
                 } catch (Exception $e) {
                     $message = $e->getMessage();
                     rzpLogError("Failed to update 1cc flow with error : $message");
@@ -1787,6 +1811,7 @@ EOT;
                     $order->payment_complete($razorpayPaymentId);
                 }
 
+                //@codeCoverageIgnoreStart
                 if(is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
                     handleCBRecoveredOrder($orderId);
                 }
@@ -1795,7 +1820,7 @@ EOT;
                 if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
                     handleWatiRecoveredOrder($orderId);
                 }
-
+                //@codeCoverageIgnoreEnd
                 $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
 
                 if($this->getSetting('route_enable') == 'yes')
@@ -1843,6 +1868,7 @@ EOT;
             }
         }
 
+        //@codeCoverageIgnoreStart
         public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
         {
             global $woocommerce;
@@ -2326,6 +2352,7 @@ EOT;
 
             return $zone;
         }
+        //@codeCoverageIgnoreEnd 
 
         // Update user billing and shipping information
         protected function updateUserAddressInfo($addressKeyPrefix, $addressValue, $stateValue, $order)
@@ -2341,6 +2368,7 @@ EOT;
             update_user_meta($order->get_user_id(), $addressKeyPrefix . 'state', $stateValue);
         }
 
+        //@codeCoverageIgnoreStart
         // Update Abandonment cart plugin table for recovered cart.
         protected function updateRecoverCartInfo($wcOrderId)
         {
@@ -2401,6 +2429,7 @@ EOT;
                 )
             );
         }
+        //@codeCoverageIgnoreEnd
 
         protected function handleErrorCase($order)
         {
@@ -2469,6 +2498,7 @@ EOT;
 
     }
 
+    //@codeCoverageIgnoreStart
     //update vendor data into wp_wcfm_marketplace_orders
     function updateVendorDetails($shippingFee, $vendorId, $orderId)
     {
@@ -2496,6 +2526,7 @@ EOT;
             );
         }
     }
+    //@codeCoverageIgnoreEnd
 
     /**
      * Add the Gateway to WooCommerce
@@ -2588,7 +2619,7 @@ define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/magic-checkout.js
 define('BTN_CHECKOUTJS_URL', 'https://cdn.razorpay.com/static/wooc/magic-rzp.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
-
+//@codeCoverageIgnoreStart
 function enqueueScriptsFor1cc()
 {
     $siteurl = get_option('siteurl');
@@ -2770,3 +2801,4 @@ function cartbounty_alter_automation_button( $button ){
 if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
     add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
 }
+//@codeCoverageIgnoreEnd

@@ -823,6 +823,11 @@ class RZP_Route extends WP_List_Table
         }
     }
 
+    public function fetchPayment($paymentId)
+    {
+        return $api->payment->fetch($paymentId);
+    }
+    
     function rzpPaymentDetails()
     {
         if (empty(sanitize_text_field($_REQUEST['id'])) || null == (sanitize_text_field($_REQUEST['id']))) {
@@ -833,10 +838,11 @@ class RZP_Route extends WP_List_Table
             
             $api = $this->fetchRazorpayApiInstance();
 
-            $paymentDetail = $api->payment->fetch($paymentId);
+            $paymentDetail = $this->fetchPayment($paymentId);
 
             $paymentTransfers = $api->payment->fetch($paymentId)->transfers();
 
+            var_dump($paymentTransfers);
             $prev_url = admin_url('admin.php?page=razorpayRoutePayments');
 
             $show = "jQuery('.overlay').show()";

@@ -17,10 +17,10 @@ define( 'WP_DEBUG', false );
 // WARNING WARNING WARNING!
 // tests DROPS ALL TABLES in the database. DO NOT use a production database
 
-define( 'DB_NAME', 'wptt_tests' );
+define( 'DB_NAME', 'wptest' );
 define( 'DB_USER', 'root' );
 define( 'DB_PASSWORD', 'root' );
-define( 'DB_HOST', '127.0.0.1' );
+define( 'DB_HOST', '127.0.0.1:3306' );
 define( 'DB_CHARSET', 'utf8' );
 define( 'DB_COLLATE', '' );
 

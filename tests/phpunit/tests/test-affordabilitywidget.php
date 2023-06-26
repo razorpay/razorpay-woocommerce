@@ -4,6 +4,34 @@ require_once __DIR__ . '/../../../includes/razorpay-affordability-widget.php';
 
 use Razorpay\MockApi\MockApi;
 
+/**
+ * @covers ::addAffordabilityWidgetHTML
+ * @covers ::getKeyId
+ * @covers ::getPrice
+ * @covers ::getOffers
+ * @covers ::getAdditionalOffers
+ * @covers ::getEmi
+ * @covers ::getCardlessEmi
+ * @covers ::getPayLater
+ * @covers ::getThemeColor
+ * @covers ::getHeadingColor
+ * @covers ::getHeadingFontSize
+ * @covers ::getContentColor
+ * @covers ::getContentFontSize
+ * @covers ::getLinkColor
+ * @covers ::getLinkFontSize
+ * @covers ::getFooterColor
+ * @covers ::getFooterFontSize
+ * @covers ::getFooterDarkLogo
+ * @covers ::addSubSection
+ * @covers ::getAffordabilityWidgetSettings
+ * @covers ::displayAffordabilityWidgetSettings
+ * @covers ::updateAffordabilityWidgetSettings
+ * @covers ::isEnabled
+ * @covers ::getCustomisation
+ * @covers ::isAffordabilityWidgetTestModeEnabled
+ */
+
 class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 {
     public function setup(): void
@@ -195,7 +223,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testisAffordabilityWidgetTestModeEnabledYes()
     {
-        add_option('rzp_afd_enable_test_mode', 'yes');
+        update_option('rzp_afd_enable_test_mode', 'yes');
 
         $this->assertTrue(isAffordabilityWidgetTestModeEnabled());
     }
@@ -209,6 +237,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testisAffordabilityWidgetTestModeNotEnabled()
     {
+        delete_option('rzp_afd_enable_test_mode');
         $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
     }
     
@@ -364,5 +393,78 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $this->assertStringContainsString('offer_ABC', $response);
 
         $this->assertStringContainsString('offer_XYZ', $response);
+    }
+
+    public function testgetAffordabilityWidgetSettings()
+    {
+        global $current_section;
+        $current_section = 'affordability-widget';
+
+        $response = getAffordabilityWidgetSettings();
+        
+        $this->assertSame('rzp_afd_section_title', $response['section_title']['id']);
+
+        $this->assertSame('rzp_afd_enable', $response['enable']['id']);
+
+        $this->assertSame('rzp_afd_enable_test_mode', $response['enable_test_mode']['id']);
+
+        $this->assertSame('rzp_afd_enable_offers', $response['enable_offers']['id']);
+
+        $this->assertSame('rzp_afd_additional_offers', $response['additional_offers']['id']);
+
+        $this->assertSame('rzp_afd_limited_offers', $response['limited_offers']['id']);
+
+        $this->assertSame('rzp_afd_show_discount_amount', $response['show_discount_amount']['id']);
+
+        $this->assertSame('rzp_afd_enable_emi', $response['enable_emi']['id']);
+
+        $this->assertSame('rzp_afd_limited_emi_providers', $response['limited_emi_providers']['id']);
+
+        $this->assertSame('rzp_afd_enable_cardless_emi', $response['enable_cardless_emi']['id']);
+
+        $this->assertSame('rzp_afd_limited_cardless_emi_providers', $response['limited_cardles_emi_providers']['id']);
+
+        $this->assertSame('rzp_afd_enable_pay_later', $response['enable_pay_later']['id']);
+
+        $this->assertSame('rzp_afd_limited_pay_later_providers', $response['limited_pay_later_providers']['id']);
+
+        $this->assertSame('rzp_afd_theme_color', $response['theme_color']['id']);
+
+        $this->assertSame('rzp_afd_heading_color', $response['heading_color']['id']);
+
+        $this->assertSame('rzp_afd_heading_font_size', $response['heading_font_size']['id']);
+
+        $this->assertSame('rzp_afd_content_color', $response['content_color']['id']);
+
+        $this->assertSame('rzp_afd_content_font_size', $response['content_font_size']['id']);
+
+        $this->assertSame('rzp_afd_link_color', $response['link_color']['id']);
+
+        $this->assertSame('rzp_afd_link_font_size', $response['link_font_size']['id']);
+
+        $this->assertSame('rzp_afd_footer_color', $response['footer_color']['id']);
+
+        $this->assertSame('rzp_afd_footer_font_size', $response['footer_font_size']['id']);
+
+        $this->assertSame('rzp_afd_enable_dark_logo', $response['dark_logo']['id']);
+
+        $this->assertSame('wc_settings_tab_demo_section_end', $response['section_end']['id']);
+    }
+
+    public function testdisplayAffordabilityWidgetSettings()
+    {
+        ob_start();
+        displayAffordabilityWidgetSettings();
+        $result = ob_get_contents();
+        ob_end_clean();
+    
+        $response = getAffordabilityWidgetSettings();
+
+        ob_start();
+        woocommerce_admin_fields($response);
+        $expected = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertSame($expected, $result);
     }
 }

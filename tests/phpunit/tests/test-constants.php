@@ -1,4 +1,8 @@
 <?php
+/**
+ * @covers \WC_Razorpay
+ * @covers ::addRouteModuleSettingFields
+ */
 
 class Test_Constants extends WP_UnitTestCase
 {

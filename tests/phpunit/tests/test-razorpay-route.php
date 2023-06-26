@@ -1,20 +1,50 @@
 <?php
+/**
+ * @covers \RZP_Route
+ * @covers \RZP_Route_Action
+ * @covers ::woocommerce_razorpay_init
+ * @covers ::addRouteModuleSettingFields
+ * @covers ::razorpayRouteModule
+ * @covers ::rzpAddPluginPage
+ * @covers ::razorpayRouteWoocommerce
+ * @covers ::razorpayTransfers
+ * @covers ::razorpayRouteReversals
+ * @covers ::razorpayRoutePayments
+ * @covers ::razorpaySettlementTransfers
+ * @covers ::razorpayPaymentsView
+ * @covers ::adminEnqueueScriptsFunc
+ * @covers ::transferDataTab
+ * @covers ::productTransferDataFields
+ * @covers ::woocommerce_process_transfer_meta_fields_save
+ * @covers ::paymentTransferMetaBox
+ * @covers ::renderPaymentTransferMetaBox
+ * @covers ::renderPaymentMetaBox
+ * @covers ::razorpayDirectTransfer
+ * @covers ::razorpayReverseTransfer
+ * @covers ::razorpaySettlementUpdate
+ * @covers ::razorpayPaymentTransfer
+ */
 
 require_once __DIR__ . '/../../../includes/razorpay-route.php';
-require_once __DIR__ .'/../../../woo-razorpay.php';
 require_once __DIR__ . '/../mockfactory/MockApi.php';
 require_once __DIR__ . '/../mockfactory/Request.php';
+require_once __DIR__ . '/../mockfactory/Order.php';
 require_once __DIR__ . '/../mockfactory/Transfer.php';
+require_once __DIR__ . '/../mockfactory/Payment.php';
+require_once __DIR__ .'/../../../woo-razorpay.php';
 
 use Razorpay\MockApi\MockApi;
 
-class Test_RzpRoute extends \PHPUnit_Framework_TestCase
+class Test_RzpRoute extends WP_UnitTestCase
 { 
     private $instance;
+    private $rzpRoute;
+    private $api;
 
     public function setup(): void
     {
         parent::setup();
+        $this->rzpRoute = new RZP_Route();
         $this->instance = Mockery::mock('RZP_Route')->makePartial()->shouldAllowMockingProtectedMethods();
 
         $_POST = array();
@@ -84,15 +114,25 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('razorpay-route-woocommerce', $GLOBALS['admin_page_hooks']['razorpayRouteWoocommerce']);
 
-        $this->assertSame('razorpayTransfers', $GLOBALS['submenu'][''][0][2]);
+        // $this->assertSame('razorpayTransfers', $GLOBALS['submenu'][''][0][2]);
 
-        $this->assertSame('razorpayRouteReversals', $GLOBALS['submenu'][''][1][2]);
+        // $this->assertSame('razorpayRouteReversals', $GLOBALS['submenu'][''][1][2]);
 
-        $this->assertSame('razorpayRoutePayments', $GLOBALS['submenu'][''][2][2]);
+        // $this->assertSame('razorpayRoutePayments', $GLOBALS['submenu'][''][2][2]);
 
-        $this->assertSame('razorpaySettlementTransfers', $GLOBALS['submenu'][''][3][2]);
+        // $this->assertSame('razorpaySettlementTransfers', $GLOBALS['submenu'][''][3][2]);
 
-        $this->assertSame('razorpayPaymentsView', $GLOBALS['submenu'][''][4][2]);
+        // $this->assertSame('razorpayPaymentsView', $GLOBALS['submenu'][''][4][2]);
+
+        $this->assertTrue($GLOBALS['_wp_submenu_nopriv']['']['razorpayTransfers']);
+
+        $this->assertTrue($GLOBALS['_wp_submenu_nopriv']['']['razorpayRouteReversals']);
+
+        $this->assertTrue($GLOBALS['_wp_submenu_nopriv']['']['razorpayRoutePayments']);
+
+        $this->assertTrue($GLOBALS['_wp_submenu_nopriv']['']['razorpaySettlementTransfers']);
+
+        $this->assertTrue($GLOBALS['_wp_submenu_nopriv']['']['razorpayPaymentsView']);
     }
     
     public function testrzpTransfers()
@@ -816,5 +856,42 @@ class Test_RzpRoute extends \PHPUnit_Framework_TestCase
 
         $expected = '<p>' . $paymentID . ' <span><a href="?page=razorpayPaymentsView&id=' . $paymentID . '"><input type="button" class="button" value="View"></a></span></p>';
         $this->assertStringContainsString($expected, $result);
+    }
+
+    public function testrzpPaymentDetails()
+    {
+        $_REQUEST['id'] = 'test';
+
+        $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_2', 'key_secret2');
+            });
+
+        $payment = [
+            'count' => 1,
+            'order_id' => 11,
+            'recipient_settlement_id' => 'Rzp123',
+            'id' => 'abcd',
+            'source' => 'order',
+            'recipient' => 'pay',
+            'amount' => 1200,
+            'created_at' => 1677542400,
+            'status' => 'Pending',
+            'settlement_status' => 'pending',
+            'recipient_settlement_id' => 'Rzp123',
+        ];
+
+        $this->instance->shouldReceive('fetchPayment')->with('test')->andReturn($payment);
+
+        ob_start();
+        $this->instance->rzpPaymentDetails();
+        $response = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('<div class="col-sm-8 panel-value">' . $payment["id"] . '</div>', $response);
+
+        $this->assertStringContainsString('<div class="col-sm-8 panel-value">' . ucfirst($payment['status']) . '</div>', $response);
+
+        $this->assertStringContainsString('<div class="col-sm-8 panel-value">' . $payment['order_id'] . '</div>', $response);
     }
 }

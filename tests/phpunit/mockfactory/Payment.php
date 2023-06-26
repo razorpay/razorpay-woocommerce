@@ -14,7 +14,7 @@ class Data
 {
     public $id = ['Abc123'];
 
-    function transfers()
+    function transfers($options = array())
     {
         $request = new Request();
 
@@ -26,5 +26,10 @@ class Data
     function refund()
     {
         return (object)array('id' => 'abc');
+    }
+
+    function fetch($id)
+    {
+        return new Data();
     }
 }

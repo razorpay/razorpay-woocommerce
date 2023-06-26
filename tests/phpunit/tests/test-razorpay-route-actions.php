@@ -1,4 +1,9 @@
 <?php
+/**
+ * @covers \RZP_Route_Action
+ * @covers ::woocommerce_razorpay_init
+ * @covers ::addRouteModuleSettingFields
+ */
 
 require_once __DIR__ . '/../../../includes/razorpay-route-actions.php';
 require_once __DIR__ .'/../../../woo-razorpay.php';
@@ -6,13 +11,14 @@ require_once __DIR__ . '/../mockfactory/MockApi.php';
 
 use Razorpay\MockApi\MockApi;
 
-class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
+class Test_RzpRouteAction extends WP_UnitTestCase
 {
     private $instance;
 
     public function setup(): void
     {
         parent::setup();
+        $this->rzpRoute = new RZP_Route_Action();
         $this->instance = Mockery::mock('RZP_Route_Action')->makePartial()->shouldAllowMockingProtectedMethods();
     }
 

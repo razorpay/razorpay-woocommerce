@@ -99,6 +99,7 @@ class Request
                         'amount_paid' => 0,
                         'amount_due' => 0,
                         'currency' => 'INR',
+                        'receipt' => '19'
                     ],
                     'webhooks/' => [
                         'id' => 'create',
@@ -176,6 +177,7 @@ class Request
                 'GET' => [
                     'payments/Abc123/transfers' =>
                         [
+                            'count' => 1,
                             'recipient_settlement_id' => 'Rzp123',
                             'items' => [
                                 [
@@ -186,7 +188,7 @@ class Request
                                     'created_at' => 1677542400,
                                     'status' => 'Pending',
                                     'settlement_status' => 'pending',
-                                    'recipient_settlement_id' => 'Rzp123'
+                                    'recipient_settlement_id' => 'Rzp123',
                                 ],
                             ]
                         ],
@@ -307,13 +309,13 @@ class Request
                         'receipt' => '16',
                     ],
                     'orders/id' => [
-                        'id' => 'razorpay_order_id',
+                        'id' => 'razorpay_test_id',
                         'entity' => 'order',
                         'amount' => 0,
                         'amount_paid' => 0,
                         'amount_due' => 0,
                         'currency' => 'USD',
-                        'receipt' => '16',
+                        'receipt' => '21',
                     ]
                 ]
             ],

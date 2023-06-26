@@ -1,8 +1,15 @@
 <?php
-
+/**
+ * @covers \WC_Razorpay
+ * @covers woocommerce_add_razorpay_gateway
+ * @covers ::is1ccEnabled
+ * @covers ::addRouteModuleSettingFields
+ * @covers ::isDebugModeEnabled
+ */
 require_once __DIR__ . '/../mockfactory/MockApi.php';
 require_once __DIR__ . '/../mockfactory/Request.php';
 require_once __DIR__ . '/../mockfactory/Order.php';
+require_once __DIR__ . '/../../../woo-razorpay.php';
 
 use Razorpay\MockApi\MockApi;
 use Razorpay\Api\Errors\SignatureVerificationError;
@@ -104,18 +111,32 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $result = ob_get_contents();
         ob_end_clean();
 
-        $this->assertStringContainsString("Thank you for your order, please click the button below to pay with Razorpay.", $result);
-        $this->assertStringContainsString("<form name='razorpayform'", $result);
-        $this->assertStringContainsString('<input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">', $result);
-        $this->assertStringContainsString('<input type="hidden" name="razorpay_signature"  id="razorpay_signature" >', $result);
-        $this->assertStringContainsString('<input type="hidden" name="razorpay_wc_form_submit" value="1">', $result);
-        $this->assertStringContainsString('</form>', $result);
-        $this->assertStringContainsString('Please wait while we are processing your payment.', $result);
-        $this->assertStringContainsString('<button id="btn-razorpay">Pay Now</button>', $result);
-        $this->assertStringContainsString('<button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>', $result);
+            $this->assertStringContainsString("Thank you for your order, please click the button below to pay with Razorpay.", $result );
+            $this->assertStringContainsString("<form name='razorpayform'", $result );
+            $this->assertStringContainsString('<input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">', $result );
+            $this->assertStringContainsString('<input type="hidden" name="razorpay_signature"  id="razorpay_signature" >', $result );
+            $this->assertStringContainsString('<input type="hidden" name="razorpay_wc_form_submit" value="1">', $result );
+            $this->assertStringContainsString('</form>', $result );
+            $this->assertStringContainsString('Please wait while we are processing your payment.', $result );
+            $this->assertStringContainsString('<button id="btn-razorpay">Pay Now</button>', $result );
+            $this->assertStringContainsString('<button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>', $result );
+        }
+
+        public function testCreateRazorpayOrderId()
+        {
+            $order = wc_create_order();
+            $orderId = $order->get_id();
+
+            $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function () {
+                return new MockApi('key_id', 'key_secret');
+            });
+            $this->instance->shouldReceive('autoEnableWebhook');
+
+            $response = $this->instance->createOrGetRazorpayOrderId($orderId);
+            $this->assertStringContainsString('razorpay_test_id', $response );
     }
-    
-    public function testCreateRazorpayOrderId()
+
+    public function testCreateRazorpayOrderIdwitwebhooktime()
     {
         $order = wc_create_order();
         $orderId = $order->get_id();
@@ -125,16 +146,18 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         });
         $this->instance->shouldReceive('autoEnableWebhook');
 
+        add_option('webhook_enable_flag', 2400);
         $response = $this->instance->createOrGetRazorpayOrderId($orderId);
-        $this->assertStringContainsString('razorpay_test_id', $response);
+        $this->assertStringContainsString('razorpay_test_id', $response );
     }
+
 
     public function testGetRazorpayOrderId()
     {
         $order = wc_create_order();
         $orderId = $order->get_id();
 
-        set_transient('razorpay_order_id' . (string) $orderId , 'razorpay_test_id', 18000);
+        set_transient('razorpay_order_id' . (string)$orderId , 'razorpay_test_id', 18000);
 
         $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function () {
             return new MockApi('key_id', 'key_secret');
@@ -142,7 +165,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->instance->shouldReceive('autoEnableWebhook');
 
         $response = $this->instance->createOrGetRazorpayOrderId($orderId);
-        $this->assertStringContainsString('razorpay_test_id', $response);
+        $this->assertStringContainsString('razorpay_test_id', $response );
     }
 
     public function testGenerateRazorpayFormException()
@@ -208,12 +231,11 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->assertStringContainsString("<input type='hidden' name='prefill[email]' value='testing@razorpay.com'>", $response);
         $this->assertStringContainsString("<input type='hidden' name='prefill[contact]' value='00000000000'>", $response);
         $this->assertStringContainsString("<input type='hidden' name='_[integration]' value='woocommerce'>", $response);
-        $this->assertStringContainsString("name='_[integration_version]'", $response);
-        $this->assertStringContainsString("name='_[integration_parent_version]'", $response);
-        $this->assertStringContainsString("<input type='hidden' name='_[integration_type]' value='plugin'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='_[integration_version]' value='4.5.2'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='_[integration_parent_version]' value='7.7.2'>", $response);
         $this->assertStringContainsString("</form>", $response);
     }
- 
+
     public function testGetShippingZone()
     {
         $response = $this->instance->getShippingZone(0);

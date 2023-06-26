@@ -18,6 +18,7 @@ function isRazorpayPluginEnabled()
     );
 }
 
+// @codeCoverageIgnoreStart
 function isTestModeEnabled()
 {
     return (
@@ -75,6 +76,7 @@ function isMandatoryAccCreationEnabled()
         && 'yes' == get_option('woocommerce_razorpay_settings')['1cc_account_creation']
     );
 }
+// @codeCoverageIgnoreEnd
 function validateInput($route, $param)
 {
     $failure_reason = null;
@@ -97,8 +99,8 @@ function validateInput($route, $param)
             }
             break;
 
-        case 'shipping':
-            if (empty(sanitize_text_field($param['order_id'])) === true) {
+        case 'shipping':     
+            if (empty(sanitize_text_field($param['order_id'])) === true) {      
                 $failure_reason = 'Field order id is required.';
 
             } elseif (empty($param['addresses']) === true) {

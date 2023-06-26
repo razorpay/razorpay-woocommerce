@@ -1,4 +1,8 @@
 <?php
+/**
+ * @covers \WC_Razorpay
+ * @covers ::addRouteModuleSettingFields
+ */
 
 class Test_FormFields extends WP_UnitTestCase
 {
