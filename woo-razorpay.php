@@ -1768,7 +1768,7 @@ EOT;
                         {
                             rzpLogInfo("Order details update initiated step 2 for the orderId: $wcOrderId");
 
-                            $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId, $webhook);
+                            $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId);
                         }
 
                     }
@@ -1845,7 +1845,7 @@ EOT;
             }
         }
 
-        public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId, $webhook)
+        public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
         {
             global $woocommerce;
 
@@ -2031,7 +2031,7 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
-            if ($webhook === false && $paymentDoneBy === 'cod')
+            if ($paymentDoneBy === 'cod')
             {
                 try
                 {
