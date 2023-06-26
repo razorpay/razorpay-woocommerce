@@ -25,7 +25,7 @@ function one_cc_plugin_sync_cron_exce()
     $lastUpdateDate = add_option('plugin_cron_sync_date_test2', time());
 
 
-	$url = '1cc/merchant/wooc/plugin';
+	$url = '1cc/merchant/woocommerce/plugins_list';
 
 	try
     {
