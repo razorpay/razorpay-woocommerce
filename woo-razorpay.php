@@ -2478,7 +2478,6 @@ EOT;
             foreach($order->get_items() as $order_item)
             {
                 $total = $order_item->get_total();
-                $order_item->set_subtotal($total);
                 $order_item->set_total($total - $discount_total);
                 $order_item->save();
             }
