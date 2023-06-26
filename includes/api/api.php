@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../debug.php';
 require_once __DIR__ . '/../../woo-razorpay.php';
+require_once __DIR__ . '/../../prepay-cod.php';
 require_once __DIR__ . '/shipping-info.php';
 require_once __DIR__ . '/coupon-apply.php';
 require_once __DIR__ . '/coupon-get.php';
@@ -15,6 +16,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../state-map.php';
 require_once __DIR__ . '/save-abandonment-data.php';
 require_once __DIR__ . '/giftcard-apply.php';
+require_once __DIR__ . '/prepay-cod.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
@@ -132,19 +134,13 @@ function rzp1ccInitRestApi()
         'prepay',
         array(
             'methods'             => 'POST',
-            'callback'            => 'prepayCODOrder',
+            'callback'            => 'prepayCODOrderHandler',
             'permission_callback' => 'checkAuthCredentials',
         )
     );
 }
 
 add_action('rest_api_init', 'rzp1ccInitRestApi');
-
-function prepayCODOrder(WP_REST_Request $request) {
-    $params = $request->get_params();
-    $wcRazorpay = new WC_Razorpay(false);
-    return $wcRazorpay->prepayCODOrder($params);
-}
 
 /**
  * Check any prerequisites for our REST request

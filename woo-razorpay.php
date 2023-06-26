@@ -66,6 +66,8 @@ function woocommerce_razorpay_init()
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
         const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
 
+        const PREPAY_COD_URL = '1cc/orders/cod/convert';
+
         protected $supportedWebhookEvents = array(
             'payment.authorized',
             'payment.pending',
@@ -2029,21 +2031,19 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
-            if (!$webhook && $paymentDoneBy === 'cod')
+            if ($webhook === false && $paymentDoneBy === 'cod')
             {
                 try
                 {
                     $body = ['order_id' => $razorpayOrderId];
                     rzpLogInfo("making prepay API Call for order : $razorpayOrderId");
-                    $url = '1cc/orders/cod/convert';
-                    $response = $api->request->request('POST', $url , $body);
-                    rzpLogInfo("makeAPICall: url: ". $url . " is success");
+                    $response = $api->request->request('POST', self::PREPAY_COD_URL , $body);
+                    rzpLogInfo("makeAPICall: url: ". self::PREPAY_COD_URL . " is success");
                 }
                 catch (\Razorpay\Api\Errors\Error $e)
                 {
-                    error_log($e->getMessage());
                     $statusCode = $e->getHttpStatusCode();
-                    rzpLogError("make prepayAPICall failed: message:" . $e->getMessage() . ", url: " . $url . ", statusCode : " . $statusCode . ", stacktrace : " . $e->getTraceAsString());
+                    rzpLogError("make prepayAPICall failed: message:" . $e->getMessage() . ", url: " . self::PREPAY_COD_URL . ", statusCode : " . $statusCode . ", stacktrace : " . $e->getTraceAsString());
                 }
             }
         }
@@ -2466,78 +2466,92 @@ EOT;
             }
         }
 
-        public function prepayCODOrder(array $payload): WP_REST_Response
-        {
-            $orderId = $payload[self::WC_ORDER_ID];
-            $razorpayPaymentId = $payload[self::RAZORPAY_PAYMENT_ID];
-            $razorpayOrderId = $payload[self::RAZORPAY_ORDER_ID];
-            $signature = $payload[self::RAZORPAY_SIGNATURE];
-            $attributes = array(
-                self::RAZORPAY_ORDER_ID => $razorpayOrderId,
-                self::RAZORPAY_PAYMENT_ID => $razorpayPaymentId,
-                self::RAZORPAY_SIGNATURE  => $signature,
-            );
-            try
-            {
-                $api = $this->getRazorpayApiInstance();
-                $api->utility->verifyPaymentSignature($attributes);
-            }
-            catch (Exception $e)
-            {
-                return new WP_REST_Response(["code" => 'woocommerce_order_payment_signature_verfication_failed'], 400);
-            }
-            $order = wc_get_order($orderId);
-            if ('on-hold' != $order->get_status())
-            {
-                return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
-			}
+//        public function prepayCODOrder(array $payload): WP_REST_Response
+//        {
+//            $orderId = $payload[self::WC_ORDER_ID];
+//            $razorpayPaymentId = $payload[self::RAZORPAY_PAYMENT_ID];
+//            $razorpayOrderId = $payload[self::RAZORPAY_ORDER_ID];
+//            $signature = $payload[self::RAZORPAY_SIGNATURE];
+//            $attributes = array(
+//                self::RAZORPAY_ORDER_ID => $razorpayOrderId,
+//                self::RAZORPAY_PAYMENT_ID => $razorpayPaymentId,
+//                self::RAZORPAY_SIGNATURE  => $signature,
+//            );
+//            try
+//            {
+//                $api = $this->getRazorpayApiInstance();
+//                $api->utility->verifyPaymentSignature($attributes);
+//            }
+//            catch (Exception $e)
+//            {
+//                return new WP_REST_Response(["code" => 'woocommerce_order_payment_signature_verfication_failed'], 400);
+//            }
+//            $order = wc_get_order($orderId);
+//            if ('on-hold' != $order->get_status())
+//            {
+//                return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
+//			}
+//
+//
+//            $order->set_status('pending');
+//            $order->save();
+//
+//            if (isset($payload['coupon']))
+//            {
+//                $couponKey = $payload['coupon']['code'];
+//                $amount = $payload['coupon']['amount'];
+//                $isSuccess = $this->createCoupon($couponKey, $amount/100);
+//                if ($isSuccess === false) {
+//                    return new WP_REST_Response(['code' => 'woocommerce_create_new_coupon_error'], 500);
+//                }
+//                $this->applyCoupon($order, $couponKey, $amount);
+//                rzpLogInfo("Coupon details updated for orderId: $orderId, razorpayOrderId: $razorpayOrderId, couponKey: $couponKey");
+//            }
+//            $order->set_payment_method($this->id);
+//            $order->set_payment_method_title($this->title);
+//            $order->payment_complete($razorpayPaymentId);
+//            $order->set_status("processing");
+//            $order->save();
+//            $order->add_order_note("COD Order Converted to Prepaid <br/> Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
+//            return new WP_REST_Response([], 200);
+//        }
 
+//        private function createCoupon($coupon_code, $amount) : bool {
+//
+//            $coupon = array(
+//                'post_title' => $coupon_code,
+//                'post_content' => '',
+//                'post_status' => 'publish',
+//                'post_author' => 1,
+//                'post_type' => 'shop_coupon');
+//
+//            $new_coupon_id = wp_insert_post( $coupon );
+//
+//            if( $new_coupon_id === 0) {
+//                return false;
+//            }
+//
+//            $input = [
+//                'discount_type' => 'fixed_cart',
+//                'coupon_amount' => $amount,
+//                'usage_limit' => 1,
+//                'minimum_amount' => $amount,
+//            ];
+//
+//            return $this->bulkUpdatePostMeta($new_coupon_id, $input);
+//        }
+//
+//        private function bulkUpdatePostMeta($id, $input): bool {
+//            foreach ($input as $key => $value) {
+//                $isSuccess = update_post_meta($id, $key, $value);
+//                if($isSuccess === false) {
+//                    return false;
+//                }
+//            }
+//            return true;
+//        }
 
-            $order->set_status('pending');
-            $order->save();
-
-            if (isset($payload['coupon']))
-            {
-                $couponKey = $payload['coupon']['code'];
-                $amount = $payload['coupon']['amount'];
-                $this->createCoupon($couponKey, $amount/100);
-                $this->applyCoupon($order, $couponKey, $amount);
-                rzpLogInfo("Coupon details updated for orderId: $orderId, razorpayOrderId: $razorpayOrderId, couponKey: $couponKey");
-            }
-            $order->set_payment_method($this->id);
-            $order->set_payment_method_title($this->title);
-            $order->payment_complete($razorpayPaymentId);
-            $order->set_status("processing");
-            $order->save();
-            $order->add_order_note("COD Order Converted to Prepaid <br/> Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
-            return new WP_REST_Response([], 200);
-        }
-
-        private function createCoupon($couponKey, $amount) {
-
-            /**
-             * Create a coupon programatically
-             */
-            $coupon_code = $couponKey;
-            $discount_type = 'fixed_cart'; // Type: fixed_cart, percent, fixed_product, percent_product
-
-            $coupon = array(
-                'post_title' => $coupon_code,
-                'post_content' => '',
-                'post_status' => 'publish',
-                'post_author' => 1,
-                'post_type' => 'shop_coupon');
-
-            $new_coupon_id = wp_insert_post( $coupon );
-
-            update_post_meta( $new_coupon_id, 'discount_type', $discount_type );
-            update_post_meta( $new_coupon_id, 'coupon_amount', $amount );
-            update_post_meta( $new_coupon_id, 'usage_limit', '1' );
-            update_post_meta( $new_coupon_id, 'minimum_amount', $amount );
-
-        }
-
-        private function applyCoupon($order, $couponKey, $couponValue) {
+        public function applyCoupon($order, $couponKey, $couponValue) {
             // Remove the same coupon, if already being added to order.
             $order->remove_coupon($couponKey);
 
