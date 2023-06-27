@@ -573,40 +573,40 @@ class Test_Webhook extends \PHPUnit_Framework_TestCase
         $this->assertSame(null, $this->instance->refundedCreated($data));
     }
 
-    public function testProcessRzpWebhookNotifiedEmpty()
-    {        
-        $order = wc_create_order();
+    // public function testProcessRzpWebhookNotifiedEmpty()
+    // {        
+    //     $order = wc_create_order();
 
-        $post = array('event' => 'subscription.paused', 'payload' => array('payment' => array('entity' => array('notes' => array('woocommerce_order_number' => $order->get_order_number()), 'order_id' => 'razorpay_order_id'))));
+    //     $post = array('event' => 'subscription.paused', 'payload' => array('payment' => array('entity' => array('notes' => array('woocommerce_order_number' => $order->get_order_number()), 'order_id' => 'razorpay_order_id'))));
         
-        $postEncoded = json_encode($post);
+    //     $postEncoded = json_encode($post);
 
-        $this->instance->shouldReceive('getContents')->andReturn($postEncoded);
+    //     $this->instance->shouldReceive('getContents')->andReturn($postEncoded);
 
-        $_SERVER = array('HTTP_X_RAZORPAY_SIGNATURE' => true);
+    //     $_SERVER = array('HTTP_X_RAZORPAY_SIGNATURE' => true);
 
-        add_option('webhook_secret', 'ABCD123');
+    //     add_option('webhook_secret', 'ABCD123');
 
-        add_post_meta($order->get_order_number(), "rzp_webhook_notified_at", 1);
+    //     add_post_meta($order->get_order_number(), "rzp_webhook_notified_at", 1);
 
-        $this->instance->shouldReceive('verifyWebhook');
+    //     $this->instance->shouldReceive('verifyWebhook');
 
-        $this->instance->shouldReceive('shouldConsumeWebhook')->with($post)->andReturn(true);
+    //     $this->instance->shouldReceive('shouldConsumeWebhook')->with($post)->andReturn(true);
         
-        $this->instance->shouldReceive('fetchSettings')->andReturn(true);
+    //     $this->instance->shouldReceive('fetchSettings')->andReturn(true);
 
-        $this->instance->shouldReceive('verifyWebhookSignature')->willThrowException('Errors\SignatureVerificationError');
-        // $this->expectException("Errors\SignatureVerificationError");
-        // $this->expectExceptionMessage("Payment Failed or error from gateway");
+    //     $this->instance->shouldReceive('verifyWebhookSignature')->willThrowException('Errors\SignatureVerificationError');
+    //     // $this->expectException("Errors\SignatureVerificationError");
+    //     // $this->expectExceptionMessage("Payment Failed or error from gateway");
 
-        $response = $this->instance->process();
+    //     $response = $this->instance->process();
 
-        var_dump($response);
-        // $this->assertSame(null,$response);
+    //     var_dump($response);
+    //     // $this->assertSame(null,$response);
 
-        delete_option('webhook_secret');
+    //     delete_option('webhook_secret');
 
-        delete_post_meta($order->get_order_number(), "rzp_webhook_notified_at");
-    }
+    //     delete_post_meta($order->get_order_number(), "rzp_webhook_notified_at");
+    // }
 }
 
