@@ -842,7 +842,6 @@ class RZP_Route extends WP_List_Table
 
             $paymentTransfers = $api->payment->fetch($paymentId)->transfers();
 
-            var_dump($paymentTransfers);
             $prev_url = admin_url('admin.php?page=razorpayRoutePayments');
 
             $show = "jQuery('.overlay').show()";

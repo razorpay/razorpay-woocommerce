@@ -16,13 +16,13 @@ class Order
         return $response;
     }
 
-    public function fetch($id)
+    public function fetch($id, $attributes = array())
     {
         $request = new Request();
 
         $response = $request->request('POST', 'orders/id', $attributes);
 
+        $response['currency'] = 'USD';
         return $response;
     }
 }
-
