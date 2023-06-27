@@ -36,11 +36,6 @@ function prepayCODOrder(array $payload): WP_REST_Response {
         return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
     }
 
-    if ((isset($payload['coupon']) || $razorpayOffer > 0) && get_option("woocommerce_enable_coupons") === "no")
-    {
-        return new WP_REST_Response(['code' => 'woocommerce_merchant_coupon_feature_disabled'], 400);
-    }
-
     $order->set_status('pending');
     $order->save();
     $couponInput = [];
