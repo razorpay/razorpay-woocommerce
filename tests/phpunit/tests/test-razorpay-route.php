@@ -31,20 +31,18 @@ require_once __DIR__ . '/../mockfactory/Request.php';
 require_once __DIR__ . '/../mockfactory/Order.php';
 require_once __DIR__ . '/../mockfactory/Transfer.php';
 require_once __DIR__ . '/../mockfactory/Payment.php';
-require_once __DIR__ .'/../../../woo-razorpay.php';
+require_once __DIR__ . '/../../../woo-razorpay.php';
 
 use Razorpay\MockApi\MockApi;
 
 class Test_RzpRoute extends WP_UnitTestCase
 { 
     private $instance;
-    private $rzpRoute;
     private $api;
 
     public function setup(): void
     {
         parent::setup();
-        $this->rzpRoute = new RZP_Route();
         $this->instance = Mockery::mock('RZP_Route')->makePartial()->shouldAllowMockingProtectedMethods();
 
         $_POST = array();
