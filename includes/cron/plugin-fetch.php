@@ -7,7 +7,6 @@ use Razorpay\Api\Api;
 
 add_action('one_cc_plugin_sync_cron', 'one_cc_plugin_sync_cron_exce');
 
-
 function one_cc_plugin_sync_cron_exce() 
 {
 
@@ -22,8 +21,6 @@ function one_cc_plugin_sync_cron_exce()
     }
 
 	$pluginData = ["url" => $siteUrl, "platform" => "woocommerce", "plugin_info" => $data];
-    $lastUpdateDate = add_option('plugin_cron_sync_date_test2', time());
-
 
 	$url = '1cc/merchant/woocommerce/plugins_list';
 
@@ -32,24 +29,25 @@ function one_cc_plugin_sync_cron_exce()
     	$paymentSettings = get_option('woocommerce_razorpay_settings');
 
     	$api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
-    	$response = $api->request->request('POST', $url, $pluginData);
-        
+    	$response = $api->request->request('POST', self::RZP_1CC_PLUGIN_FETCH, $pluginData);
     }
     catch (Exception $e)
     {
         rzpLogError($e->getMessage());
     }
 
-
 }
 
 function syncPluginFetchCron(){
 
     $timestamp = strtotime('+15 days 2:00:00');
+    $startTime = strtotime('2:00:00', $timestamp);
+    $endTime = strtotime('2:15:00', $timestamp);
+    $randomTime = mt_rand($startTime, $endTime)
 
     try
     {
-        createPluginFetchCron('one_cc_plugin_sync_cron', $timestamp , 'daily');
+        createPluginFetchCron('one_cc_plugin_sync_cron', $randomTime , 'daily');
         rzpLogInfo('create one_cc_plugin_sync_cron successful');
     }
     catch (Exception $e)
