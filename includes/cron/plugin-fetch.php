@@ -22,14 +22,12 @@ function one_cc_plugin_sync_cron_exce()
 
 	$pluginData = ["url" => $siteUrl, "platform" => "woocommerce", "plugin_info" => $data];
 
-	$url = '1cc/merchant/woocommerce/plugins_list';
-
 	try
     {
     	$paymentSettings = get_option('woocommerce_razorpay_settings');
 
     	$api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
-    	$response = $api->request->request('POST', self::RZP_1CC_PLUGIN_FETCH, $pluginData);
+    	$response = $api->request->request('POST', RZP_1CC_PLUGIN_FETCH, $pluginData);
     }
     catch (Exception $e)
     {
@@ -40,10 +38,9 @@ function one_cc_plugin_sync_cron_exce()
 
 function syncPluginFetchCron(){
 
-    $timestamp = strtotime('+15 days 2:00:00');
-    $startTime = strtotime('2:00:00', $timestamp);
-    $endTime = strtotime('2:15:00', $timestamp);
-    $randomTime = mt_rand($startTime, $endTime)
+    $startTime = strtotime('+15 days 2:00:00');
+    $endTime = strtotime('+15 days 2:15:00');
+    $randomTime = mt_rand($startTime, $endTime);
 
     try
     {
