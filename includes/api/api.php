@@ -6,7 +6,6 @@
 
 require_once __DIR__ . '/../debug.php';
 require_once __DIR__ . '/../../woo-razorpay.php';
-require_once __DIR__ . '/../../prepay-cod.php';
 require_once __DIR__ . '/shipping-info.php';
 require_once __DIR__ . '/coupon-apply.php';
 require_once __DIR__ . '/coupon-get.php';
