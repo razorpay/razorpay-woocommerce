@@ -6,13 +6,8 @@ const RAZORPAY_ORDER_ID              = 'razorpay_order_id';
 const RAZORPAY_SIGNATURE             = 'razorpay_signature';
 const RAZORPAY_OFFER                 = 'razorpay_offer';
 
-function prepayCODOrderHandler(WP_REST_Request $request) {
-    $params = $request->get_params();
-    return prepayCODOrder($params);
-}
-
-
-function prepayCODOrder(array $payload): WP_REST_Response {
+function prepayCODOrder(WP_REST_Request $request): WP_REST_Response {
+    $payload = $request->get_params();
     $wcRazorpay = new WC_Razorpay(false);
 
     $orderId = $payload[WC_ORDER_ID];

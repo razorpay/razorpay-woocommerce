@@ -133,7 +133,7 @@ function rzp1ccInitRestApi()
         'prepay',
         array(
             'methods'             => 'POST',
-            'callback'            => 'prepayCODOrderHandler',
+            'callback'            => 'prepayCODOrder',
             'permission_callback' => 'checkAuthCredentials',
         )
     );
