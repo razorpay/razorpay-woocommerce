@@ -15,6 +15,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../state-map.php';
 require_once __DIR__ . '/save-abandonment-data.php';
 require_once __DIR__ . '/giftcard-apply.php';
+require_once __DIR__ . '/prepay-cod.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
@@ -126,6 +127,16 @@ function rzp1ccInitRestApi()
         )
     );
 
+    // prepay cod order
+    register_rest_route(
+        RZP_1CC_ROUTES_BASE.'/cod/order',
+        'prepay',
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'prepayCODOrder',
+            'permission_callback' => 'checkAuthCredentials',
+        )
+    );
 }
 
 add_action('rest_api_init', 'rzp1ccInitRestApi');
@@ -145,7 +156,7 @@ function initCustomerSessionAndCart()
 }
 
 function initCartCommon()
-{ 
+{
     if (defined('WC_ABSPATH')) {
         // WC 3.6+ - Cart and other frontend functions are not included for REST requests.
         include_once WC_ABSPATH . 'includes/wc-cart-functions.php'; // nosemgrep: file-inclusion
