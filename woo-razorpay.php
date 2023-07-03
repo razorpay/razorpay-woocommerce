@@ -2024,21 +2024,19 @@ EOT;
                 $order->save();
             }
 
-            if(!empty($razorpayData['offers']))
+           if(!empty($razorpayData['offers']))
             {
                 $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codKey*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
 
-                $offerDiscount = - ($offerDiff/100);
-                
-                $title = "Razorpay offer";
-                $item  = new WC_Order_Item_Fee();
-                $item->set_name( $title );
-                $item->set_amount( $offerDiscount );
-                $item->set_total( $offerDiscount );
-                $item->save();
-                $order->add_item( $item );
-                $order->calculate_totals();
-                $order->save();
+                if($offerDiff > 0){
+                    $offerDiscount = ($offerDiff/100);
+                    $title = 'Razorpay offers_'. $wcOrderId .'(₹'. $offerDiscount .')';
+
+                    $this->createRzpOfferCoupon($title, $offerDiscount);
+                    $this->applyCoupon($order, $title, $offerDiff);
+
+                }
+
             }
 
 
@@ -2506,6 +2504,38 @@ EOT;
             // TODO: Test if individual use coupon fails by hardcoding here
             $isApplied = $order->apply_coupon($couponKey);
             $order->save();
+        }
+
+        public function createRzpOfferCoupon($couponCode, $amount) : bool {
+
+            $coupon = array(
+                'post_title' => $couponCode,
+                'post_content' => '',
+                'post_status' => 'publish',
+                'post_author' => 1,
+                'post_type' => 'shop_coupon');
+
+            $newCouponId = wp_insert_post( $coupon );
+
+            if( $newCouponId === 0) {
+                return false;
+            }
+
+            $input = [
+                'discount_type' => 'fixed_cart',
+                'coupon_amount' => $amount,
+                'usage_limit' => 1,
+                'minimum_amount' => $amount,
+            ];
+
+            foreach ($input as $key => $value) {
+                $isSuccess = update_post_meta($newCouponId, $key, $value);
+                if($isSuccess === false) {
+                    rzpLogError("rzp offer create coupon : update post meta error, key : " . $key . ", value : " . $value);
+                    return false;
+                }
+            }
+            return true;
         }
 
     }
