@@ -22,7 +22,6 @@ class Order
 
         $response = $request->request('POST', 'orders/id', $attributes);
 
-        $response['currency'] = 'USD';
         return $response;
     }
 }
