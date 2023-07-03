@@ -1886,7 +1886,7 @@ EOT;
             }
 
             // update gift card and coupons
-            $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
+            $rzpPromotionAmount = $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -1994,6 +1994,7 @@ EOT;
 
             $paymentDoneBy = $razorpayPaymentData['method'];
 
+            $codKey = 0;  
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
             {
                 $codKey = $razorpayData['cod_fee']/100;
@@ -2025,6 +2026,24 @@ EOT;
                 $order->calculate_totals();
                 $order->save();
             }
+
+            if(!empty($razorpayData['offers']))
+            {
+                $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codKey*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
+
+                $offerDiscount = - ($offerDiff/100);
+                
+                $title = "Razorpay offer";
+                $item  = new WC_Order_Item_Fee();
+                $item->set_name( $title );
+                $item->set_amount( $offerDiscount );
+                $item->set_total( $offerDiscount );
+                $item->save();
+                $order->add_item( $item );
+                $order->calculate_totals();
+                $order->save();
+            }
+
 
             //For abandon cart Lite recovery plugin recovery function
             if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
@@ -2058,6 +2077,8 @@ EOT;
 
             foreach($razorpayData['promotions'] as $promotion)
             {
+                $rzpGiftAndCouponAmount += $promotion['value'];
+
                 if($promotion['type'] == 'gift_card'){
 
                     $usedAmt = $promotion['value']/100;
@@ -2136,6 +2157,7 @@ EOT;
                 }
 
             }
+            return $rzpGiftAndCouponAmount;
         }
 
         protected function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
