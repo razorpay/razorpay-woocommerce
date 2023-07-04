@@ -1991,10 +1991,10 @@ EOT;
 
             $paymentDoneBy = $razorpayPaymentData['method'];
 
-            $codKey = 0;  
+            $codFee = 0;  
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
             {
-                $codKey = $razorpayData['cod_fee']/100;
+                $codFee = $razorpayData['cod_fee']/100;
                 $payment_method = 'cod';
                 $payment_method_title = 'Cash on delivery';
             }
@@ -2010,10 +2010,10 @@ EOT;
                 $itemFee = new WC_Order_Item_Fee();
 
                 $itemFee->set_name('COD Fee'); // Generic fee name
-                $itemFee->set_amount($codKey); // Fee amount
+                $itemFee->set_amount($codFee); // Fee amount
                 // $itemFee->set_tax_class(''); // default for ''
                 $itemFee->set_tax_status( 'none' ); // If we don't set tax status then it will consider by dafalut tax class.
-                $itemFee->set_total($codKey); // Fee amount
+                $itemFee->set_total($codFee); // Fee amount
 
                 // Calculating Fee taxes
                 // $itemFee->calculate_taxes( $calculateTaxFor );
@@ -2026,11 +2026,11 @@ EOT;
 
            if(!empty($razorpayData['offers']))
             {
-                $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codKey*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
+                $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codFee*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
 
                 if($offerDiff > 0){
                     $offerDiscount = ($offerDiff/100);
-                    $title = 'Razorpay offers_'. $wcOrderId .'(₹'. $offerDiscount .')';
+                    $title = 'Razorpay_offers_'. $wcOrderId .'(₹'. $offerDiscount .')';
 
                     $this->createRzpOfferCoupon($title, $offerDiscount);
                     $this->applyCoupon($order, $title, $offerDiff);
@@ -2506,6 +2506,7 @@ EOT;
             $order->save();
         }
 
+        //TODO: create a common function to create a coupon functionality
         public function createRzpOfferCoupon($couponCode, $amount) : bool {
 
             $coupon = array(
