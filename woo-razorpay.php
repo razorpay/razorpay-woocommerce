@@ -1886,7 +1886,7 @@ EOT;
             }
 
             // update gift card and coupons
-            $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
+            $rzpPromotionAmount = $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -1994,9 +1994,10 @@ EOT;
 
             $paymentDoneBy = $razorpayPaymentData['method'];
 
+            $codFee = 0;  
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
             {
-                $codKey = $razorpayData['cod_fee']/100;
+                $codFee = $razorpayData['cod_fee']/100;
                 $payment_method = 'cod';
                 $payment_method_title = 'Cash on delivery';
             }
@@ -2012,10 +2013,10 @@ EOT;
                 $itemFee = new WC_Order_Item_Fee();
 
                 $itemFee->set_name('COD Fee'); // Generic fee name
-                $itemFee->set_amount($codKey); // Fee amount
+                $itemFee->set_amount($codFee); // Fee amount
                 // $itemFee->set_tax_class(''); // default for ''
                 $itemFee->set_tax_status( 'none' ); // If we don't set tax status then it will consider by dafalut tax class.
-                $itemFee->set_total($codKey); // Fee amount
+                $itemFee->set_total($codFee); // Fee amount
 
                 // Calculating Fee taxes
                 // $itemFee->calculate_taxes( $calculateTaxFor );
@@ -2025,6 +2026,22 @@ EOT;
                 $order->calculate_totals();
                 $order->save();
             }
+
+           if(!empty($razorpayData['offers']))
+            {
+                $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codFee*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
+
+                if($offerDiff > 0){
+                    $offerDiscount = ($offerDiff/100);
+                    $title = 'Razorpay_offers_'. $wcOrderId .'(₹'. $offerDiscount .')';
+
+                    $this->createRzpOfferCoupon($title, $offerDiscount);
+                    $this->applyCoupon($order, $title, $offerDiff);
+
+                }
+
+            }
+
 
             //For abandon cart Lite recovery plugin recovery function
             if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
@@ -2058,6 +2075,8 @@ EOT;
 
             foreach($razorpayData['promotions'] as $promotion)
             {
+                $rzpGiftAndCouponAmount += $promotion['value'];
+
                 if($promotion['type'] == 'gift_card'){
 
                     $usedAmt = $promotion['value']/100;
@@ -2136,6 +2155,7 @@ EOT;
                 }
 
             }
+            return $rzpGiftAndCouponAmount;
         }
 
         protected function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
@@ -2487,6 +2507,39 @@ EOT;
             // TODO: Test if individual use coupon fails by hardcoding here
             $isApplied = $order->apply_coupon($couponKey);
             $order->save();
+        }
+
+        //TODO: create a common function to create a coupon functionality
+        public function createRzpOfferCoupon($couponCode, $amount) : bool {
+
+            $coupon = array(
+                'post_title' => $couponCode,
+                'post_content' => '',
+                'post_status' => 'publish',
+                'post_author' => 1,
+                'post_type' => 'shop_coupon');
+
+            $newCouponId = wp_insert_post( $coupon );
+
+            if( $newCouponId === 0) {
+                return false;
+            }
+
+            $input = [
+                'discount_type' => 'fixed_cart',
+                'coupon_amount' => $amount,
+                'usage_limit' => 1,
+                'minimum_amount' => $amount,
+            ];
+
+            foreach ($input as $key => $value) {
+                $isSuccess = update_post_meta($newCouponId, $key, $value);
+                if($isSuccess === false) {
+                    rzpLogError("rzp offer create coupon : update post meta error, key : " . $key . ", value : " . $value);
+                    return false;
+                }
+            }
+            return true;
         }
 
     }
