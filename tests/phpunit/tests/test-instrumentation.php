@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @covers \TrackPluginInstrumentation
+ * @covers \WC_Razorpay
+ * @covers ::addRouteModuleSettingFields
+ * @covers ::isDebugModeEnabled
+ */
+
 require_once __DIR__ . '/../mockfactory/Request.php';
 require_once __DIR__ . '/../../../includes/plugin-instrumentation.php';
 
@@ -50,6 +57,37 @@ class Test_Instrumentation extends WP_UnitTestCase
     {
         $this->expectNotToPerformAssertions();
 
+        $_POST['woocommerce_razorpay_key_id'] = 'key_id';
+        $_POST['woocommerce_razorpay_key_secret'] = 'key_secret';
+        $_POST['woocommerce_razorpay_enabled'] = 'yes';
+        $_SERVER['REQUEST_SCHEME'] = 'https';
+        $_SERVER['HTTP_HOST'] = 'razorpay.com';
+        $_SERVER['REQUEST_URI'] = 'wc-settings&tab=checkout=razorpay';
+
+        $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
+            if ($key === 'enabled')
+            {
+                return 'no';
+            }
+        });
+
+        $this->instrumentationMock->shouldReceive('rzpTrackSegment')->with('event', [])->andReturn('success');
+        $this->instrumentationMock->shouldReceive('rzpTrackDataLake')->with('event', [])->andReturn('success');
+
+        $this->instance->shouldReceive('newTrackPluginInstrumentation')->with('key_id', 'key_secret')->andReturnUsing(
+            function () {
+                return $this->instrumentationMock;
+            });
+
+        $this->instance->pluginInstrumentation();
+    }
+
+    public function testExistingVersion()
+    {
+        $this->expectNotToPerformAssertions();
+        
+        add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
+        
         $_POST['woocommerce_razorpay_key_id'] = 'key_id';
         $_POST['woocommerce_razorpay_key_secret'] = 'key_secret';
         $_POST['woocommerce_razorpay_enabled'] = 'yes';
@@ -177,12 +215,40 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->assertSame('success', $response['status']);
     }
 
+    public function testInstrumentationSegmentEmptyEvent()
+    {
+        $response = $this->instrumentationMock->rzpTrackSegment(null, ['key' => 'value']);
+        $this->assertSame('error', $response['status']);
+        $this->assertSame('event given as input is not valid', $response['message']);
+    }
+
+    public function testInstrumentationSegmentEmptyProperties()
+    {
+        $response = $this->instrumentationMock->rzpTrackSegment('testing', null);
+        $this->assertSame('error', $response['status']);
+        $this->assertSame('properties given as input is not valid', $response['message']);
+    }
+
     public function testInstrumentationDataLake()
     {
         $response = $this->instrumentationMock->rzpTrackDataLake('testing', ['key' => 'value']);
         $this->assertSame(200, $response['response']['code']);
     }
 
+    public function testInstrumentationDataLakeEmptyEvent()
+    {
+        $response = $this->instrumentationMock->rzpTrackDataLake(null, ['key' => 'value']);
+        $this->assertSame('error', $response['status']);
+        $this->assertSame('event given as input is not valid', $response['message']);
+    }
+
+    public function testInstrumentationDataLakeEmptyProperties()
+    {
+        $response = $this->instrumentationMock->rzpTrackDataLake('testing', null);
+        $this->assertSame('error', $response['status']);
+        $this->assertSame('properties given as input is not valid', $response['message']);
+    }
+    
     public function testGetDefaultPropertiesWithTimeStamp()
     {
         $response = $this->instrumentationMock->getDefaultProperties();
