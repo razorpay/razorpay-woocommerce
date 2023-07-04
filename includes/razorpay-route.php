@@ -825,6 +825,8 @@ class RZP_Route extends WP_List_Table
 
     public function fetchPayment($paymentId)
     {
+        $api = $this->fetchRazorpayApiInstance();
+
         return $api->payment->fetch($paymentId);
     }
     
