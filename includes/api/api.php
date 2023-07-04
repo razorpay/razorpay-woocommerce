@@ -20,6 +20,7 @@ require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 define('RZP_1CC_ROUTES_BASE', '1cc/v1');
 define('RZP_1CC_CART_HASH', 'wc_razorpay_cart_hash_');
+define('RZP_1CC_PLUGIN_FETCH', '1cc/merchant/woocommerce/plugins_list');
 
 function rzp1ccInitRestApi()
 {
