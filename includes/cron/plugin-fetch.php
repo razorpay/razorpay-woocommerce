@@ -39,8 +39,8 @@ function one_cc_plugin_sync_cron_exce()
 
 function syncPluginFetchCron(){
 
-    $startTime = strtotime('tomorrow 20:30');
-    $endTime =  strtotime('tomorrow 20:45');
+    $startTime = strtotime('today 20:30');
+    $endTime =  strtotime('today 20:45');
     $randomTime = mt_rand($startTime, $endTime);
 
     try
