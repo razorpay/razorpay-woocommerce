@@ -1,4 +1,8 @@
 <?php
+/**
+ * @covers \WC_Razorpay
+ * @covers ::isDebugModeEnabled
+ */
 
 use Razorpay\MockApi\MockApi;
 
@@ -10,7 +14,6 @@ class Test_AutoWebhook extends WP_UnitTestCase
     {
         parent::setup();
         $this->instance = Mockery::mock('WC_Razorpay')->makePartial()->shouldAllowMockingProtectedMethods();
-//        $_POST = array();
         $_SERVER['REQUEST_SCHEME'] = 'https';
         $_SERVER['HTTP_HOST'] = 'razorpay.com';
         $_SERVER['REQUEST_URI'] = 'wc-settings';
@@ -19,6 +22,30 @@ class Test_AutoWebhook extends WP_UnitTestCase
 
     public function testEmptyKeyAndSecretValidation()
     {
+        $this->instance->shouldReceive('triggerValidationInstrumentation')->andReturn(null);
+
+        $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
+            if ($key === 'key_id')
+            {
+                return null;
+            }
+            else
+            {
+                return null;
+            }
+        });
+
+        ob_start();
+        $response = $this->instance->autoEnableWebhook();
+        $response = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertStringContainsString('Key Id and Key Secret are required', $response);
+    }
+
+    public function testUpdateKeyAndSecretValidation()
+    {
+        add_option('webhook_enable_flag', time());
         $this->instance->shouldReceive('triggerValidationInstrumentation')->andReturn(null);
 
         $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
@@ -167,5 +194,39 @@ class Test_AutoWebhook extends WP_UnitTestCase
         $this->assertNotNull($response['events']);
         $this->assertTrue($response['events']['payment.authorized']);
         $this->assertTrue($response['events']['order.paid']);
+    }
+
+    public function testSubscriptionWebhookFlag()
+    {
+        $this->instance->shouldReceive('getSetting')->andReturnUsing(function ($key) {
+            if ($key === 'key_id')
+            {
+                return 'key_id';
+            }
+            else
+            {
+                return 'key_secret';
+            }
+        });
+
+        $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function () {
+            return new MockApi('key_id', 'key_secret');
+        });
+
+        $this->instance->shouldReceive('getWebhookUrl')->andReturn("https://webhook.site/create");
+
+        $this->instance->shouldReceive('newTrackPluginInstrumentation')->andReturnUsing(function ()
+        {
+            $mockObj = Mockery::mock('stdClass')->makePartial();
+            $mockObj->shouldReceive('rzpTrackSegment')->andReturn(null);
+            $mockObj->shouldReceive('rzpTrackDataLake')->andReturn(null);
+            return $mockObj;
+        });
+
+        add_option('rzp_subscription_webhook_enable_flag','yes');
+
+        $response = $this->instance->autoEnableWebhook();
+
+        $this->assertSame('create', $response['id']);
     }
 }
