@@ -1,10 +1,17 @@
 <?php
 /**
  * @covers \WC_Razorpay
+ * @covers ::is1ccEnabled
+ * @covers ::addRouteModuleSettingFields
+ * @covers ::isDebugModeEnabled
+ * @covers razorpay_woo_plugin_links
+ * @covers ::woocommerce_razorpay_init
  */
 
 require_once __DIR__ . '/../mockfactory/MockApi.php';
 require_once __DIR__ . '/../mockfactory/Request.php';
+require_once __DIR__ . '/../mockfactory/Order.php';
+require_once __DIR__ . '/../mockfactory/Payment.php';
 
 use Razorpay\MockApi\MockApi;
 
@@ -90,6 +97,19 @@ class Test_OrderMethods extends WP_UnitTestCase
         $response = $this->instance->getCustomOrdercreationMessage("Order Placed", $order);
 
         $this->assertSame($message, $response);
+    }
+
+    public function testgetCustomOrdercreationMessagedefaultmessage()
+    {
+        $order = wc_create_order();
+
+        $defaultmessage = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
+        
+        $this->instance->shouldReceive('getSetting')->with('order_success_message');
+        
+        $response = $this->instance->getCustomOrdercreationMessage("",$order);
+        
+        $this->assertSame($defaultmessage,$response);
     }
 
     public function testgetDefaultCheckoutArguments()
@@ -249,5 +269,92 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->assertSame($msg['message'], $actual);
 
         $this->assertSame($msg['class'], 'error');
+    }
+
+    public function testwoocommerce_razorpay_init()
+    {
+        $this->assertNull(woocommerce_razorpay_init());
+    }
+
+    public function testProcessRefund()
+    {
+        $order = wc_create_order();
+
+        $wcOrderId = $order->get_id();
+
+        add_post_meta( $wcOrderId, '_transaction_id', 25, true );
+
+        $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(
+            function () {
+                return new MockApi('key_id_2', 'key_secret2');
+            });
+
+        $response = $this->instance->process_refund($wcOrderId, 25.25, "not interested anymore");
+
+        $this->assertSame($response, true);
+    }
+
+    public function testgetVersionMetaInfo()
+    {
+        // $data = array('subscription_id' => '241100', 'recurring' => 'yes');
+
+        $response = $this->instance->getVersionMetaInfo();
+
+        $this->assertSame('woocommerce', $response['integration']);
+
+        $integration_version = $response['integration_version'];
+        $v1 = explode(".", $integration_version);
+        $this->assertSame(3, count($v1));
+
+        $integration_parent_version = $response['integration_parent_version'];
+        $v2 = explode(".", $integration_parent_version);
+        $this->assertSame(3, count($v2));
+
+        $this->assertSame('plugin', $response['integration_type']);
+    }
+
+    public function testrazorpay_woo_plugin_links()
+    {
+        $response = razorpay_woo_plugin_links([]);
+
+        $this->assertSame('<a href="'. esc_url(admin_url('admin.php?page=wc-settings&tab=checkout&section=razorpay')) .'">Settings</a>', $response['settings']);
+
+        $this->assertSame('<a href="https://razorpay.com/docs/payment-gateway/ecommerce-plugins/woocommerce/woocommerce-pg/">Docs</a>', $response['docs']);
+
+        $this->assertSame('<a href="https://razorpay.com/contact/">Support</a>', $response['support']);
+    }
+
+    public function testwoocommerce_razorpay_inithasAction()
+    {
+        woocommerce_razorpay_init();
+
+        $this->assertSame(10, has_action('woocommerce_before_single_product', 'trigger_affordability_widget'));
+    }
+
+    public function testcheck_razorpay_response()
+    {
+        global $woocommerce;
+        global $wpdb;
+
+        $order = wc_create_order();
+        $wcOrderId = $order->get_id();
+
+        $_GET = ['order_key' => 'root'];
+
+        $_POST = ['razorpay_payment_id' => 'AVC123'];
+
+        $wpdb->insert($wpdb->postmeta, array('post_id' => 22, 'meta_key' => '_order_key', 'meta_value' => 'root'));
+
+        $wpdb->insert($wpdb->posts, array('post_status' => 'Pending','post_type' => 'shop_order', 'ID' => 22));
+
+        $this->instance->shouldReceive('verifySignature');
+        
+        $this->instance->shouldReceive('redirectUser');
+
+        $this->instance->shouldReceive('updateOrder');
+
+        $response = $this->instance->check_razorpay_response();
+
+        $this->assertTrue(true);
     }
 }
