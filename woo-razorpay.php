@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.5.2
- * Stable tag: 4.5.2
+ * Version: 4.5.3
+ * Stable tag: 4.5.3
  * Author: Team Razorpay
  * WC tested up to: 6.7.0
  * Author URI: https://razorpay.com
@@ -32,6 +32,7 @@ require_once __DIR__.'/includes/razorpay-affordability-widget.php';
 require_once __DIR__.'/includes/cron/one-click-checkout/Constants.php';
 require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php';
 require_once __DIR__.'/includes/cron/cron.php';
+require_once __DIR__.'/includes/cron/plugin-fetch.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -65,6 +66,8 @@ function woocommerce_razorpay_init()
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
         const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
+
+        const PREPAY_COD_URL = '1cc/orders/cod/convert';
 
         protected $supportedWebhookEvents = array(
             'payment.authorized',
@@ -248,6 +251,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
             }
             else
             {
@@ -256,6 +260,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
             }
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
@@ -1881,7 +1886,7 @@ EOT;
             }
 
             // update gift card and coupons
-            $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
+            $rzpPromotionAmount = $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -1989,9 +1994,10 @@ EOT;
 
             $paymentDoneBy = $razorpayPaymentData['method'];
 
+            $codFee = 0;  
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
             {
-                $codKey = $razorpayData['cod_fee']/100;
+                $codFee = $razorpayData['cod_fee']/100;
                 $payment_method = 'cod';
                 $payment_method_title = 'Cash on delivery';
             }
@@ -2007,10 +2013,10 @@ EOT;
                 $itemFee = new WC_Order_Item_Fee();
 
                 $itemFee->set_name('COD Fee'); // Generic fee name
-                $itemFee->set_amount($codKey); // Fee amount
+                $itemFee->set_amount($codFee); // Fee amount
                 // $itemFee->set_tax_class(''); // default for ''
                 $itemFee->set_tax_status( 'none' ); // If we don't set tax status then it will consider by dafalut tax class.
-                $itemFee->set_total($codKey); // Fee amount
+                $itemFee->set_total($codFee); // Fee amount
 
                 // Calculating Fee taxes
                 // $itemFee->calculate_taxes( $calculateTaxFor );
@@ -2021,6 +2027,22 @@ EOT;
                 $order->save();
             }
 
+           if(!empty($razorpayData['offers']))
+            {
+                $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codFee*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
+
+                if($offerDiff > 0){
+                    $offerDiscount = ($offerDiff/100);
+                    $title = 'Razorpay_offers_'. $wcOrderId .'(₹'. $offerDiscount .')';
+
+                    $this->createRzpOfferCoupon($title, $offerDiscount);
+                    $this->applyCoupon($order, $title, $offerDiff);
+
+                }
+
+            }
+
+
             //For abandon cart Lite recovery plugin recovery function
             if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
             {
@@ -2029,6 +2051,21 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
+            if ($paymentDoneBy === 'cod')
+            {
+                try
+                {
+                    $body = ['order_id' => $razorpayOrderId];
+                    rzpLogInfo("making prepay API Call for order : $razorpayOrderId");
+                    $response = $api->request->request('POST', self::PREPAY_COD_URL , $body);
+                    rzpLogInfo("makeAPICall: url: ". self::PREPAY_COD_URL . " is success");
+                }
+                catch (\Razorpay\Api\Errors\Error $e)
+                {
+                    $statusCode = $e->getHttpStatusCode();
+                    rzpLogError("make prepayAPICall failed: message:" . $e->getMessage() . ", url: " . self::PREPAY_COD_URL . ", statusCode : " . $statusCode . ", stacktrace : " . $e->getTraceAsString());
+                }
+            }
         }
 
         public function updateGiftAndCoupon($razorpayData, $order, $orderId, $razorpayPaymentId)
@@ -2038,6 +2075,8 @@ EOT;
 
             foreach($razorpayData['promotions'] as $promotion)
             {
+                $rzpGiftAndCouponAmount += $promotion['value'];
+
                 if($promotion['type'] == 'gift_card'){
 
                     $usedAmt = $promotion['value']/100;
@@ -2110,30 +2149,13 @@ EOT;
 
                     if (empty($couponKey) === false)
                     {
-                        // Remove the same coupon, if already being added to order.
-                        $order->remove_coupon($couponKey);
-
-                        //TODO: Convert all razorpay amount in paise to rupees
-                        $discount_total = $promotion['value']/100;
-
-                        //TODO: Verify source code implementation
-                        // Loop through products and apply the coupon discount
-                        foreach($order->get_items() as $order_item)
-                        {
-                            $total = $order_item->get_total();
-                            $order_item->set_subtotal($total);
-                            $order_item->set_total($total - $discount_total);
-                            $order_item->save();
-                        }
-                        // TODO: Test if individual use coupon fails by hardcoding here
-                        $isApplied = $order->apply_coupon($couponKey);
-                        $order->save();
-
+                        $this->applyCoupon($order, $couponKey, $promotion['value']);
                         rzpLogInfo("Coupon details updated for orderId: $orderId");
                     }
                 }
 
             }
+            return $rzpGiftAndCouponAmount;
         }
 
         protected function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
@@ -2465,6 +2487,59 @@ EOT;
                     'integration_type' => 'plugin',
                 );
             }
+        }
+
+        public function applyCoupon($order, $couponKey, $couponValue) {
+            // Remove the same coupon, if already being added to order.
+            $order->remove_coupon($couponKey);
+
+            //TODO: Convert all razorpay amount in paise to rupees
+            $discount_total = $couponValue/100;
+
+            //TODO: Verify source code implementation
+            // Loop through products and apply the coupon discount
+            foreach($order->get_items() as $order_item)
+            {
+                $total = $order_item->get_total();
+                $order_item->set_total($total - $discount_total);
+                $order_item->save();
+            }
+            // TODO: Test if individual use coupon fails by hardcoding here
+            $isApplied = $order->apply_coupon($couponKey);
+            $order->save();
+        }
+
+        //TODO: create a common function to create a coupon functionality
+        public function createRzpOfferCoupon($couponCode, $amount) : bool {
+
+            $coupon = array(
+                'post_title' => $couponCode,
+                'post_content' => '',
+                'post_status' => 'publish',
+                'post_author' => 1,
+                'post_type' => 'shop_coupon');
+
+            $newCouponId = wp_insert_post( $coupon );
+
+            if( $newCouponId === 0) {
+                return false;
+            }
+
+            $input = [
+                'discount_type' => 'fixed_cart',
+                'coupon_amount' => $amount,
+                'usage_limit' => 1,
+                'minimum_amount' => $amount,
+            ];
+
+            foreach ($input as $key => $value) {
+                $isSuccess = update_post_meta($newCouponId, $key, $value);
+                if($isSuccess === false) {
+                    rzpLogError("rzp offer create coupon : update post meta error, key : " . $key . ", value : " . $value);
+                    return false;
+                }
+            }
+            return true;
         }
 
     }

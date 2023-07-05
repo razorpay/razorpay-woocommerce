@@ -50,7 +50,7 @@ function createWcOrder(WP_REST_Request $request)
 
     initCartCommon();
 
-     // check if cart is empty
+    // check if cart is empty
     checkCartEmpty($logObj);
 
     $cartHash  = WC()->cart->get_cart_hash();

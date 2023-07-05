@@ -38,6 +38,7 @@ class TrackPluginInstrumentation
     function initRzpCronJobs()
     {
         createOneCCAddressSyncCron();
+        syncPluginFetchCron();
     }
 
     function razorpayPluginDeactivated()
@@ -73,6 +74,7 @@ class TrackPluginInstrumentation
     function deleteRzpCronJobs()
     {
         deleteOneCCAddressSyncCron('deactivated');
+        deletePluginFetchCron('one_cc_plugin_sync_cron');
     }
 
     function razorpayPluginUpgraded()
@@ -92,6 +94,7 @@ class TrackPluginInstrumentation
         if (isset($prevVersion) && strcmp($prevVersion, '4.5.0') <= 0)
         {
             createOneCCAddressSyncCron();
+            syncPluginFetchCron();
         }
 
         if ($response['status'] === 'success')
