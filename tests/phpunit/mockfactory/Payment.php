@@ -14,7 +14,16 @@ class Data
 {
     public $id = ['Abc123'];
 
-    function transfers()
+    function transfers($options = array())
+    {
+        $request = new Request();
+
+        $relativeUrl = 'payments/Abc123/transfers';
+
+        return $request->request('GET', $relativeUrl, $options);
+    }
+
+    function transfer($options = array())
     {
         $request = new Request();
 
@@ -26,5 +35,10 @@ class Data
     function refund()
     {
         return (object)array('id' => 'abc');
+    }
+
+    function fetch($id)
+    {
+        return new Data();
     }
 }
