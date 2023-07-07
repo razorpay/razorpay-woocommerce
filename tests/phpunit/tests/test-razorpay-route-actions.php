@@ -1,11 +1,9 @@
 <?php
-
-require_once __DIR__ . '/../../../includes/razorpay-route-actions.php';
-require_once __DIR__ .'/../../../woo-razorpay.php';
-require_once __DIR__ . '/../mockfactory/MockApi.php';
-require_once __DIR__ . '/../mockfactory/Payment.php';
-require_once __DIR__ . '/../mockfactory/Transfer.php';
-require_once __DIR__ . '/../mockfactory/Request.php';
+/**
+ * @covers \RZP_Route_Action
+ * @covers ::woocommerce_razorpay_init
+ * @covers ::addRouteModuleSettingFields
+ */
 
 use Razorpay\MockApi\MockApi;
 
@@ -19,22 +17,13 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->instance = Mockery::mock('RZP_Route_Action')->makePartial()->shouldAllowMockingProtectedMethods();
     }
 
-    public function testAddRouteAnalyticsScript()
-    {
-        $response = $this->instance->addRouteAnalyticsScript();
-
-        $this->assertStringContainsString('<form method="POST" action="https://api.razorpay.com/v1/checkout/embedded" id="routeAnalyticsForm">', $response);
-        $this->assertStringContainsString("<input type='hidden' name='_[x-integration]' value='Woocommerce'>", $response);
-        $this->assertStringContainsString("<input type='hidden' name='_[x-integration-module]' value='Route'>", $response);
-    }
-
-    public function testreverseTransfer()
+    public function testReverseTransfer()
     {
 
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
 
         $_POST['transfer_id'] = 'test';
         $_POST['reversal_amount'] = 12;
@@ -47,7 +36,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->assertNull($response);
     }
 
-    public function testdirectTransfer()
+    public function testDirectTransfer()
     {
 
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
@@ -66,7 +55,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->assertNull($response);
     }
 
-    public function testupdateTransferSettlement()
+    public function testUpdateTransferSettlement()
     {
 
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
@@ -86,7 +75,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->assertNull($response);
     }
 
-    public function testcreatePaymentTransfer()
+    public function testCreatePaymentTransfer()
     {
 
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
@@ -108,7 +97,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->assertNull($response);
     }
 
-    public function testgetOrderTransferData()
+    public function testGetOrderTransferData()
     {
         global $product;
 
@@ -126,7 +115,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $item->set_product($product);
 		$item->save();
 
-		$order->add_item( $item );
+		$order->add_item($item);
         $order->save();
 
         $productId = $product->get_id();
@@ -137,7 +126,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
 
         add_post_meta($productId, 'LA_transfer_amount', [123, 234]);
 
-        add_post_meta($productId, 'LA_transfer_status', ['Pending','Completed']);
+        add_post_meta($productId, 'LA_transfer_status', ['Pending', 'Completed']);
         
         $response = $this->instance->getOrderTransferData($orderId);
 
@@ -154,7 +143,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->assertSame('Completed', $response[1]['on_hold']);
     }
 
-    public function testtransferFromPayment()
+    public function testTransferFromPayment()
     {
         global $product;
 
@@ -183,7 +172,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
 
         add_post_meta($productId, 'LA_transfer_amount', [123, 234]);
 
-        add_post_meta($productId, 'LA_transfer_status', ['Pending','Completed']);
+        add_post_meta($productId, 'LA_transfer_status', ['Pending', 'Completed']);
         
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
             function () {
@@ -193,5 +182,14 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $response = $this->instance->transferFromPayment($orderId, 'Abc123');
     
         $this->assertNull($response);
+    }
+
+    public function testAddRouteAnalyticsScript()
+    {
+        $response = $this->instance->addRouteAnalyticsScript();
+
+        $this->assertStringContainsString('<form method="POST" action="https://api.razorpay.com/v1/checkout/embedded" id="routeAnalyticsForm">', $response);
+        $this->assertStringContainsString("<input type='hidden' name='_[x-integration]' value='Woocommerce'>", $response);
+        $this->assertStringContainsString("<input type='hidden' name='_[x-integration-module]' value='Route'>", $response);
     }
 }
