@@ -9,7 +9,6 @@
  */
 
 require_once __DIR__ . '/../mockfactory/MockApi.php';
-require_once __DIR__ . '/../../../woo-razorpay.php';
 require_once __DIR__ . '/../mockfactory/Request.php';
 require_once __DIR__ . '/../mockfactory/Order.php';
 
