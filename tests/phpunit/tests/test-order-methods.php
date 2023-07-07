@@ -83,7 +83,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         }  
     }
 
-    public function testGetCustomOrdercreationMessage()
+    public function testGetCustomOrderCreationMessage()
     {
         $order = wc_create_order();
 
