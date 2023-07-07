@@ -25,11 +25,11 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
                 return new MockApi('key_id_2', 'key_secret2');
         });
 
-        $_POST['transfer_id'] = 'test';
-        $_POST['reversal_amount'] = 12;
+        $_POST['transfer_id']       = 'test';
+        $_POST['reversal_amount']   = 12;
 
-        $pageUrl = admin_url('admin.php?page=razorpayTransfers&id=' . 'test');
-        $razorpayOrderId = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $pageUrl            = admin_url('admin.php?page=razorpayTransfers&id=' . 'test');
+        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->reverseTransfer();
 
@@ -44,11 +44,11 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
                 return new MockApi('key_id_2', 'key_secret2');
             });
 
-        $_POST['drct_trf_account'] = 'hello';
-        $_POST['drct_trf_amount'] = '123';
+        $_POST['drct_trf_account']  = 'hello';
+        $_POST['drct_trf_amount']   = '123';
 
-        $pageUrl = admin_url('admin.php?page=razorpayRouteWoocommerce');
-        $razorpayOrderId = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $pageUrl            = admin_url('admin.php?page=razorpayRouteWoocommerce');
+        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->directTransfer();
 
@@ -63,12 +63,12 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
                 return new MockApi('key_id_2', 'key_secret2');
             });
 
-        $_POST['transfer_id'] = 'test';
-        $_POST['on_hold'] = 'on_hold_until';
-        $_POST['hold_until'] = 1666097548;
+        $_POST['transfer_id']   = 'test';
+        $_POST['on_hold']       = 'on_hold_until';
+        $_POST['hold_until']    = 1666097548;
 
-        $pageUrl = admin_url('admin.php?page=razorpayTransfers&id=' . 'test');
-        $razorpayOrderId = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $pageUrl            = admin_url('admin.php?page=razorpayTransfers&id=' . 'test');
+        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->updateTransferSettlement();
 
@@ -83,14 +83,14 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
                 return new MockApi('key_id_2', 'key_secret2');
             });
 
-        $_POST['payment_id'] = 'Abc123';
-        $_POST['pay_trf_account'] = 'test';
-        $_POST['pay_trf_amount'] = 123;
-        $_POST['on_hold'] = 'on_hold_until';
-        $_POST['hold_until'] = 1666097548;
+        $_POST['payment_id']        = 'Abc123';
+        $_POST['pay_trf_account']   = 'test';
+        $_POST['pay_trf_amount']    = 123;
+        $_POST['on_hold']           = 'on_hold_until';
+        $_POST['hold_until']        = 1666097548;
 
-        $pageUrl = admin_url('admin.php?page=razorpayPaymentsView&id=' . 'Abc123');
-        $razorpayOrderId = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $pageUrl            = admin_url('admin.php?page=razorpayPaymentsView&id=' . 'Abc123');
+        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->createPaymentTransfer();
 
@@ -101,9 +101,8 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
     {
         global $product;
 
-        $order = wc_create_order();
-
-        $orderId = $order->get_id();
+        $order      = wc_create_order();
+        $orderId    = $order->get_id();
 
         $item = new WC_Order_Item_Product();
         
@@ -147,9 +146,8 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
     {
         global $product;
 
-        $order = wc_create_order();
-
-        $orderId = $order->get_id();
+        $order      = wc_create_order();
+        $orderId    = $order->get_id();
 
         $item = new WC_Order_Item_Product();
         

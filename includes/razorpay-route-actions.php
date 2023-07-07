@@ -170,7 +170,6 @@ class RZP_Route_Action
                     $LA_transfer_count = count($LA_number_arr);
                     for($i=0;$i<$LA_transfer_count;$i++){
                         if(!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])){
-                            
                             $transferArr = array(
 
                                 'account'=> $LA_number_arr[$i],
