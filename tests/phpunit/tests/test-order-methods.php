@@ -10,7 +10,6 @@
 
 require_once __DIR__ . '/../mockfactory/MockApi.php';
 require_once __DIR__ . '/../mockfactory/Request.php';
-require_once __DIR__ . '/../mockfactory/Order.php';
 require_once __DIR__ . '/../mockfactory/Payment.php';
 
 use Razorpay\MockApi\MockApi;
@@ -31,7 +30,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $_POST = array();
     }
     
-    public function testgetRazorpayPaymentParams()
+    public function testGetRazorpayPaymentParams()
     {    
         global $woocommerce;
         
@@ -42,7 +41,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
 
         $this->instance->shouldReceive('autoEnableWebhook');
 
@@ -57,7 +56,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 
     }
 
-    public function testgetRazorpayPaymentParamsRzpidnull()
+    public function testGetRazorpayPaymentParamsRzpIdNull()
     {
         $order = wc_create_order();
         $wcOrderId = $order->get_id();
@@ -65,7 +64,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
         $this->instance->shouldReceive('autoEnableWebhook');
 
         $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($wcOrderId)->andReturn(null);
@@ -84,7 +83,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         }  
     }
 
-    public function testgetCustomOrdercreationMessage()
+    public function testGetCustomOrdercreationMessage()
     {
         $order = wc_create_order();
 
@@ -99,7 +98,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->assertSame($message, $response);
     }
 
-    public function testgetCustomOrdercreationMessagedefaultmessage()
+    public function testGetDefaultCustomOrderCreationMessage()
     {
         $order = wc_create_order();
 
@@ -107,12 +106,12 @@ class Test_OrderMethods extends WP_UnitTestCase
         
         $this->instance->shouldReceive('getSetting')->with('order_success_message');
         
-        $response = $this->instance->getCustomOrdercreationMessage("",$order);
+        $response = $this->instance->getCustomOrdercreationMessage("", $order);
         
-        $this->assertSame($defaultmessage,$response);
+        $this->assertSame($defaultmessage, $response);
     }
 
-    public function testgetDefaultCheckoutArguments()
+    public function testGetDefaultCheckoutArguments()
     {
         $order = wc_create_order();
 
@@ -198,7 +197,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->assertSame('failed', $order->get_status());
     }
 
-    public function testupdateUserAddressInfo()
+    public function testUpdateUserAddressInfo()
     {
         $order = wc_create_order();
 
@@ -252,7 +251,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->assertSame($shippingStateCode, $state);
     }
 
-    public function testhandleErrorCase()
+    public function testHandleErrorCase()
     {
         global $woocommerce;
 
@@ -271,7 +270,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->assertSame($msg['class'], 'error');
     }
 
-    public function testwoocommerce_razorpay_init()
+    public function testWoocommerceRazorpayInit()
     {
         $this->assertNull(woocommerce_razorpay_init());
     }
@@ -282,22 +281,20 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $wcOrderId = $order->get_id();
 
-        add_post_meta( $wcOrderId, '_transaction_id', 25, true );
+        add_post_meta($wcOrderId, '_transaction_id', 25, true);
 
         $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
 
         $response = $this->instance->process_refund($wcOrderId, 25.25, "not interested anymore");
 
         $this->assertSame($response, true);
     }
 
-    public function testgetVersionMetaInfo()
+    public function testGetVersionMetaInfo()
     {
-        // $data = array('subscription_id' => '241100', 'recurring' => 'yes');
-
         $response = $this->instance->getVersionMetaInfo();
 
         $this->assertSame('woocommerce', $response['integration']);
@@ -313,7 +310,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->assertSame('plugin', $response['integration_type']);
     }
 
-    public function testrazorpay_woo_plugin_links()
+    public function testRazorpayWooPluginLinks()
     {
         $response = razorpay_woo_plugin_links([]);
 
@@ -324,14 +321,14 @@ class Test_OrderMethods extends WP_UnitTestCase
         $this->assertSame('<a href="https://razorpay.com/contact/">Support</a>', $response['support']);
     }
 
-    public function testwoocommerce_razorpay_inithasAction()
+    public function testWoocommerceRazorpayInitHasAction()
     {
         woocommerce_razorpay_init();
 
         $this->assertSame(10, has_action('woocommerce_before_single_product', 'trigger_affordability_widget'));
     }
 
-    public function testcheck_razorpay_response()
+    public function testCheckRazorpayResponse()
     {
         global $woocommerce;
         global $wpdb;
@@ -345,7 +342,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $wpdb->insert($wpdb->postmeta, array('post_id' => 22, 'meta_key' => '_order_key', 'meta_value' => 'root'));
 
-        $wpdb->insert($wpdb->posts, array('post_status' => 'Pending','post_type' => 'shop_order', 'ID' => 22));
+        $wpdb->insert($wpdb->posts, array('post_status' => 'Pending', 'post_type' => 'shop_order', 'ID' => 22));
 
         $this->instance->shouldReceive('verifySignature');
         
