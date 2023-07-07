@@ -77,12 +77,12 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->instance->shouldReceive('newTrackPluginInstrumentation')->with('key_id', 'key_secret')->andReturnUsing(
             function () {
                 return $this->instrumentationMock;
-            });
+        });
 
         $this->instance->pluginInstrumentation();
     }
 
-    public function testExistingVersion()
+    public function testUpdateCurrentVersion()
     {
         $this->expectNotToPerformAssertions();
         
@@ -145,7 +145,7 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->instance->shouldReceive('newTrackPluginInstrumentation')->with('key_id', 'key_secret')->andReturnUsing(
             function () {
                 return $this->instrumentationMock;
-            });
+        });
 
         $this->instance->pluginInstrumentation();
     }
@@ -217,14 +217,14 @@ class Test_Instrumentation extends WP_UnitTestCase
 
     public function testInstrumentationSegmentEmptyEvent()
     {
-        $response = $this->instrumentationMock->rzpTrackSegment(null, ['key' => 'value']);
+        $response = $this->instrumentationMock->rzpTrackSegment('', ['key' => 'value']);
         $this->assertSame('error', $response['status']);
         $this->assertSame('event given as input is not valid', $response['message']);
     }
 
     public function testInstrumentationSegmentEmptyProperties()
     {
-        $response = $this->instrumentationMock->rzpTrackSegment('testing', null);
+        $response = $this->instrumentationMock->rzpTrackSegment('testing', []);
         $this->assertSame('error', $response['status']);
         $this->assertSame('properties given as input is not valid', $response['message']);
     }
@@ -237,14 +237,14 @@ class Test_Instrumentation extends WP_UnitTestCase
 
     public function testInstrumentationDataLakeEmptyEvent()
     {
-        $response = $this->instrumentationMock->rzpTrackDataLake(null, ['key' => 'value']);
+        $response = $this->instrumentationMock->rzpTrackDataLake('', ['key' => 'value']);
         $this->assertSame('error', $response['status']);
         $this->assertSame('event given as input is not valid', $response['message']);
     }
 
     public function testInstrumentationDataLakeEmptyProperties()
     {
-        $response = $this->instrumentationMock->rzpTrackDataLake('testing', null);
+        $response = $this->instrumentationMock->rzpTrackDataLake('testing', []);
         $this->assertSame('error', $response['status']);
         $this->assertSame('properties given as input is not valid', $response['message']);
     }
