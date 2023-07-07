@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @covers \WC_Razorpay
+ * @covers woocommerce_add_razorpay_gateway
+ * @covers ::is1ccEnabled
+ * @covers ::addRouteModuleSettingFields
+ * @covers ::isDebugModeEnabled
+ */
+
 require_once __DIR__ . '/../mockfactory/MockApi.php';
 require_once __DIR__ . '/../mockfactory/Request.php';
 require_once __DIR__ . '/../mockfactory/Order.php';
@@ -129,6 +137,21 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->assertStringContainsString('razorpay_test_id', $response);
     }
 
+    public function testCreateRazorpayOrderIdwitwebhooktime()
+    {
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+
+        $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function () {
+            return new MockApi('key_id', 'key_secret');
+        });
+        $this->instance->shouldReceive('autoEnableWebhook');
+
+        add_option('webhook_enable_flag', 2400);
+        $response = $this->instance->createOrGetRazorpayOrderId($orderId);
+        $this->assertStringContainsString('razorpay_test_id', $response );
+    }
+    
     public function testGetRazorpayOrderId()
     {
         $order = wc_create_order();
