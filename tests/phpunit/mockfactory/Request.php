@@ -329,6 +329,12 @@ class Request
                             'subscription.charged' => true,
                         ]
                     ]
+                ],
+                'PATCH' => [
+                    'transfers/test' => [
+                        'on_hold' => 'on_hold_until',
+                        'on_hold_until' => 1666097548,
+                    ]
                 ]
             ],
             'key_id_3' => [
