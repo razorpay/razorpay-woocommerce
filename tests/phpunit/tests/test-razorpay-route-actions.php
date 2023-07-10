@@ -61,7 +61,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
 
         $_POST['transfer_id']   = 'test';
         $_POST['on_hold']       = 'on_hold_until';
@@ -81,7 +81,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
 
         $_POST['payment_id']        = 'Abc123';
         $_POST['pay_trf_account']   = 'test';
@@ -175,7 +175,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
         
         $response = $this->instance->transferFromPayment($orderId, 'Abc123');
     
