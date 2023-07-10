@@ -5,7 +5,7 @@ namespace Razorpay\MockApi;
 class Payment
 {
     public $id = ['Abc123'];
-    
+
     public function fetch($paymentid)
     {
         return new Payment();
@@ -34,4 +34,3 @@ class Payment
         return (object)array('id' => 'abc');
     }
 }
-
