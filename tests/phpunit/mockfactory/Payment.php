@@ -23,6 +23,15 @@ class Data
         return $request->request('GET', $relativeUrl, $options);
     }
 
+    function transfer($options = array())
+    {
+        $request = new Request();
+
+        $relativeUrl = 'payments/Abc123/transfers';
+
+        return $request->request('GET', $relativeUrl, $options);
+    }
+
     function refund()
     {
         return (object)array('id' => 'abc');

@@ -1,0 +1,6 @@
+projectKey=WoocRazorpay
+serverUrl=https://sonar.razorpay.com
+serverVersion=9.9.0.65466
+dashboardUrl=https://sonar.razorpay.com/dashboard?id=WoocRazorpay
+ceTaskId=AYkrki1VG4f4di0q67db
+ceTaskUrl=https://sonar.razorpay.com/api/ce/task?id=AYkrki1VG4f4di0q67db

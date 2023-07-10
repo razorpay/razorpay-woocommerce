@@ -2478,6 +2478,7 @@ EOT;
         public function getVersionMetaInfo($data = array())
         {
             if (isset($data['subscription_id']) && isset($data['recurring'])) {
+            //@codeCoverageIgnoreStart
                 $pluginRoot = WP_PLUGIN_DIR . '/razorpay-subscriptions-for-woocommerce';
                 return array(
                     'integration' => 'woocommerce-subscription',
@@ -2486,6 +2487,7 @@ EOT;
                     'integration_parent_version' => WOOCOMMERCE_VERSION,
                     'integration_type' => 'plugin',
                 );
+            //@codeCoverageIgnoreEnd
             } else {
                 return array(
                     'integration' => 'woocommerce',

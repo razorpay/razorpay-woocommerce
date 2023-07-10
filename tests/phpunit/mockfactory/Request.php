@@ -316,6 +316,15 @@ class Request
                         'amount_due' => 0,
                         'currency' => 'USD',
                         'receipt' => '21',
+                    ],
+                    'transfers/reversals' => [
+                        'amount' => 1200,
+                    ]
+                ],
+                'PATCH' => [
+                    'transfers/test' => [
+                        'on_hold' => 'on_hold_until',
+                        'on_hold_until' => 1666097548,
                     ]
                 ]
             ],
