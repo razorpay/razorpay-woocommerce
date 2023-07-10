@@ -4,9 +4,11 @@ namespace Razorpay\MockApi;
 
 class Transfer
 {
+    public $id = ['Abc123'];
+    
     public function fetch($id)
     {
-        return new Reverse();
+        return new Transfer();
     }
 
     public function all($options = array())
@@ -26,11 +28,6 @@ class Transfer
 
         return $response;
     }
-}
-
-class Reverse 
-{
-    public $id = ['Abc123'];
 
     function reverse($attributes = array())
     {

@@ -28,8 +28,8 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $_POST['transfer_id']       = 'test';
         $_POST['reversal_amount']   = 12;
 
-        $pageUrl            = admin_url('admin.php?page=razorpayTransfers&id=' . 'test');
-        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $pageUrl = admin_url('admin.php?page=razorpayTransfers&id=' . 'test');
+        $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->reverseTransfer();
 
@@ -42,13 +42,13 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
-            });
+        });
 
-        $_POST['drct_trf_account']  = 'hello';
+        $_POST['drct_trf_account']  = 'test';
         $_POST['drct_trf_amount']   = '123';
 
-        $pageUrl            = admin_url('admin.php?page=razorpayRouteWoocommerce');
-        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $pageUrl = admin_url('admin.php?page=razorpayRouteWoocommerce');
+        $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->directTransfer();
 
@@ -68,7 +68,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $_POST['hold_until']    = 1666097548;
 
         $pageUrl            = admin_url('admin.php?page=razorpayTransfers&id=' . 'test');
-        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->updateTransferSettlement();
 
@@ -90,7 +90,7 @@ class Test_RzpRouteAction extends \PHPUnit_Framework_TestCase
         $_POST['hold_until']        = 1666097548;
 
         $pageUrl            = admin_url('admin.php?page=razorpayPaymentsView&id=' . 'Abc123');
-        $razorpayOrderId    = $this->instance->shouldReceive('redirect')->with($pageUrl);
+        $this->instance->shouldReceive('redirect')->with($pageUrl);
 
         $response = $this->instance->createPaymentTransfer();
 

@@ -4,15 +4,12 @@ namespace Razorpay\MockApi;
 
 class Payment
 {
+    public $id = ['Abc123'];
+    
     public function fetch($paymentid)
     {
-        return new Data();
+        return new Payment();
     }
-}
-
-class Data 
-{
-    public $id = ['Abc123'];
 
     function transfers($options = array())
     {
@@ -36,9 +33,5 @@ class Data
     {
         return (object)array('id' => 'abc');
     }
-
-    function fetch($id)
-    {
-        return new Data();
-    }
 }
+
