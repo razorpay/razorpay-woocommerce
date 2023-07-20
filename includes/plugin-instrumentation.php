@@ -49,7 +49,7 @@ class TrackPluginInstrumentation
 
         $orderTable = $wpdb->prefix . 'wc_orders';
 
-        if ( OrderUtil::custom_orders_table_usage_is_enabled() ) 
+        if(OrderUtil::custom_orders_table_usage_is_enabled()) 
         {
             $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
         }

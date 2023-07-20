@@ -1192,14 +1192,14 @@ function renderPaymentTransferMetaBox() {
     
     if (OrderUtil::custom_orders_table_usage_is_enabled()) 
     {
-        $orderId= $_GET['id'];
+        $orderId = $_GET['id'];
         $order = wc_get_order($orderId);
         $rzpPaymentId = $order->get_transaction_id();
     }
     else 
     {
-        $orderId= $post->ID;
-        $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
+        $orderId = $post->ID;
+        $rzpPaymentId = get_post_meta($orderId, '_transaction_id', true);
     }
     
 
@@ -1249,14 +1249,14 @@ function renderPaymentMetaBox(){
 
     if (OrderUtil::custom_orders_table_usage_is_enabled()) 
     {
-        $orderId= $_GET['id'];
+        $orderId = $_GET['id'];
         $order = wc_get_order($orderId);
         $rzpPaymentId = $order->get_transaction_id();
     }
     else 
     {
-        $orderId= $post->ID;
-        $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
+        $orderId = $post->ID;
+        $rzpPaymentId = get_post_meta($orderId, '_transaction_id', true);
     }
 
     echo '<p>'.$rzpPaymentId.' <span><a href="?page=razorpayPaymentsView&id='.$rzpPaymentId.'"><input type="button" class="button" value="View"></a></span></p>';
