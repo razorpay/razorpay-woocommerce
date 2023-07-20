@@ -7,6 +7,8 @@ require_once __DIR__ . '/../support/cartbounty.php';
 require_once __DIR__ . '/../support/wati.php';
 require_once __DIR__ . '/../support/abandoned-cart-hooks.php';
 
+use Automattic\WooCommerce\Utilities\OrderUtil; 
+
 function saveCartAbandonmentData(WP_REST_Request $request)
 {
     global $woocommerce;
@@ -55,7 +57,12 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     initCustomerSessionAndCart();
 
-    $customerEmail = get_post_meta($wcOrderId, '_billing_email', true);
+    if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+        $customerEmail  = $order->get_billing_email();
+
+    }else{
+        $customerEmail = get_post_meta($wcOrderId, '_billing_email', true);
+    }
 
     //Retrieving cart products and their quantities.
     // check plugin is activated or not

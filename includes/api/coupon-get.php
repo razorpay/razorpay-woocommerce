@@ -14,6 +14,9 @@
  * convert all amounts to int in paise
  * return whatever clears
  */
+
+use Automattic\WooCommerce\Utilities\OrderUtil; 
+
 function getCouponList($request)
 {
     global $woocommerce;
@@ -43,13 +46,26 @@ function getCouponList($request)
 
     //Updating the email address to wc order.
     if (empty($email) == false) {
-        update_post_meta($orderId, '_billing_email', $email);
-        update_post_meta($orderId, '_shipping_email', $email);
+        if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+            $order->update_meta_data( '_billing_email', $email );
+            $order->update_meta_data( '_shipping_email', $email );
+            $order->save();
+        }else{
+            update_post_meta($orderId, '_billing_email', $email);
+            update_post_meta($orderId, '_shipping_email', $email);
+        }
     }
 
     if (empty($contact) == false) {
-        update_post_meta($orderId, '_billing_phone', $contact);
-        update_post_meta($orderId, '_shipping_phone', $contact);
+        if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+            $order->update_meta_data( '_billing_phone', $contact );
+            $order->update_meta_data( '_shipping_phone', $contact );
+            $order->save();
+        }else{
+           update_post_meta($orderId, '_billing_phone', $contact);
+           update_post_meta($orderId, '_shipping_phone', $contact);
+        }
+        
     }
 
     $args = array(
