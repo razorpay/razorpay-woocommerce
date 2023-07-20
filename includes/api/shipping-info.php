@@ -474,7 +474,7 @@ function smartCodRestriction($addresses, $order)
 
     // zip code restriction
     $postals         = explode(',', trim($restriction['restrict_postals']));
-    $postals         = array_map('trim', $postals);
+    $postals         = array_map('codTrim', $postals);
     $customerZipcode = $addresses['zipcode'];
     $flag            = 0;
 
@@ -550,8 +550,8 @@ function smartCodRestriction($addresses, $order)
     // city based restriction
     if (!empty($restriction['city_restrictions'])) {
         $cityRes         = explode(',', trim($restriction['city_restrictions']));
-        $restrict        = array_map('trim', $cityRes);
-        $cityRestriction = array_map('strtolower', $restrict);
+        $restrict        = array_map('codTrim', $cityRes);
+        $cityRestriction = array_map('codStrtolower', $restrict);
         if ($restrictionSettings->city_restrictions === 0) {
             if (in_array($addresses['city'], $cityRestriction)) {
                 return false;
@@ -638,6 +638,17 @@ function smartCodRestriction($addresses, $order)
     return true;
 }
 
+function codTrim($str){
+
+  $str=strtoupper($str);
+  return $str;
+}
+
+function codStrtolower($str){
+
+   $str=strtolower($str);
+   return $str;
+}
 
 function restictPaymentGetway($rzpOrderId){
 
