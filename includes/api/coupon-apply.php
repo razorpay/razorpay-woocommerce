@@ -12,9 +12,7 @@ function applyCouponOnCart(WP_REST_Request $request)
     $failure_reason = "";
 
     $params = $request->get_params();
-    print_r($params);
-    print_r($params['code']);
-
+    
     $logObj           = [];
     $logObj["api"]    = "applyCouponOnCart";
     $logObj["params"] = $params;
