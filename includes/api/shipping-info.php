@@ -19,9 +19,6 @@ function calculateShipping1cc(WP_REST_Request $request)
     $logObj['params'] = $params;
 
     $validateInput = validateInput('shipping', $params);
-
-    $order = wc_get_order($params['order_id']);
-    echo $order->get_meta('is_magic_checkout_order');
     
     if ($validateInput != null) {
         $response['failure_reason'] = $validateInput;

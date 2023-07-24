@@ -181,7 +181,7 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/rzp_payment_icon.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
-            $isAccCreationAvailable = true;
+            $isAccCreationAvailable = false;
 
             // Load preference API call only for administrative interface page.
             if (current_user_can('administrator'))
@@ -809,7 +809,7 @@ function woocommerce_razorpay_init()
          */
         protected function getOrderSessionKey($orderId)
         {
-            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+            if (OrderUtil::custom_orders_table_usage_is_enabled()) {
                $order = wc_get_order($orderId);
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
@@ -841,7 +841,7 @@ function woocommerce_razorpay_init()
 
             if($is1ccCheckout == 'no')
             {
-                if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                if (OrderUtil::custom_orders_table_usage_is_enabled()) {
                     $order = wc_get_order($orderId);
                     $order->update_meta_data( 'is_magic_checkout_order', 'no' );
                     $order->save();
@@ -1171,13 +1171,12 @@ function woocommerce_razorpay_init()
 
         private function getOrderCreationData($orderId)
         {
-            global $wpdb;
             rzpLogInfo("Called getOrderCreationData with params orderId $orderId");
             $order = wc_get_order($orderId);
 
             $orderMetaTable = $wpdb->prefix . 'wc_orders_meta';
 
-            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+            if (OrderUtil::custom_orders_table_usage_is_enabled()) {
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
                 $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1824,7 +1823,7 @@ EOT;
                 {
                     $wcOrderId = $order->get_id();
 
-                    if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                    if (OrderUtil::custom_orders_table_usage_is_enabled()) {
                         $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                     }else{
                         $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1921,7 +1920,6 @@ EOT;
         public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
         {
             global $woocommerce;
-            global $wpdb;
 
             $logObj = array();
             rzpLogInfo("update1ccOrderWC wcOrderId: $wcOrderId, razorpayPaymentId: $razorpayPaymentId");
@@ -1985,7 +1983,7 @@ EOT;
                 else
                 {
                     $isStoreShippingEnabled = "";
-                    if ( OrderUtil::custom_orders_table_usage_is_enabled() ) 
+                    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
                     {
                          $shippingData = $order->get_meta('1cc_shippinginfo');
 
@@ -2448,7 +2446,7 @@ EOT;
             global $wpdb;
 
             $order = wc_get_order($wcOrderId);
-            $order->get_customer_id();
+            $userId = $order->get_customer_id();
             $currentTime  = current_time('timestamp'); // phpcs:ignore
             $cutOffTime  = get_option('ac_lite_cart_abandoned_time');
 
@@ -2469,7 +2467,7 @@ EOT;
             else
             {
                 $userType = 'GUEST';
-                if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                if (OrderUtil::custom_orders_table_usage_is_enabled()) {
                    $userId = $order->get_meta('abandoned_user_id');
                 }else{
                   $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
@@ -2497,7 +2495,7 @@ EOT;
 
             $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
             
-            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+            if (OrderUtil::custom_orders_table_usage_is_enabled()) {
                 $order->update_meta_data( 'abandoned_id', $abandonedOrderId);
                 $order->save();
             }else{

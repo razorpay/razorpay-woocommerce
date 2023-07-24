@@ -57,7 +57,7 @@ function getCouponList($request)
     }
 
     if (empty($contact) == false) {
-        if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+        if (OrderUtil::custom_orders_table_usage_is_enabled()) {
             $order->update_meta_data( '_billing_phone', $contact );
             $order->update_meta_data( '_shipping_phone', $contact );
             $order->save();
