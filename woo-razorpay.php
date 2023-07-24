@@ -181,7 +181,7 @@ function woocommerce_razorpay_init()
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/rzp_payment_icon.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
-            $isAccCreationAvailable = false;
+            $isAccCreationAvailable = true;
 
             // Load preference API call only for administrative interface page.
             if (current_user_can('administrator'))
@@ -809,7 +809,12 @@ function woocommerce_razorpay_init()
          */
         protected function getOrderSessionKey($orderId)
         {
-            $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+               $order = wc_get_order($orderId);
+               $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+            }else{
+                $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            }
 
             if($is1ccOrder == 'yes')
             {
@@ -836,7 +841,13 @@ function woocommerce_razorpay_init()
 
             if($is1ccCheckout == 'no')
             {
-                update_post_meta( $orderId, 'is_magic_checkout_order', 'no' );
+                if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                    $order = wc_get_order($orderId);
+                    $order->update_meta_data( 'is_magic_checkout_order', 'no' );
+                    $order->save();
+                }else{
+                    update_post_meta($orderId, 'is_magic_checkout_order', 'no');
+                }
 
                 rzpLogInfo("Called createOrGetRazorpayOrderId with params orderId $orderId and is_magic_checkout_order is set to no");
             }
@@ -1160,10 +1171,17 @@ function woocommerce_razorpay_init()
 
         private function getOrderCreationData($orderId)
         {
+            global $wpdb;
             rzpLogInfo("Called getOrderCreationData with params orderId $orderId");
             $order = wc_get_order($orderId);
 
-            $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            $orderMetaTable = $wpdb->prefix . 'wc_orders_meta';
+
+            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+               $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+            }else{
+                $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            }
 
             $data = array(
                 'receipt'         => $orderId,
@@ -1667,7 +1685,12 @@ EOT;
                     $error = "Payment Failed.";
                 }
 
-                $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                    $order = wc_get_order($orderId);
+                    $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+                }else{
+                    $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                }
 
                 if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                 {
@@ -1801,7 +1824,11 @@ EOT;
                 {
                     $wcOrderId = $order->get_id();
 
-                    $is1ccOrder = get_post_meta( $wcOrderId, 'is_magic_checkout_order', true );
+                    if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                        $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+                    }else{
+                        $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                    }
 
                     rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
 
@@ -1894,6 +1921,7 @@ EOT;
         public function update1ccOrderWC(& $order, $wcOrderId, $razorpayPaymentId)
         {
             global $woocommerce;
+            global $wpdb;
 
             $logObj = array();
             rzpLogInfo("update1ccOrderWC wcOrderId: $wcOrderId, razorpayPaymentId: $razorpayPaymentId");
@@ -1957,7 +1985,13 @@ EOT;
                 else
                 {
                     $isStoreShippingEnabled = "";
-                    $shippingData = get_post_meta( $wcOrderId, '1cc_shippinginfo', true );
+                    if ( OrderUtil::custom_orders_table_usage_is_enabled() ) 
+                    {
+                         $shippingData = $order->get_meta('1cc_shippinginfo');
+
+                    }else{
+                        $shippingData = get_post_meta( $wcOrderId, '1cc_shippinginfo', true );
+                    }
 
                     if (class_exists('WCFMmp'))
                     {
@@ -2323,7 +2357,8 @@ EOT;
                 $userId  = wp_create_user( $username, $random_password, $email );
                 $user = get_user_by('id', $userId);
 
-                update_post_meta($order->get_id(), '_customer_user', $userId);
+                $order->set_customer_id( $userId );
+                $order->save();
 
                 // Get all WooCommerce emails Objects from WC_Emails Object instance
                 $emails = wc()->mailer()->emails;
@@ -2412,7 +2447,8 @@ EOT;
             global $woocommerce;
             global $wpdb;
 
-            $userId = get_post_meta($wcOrderId, '_customer_user', true);
+            $order = wc_get_order($wcOrderId);
+            $order->get_customer_id();
             $currentTime  = current_time('timestamp'); // phpcs:ignore
             $cutOffTime  = get_option('ac_lite_cart_abandoned_time');
 
@@ -2433,7 +2469,12 @@ EOT;
             else
             {
                 $userType = 'GUEST';
-                $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+                if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                   $userId = $order->get_meta('abandoned_user_id');
+                }else{
+                  $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+                }
+                
             }
 
             $results = $wpdb->get_results( // phpcs:ignore
@@ -2455,8 +2496,13 @@ EOT;
             }
 
             $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
-
-            add_post_meta($wcOrderId, 'abandoned_id', $abandonedOrderId);
+            
+            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                $order->update_meta_data( 'abandoned_id', $abandonedOrderId);
+                $order->save();
+            }else{
+               add_post_meta($wcOrderId, 'abandoned_id', $abandonedOrderId);
+            }
             $wpdb->query( // phpcS:ignore
             $wpdb->prepare(
                 'UPDATE `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` SET recovered_cart = %s, cart_ignored = %s WHERE id = %s',

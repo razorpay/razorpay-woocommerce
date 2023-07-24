@@ -242,10 +242,21 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
 
         $cartInfo   = wp_json_encode($cart);
         $recResults = checkRecordBySession($getCookie[0]);
+        $order = wc_get_order($wcOrderId);
 
         if (get_post_meta($wcOrderId, 'abandoned_user_id', true) == '') {
-            add_post_meta($wcOrderId, 'abandoned_user_id', $userId);} else {
-            update_post_meta($wcOrderId, 'abandoned_user_id', $userId);
+            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                   $userId = $order->add_meta('abandoned_user_id', $userId);
+            }else{
+              $userId =  add_post_meta($wcOrderId, 'abandoned_user_id', $userId);
+            }
+           
+        } else {
+            if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                   $userId = $order->update_meta_data('abandoned_user_id', $userId);
+            }else{
+              $userId =  update_post_meta($wcOrderId, 'abandoned_user_id', $userId);
+            }
         }
 
         if (count($recResults) === 0) {
