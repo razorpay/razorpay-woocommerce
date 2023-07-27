@@ -1573,7 +1573,7 @@ EOT;
                     
                     $order = wc_get_order($orderId);
 
-                    if ($orderData->status === 'draft')
+                    if ($orderData->status === 'checkout-draft')
                     {
                         $order->set_status('wc-pending');
                         $order->save();
