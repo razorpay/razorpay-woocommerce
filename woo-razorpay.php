@@ -49,6 +49,44 @@ add_action('before_woocommerce_init', function() {
 
 function woocommerce_razorpay_init()
 {
+    add_action("woocommerce_update_options_advanced_features", 'hposInstrumentation');
+
+    function hposInstrumentation()
+    {
+        $rzp = new WC_Razorpay();
+
+        if (OrderUtil::custom_orders_table_usage_is_enabled() and
+            (empty(get_option('rzp_hpos')) or
+            get_option('rzp_hpos') === 'no'))
+        {
+            $key_id = $rzp->getSetting('key_id');
+            $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+            $properties = [
+                'isHPOSEnabled' => true
+            ];
+
+            $response = $trackObject->rzpTrackSegment('hpos.interacted', $properties);
+            $trackObject->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'yes');
+        }
+        else if(OrderUtil::custom_orders_table_usage_is_enabled() === false and
+                empty(get_option('rzp_hpos')) === false and
+                get_option('rzp_hpos') === 'yes')
+        {
+            $key_id = $rzp->getSetting('key_id');
+            $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+            $properties = [
+                'isHPOSEnabled' => false
+            ];
+
+            $response = $trackObject->rzpTrackSegment('hpos.interacted', $properties);
+            $trackObject->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'no');
+        }
+    }
+
     if (!class_exists('WC_Payment_Gateway') || class_exists('WC_Razorpay'))
     {
         return;
@@ -251,6 +289,8 @@ function woocommerce_razorpay_init()
 
             $cb = array($this, 'process_admin_options');
 
+            
+
             if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'pluginInstrumentation'));
@@ -259,6 +299,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
+                add_action("woocommerce_update_options_advanced", 'hposInstrumentation');
             }
             else
             {
@@ -268,9 +309,21 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
+                // add_action("woocommerce_update_options_advanced", 'hposInstrumentation', 10);
             }
-
+            // var_dump( has_action('woocommerce_update_options_advanced', array($this,'hposInstrumentation')));
+            // print_r($GLOBALS['wp_filter']);
+            // die;
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
+        }
+
+        public function hposInstrumentation()
+        {
+            $myfile = fopen("newfile.txt", "w") or die("Unable to open file!");
+            fwrite($myfile, 'yash');
+            fclose($myfile);
+
+            // error_log('advanced settings saved');
         }
 
         public function init_form_fields()
