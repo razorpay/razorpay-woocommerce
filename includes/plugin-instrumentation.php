@@ -2,6 +2,7 @@
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use Automattic\WooCommerce\Utilities\OrderUtil;
 
 class TrackPluginInstrumentation
 {
@@ -46,7 +47,16 @@ class TrackPluginInstrumentation
         global $wpdb;
         $isTransactingUser = false;
 
-        $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+        $orderTable = $wpdb->prefix . 'wc_orders';
+
+        if(OrderUtil::custom_orders_table_usage_is_enabled()) 
+        {
+            $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
+        }
+        else 
+        {
+            $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+        }
 
         $arrayPost = json_decode(json_encode($rzpTrancationData), true);
 

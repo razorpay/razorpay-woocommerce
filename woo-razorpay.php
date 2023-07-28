@@ -36,9 +36,16 @@ require_once __DIR__.'/includes/cron/plugin-fetch.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use Automattic\WooCommerce\Utilities\OrderUtil;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
+add_action('before_woocommerce_init', function() {
+	if (class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class))
+    {
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+	}
+});
 
 function woocommerce_razorpay_init()
 {
@@ -609,8 +616,17 @@ function woocommerce_razorpay_init()
                 global $wpdb;
                 $isTransactingUser = false;
 
-                $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+                $orderTable = $wpdb->prefix . 'wc_orders';
 
+                if(OrderUtil::custom_orders_table_usage_is_enabled()) 
+                {
+                    $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
+                } 
+                else 
+                {
+                    $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+                }              
+                
                 $arrayPost = json_decode(json_encode($rzpTrancationData), true);
 
                 if (empty($arrayPost) === false and
@@ -1531,23 +1547,50 @@ EOT;
 
             $meta_key = '_order_key';
 
-            $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
+            $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
+            $orderTable = $wpdb->prefix . 'wc_orders';
 
-            $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
+            if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+            {
+                $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
+            
+                $orderData = $wpdb->get_row($wpdb->prepare("SELECT status FROM $orderTable AS P WHERE id = %s", $orderOperationalData->order_id));
+            } else 
+            {
+                $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password));
 
-            $arrayPost = json_decode(json_encode($postMetaData), true);
+                $orderData = $wpdb->get_row($wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $orderOperationalData->post_id));
+            }
+            
+            $arrayPost = json_decode(json_encode($orderOperationalData), true);
 
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                $orderId = $postMetaData->post_id;
-
-                if ($postData->post_status === 'draft')
+                if(OrderUtil::custom_orders_table_usage_is_enabled()) 
                 {
-                    updateOrderStatus($orderId, 'wc-pending');
-                }
+                    $orderId = $orderOperationalData->order_id;
+                    
+                    $order = wc_get_order($orderId);
 
-                $order = wc_get_order($orderId);
+                    if ($orderData->status === 'checkout-draft')
+                    {
+                        $order->set_status('wc-pending');
+                        $order->save();
+                    }
+                } 
+                else
+                {
+                    $orderId = $orderOperationalData->post_id;
+
+                    $order = wc_get_order($orderId);
+
+                    if ($orderData->post_status === 'draft')
+                    {
+                        updateOrderStatus($orderId, 'wc-pending');
+                    }
+                }
+                
                 rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
             }
 
