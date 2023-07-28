@@ -101,7 +101,9 @@ class RZP_Webhook
                 return;
             }
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
-                $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
+                
+                $razorpayWebhookSecret = (empty($this->razorpay->getSetting('webhook_secret')) === false) ? $this->razorpay->getSetting('webhook_secret') : get_option('webhook_secret');
+                
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
