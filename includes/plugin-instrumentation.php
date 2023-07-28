@@ -30,9 +30,41 @@ class TrackPluginInstrumentation
 
         $this->rzpTrackDataLake('plugin activate', $activateProperties);
 
+        $this->hposInstrumentation();
+
         $this->initRzpCronJobs();
 
         return 'success';
+    }
+
+    function hposInstrumentation()
+    {
+        if (OrderUtil::custom_orders_table_usage_is_enabled() and
+            (empty(get_option('rzp_hpos')) or
+            get_option('rzp_hpos') === 'no'))
+        {
+            $properties = [
+                'isHposEnabled' => true
+            ];
+
+            $response = $this->rzpTrackSegment('hpos.interacted', $properties);
+            $this->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'yes');
+        }
+        else if(OrderUtil::custom_orders_table_usage_is_enabled() === false and
+                empty(get_option('rzp_hpos')) === false and
+                get_option('rzp_hpos') === 'yes')
+        {
+            $properties = [
+                'isHposEnabled' => false
+            ];
+
+            $response = $this->rzpTrackSegment('hpos.interacted', $properties);
+            $this->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'no');
+        }
     }
 
     // initCronJobs initialize all cron jobs needed for this Plugin
@@ -99,6 +131,8 @@ class TrackPluginInstrumentation
         $response = $this->rzpTrackSegment('plugin upgrade', $upgradeProperties);
 
         $this->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
+
+        $this->hposInstrumentation();
 
         // TODO: Update correct version
         if (isset($prevVersion) && strcmp($prevVersion, '4.5.0') <= 0)

@@ -289,8 +289,6 @@ function woocommerce_razorpay_init()
 
             $cb = array($this, 'process_admin_options');
 
-            
-
             if (version_compare(WOOCOMMERCE_VERSION, '2.0.0', '>='))
             {
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'pluginInstrumentation'));
@@ -299,7 +297,6 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
-                add_action("woocommerce_update_options_advanced", 'hposInstrumentation');
             }
             else
             {
@@ -309,21 +306,9 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
-                // add_action("woocommerce_update_options_advanced", 'hposInstrumentation', 10);
             }
-            // var_dump( has_action('woocommerce_update_options_advanced', array($this,'hposInstrumentation')));
-            // print_r($GLOBALS['wp_filter']);
-            // die;
+
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
-        }
-
-        public function hposInstrumentation()
-        {
-            $myfile = fopen("newfile.txt", "w") or die("Unable to open file!");
-            fwrite($myfile, 'yash');
-            fclose($myfile);
-
-            // error_log('advanced settings saved');
         }
 
         public function init_form_fields()
