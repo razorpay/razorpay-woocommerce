@@ -314,6 +314,26 @@ class Request
                         'amount_due' => 0,
                         'currency' => 'USD',
                         'receipt' => '16',
+                    ],
+                    'webhooks/' => [
+                        'id' => 'create',
+                        'url' => 'https://webhook.site/create',
+                        'entity' => 'webhook',
+                        'active' => true,
+                        'events' => [
+                            'payment.authorized' => true,
+                            'order.paid' => true,
+                            'subscription.cancelled' => true,
+                            'subscription.resumed' => true,
+                            'subscription.paused' => true,
+                            'subscription.charged' => true,
+                        ]
+                    ]
+                ],
+                'PATCH' => [
+                    'transfers/test' => [
+                        'on_hold' => 'on_hold_until',
+                        'on_hold_until' => 1666097548,
                     ]
                 ]
             ],
