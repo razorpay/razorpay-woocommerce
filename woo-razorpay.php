@@ -49,7 +49,7 @@ add_action('before_woocommerce_init', function() {
 
 function woocommerce_razorpay_init()
 {
-    add_action("woocommerce_update_options_advanced_features", 'hposInstrumentation');
+    add_action("woocommerce_update_options_advanced", 'hposInstrumentation');
 
     function hposInstrumentation()
     {
