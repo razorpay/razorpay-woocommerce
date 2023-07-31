@@ -62,7 +62,7 @@ function woocommerce_razorpay_init()
             $key_id = $rzp->getSetting('key_id');
             $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
             $properties = [
-                'isHPOSEnabled' => true
+                'isHposEnabled' => true
             ];
 
             $response = $trackObject->rzpTrackSegment('hpos.interacted', $properties);
@@ -76,7 +76,7 @@ function woocommerce_razorpay_init()
             $key_id = $rzp->getSetting('key_id');
             $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
             $properties = [
-                'isHPOSEnabled' => false
+                'isHposEnabled' => false
             ];
 
             $response = $trackObject->rzpTrackSegment('hpos.interacted', $properties);
