@@ -640,7 +640,7 @@ function smartCodRestriction($addresses, $order)
 
 function codTrim($str){
 
-  $str=strtoupper($str);
+  $str=trim($str);
   return $str;
 }
 
