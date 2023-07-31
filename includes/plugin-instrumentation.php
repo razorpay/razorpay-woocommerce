@@ -53,7 +53,6 @@ class TrackPluginInstrumentation
             update_option('rzp_hpos', 'yes');
         }
         else if(OrderUtil::custom_orders_table_usage_is_enabled() === false and
-                empty(get_option('rzp_hpos')) === false and
                 get_option('rzp_hpos') === 'yes')
         {
             $properties = [
