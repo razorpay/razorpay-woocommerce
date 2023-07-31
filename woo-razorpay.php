@@ -832,7 +832,7 @@ function woocommerce_razorpay_init()
          * @param  string $orderId Order Id
          * @return mixed Razorpay Order Id or Exception
          */
-        public function createOrGetRazorpayOrderId($orderId, $is1ccCheckout = 'no')
+        public function createOrGetRazorpayOrderId($order, $orderId, $is1ccCheckout = 'no')
         {
             global $woocommerce;
             rzpLogInfo("createOrGetRazorpayOrderId $orderId and is1ccCheckout is set to $is1ccCheckout");
@@ -842,7 +842,6 @@ function woocommerce_razorpay_init()
             if($is1ccCheckout == 'no')
             {
                 if (OrderUtil::custom_orders_table_usage_is_enabled()) {
-                    $order = wc_get_order($orderId);
                     $order->update_meta_data( 'is_magic_checkout_order', 'no' );
                     $order->save();
                 }else{
@@ -919,7 +918,7 @@ function woocommerce_razorpay_init()
          * @param  string $orderId WC Order Id
          * @return array payment params
          */
-        protected function getRazorpayPaymentParams($orderId)
+        protected function getRazorpayPaymentParams($order, $orderId)
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
@@ -937,7 +936,7 @@ function woocommerce_razorpay_init()
             }
 
             rzpLogInfo("getRazorpayPaymentParams $orderId");
-            $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
+            $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderId);
 
             if ($razorpayOrderId === null)
             {
@@ -965,7 +964,7 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $params = $this->getRazorpayPaymentParams($orderId);
+                $params = $this->getRazorpayPaymentParams($order, $orderId);
             }
             catch (Exception $e)
             {
@@ -1590,7 +1589,7 @@ EOT;
                     
                     $order = wc_get_order($orderId);
 
-                    if ($orderData->status === 'draft')
+                    if ($orderData->status === 'wc-checkout-draft')
                     {
                         $order->set_status('wc-pending');
                         $order->save();
@@ -1685,7 +1684,6 @@ EOT;
                 }
 
                 if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
-                    $order = wc_get_order($orderId);
                     $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                 }else{
                     $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );

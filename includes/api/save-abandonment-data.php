@@ -246,7 +246,7 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
 
         if (get_post_meta($wcOrderId, 'abandoned_user_id', true) == '') {
             if (OrderUtil::custom_orders_table_usage_is_enabled()) {
-                   $userId = $order->add_meta_data('abandoned_user_id', $userId);
+                $userId = $order->add_meta_data('abandoned_user_id', $userId);
             }else{
               $userId =  add_post_meta($wcOrderId, 'abandoned_user_id', $userId);
             }

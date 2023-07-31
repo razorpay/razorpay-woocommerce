@@ -184,7 +184,7 @@ function createWcOrder(WP_REST_Request $request)
 
         $razorpay = new WC_Razorpay(false);
 
-        $rzp_order_id = $razorpay->createOrGetRazorpayOrderId($orderId, 'yes');
+        $rzp_order_id = $razorpay->createOrGetRazorpayOrderId($order, $orderId, 'yes');
         $rzp_response = $razorpay->getDefaultCheckoutArguments($order);
 
         // Response sent to the user when order creation fails
