@@ -5,6 +5,8 @@ require_once __DIR__ .'/../razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use Automattic\WooCommerce\Utilities\OrderUtil;
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 
 add_action('setup_extra_setting_fields', 'addRouteModuleSettingFields');
 add_action('admin_post_rzp_direct_transfer', 'razorpayDirectTransfer');
@@ -1168,11 +1170,15 @@ function woocommerce_process_transfer_meta_fields_save( $post_id ){
 //fetch transfers of order/payment in order edit page
 
 function paymentTransferMetaBox() {
+    $screen = wc_get_container()->get(CustomOrdersTableController::class)->custom_orders_table_usage_is_enabled()
+		? wc_get_page_screen_id('shop-order')
+		: 'shop_order';
+    
     add_meta_box(
         'rzp_trf_payment_meta',
         esc_html__( 'Razorpay transfers from Order / Payment', 'text-domain' ),
         'renderPaymentTransferMetaBox',
-        'shop_order', // shop_order is the post type of the admin order page
+        $screen, // shop_order is the post type of the admin order page
         'normal', // change to 'side' to move box to side column
         'low'
     );
@@ -1181,7 +1187,7 @@ function paymentTransferMetaBox() {
         'rzp_payment_meta',
         esc_html__( 'Razorpay Payment ID', 'text-domain' ),
         'renderPaymentMetaBox',
-        'shop_order', // shop_order is the post type of the admin order page
+        $screen, // shop_order is the post type of the admin order page
         'normal', // change to 'side' to move box to side column
         'low'
     );
@@ -1190,8 +1196,19 @@ function paymentTransferMetaBox() {
 
 function renderPaymentTransferMetaBox() {
     global $woocommerce, $post;
-    $orderId= $post->ID;
-    $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
+    
+    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+    {
+        $orderId = $_GET['id'];
+        $order = wc_get_order($orderId);
+        $rzpPaymentId = $order->get_transaction_id();
+    }
+    else 
+    {
+        $orderId = $post->ID;
+        $rzpPaymentId = get_post_meta($orderId, '_transaction_id', true);
+    }
+    
 
     $rzp = new WC_Razorpay();
 
@@ -1236,8 +1253,18 @@ function renderPaymentTransferMetaBox() {
 function renderPaymentMetaBox(){
 
     global $woocommerce, $post;
-    $orderId= $post->ID;
-    $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
+
+    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+    {
+        $orderId = $_GET['id'];
+        $order = wc_get_order($orderId);
+        $rzpPaymentId = $order->get_transaction_id();
+    }
+    else 
+    {
+        $orderId = $post->ID;
+        $rzpPaymentId = get_post_meta($orderId, '_transaction_id', true);
+    }
 
     echo '<p>'.$rzpPaymentId.' <span><a href="?page=razorpayPaymentsView&id='.$rzpPaymentId.'"><input type="button" class="button" value="View"></a></span></p>';
 
