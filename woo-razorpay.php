@@ -55,7 +55,8 @@ function woocommerce_razorpay_init()
     {
         $rzp = new WC_Razorpay();
 
-        if (OrderUtil::custom_orders_table_usage_is_enabled() and
+        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+            OrderUtil::custom_orders_table_usage_is_enabled() and
             (empty(get_option('rzp_hpos')) or
             get_option('rzp_hpos') === 'no'))
         {
@@ -70,7 +71,8 @@ function woocommerce_razorpay_init()
 
             update_option('rzp_hpos', 'yes');
         }
-        else if(OrderUtil::custom_orders_table_usage_is_enabled() === false and
+        else if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                OrderUtil::custom_orders_table_usage_is_enabled() === false and
                 get_option('rzp_hpos') === 'yes')
         {
             $key_id = $rzp->getSetting('key_id');
@@ -655,7 +657,8 @@ function woocommerce_razorpay_init()
 
                 $orderTable = $wpdb->prefix . 'wc_orders';
 
-                if(OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                    OrderUtil::custom_orders_table_usage_is_enabled()) 
                 {
                     $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
                 } 
@@ -1587,7 +1590,8 @@ EOT;
             $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
             $orderTable = $wpdb->prefix . 'wc_orders';
 
-            if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                OrderUtil::custom_orders_table_usage_is_enabled()) 
             {
                 $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
             
@@ -1604,7 +1608,8 @@ EOT;
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                if(OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                    OrderUtil::custom_orders_table_usage_is_enabled()) 
                 {
                     $orderId = $orderOperationalData->order_id;
                     
