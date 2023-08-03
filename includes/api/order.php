@@ -4,6 +4,8 @@
  * create order with status pending
  * user, adddress, coupon and shipping are left blank
  */
+use Automattic\WooCommerce\Utilities\OrderUtil;
+
 function createWcOrder(WP_REST_Request $request)
 {
     rzpLogInfo("createWcOrder");
@@ -57,6 +59,12 @@ function createWcOrder(WP_REST_Request $request)
     $hash = $sessionResult."_".$cartHash;
     $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
 
+    if (isHposEnabled()) {
+        $updateOrderStatus = 'checkout-draft';
+    }else{
+        $updateOrderStatus = 'draft';
+    }
+
     if ($orderIdFromHash == null) {
         $checkout = WC()->checkout();
         $orderId  = $checkout->create_order(array());
@@ -65,12 +73,12 @@ function createWcOrder(WP_REST_Request $request)
             $checkout_error = $orderId->get_error_message();
         }
         //Keep order in draft status untill customer info available
-        updateOrderStatus($orderId, 'draft');
+        updateOrderStatus($orderId, $updateOrderStatus);
     } else {
         $existingOrder = wc_get_order($orderIdFromHash);
         $orderStatus   = $existingOrder->get_status();
         $existingOrder->calculate_totals();
-        if ($orderStatus != 'draft' && $existingOrder->needs_payment() == false) {
+        if ($orderStatus != $updateOrderStatus && $existingOrder->needs_payment() == false) {
             $woocommerce->session->__unset(RZP_1CC_CART_HASH . $cartHash);
             $checkout = WC()->checkout();
             $orderId  = $checkout->create_order(array());
@@ -79,7 +87,7 @@ function createWcOrder(WP_REST_Request $request)
                 $checkout_error = $orderId->get_error_message();
             }
             //Keep order in draft status untill customer info available
-            updateOrderStatus($orderId, 'draft');
+            updateOrderStatus($orderId, $updateOrderStatus);
         } else {
             $orderId = $orderIdFromHash;
             //To get the applied coupon details from cart object.
@@ -125,7 +133,7 @@ function createWcOrder(WP_REST_Request $request)
 
             // Store UTM data only if config enabled.
             if ($pysData['woo_enabled_save_data_to_orders'] == true) {
-                wooSaveCheckoutUTMFields($orderId, $params);
+                wooSaveCheckoutUTMFields($order, $params);
             }
         }
 
@@ -150,7 +158,12 @@ function createWcOrder(WP_REST_Request $request)
 
         $order->calculate_totals();
 
-        update_post_meta($orderId, 'is_magic_checkout_order', 'yes');
+        if (isHposEnabled()) {
+            $order->update_meta_data( 'is_magic_checkout_order', 'yes' );
+            $order->save();
+        }else{
+            update_post_meta($orderId, 'is_magic_checkout_order', 'yes');
+        }
 
         $minCartAmount1cc = !empty(get_option('woocommerce_razorpay_settings')['1cc_min_cart_amount']) ? get_option('woocommerce_razorpay_settings')['1cc_min_cart_amount'] : 0;
 
@@ -171,7 +184,7 @@ function createWcOrder(WP_REST_Request $request)
 
         $razorpay = new WC_Razorpay(false);
 
-        $rzp_order_id = $razorpay->createOrGetRazorpayOrderId($orderId, 'yes');
+        $rzp_order_id = $razorpay->createOrGetRazorpayOrderId($order, $orderId, 'yes');
         $rzp_response = $razorpay->getDefaultCheckoutArguments($order);
 
         // Response sent to the user when order creation fails
@@ -247,13 +260,20 @@ function createWcOrder(WP_REST_Request $request)
 //Update order status according to the steps.
 function updateOrderStatus($orderId, $orderStatus)
 {
-    wp_update_post(array(
-        'ID'          => $orderId,
-        'post_status' => $orderStatus,
-    ));
+    $order = wc_get_order( $orderId );
+    if (isHposEnabled()) {
+        $order->update_status($orderStatus);
+        $order->save();
+    }else{
+        wp_update_post(array(
+            'ID'          => $orderId,
+            'post_status' => $orderStatus,
+         ));
+    }
+    
 }
 
-function wooSaveCheckoutUTMFields($orderId, $params)
+function wooSaveCheckoutUTMFields($order, $params)
 {
     $pysData                = [];
     $cookieData             = $params['cookies'];
@@ -273,5 +293,11 @@ function wooSaveCheckoutUTMFields($orderId, $params)
     $pysData['pys_utm']          = "utm_source:" . $pysUTMSource . "|utm_medium:" . $pysUTMMedium . "|utm_campaign:" . $pysUTMCampaign . "|utm_term:" . $pysUTMTerm . "|utm_content:" . $pysUTMContent;
     $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
 
-    update_post_meta($orderId, "pys_enrich_data", $pysData);
+    if (isHposEnabled()) {
+        $order->update_meta_data( 'pys_enrich_data', $pysData );
+        $order->save();
+    }else{
+        update_post_meta($order->get_id(), "pys_enrich_data", $pysData);
+    }
+   
 }

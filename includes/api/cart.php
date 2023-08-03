@@ -5,6 +5,8 @@
 
 // Fetch cart data on cart and mini cart page
 
+use Automattic\WooCommerce\Utilities\OrderUtil; 
+
 function fetchCartData(WP_REST_Request $request)
 {
     rzpLogInfo("fetchCartData");
@@ -221,5 +223,9 @@ function cartResponse($couponCode){
     $response += ['redirect' => true, 'one_click_checkout' => true, 'mandatory_login' => false, 'key' => get_option('woocommerce_razorpay_settings')['key_id'], 'name' => html_entity_decode(get_bloginfo('name'), ENT_QUOTES), 'currency' => 'INR'];
 
     return $response;
+}
+
+function isHposEnabled(){
+    return class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled();
 }
 
