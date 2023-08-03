@@ -1298,8 +1298,3 @@ function razorpayPaymentTransfer()
     $routeAction->createPaymentTransfer();
 }
 
-function isHposEnabled()
-{
-    return (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-            OrderUtil::custom_orders_table_usage_is_enabled());
-}
