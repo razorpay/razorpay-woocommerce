@@ -57,7 +57,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     initCustomerSessionAndCart();
 
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+    if (isHposEnabled()) {
         $customerEmail  = $order->get_billing_email();
 
     }else{
@@ -245,14 +245,14 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
         $order = wc_get_order($wcOrderId);
 
         if (get_post_meta($wcOrderId, 'abandoned_user_id', true) == '') {
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if (isHposEnabled()) {
                 $userId = $order->add_meta_data('abandoned_user_id', $userId);
             }else{
               $userId =  add_post_meta($wcOrderId, 'abandoned_user_id', $userId);
             }
            
         } else {
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if (isHposEnabled()) {
                    $userId = $order->update_meta_data('abandoned_user_id', $userId);
             }else{
               $userId =  update_post_meta($wcOrderId, 'abandoned_user_id', $userId);

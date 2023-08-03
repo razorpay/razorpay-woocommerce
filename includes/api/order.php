@@ -59,7 +59,7 @@ function createWcOrder(WP_REST_Request $request)
     $hash = $sessionResult."_".$cartHash;
     $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
 
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+    if (isHposEnabled()) {
         $updateOrderStatus = 'checkout-draft';
     }else{
         $updateOrderStatus = 'draft';
@@ -158,7 +158,7 @@ function createWcOrder(WP_REST_Request $request)
 
         $order->calculate_totals();
 
-        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+        if (isHposEnabled()) {
             $order->update_meta_data( 'is_magic_checkout_order', 'yes' );
             $order->save();
         }else{
@@ -261,7 +261,7 @@ function createWcOrder(WP_REST_Request $request)
 function updateOrderStatus($orderId, $orderStatus)
 {
     $order = wc_get_order( $orderId );
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+    if (isHposEnabled()) {
         $order->update_status($orderStatus);
         $order->save();
     }else{
@@ -293,7 +293,7 @@ function wooSaveCheckoutUTMFields($order, $params)
     $pysData['pys_utm']          = "utm_source:" . $pysUTMSource . "|utm_medium:" . $pysUTMMedium . "|utm_campaign:" . $pysUTMCampaign . "|utm_term:" . $pysUTMTerm . "|utm_content:" . $pysUTMContent;
     $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
 
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+    if (isHposEnabled()) {
         $order->update_meta_data( 'pys_enrich_data', $pysData );
         $order->save();
     }else{

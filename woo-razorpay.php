@@ -219,6 +219,11 @@ function woocommerce_razorpay_init()
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
+            $isCustomTableEnabled = false;
+
+            if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()){
+                $isCustomTableEnabled = true;
+            }
 
             // Load preference API call only for administrative interface page.
             if (current_user_can('administrator'))
@@ -655,7 +660,7 @@ function woocommerce_razorpay_init()
 
                 $orderTable = $wpdb->prefix . 'wc_orders';
 
-                if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if($isCustomTableEnabled) 
                 {
                     $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
                 } 
@@ -846,7 +851,7 @@ function woocommerce_razorpay_init()
          */
         protected function getOrderSessionKey($orderId)
         {
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if ($isCustomTableEnabled) {
                $order = wc_get_order($orderId);
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
@@ -878,7 +883,7 @@ function woocommerce_razorpay_init()
 
             if($is1ccCheckout == 'no')
             {
-                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+                if ($isCustomTableEnabled) {
                     $order->update_meta_data( 'is_magic_checkout_order', 'no' );
                     $order->save();
                 }else{
@@ -1212,7 +1217,7 @@ function woocommerce_razorpay_init()
 
             $orderMetaTable = $wpdb->prefix . 'wc_orders_meta';
 
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if ($isCustomTableEnabled) {
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
                 $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1603,7 +1608,7 @@ EOT;
             $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
             $orderTable = $wpdb->prefix . 'wc_orders';
 
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
+            if ($isCustomTableEnabled) 
             {
                 $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
             
@@ -1620,7 +1625,7 @@ EOT;
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if($isCustomTableEnabled) 
                 {
                     $orderId = $orderOperationalData->order_id;
                     
@@ -1720,7 +1725,7 @@ EOT;
                     $error = "Payment Failed.";
                 }
 
-                if ( class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                if ($isCustomTableEnabled) {
                     $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                 }else{
                     $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1858,7 +1863,7 @@ EOT;
                 {
                     $wcOrderId = $order->get_id();
 
-                    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+                    if ($isCustomTableEnabled) {
                         $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                     }else{
                         $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -2018,7 +2023,7 @@ EOT;
                 else
                 {
                     $isStoreShippingEnabled = "";
-                    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
+                    if ($isCustomTableEnabled) 
                     {
                          $shippingData = $order->get_meta('1cc_shippinginfo');
 
@@ -2502,7 +2507,7 @@ EOT;
             else
             {
                 $userType = 'GUEST';
-                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+                if ($isCustomTableEnabled) {
                    $userId = $order->get_meta('abandoned_user_id');
                 }else{
                   $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
@@ -2530,7 +2535,7 @@ EOT;
 
             $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
             
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if ($isCustomTableEnabled) {
                 $order->update_meta_data( 'abandoned_id', $abandonedOrderId);
                 $order->save();
             }else{
