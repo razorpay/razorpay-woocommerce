@@ -136,7 +136,7 @@ class RZP_Webhook
                     return;
                 }
 
-                if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
                 {
                     $order = wc_get_order($orderId);
                     $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
@@ -149,7 +149,7 @@ class RZP_Webhook
                 
                 if ($rzpWebhookNotifiedAt === '')
                 {
-                    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+                    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
                     {
                         $order->update_meta_data('rzp_webhook_notified_at', time());
                         $order->save();
