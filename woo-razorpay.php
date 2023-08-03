@@ -226,6 +226,7 @@ function woocommerce_razorpay_init()
 
             $this->isHposEnabled = false;
 
+            // file added in woocommerce v7.1.0, maybe removed later
             if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
                 OrderUtil::custom_orders_table_usage_is_enabled()) 
             {
