@@ -1197,7 +1197,7 @@ function paymentTransferMetaBox() {
 function renderPaymentTransferMetaBox() {
     global $woocommerce, $post;
     
-    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
     {
         $orderId = $_GET['id'];
         $order = wc_get_order($orderId);
@@ -1254,7 +1254,7 @@ function renderPaymentMetaBox(){
 
     global $woocommerce, $post;
 
-    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
     {
         $orderId = $_GET['id'];
         $order = wc_get_order($orderId);

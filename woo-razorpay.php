@@ -55,7 +55,7 @@ function woocommerce_razorpay_init()
     {
         $rzp = new WC_Razorpay();
 
-        if (OrderUtil::custom_orders_table_usage_is_enabled() and
+        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() and
             (empty(get_option('rzp_hpos')) or
             get_option('rzp_hpos') === 'no'))
         {
@@ -70,7 +70,7 @@ function woocommerce_razorpay_init()
 
             update_option('rzp_hpos', 'yes');
         }
-        else if(OrderUtil::custom_orders_table_usage_is_enabled() === false and
+        else if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() === false and
                 get_option('rzp_hpos') === 'yes')
         {
             $key_id = $rzp->getSetting('key_id');
@@ -655,7 +655,7 @@ function woocommerce_razorpay_init()
 
                 $orderTable = $wpdb->prefix . 'wc_orders';
 
-                if(OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
                 {
                     $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
                 } 
@@ -846,7 +846,7 @@ function woocommerce_razorpay_init()
          */
         protected function getOrderSessionKey($orderId)
         {
-            if (OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
                $order = wc_get_order($orderId);
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
@@ -878,7 +878,7 @@ function woocommerce_razorpay_init()
 
             if($is1ccCheckout == 'no')
             {
-                if (OrderUtil::custom_orders_table_usage_is_enabled()) {
+                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
                     $order->update_meta_data( 'is_magic_checkout_order', 'no' );
                     $order->save();
                 }else{
@@ -1212,7 +1212,7 @@ function woocommerce_razorpay_init()
 
             $orderMetaTable = $wpdb->prefix . 'wc_orders_meta';
 
-            if (OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
                 $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1603,7 +1603,7 @@ EOT;
             $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
             $orderTable = $wpdb->prefix . 'wc_orders';
 
-            if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
             {
                 $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
             
@@ -1620,7 +1620,7 @@ EOT;
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                if(OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
                 {
                     $orderId = $orderOperationalData->order_id;
                     
@@ -1720,7 +1720,7 @@ EOT;
                     $error = "Payment Failed.";
                 }
 
-                if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+                if ( class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() ) {
                     $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                 }else{
                     $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1858,7 +1858,7 @@ EOT;
                 {
                     $wcOrderId = $order->get_id();
 
-                    if (OrderUtil::custom_orders_table_usage_is_enabled()) {
+                    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
                         $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                     }else{
                         $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -2018,7 +2018,7 @@ EOT;
                 else
                 {
                     $isStoreShippingEnabled = "";
-                    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+                    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
                     {
                          $shippingData = $order->get_meta('1cc_shippinginfo');
 
@@ -2502,7 +2502,7 @@ EOT;
             else
             {
                 $userType = 'GUEST';
-                if (OrderUtil::custom_orders_table_usage_is_enabled()) {
+                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
                    $userId = $order->get_meta('abandoned_user_id');
                 }else{
                   $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
@@ -2530,7 +2530,7 @@ EOT;
 
             $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
             
-            if (OrderUtil::custom_orders_table_usage_is_enabled()) {
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
                 $order->update_meta_data( 'abandoned_id', $abandonedOrderId);
                 $order->save();
             }else{

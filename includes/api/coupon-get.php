@@ -46,7 +46,7 @@ function getCouponList($request)
 
     //Updating the email address to wc order.
     if (empty($email) == false) {
-        if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+        if ( class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() ) {
             $order->update_meta_data( '_billing_email', $email );
             $order->update_meta_data( '_shipping_email', $email );
             $order->save();
@@ -57,7 +57,7 @@ function getCouponList($request)
     }
 
     if (empty($contact) == false) {
-        if (OrderUtil::custom_orders_table_usage_is_enabled()) {
+        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) {
             $order->update_meta_data( '_billing_phone', $contact );
             $order->update_meta_data( '_shipping_phone', $contact );
             $order->save();

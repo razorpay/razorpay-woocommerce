@@ -219,7 +219,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
         return array();
     }
     // add shipping in postmeta for multivendor plugin
-    if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+    if ( class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() ) {
         $order = wc_get_order($orderId);
         $order->update_meta_data( '1cc_shippinginfo', $response);
         $order->save();
