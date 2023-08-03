@@ -24,7 +24,7 @@ function saveWatiCartAbandonmentData($razorpayData){
                 $sessionID = $sessionCheckoutDetails->session_id;
                 WC()->session->set( 'wcf_session_id', $sessionID );
             } else {
-                $sessionID = md5( uniqid( wp_rand(), true ) );
+                $sessionID = md5( uniqid( wp_rand(), true ) );  // nosemgrep: php.lang.security.weak-crypto.weak-crypto
             }
         }
 
@@ -32,7 +32,7 @@ function saveWatiCartAbandonmentData($razorpayData){
 
         if ( isset( $sessionCheckoutDetails ) && $sessionCheckoutDetails->order_status === "completed" ) {
             WC()->session->__unset( 'wcf_session_id' );
-            $sessionID = md5( uniqid( wp_rand(), true ) );
+            $sessionID = md5( uniqid( wp_rand(), true ) );  // nosemgrep: php.lang.security.weak-crypto.weak-crypto
         }
 
         if ( isset( $checkoutDetails['cart_total'] ) && $checkoutDetails['cart_total'] > 0 ) {
