@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, ecommerce
 Requires at least: 3.9.2
 Tested up to: 6.1.1
-Stable tag: 4.5.3
+Stable tag: 4.6.0
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -24,7 +24,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 == Dependencies ==
 
 1. Wordpress v3.9.2 and later
-2. Woocommerce v2.6 and later
+2. Woocommerce v4.0 and later
 3. PHP v5.6.0 and later
 4. php-curl extension
 
@@ -40,6 +40,10 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 4.6.0 =
+* Add compatibility with WooCommerce 7.9
+* Bug fix, city restriction for smart cod
 
 = 4.5.3 =
 * New feature to send payment-links for COD orders with added discounts
