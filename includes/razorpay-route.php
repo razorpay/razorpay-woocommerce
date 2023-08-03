@@ -1197,8 +1197,7 @@ function paymentTransferMetaBox() {
 function renderPaymentTransferMetaBox() {
     global $woocommerce, $post;
     
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-        OrderUtil::custom_orders_table_usage_is_enabled()) 
+    if (isHposEnabled()) 
     {
         $orderId = $_GET['id'];
         $order = wc_get_order($orderId);
@@ -1255,8 +1254,7 @@ function renderPaymentMetaBox(){
 
     global $woocommerce, $post;
 
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-        OrderUtil::custom_orders_table_usage_is_enabled()) 
+    if (isHposEnabled()) 
     {
         $orderId = $_GET['id'];
         $order = wc_get_order($orderId);
@@ -1298,4 +1296,10 @@ function razorpayPaymentTransfer()
     $routeAction = new RZP_Route_Action();
 
     $routeAction->createPaymentTransfer();
+}
+
+function isHposEnabled()
+{
+    return (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+            OrderUtil::custom_orders_table_usage_is_enabled());
 }

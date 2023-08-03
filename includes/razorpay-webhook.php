@@ -136,8 +136,7 @@ class RZP_Webhook
                     return;
                 }
 
-                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-                    OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if ($this->razorpay->isHposEnabled) 
                 {
                     $order = wc_get_order($orderId);
                     $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
@@ -150,8 +149,7 @@ class RZP_Webhook
                 
                 if ($rzpWebhookNotifiedAt === '')
                 {
-                    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-                        OrderUtil::custom_orders_table_usage_is_enabled()) 
+                    if ($this->razorpay->isHposEnabled) 
                     {
                         $order->update_meta_data('rzp_webhook_notified_at', time());
                         $order->save();

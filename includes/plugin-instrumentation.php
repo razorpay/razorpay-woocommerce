@@ -8,11 +8,20 @@ class TrackPluginInstrumentation
 {
     protected $api;
     protected $mode;
+    protected $isHposEnabled;
 
     public function __construct($api, $key_id)
     {
         $this->api = $api;
         $this->mode = (substr($key_id, 0, 8) === 'rzp_live') ? 'live' : 'test';
+
+        $this->isHposEnabled = false;
+
+        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+            OrderUtil::custom_orders_table_usage_is_enabled()) 
+        {
+            $this->isHposEnabled = true;
+        }
 
         register_activation_hook(PLUGIN_MAIN_FILE, [$this, 'razorpayPluginActivated'], 10, 2);
         register_deactivation_hook(PLUGIN_MAIN_FILE, [$this, 'razorpayPluginDeactivated'], 10, 2);
@@ -39,8 +48,7 @@ class TrackPluginInstrumentation
 
     function hposInstrumentation()
     {
-        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-            OrderUtil::custom_orders_table_usage_is_enabled() and
+        if ($this->isHposEnabled and
             (empty(get_option('rzp_hpos')) or
             get_option('rzp_hpos') === 'no'))
         {
@@ -53,8 +61,7 @@ class TrackPluginInstrumentation
 
             update_option('rzp_hpos', 'yes');
         }
-        else if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-                OrderUtil::custom_orders_table_usage_is_enabled() === false and
+        else if($this->isHposEnabled === false and
                 get_option('rzp_hpos') === 'yes')
         {
             $properties = [
@@ -82,8 +89,7 @@ class TrackPluginInstrumentation
 
         $orderTable = $wpdb->prefix . 'wc_orders';
 
-        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-            OrderUtil::custom_orders_table_usage_is_enabled()) 
+        if ($this->isHposEnabled) 
         {
             $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
         }

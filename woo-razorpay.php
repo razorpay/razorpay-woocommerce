@@ -191,6 +191,12 @@ function woocommerce_razorpay_init()
         );
 
         /**
+         * hpos enabled check
+         * @var bool
+         */
+        public $isHposEnabled;
+
+        /**
          * Return Wordpress plugin settings
          * @param  string $key setting key
          * @return mixed setting value
@@ -217,6 +223,15 @@ function woocommerce_razorpay_init()
          */
         public function __construct($hooks = true)
         {
+
+            $this->isHposEnabled = false;
+
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                OrderUtil::custom_orders_table_usage_is_enabled()) 
+            {
+                $this->isHposEnabled = true;
+            }
+
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/rzp_payment_icon.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
@@ -657,8 +672,7 @@ function woocommerce_razorpay_init()
 
                 $orderTable = $wpdb->prefix . 'wc_orders';
 
-                if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-                    OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if($this->isHposEnabled) 
                 {
                     $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
                 } 
@@ -1590,8 +1604,7 @@ EOT;
             $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
             $orderTable = $wpdb->prefix . 'wc_orders';
 
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-                OrderUtil::custom_orders_table_usage_is_enabled()) 
+            if ($this->isHposEnabled) 
             {
                 $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
             
@@ -1608,8 +1621,7 @@ EOT;
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-                    OrderUtil::custom_orders_table_usage_is_enabled()) 
+                if ($this->isHposEnabled) 
                 {
                     $orderId = $orderOperationalData->order_id;
                     
