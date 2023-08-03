@@ -5,6 +5,7 @@ require_once __DIR__ . '/../razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use Automattic\WooCommerce\Utilities\OrderUtil;
 
 class RZP_Webhook
 {
@@ -100,7 +101,9 @@ class RZP_Webhook
                 return;
             }
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
-                $razorpayWebhookSecret = $this->razorpay->getSetting('webhook_secret');
+                
+                $razorpayWebhookSecret = (empty($this->razorpay->getSetting('webhook_secret')) === false) ? $this->razorpay->getSetting('webhook_secret') : get_option('webhook_secret');
+                
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
@@ -133,10 +136,29 @@ class RZP_Webhook
                     return;
                 }
 
-                $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
+                if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+                {
+                    $order = wc_get_order($orderId);
+                    $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
+                }
+                else 
+                {
+                    $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
+                }
+
+                
                 if ($rzpWebhookNotifiedAt === '')
                 {
-                    update_post_meta($orderId, "rzp_webhook_notified_at", time());
+                    if (OrderUtil::custom_orders_table_usage_is_enabled()) 
+                    {
+                        $order->update_meta_data('rzp_webhook_notified_at', time());
+                        $order->save();
+                    }
+                    else 
+                    {
+                        update_post_meta($orderId, "rzp_webhook_notified_at", time());
+                    }
+
                     error_log("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
