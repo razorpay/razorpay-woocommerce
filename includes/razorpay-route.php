@@ -1170,7 +1170,7 @@ function woocommerce_process_transfer_meta_fields_save( $post_id ){
 //fetch transfers of order/payment in order edit page
 
 function paymentTransferMetaBox() {
-    $screen = wc_get_container()->get(CustomOrdersTableController::class)->custom_orders_table_usage_is_enabled()
+    $screen = (class_exists('Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController') and wc_get_container()->get(CustomOrdersTableController::class)->custom_orders_table_usage_is_enabled())
 		? wc_get_page_screen_id('shop-order')
 		: 'shop_order';
     
@@ -1197,7 +1197,7 @@ function paymentTransferMetaBox() {
 function renderPaymentTransferMetaBox() {
     global $woocommerce, $post;
     
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
+    if (isHposEnabled()) 
     {
         $orderId = $_GET['id'];
         $order = wc_get_order($orderId);
@@ -1254,7 +1254,7 @@ function renderPaymentMetaBox(){
 
     global $woocommerce, $post;
 
-    if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
+    if (isHposEnabled()) 
     {
         $orderId = $_GET['id'];
         $order = wc_get_order($orderId);
@@ -1296,4 +1296,10 @@ function razorpayPaymentTransfer()
     $routeAction = new RZP_Route_Action();
 
     $routeAction->createPaymentTransfer();
+}
+
+function isHposEnabled()
+{
+    return (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+            OrderUtil::custom_orders_table_usage_is_enabled());
 }

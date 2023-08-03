@@ -55,7 +55,8 @@ function woocommerce_razorpay_init()
     {
         $rzp = new WC_Razorpay();
 
-        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() and
+        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+            OrderUtil::custom_orders_table_usage_is_enabled() and
             (empty(get_option('rzp_hpos')) or
             get_option('rzp_hpos') === 'no'))
         {
@@ -70,7 +71,8 @@ function woocommerce_razorpay_init()
 
             update_option('rzp_hpos', 'yes');
         }
-        else if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() === false and
+        else if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                OrderUtil::custom_orders_table_usage_is_enabled() === false and
                 get_option('rzp_hpos') === 'yes')
         {
             $key_id = $rzp->getSetting('key_id');
@@ -189,6 +191,12 @@ function woocommerce_razorpay_init()
         );
 
         /**
+         * hpos enabled check
+         * @var bool
+         */
+        public $isHposEnabled;
+
+        /**
          * Return Wordpress plugin settings
          * @param  string $key setting key
          * @return mixed setting value
@@ -215,16 +223,21 @@ function woocommerce_razorpay_init()
          */
         public function __construct($hooks = true)
         {
+
+            $this->isHposEnabled = false;
+
+            // file added in woocommerce v7.1.0, maybe removed later
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                OrderUtil::custom_orders_table_usage_is_enabled()) 
+            {
+                $this->isHposEnabled = true;
+            }
+
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/rzp_payment_icon.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
-            $isCustomTableEnabled = false;
-
-            if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()){
-                $isCustomTableEnabled = true;
-            }
-
+            
             // Load preference API call only for administrative interface page.
             if (current_user_can('administrator'))
             {
@@ -660,7 +673,7 @@ function woocommerce_razorpay_init()
 
                 $orderTable = $wpdb->prefix . 'wc_orders';
 
-                if($isCustomTableEnabled) 
+                if($this->isHposEnabled) 
                 {
                     $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
                 } 
@@ -851,7 +864,7 @@ function woocommerce_razorpay_init()
          */
         protected function getOrderSessionKey($orderId)
         {
-            if ($isCustomTableEnabled) {
+            if ($this->isHposEnabled) {
                $order = wc_get_order($orderId);
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
@@ -883,7 +896,7 @@ function woocommerce_razorpay_init()
 
             if($is1ccCheckout == 'no')
             {
-                if ($isCustomTableEnabled) {
+                if ($this->isHposEnabled) {
                     $order->update_meta_data( 'is_magic_checkout_order', 'no' );
                     $order->save();
                 }else{
@@ -1217,7 +1230,7 @@ function woocommerce_razorpay_init()
 
             $orderMetaTable = $wpdb->prefix . 'wc_orders_meta';
 
-            if ($isCustomTableEnabled) {
+            if ($this->isHposEnabled) {
                $is1ccOrder = $order->get_meta('is_magic_checkout_order');
             }else{
                 $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1608,7 +1621,7 @@ EOT;
             $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
             $orderTable = $wpdb->prefix . 'wc_orders';
 
-            if ($isCustomTableEnabled) 
+            if ($this->isHposEnabled) 
             {
                 $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
             
@@ -1625,7 +1638,7 @@ EOT;
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                if($isCustomTableEnabled) 
+                if ($this->isHposEnabled) 
                 {
                     $orderId = $orderOperationalData->order_id;
                     
@@ -1725,7 +1738,7 @@ EOT;
                     $error = "Payment Failed.";
                 }
 
-                if ($isCustomTableEnabled) {
+                if ($this->isHposEnabled) {
                     $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                 }else{
                     $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -1863,7 +1876,7 @@ EOT;
                 {
                     $wcOrderId = $order->get_id();
 
-                    if ($isCustomTableEnabled) {
+                    if ($this->isHposEnabled) {
                         $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                     }else{
                         $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
@@ -2023,7 +2036,7 @@ EOT;
                 else
                 {
                     $isStoreShippingEnabled = "";
-                    if ($isCustomTableEnabled) 
+                    if ($this->isHposEnabled) 
                     {
                          $shippingData = $order->get_meta('1cc_shippinginfo');
 
@@ -2507,7 +2520,7 @@ EOT;
             else
             {
                 $userType = 'GUEST';
-                if ($isCustomTableEnabled) {
+                if ($this->isHposEnabled) {
                    $userId = $order->get_meta('abandoned_user_id');
                 }else{
                   $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
@@ -2535,7 +2548,7 @@ EOT;
 
             $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
             
-            if ($isCustomTableEnabled) {
+            if ($this->isHposEnabled) {
                 $order->update_meta_data( 'abandoned_id', $abandonedOrderId);
                 $order->save();
             }else{
