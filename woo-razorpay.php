@@ -1225,6 +1225,8 @@ function woocommerce_razorpay_init()
 
         private function getOrderCreationData($orderId)
         {
+            global $wpdb;
+            
             rzpLogInfo("Called getOrderCreationData with params orderId $orderId");
             $order = wc_get_order($orderId);
 
