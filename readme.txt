@@ -42,7 +42,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 == Changelog ==
 
 = 4.5.4 =
-* Add compatibility with WooCommerce 7.9
+* Add compatibility with WooCommerce 7.9 HPOS
 * Bug fix, city restriction for smart cod
 
 = 4.5.3 =
