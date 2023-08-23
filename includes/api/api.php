@@ -281,8 +281,9 @@ add_filter("nonce_user_logged_out", function ($uid, $action) {
     return $uid;
 }, 10, 2);
 
-add_filter('rest_authentication_errors', function ($maybe_error, $action) {
-    if ($action === 'createWcOrder') {
+add_filter('rest_authentication_errors', function ($maybe_error) {
+    $action = 'createWcOrder';
+    if (doing_action($action)) {
             return true;
     }
 });
