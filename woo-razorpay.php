@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.5.4
- * Stable tag: 4.5.4
+ * Version: 4.5.5
+ * Stable tag: 4.5.5
  * Author: Team Razorpay
  * WC tested up to: 7.9.0
  * Author URI: https://razorpay.com
@@ -1691,7 +1691,7 @@ EOT;
             if ($order->needs_payment() === false && $orderStat != 'draft' && $orderStat != 'wc-checkout-draft')
             {
                 rzpLogInfo("Order payment is already done for the orderId: ".$orderId ." order status ".$orderStat);
-                
+
                 $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
                 if ($cartHash != false)
