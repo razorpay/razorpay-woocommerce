@@ -1652,7 +1652,7 @@ EOT;
                         $order->save();
                     }
                     $orderStat = $order->get_status();
-                    rzpLogInfo("HPOS is enabled and status and order status: $orderStat");
+                    rzpLogInfo("HPOS is enabled and order status: $orderStat");
                 } 
                 else
                 {
@@ -1665,7 +1665,7 @@ EOT;
                         updateOrderStatus($orderId, 'wc-pending');
                     }
                     $orderStat = $order->get_status();
-                    rzpLogInfo("HPOS is disabled and status and order status: $orderStat");
+                    rzpLogInfo("HPOS is disabled and order status: $orderStat");
                 }
                 
                 rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
