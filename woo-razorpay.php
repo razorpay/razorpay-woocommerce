@@ -1688,7 +1688,9 @@ EOT;
 
             // If the order has already been paid for
             // redirect user to success page
-            if ($order->needs_payment() === false && $orderStat != 'draft' && $orderStat != 'wc-checkout-draft')
+            if (($order->needs_payment() === false) and 
+                ($orderStat != 'draft') and 
+                ($orderStat != 'wc-checkout-draft'))
             {
                 rzpLogInfo("Order payment is already done for the orderId: ".$orderId ." order status ".$orderStat);
                 
