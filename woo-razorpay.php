@@ -1651,6 +1651,8 @@ EOT;
                         $order->set_status('wc-pending');
                         $order->save();
                     }
+                    $orderStat = $order->get_status();
+                    rzpLogInfo("HPOS is enabled and status and order status: $orderStat");
                 } 
                 else
                 {
@@ -1662,6 +1664,8 @@ EOT;
                     {
                         updateOrderStatus($orderId, 'wc-pending');
                     }
+                    $orderStat = $order->get_status();
+                    rzpLogInfo("HPOS is disabled and status and order status: $orderStat");
                 }
                 
                 rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
@@ -1684,10 +1688,10 @@ EOT;
 
             // If the order has already been paid for
             // redirect user to success page
-            if ($order->needs_payment() === false)
+            if ($order->needs_payment() === false && $orderStat != 'draft' && $orderStat != 'wc-checkout-draft')
             {
-                rzpLogInfo("Order payment is already done for the orderId: $orderId");
-
+                rzpLogInfo("Order payment is already done for the orderId: ".$orderId ." order status ".$orderStat);
+                
                 $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
                 if ($cartHash != false)
