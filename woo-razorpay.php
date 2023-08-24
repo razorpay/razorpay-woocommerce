@@ -1692,7 +1692,7 @@ EOT;
                 ($orderStatus != 'draft') and 
                 ($orderStatus != 'wc-checkout-draft'))
             {
-                rzpLogInfo("Order payment is already done for the orderId: ". $orderId ." order status ". $orderStatus);
+                rzpLogInfo("Order payment is already done for the orderId: " . $orderId . " order status " . $orderStatus);
                 
                 $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
