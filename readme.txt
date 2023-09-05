@@ -38,6 +38,12 @@ Razorpay is available for Store Owners and Merchants in
 - India
 - Malaysia
 
+== Screenshots ==
+
+1. Razorpay Payment Gateway for WooCommerce API keys.
+2. Razorpay Payment Gateway for WooCommerce Plugin settings.
+3. Razorpay Payment Gateway for WooCommerce Plugin Payments checkout.
+
 == Installation ==
 
 1. Install the plugin from the [Wordpress Plugin Directory](https://wordpress.org/plugins/woo-razorpay/).
