@@ -1,6 +1,6 @@
 === Razorpay for WooCommerce ===
 Contributors: razorpay
-Tags: razorpay, payments, india, woocommerce, ecommerce
+Tags: razorpay, payments, india, woocommerce, curlec, malaysia, ecommerce, international, cross border
 Requires at least: 3.9.2
 Tested up to: 6.1.1
 Stable tag: 4.5.5
@@ -8,13 +8,41 @@ Requires PHP: 7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Allows you to use Razorpay payment gateway with the WooCommerce plugin.
+Start accepting payments in minutes with 100% digital onboarding & feature filled Razorpay payment gateway with the WooCommerce plugin.
 
 == Description ==
 
-This is the official Razorpay payment gateway plugin for WooCommerce. Allows you to accept credit cards, debit cards, netbanking, wallet, and UPI payments with the WooCommerce plugin. It uses a seamles integration, allowing the customer to pay on your website without being redirected away. This allows for refunds, works across all browsers, and is compatible with the latest WooCommerce.
+Allows you to accept credit cards, debit cards, netbanking, wallet, and UPI payments in India and FPX, eWallets, Duitnow in Malaysia.
 
-This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has been tested upto the 3.1.1 WooCommerce release.
+This is the official Razorpay payment gateway plugin for WooCommerce. A system designed to handle end-to-end payments. Accept payments via 100+ payment modes - domestic & international credit & debit cards, EMIs, paylater, net banking, UPI & mobile wallets  including JioMoney, Mobikwik, Airtel Money, FreeCharge, Ola Money and PayZapp  in India, and FPX, Duitnow and eWallets including GrabPay, Touch N Go, Boost in Malaysia, with the WooCommerce plugin.
+Get a feature-filled and easy to integrate checkout with cards (Visa, MasterCard, American Express, UnionPay etc) saved across businesses so that customers can pay seamlessly everywhere, both domestic and international. This plugin allows for refunds, works across all browsers, and is compatible with the latest WooCommerce. Boost conversions with international customers paying in their local currency. Keep your data safe with robust security that comes with PCI DSS Level 1 compliance.
+
+This is compatible with WooCommerce>=4.0, including the new 8.0 release. It has been tested up to the 8.0.3 WooCommerce release.
+
+BENEFITS OF USING RAZORPAY
+
+- Get started in minutes with seamless onboarding - [Razorpay registration link](https://easy.razorpay.com/onboarding/l1/signup?field=MobileNumber) via 100% digital KYC for Indian businesses and [easy onboarding]( https://curlec.com/onboarding/my/) for Malaysia businesses
+
+- Boost customer conversions with superior checkout experience on fast-growing UPI  in India and Duitnow in Malaysia
+
+- Enjoy industry leading success rate & avoid drop offs with seamless payment flow
+
+- Razorpay has no setup fees, no monthly fees, no hidden costs: you only get charged when you earn money! Earnings are transferred to your bank account as per settlement cycle.
+
+- Razorpay supports the WooCommerce Subscriptions extension via [Razorpay Subscriptions Plugin for WooCommerce](https://razorpay.com/docs/payments/subscriptions/plugins/woocommerce/) and When a customer pays for a subscription item, you can accept recurring payments for the same on your WooCommerce-enabled WordPress site.
+
+- Razorpay has [Affordability Widget](https://razorpay.com/docs/payments/payment-gateway/affordability/widget/woocommerce/) to spread awareness about the affordability-based payment options before they reach checkout.  You can integrate Razorpay Affordability Widget with your WooCommerce website to influence your customer's purchase decisions before they reach checkout by displaying various affordable payment options and offers.
+
+COUNTRIES SUPPORTED
+Razorpay is available for Store Owners and Merchants in
+- India
+- Malaysia
+
+== Screenshots ==
+
+1. Razorpay Payment Gateway for WooCommerce API keys.
+2. Razorpay Payment Gateway for WooCommerce Plugin settings.
+3. Razorpay Payment Gateway for WooCommerce Plugin Payments checkout.
 
 == Installation ==
 
@@ -48,6 +76,7 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 = 4.5.4 =
 * Add compatibility with WooCommerce 7.9 HPOS
 * Bug fix, city restriction for smart cod
+Note: Razorpay woocommerce plugin v4.5.4  only supports Razorpay Subcriptions for woocommerce >= 2.3.6
 
 = 4.5.3 =
 * New feature to send payment-links for COD orders with added discounts
@@ -439,20 +468,32 @@ This is compatible with WooCommerce>=2.4, including the new 3.0 release. It has 
 
 == Frequently Asked Questions ==
 
-= Does this support webhooks? =
+= Where can I find Razorpay documentation for Razorpay WooCommerce plugin? =
+
+For help setting up and configuring, please refer to our [documentation](https://razorpay.com/docs/payments/payment-gateway/ecommerce-plugins/woocommerce/).
+
+= Does Razorpay for WooCommerce support webhooks? =
 
 Yes, please see https://github.com/razorpay/razorpay-woocommerce/wiki/Webhooks for more details
 
-= How do I enable Multi-currency support =
+= Does Razorpay for WooCommerce support both production mode and test / sandbox mode for testing? =
 
-Please get multi-currency enabled for your account. Once you have it enabled, you can install any plugin
+Yes, it does - production and Test (sandbox) mode is driven by the API keys you use with a checkbox in the admin settings to toggle between both.
+
+= How do I enable Multi-currency support or Accept payments in international currencies =
+
+You can accept [International payments](https://razorpay.com/docs/payments/payments/international-payments/) from your customers in more than 100 foreign currencies using our Payment Gateway. Please get multi-currency enabled for your account. Once you have it enabled, you can install any plugin
 version higher than 2.0.0, which comes with native multi-currency support.
 
-= How can I exclude Draft orders from woocommerce analytics reports? =
+= How can I exclude Draft orders from WooCommerce analytics reports? =
 
 Please follow the below steps:
 1. Click on the ‘Analytics’ settings in the WooCommerce dashboard menu.
 2. Go to the ‘Excluded statuses’ section and select the checkbox for ‘Draft’ orders under the ‘Unregistered statuses’ section.
+
+= Does this support recurring payments / subscriptions? =
+
+Yes. WooCommerce Subscriptions extension and [Razorpay Subscriptions Plugin for WooCommerce](https://razorpay.com/docs/payments/subscriptions/plugins/woocommerce/) installed along with Razorpay WooCommerce plugin will support subscription on your WooCommerce supported Wordpress website
 
 == Support ==
 
