@@ -17,7 +17,7 @@ Allows you to accept credit cards, debit cards, netbanking, wallet, and UPI paym
 This is the official Razorpay payment gateway plugin for WooCommerce. A system designed to handle end-to-end payments. Accept payments via 100+ payment modes - domestic & international credit & debit cards, EMIs, paylater, net banking, UPI & mobile wallets  including JioMoney, Mobikwik, Airtel Money, FreeCharge, Ola Money and PayZapp  in India, and FPX, Duitnow and eWallets including GrabPay, Touch N Go, Boost in Malaysia, with the WooCommerce plugin.
 Get a feature-filled and easy to integrate checkout with cards (Visa, MasterCard, American Express, UnionPay etc) saved across businesses so that customers can pay seamlessly everywhere, both domestic and international. This plugin allows for refunds, works across all browsers, and is compatible with the latest WooCommerce. Boost conversions with international customers paying in their local currency. Keep your data safe with robust security that comes with PCI DSS Level 1 compliance.
 
-This is compatible with WooCommerce>=2.4, including the new 4.0 release. It has been tested up to the 4.0 WooCommerce release.
+This is compatible with WooCommerce>=4.0, including the new 8.0 release. It has been tested up to the 8.0.3 WooCommerce release.
 
 BENEFITS OF USING RAZORPAY
 
