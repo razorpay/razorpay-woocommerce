@@ -70,6 +70,7 @@ Razorpay is available for Store Owners and Merchants in
 = 4.5.4 =
 * Add compatibility with WooCommerce 7.9 HPOS
 * Bug fix, city restriction for smart cod
+Note: Razorpay woocommerce plugin v4.5.4  only supports Razorpay Subcriptions for woocommerce >= 2.3.6
 
 = 4.5.3 =
 * New feature to send payment-links for COD orders with added discounts
