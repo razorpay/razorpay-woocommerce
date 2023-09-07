@@ -1310,6 +1310,7 @@ function woocommerce_razorpay_init()
                $data['line_items'][$i]['type'] =  $type;
                $data['line_items'][$i]['sku'] = $product->get_sku();
                $data['line_items'][$i]['variant_id'] = $item->get_variation_id();
+               $data['line_items'][$i]['product_id'] = $product->get_id();
                $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
                $data['line_items'][$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $productDetails['price']*100;
                $data['line_items'][$i]['quantity'] = (int)$item->get_quantity();

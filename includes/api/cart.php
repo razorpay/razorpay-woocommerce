@@ -165,6 +165,7 @@ function getCartLineItem()
        $data[$i]['name'] = mb_substr($product->get_title(), 0, 125, "UTF-8");
        $data[$i]['description'] = mb_substr($product->get_title(), 0, 250,"UTF-8");
        $productImage = $product->get_image_id()?? null;
+       $data[$i]['product_id'] = $item['product_id'];
        $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
        $data[$i]['price'] = (empty($product->get_price())=== false) ? $price/$item['quantity'] : 0;
