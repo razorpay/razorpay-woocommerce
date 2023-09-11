@@ -1142,6 +1142,7 @@ function woocommerce_razorpay_init()
             }
             catch (Exception $e)
             {
+                rzpLogInfo("rzp order error " . $e->getMessage());
                 return $e;
             }
 
