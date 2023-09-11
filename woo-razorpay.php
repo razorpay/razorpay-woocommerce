@@ -1318,7 +1318,7 @@ function woocommerce_razorpay_init()
                $data['line_items'][$i]['name'] = mb_substr($item->get_name(), 0, 125, "UTF-8");
                $data['line_items'][$i]['description'] = mb_substr($item->get_name(), 0, 250,"UTF-8");
                $productImage = $product->get_image_id()?? null;
-               $data['line_items'][$i]['image_url'] = (string)$productImage? wp_get_attachment_url( $productImage ) : "";
+               $data['line_items'][$i]['image_url'] = (string)($productImage? wp_get_attachment_url( $productImage ) : "");
                $data['line_items'][$i]['product_url'] = (string)$product->get_permalink();
 
                $i++;
