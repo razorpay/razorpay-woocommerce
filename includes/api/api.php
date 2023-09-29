@@ -286,4 +286,6 @@ add_filter('rest_authentication_errors', function ($maybe_error) {
     if (doing_action($action)) {
             return true;
     }
+
+    return $maybe_error;
 });
