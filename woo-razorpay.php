@@ -150,6 +150,12 @@ function woocommerce_razorpay_init()
             'refunds'
         );
 
+        public $threeDecimalCurrencies = [
+            "KWD",
+            "BHD",
+            "OMR"
+        ];
+
         /**
          * Can be set to true if you want payment fields
          * to show on the checkout (if doing a direct integration).
@@ -1242,9 +1248,7 @@ function woocommerce_razorpay_init()
             $currency = $this->getOrderCurrency($order);
             $amount = (int) round($order->get_total() * 100);
 
-            if($currency === 'KWD' or
-               $currency === 'OMR' or
-               $currency === 'BHD')
+            if(in_array($currency, $this->threeDecimalCurrencies) === true)
             {
                 $amount = (int) round($order->get_total() * 1000);
             }
@@ -1466,8 +1470,21 @@ EOT;
 
             $paymentId = $order->get_transaction_id();
 
+            $currency = $this->getOrderCurrency($order);
+            
+
+            if(in_array($currency, $this->threeDecimalCurrencies) === true)
+            {
+                $amount = (int) round($amount * 1000);
+            }
+            else
+            {
+                $amount = (int) round($amount * 100);
+            }
+
+            // changes required
             $data = array(
-                'amount'    =>  (int) round($amount * 100),
+                'amount'    =>  $amount,
                 'notes'     =>  array(
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
