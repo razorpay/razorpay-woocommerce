@@ -1138,6 +1138,13 @@ function woocommerce_razorpay_init()
             rzpLogInfo(json_encode($data));
             try
             {
+                if ($data['currency'] === "KWD" or
+                    $data['currency'] === "OMR" or
+                    $data['currency'] === "BHD")
+                {
+                    throw new Exception($data['currency'] . " currency is not supported at the moment.");
+                }
+                
                 $razorpayOrder = $api->order->create($data);
             }
             catch (Exception $e)
