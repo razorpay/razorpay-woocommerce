@@ -23,10 +23,35 @@ class RZP_Route_Action
         wp_redirect($pageUrl);
     }
 
+    public function authorizeAndAuthenticate($nonce, $action)
+    {
+        if(current_user_can('manage_woocommerce') === false)
+        {
+            rzpLogError("Authorization Failed");
+            wp_die('<div class="error notice">
+                <p>RAZORPAY ERROR: User is not Authorized to perform Operation</p>
+             </div>');
+        }
+
+        $verifyReq = wp_verify_nonce($nonce, $action);
+
+        if ($verifyReq === false)
+        {
+            rzpLogError("nonce Authentication failed");
+            wp_die('<div class="error notice">
+                <p>RAZORPAY ERROR: Authentication Failed</p>
+             </div>');
+        }
+    }
+
     function directTransfer()
     {
         $trfAccount = sanitize_text_field($_POST['drct_trf_account']);
         $trfAmount = sanitize_text_field($_POST['drct_trf_amount']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_direct_transfer');
+
         $pageUrl = admin_url('admin.php?page=razorpayRouteWoocommerce');
         try {
             $transferData = array(
@@ -51,9 +76,12 @@ class RZP_Route_Action
 
     function reverseTransfer()
     {
-
         $transferId = sanitize_text_field($_POST['transfer_id']);
         $reversalAmount = sanitize_text_field($_POST['reversal_amount']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_reverse_transfer');
+
         $pageUrl = admin_url('admin.php?page=razorpayTransfers&id=' . $transferId);
         try {
             $reversalData = array(
@@ -75,9 +103,12 @@ class RZP_Route_Action
 
     function updateTransferSettlement()
     {
-
         $transferId = sanitize_text_field($_POST['transfer_id']);
         $trfHoldStatus = sanitize_text_field($_POST['on_hold']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_settlement_change');
+
         if ($trfHoldStatus == "on_hold_until") {
             $trfHoldUntil = sanitize_text_field($_POST['hold_until']);
             $unixTime = strtotime($trfHoldUntil);
@@ -110,10 +141,13 @@ class RZP_Route_Action
 
     function createPaymentTransfer()
     {
-
         $paymentId = sanitize_text_field($_POST['payment_id']);
         $trfAccount = sanitize_text_field($_POST['pay_trf_account']);
         $trfAmount = sanitize_text_field($_POST['pay_trf_amount']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_payment_transfer');
+
         $pageUrl = admin_url('admin.php?page=razorpayPaymentsView&id=' . $paymentId);
 
         $trfHoldStatus = sanitize_text_field($_POST['on_hold']);
