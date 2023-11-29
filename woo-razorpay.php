@@ -3,8 +3,8 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.5.6
- * Stable tag: 4.5.6
+ * Version: 4.5.7
+ * Stable tag: 4.5.7
  * Author: Team Razorpay
  * WC tested up to: 7.9.0
  * Author URI: https://razorpay.com
@@ -1138,6 +1138,13 @@ function woocommerce_razorpay_init()
             rzpLogInfo(json_encode($data));
             try
             {
+                if ($data['currency'] === "KWD" or
+                    $data['currency'] === "OMR" or
+                    $data['currency'] === "BHD")
+                {
+                    throw new Exception($data['currency'] . " currency is not supported at the moment.");
+                }
+                
                 $razorpayOrder = $api->order->create($data);
             }
             catch (Exception $e)
