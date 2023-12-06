@@ -1753,13 +1753,13 @@ EOT;
                                         
                         $razorpayData = $api->order->fetch($_POST[self::RAZORPAY_ORDER_ID]); 
     
-                        rzpLogInfo(" razorpay order fetch:" . json_enocde($razorpayData)); 
+                        rzpLogInfo(" razorpay order fetch:" . json_encode($razorpayData)); 
 
                         if($razorpayData['status'] === 'paid')
                         {
                             $rzpPaymentData = $api->order->payment($_POST[self::RAZORPAY_ORDER_ID]);
 
-                            rzpLogInfo(" razorpay order fetch Payment ID :" . json_enocde($rzpPaymentData)); 
+                            rzpLogInfo(" razorpay order fetch Payment ID :" . json_encode($rzpPaymentData)); 
 
                             foreach ($rzpPaymentData['items'] as $item) {
                                 if ($item['status'] == 'captured' || $item['status'] == 'authorized') {
@@ -1811,7 +1811,7 @@ EOT;
 
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
-                    rzpLogInfo("razorpay order fetch:" . json_enocde($razorpayData));
+                    rzpLogInfo("razorpay order fetch:" . json_encode($razorpayData));
 
                     $this->UpdateOrderAddress($razorpayData, $order);
                 }
