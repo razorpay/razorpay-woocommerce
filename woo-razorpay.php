@@ -1766,7 +1766,8 @@ EOT;
 
                             rzpLogInfo(" razorpay order fetch Payment ID :" . json_encode($rzpPaymentData)); 
 
-                            foreach ($rzpPaymentData['items'] as $item) {
+                            foreach ($rzpPaymentData['items'] as $item) 
+                            {
                                 if ($item['status'] == 'captured' || $item['status'] == 'authorized') {
                                     
                                     $razorpayPaymentId = $item['id'];
@@ -1774,7 +1775,7 @@ EOT;
                                 }
                             }
 
-                            rzpLogInfo(" Woocommerce order status updated via Razorpay validation : "); 
+                            rzpLogInfo(" Woocommerce order status updated via Razorpay validation"); 
                         }
                     }
                   
