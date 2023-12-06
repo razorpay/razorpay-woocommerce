@@ -1771,12 +1771,10 @@ EOT;
                                     
                                     $razorpayPaymentId = $item['id'];
                                     $success = true;
-                                    rzpLogInfo(" razorpay order failed assign payment id to updateOrder : ". $razorpayPaymentId ); 
                                 }
                             }
 
-                           
-                            rzpLogInfo(" razorpay order failed Executed"); 
+                            rzpLogInfo(" Woocommerce order status updated via Razorpay validation : "); 
                         }
                     }
                   
