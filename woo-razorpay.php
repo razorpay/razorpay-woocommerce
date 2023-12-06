@@ -1067,8 +1067,7 @@ function woocommerce_razorpay_init()
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
-                'prefill'      => $this->getCustomerInfo($order),
-                'redirect'     => true
+                'prefill'      => $this->getCustomerInfo($order)
             );
         }
 
@@ -1141,7 +1140,7 @@ function woocommerce_razorpay_init()
             rzpLogInfo(json_encode($data));
             try
             {
-                    if ($data['currency'] === "KWD" or
+                if ($data['currency'] === "KWD" or
                     $data['currency'] === "OMR" or
                     $data['currency'] === "BHD")
                 {
