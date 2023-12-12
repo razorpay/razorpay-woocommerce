@@ -7,6 +7,8 @@ require_once __DIR__ . '/../support/cartbounty.php';
 require_once __DIR__ . '/../support/wati.php';
 require_once __DIR__ . '/../support/abandoned-cart-hooks.php';
 
+use Automattic\WooCommerce\Utilities\OrderUtil; 
+
 function saveCartAbandonmentData(WP_REST_Request $request)
 {
     global $woocommerce;
@@ -38,12 +40,15 @@ function saveCartAbandonmentData(WP_REST_Request $request)
     if (isset($razorpayData['receipt'])) {
         $wcOrderId = $razorpayData['receipt'];
 
-        if (isset($razorpayData['customer_details']['shipping_address'])) {
+        $order = wc_get_order($wcOrderId);
+
+        $orderStatus = $order->get_status();
+
+        if ($orderStatus === 'draft' && isset($razorpayData['customer_details']['shipping_address'])) {
             //Update the order status to wc-pending as we have the customer address info at this point.
             updateOrderStatus($wcOrderId, 'wc-pending');
 
         }
-        $order = wc_get_order($wcOrderId);
     }
 
     $razorpay->UpdateOrderAddress($razorpayData, $order);
@@ -52,7 +57,12 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
     initCustomerSessionAndCart();
 
-    $customerEmail = get_post_meta($wcOrderId, '_billing_email', true);
+    if (isHposEnabled()) {
+        $customerEmail  = $order->get_billing_email();
+
+    }else{
+        $customerEmail = get_post_meta($wcOrderId, '_billing_email', true);
+    }
 
     //Retrieving cart products and their quantities.
     // check plugin is activated or not
@@ -232,10 +242,21 @@ function saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId)
 
         $cartInfo   = wp_json_encode($cart);
         $recResults = checkRecordBySession($getCookie[0]);
+        $order = wc_get_order($wcOrderId);
 
         if (get_post_meta($wcOrderId, 'abandoned_user_id', true) == '') {
-            add_post_meta($wcOrderId, 'abandoned_user_id', $userId);} else {
-            update_post_meta($wcOrderId, 'abandoned_user_id', $userId);
+            if (isHposEnabled()) {
+                $userId = $order->add_meta_data('abandoned_user_id', $userId);
+            }else{
+              $userId =  add_post_meta($wcOrderId, 'abandoned_user_id', $userId);
+            }
+           
+        } else {
+            if (isHposEnabled()) {
+                   $userId = $order->update_meta_data('abandoned_user_id', $userId);
+            }else{
+              $userId =  update_post_meta($wcOrderId, 'abandoned_user_id', $userId);
+            }
         }
 
         if (count($recResults) === 0) {

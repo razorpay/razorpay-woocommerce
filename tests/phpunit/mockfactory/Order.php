@@ -16,7 +16,7 @@ class Order
         return $response;
     }
 
-    public function fetch($id)
+    public function fetch($id, $attributes = array())
     {
         $request = new Request();
 
@@ -25,4 +25,3 @@ class Order
         return $response;
     }
 }
-

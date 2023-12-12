@@ -3,10 +3,10 @@
  * Plugin Name: Razorpay for WooCommerce
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.5.2
- * Stable tag: 4.5.2
+ * Version: 4.5.7
+ * Stable tag: 4.5.7
  * Author: Team Razorpay
- * WC tested up to: 6.7.0
+ * WC tested up to: 7.9.0
  * Author URI: https://razorpay.com
 */
 
@@ -33,15 +33,62 @@ require_once __DIR__.'/includes/stylehandler.php';
 require_once __DIR__.'/includes/cron/one-click-checkout/Constants.php';
 require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php';
 require_once __DIR__.'/includes/cron/cron.php';
+require_once __DIR__.'/includes/cron/plugin-fetch.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use Automattic\WooCommerce\Utilities\OrderUtil;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
+add_action('before_woocommerce_init', function() {
+	if (class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class))
+    {
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+	}
+});
 
 function woocommerce_razorpay_init()
 {
+    add_action("woocommerce_update_options_advanced", 'hposInstrumentation');
+
+    function hposInstrumentation()
+    {
+        $rzp = new WC_Razorpay();
+
+        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+            OrderUtil::custom_orders_table_usage_is_enabled() and
+            (empty(get_option('rzp_hpos')) or
+            get_option('rzp_hpos') === 'no'))
+        {
+            $key_id = $rzp->getSetting('key_id');
+            $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+            $properties = [
+                'isHposEnabled' => true
+            ];
+
+            $response = $trackObject->rzpTrackSegment('hpos.interacted', $properties);
+            $trackObject->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'yes');
+        }
+        else if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                OrderUtil::custom_orders_table_usage_is_enabled() === false and
+                get_option('rzp_hpos') === 'yes')
+        {
+            $key_id = $rzp->getSetting('key_id');
+            $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+            $properties = [
+                'isHposEnabled' => false
+            ];
+
+            $response = $trackObject->rzpTrackSegment('hpos.interacted', $properties);
+            $trackObject->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'no');
+        }
+    }
+
     if (!class_exists('WC_Payment_Gateway') || class_exists('WC_Razorpay'))
     {
         return;
@@ -66,6 +113,8 @@ function woocommerce_razorpay_init()
         const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
         const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
         const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
+
+        const PREPAY_COD_URL = '1cc/orders/cod/convert';
 
         protected $supportedWebhookEvents = array(
             'payment.authorized',
@@ -143,6 +192,12 @@ function woocommerce_razorpay_init()
         );
 
         /**
+         * hpos enabled check
+         * @var bool
+         */
+        public $isHposEnabled;
+
+        /**
          * Return Wordpress plugin settings
          * @param  string $key setting key
          * @return mixed setting value
@@ -169,6 +224,16 @@ function woocommerce_razorpay_init()
          */
         public function __construct($hooks = true)
         {
+
+            $this->isHposEnabled = false;
+
+            // file added in woocommerce v7.1.0, maybe removed later
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
+                OrderUtil::custom_orders_table_usage_is_enabled()) 
+            {
+                $this->isHposEnabled = true;
+            }
+
             $this->icon =  "https://cdn.razorpay.com/static/assets/logo/rzp_payment_icon.svg";
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
@@ -263,6 +328,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
             }
             else
             {
@@ -271,6 +337,7 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
                 add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
             }
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
@@ -619,8 +686,17 @@ function woocommerce_razorpay_init()
                 global $wpdb;
                 $isTransactingUser = false;
 
-                $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+                $orderTable = $wpdb->prefix . 'wc_orders';
 
+                if($this->isHposEnabled) 
+                {
+                    $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
+                } 
+                else 
+                {
+                    $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+                }              
+                
                 $arrayPost = json_decode(json_encode($rzpTrancationData), true);
 
                 if (empty($arrayPost) === false and
@@ -803,7 +879,12 @@ function woocommerce_razorpay_init()
          */
         protected function getOrderSessionKey($orderId)
         {
-            $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            if ($this->isHposEnabled) {
+               $order = wc_get_order($orderId);
+               $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+            }else{
+                $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            }
 
             if($is1ccOrder == 'yes')
             {
@@ -821,7 +902,7 @@ function woocommerce_razorpay_init()
          * @param  string $orderId Order Id
          * @return mixed Razorpay Order Id or Exception
          */
-        public function createOrGetRazorpayOrderId($orderId, $is1ccCheckout = 'no')
+        public function createOrGetRazorpayOrderId($order, $orderId, $is1ccCheckout = 'no')
         {
             global $woocommerce;
             rzpLogInfo("createOrGetRazorpayOrderId $orderId and is1ccCheckout is set to $is1ccCheckout");
@@ -830,7 +911,12 @@ function woocommerce_razorpay_init()
 
             if($is1ccCheckout == 'no')
             {
-                update_post_meta( $orderId, 'is_magic_checkout_order', 'no' );
+                if ($this->isHposEnabled) {
+                    $order->update_meta_data( 'is_magic_checkout_order', 'no' );
+                    $order->save();
+                }else{
+                    update_post_meta($orderId, 'is_magic_checkout_order', 'no');
+                }
 
                 rzpLogInfo("Called createOrGetRazorpayOrderId with params orderId $orderId and is_magic_checkout_order is set to no");
             }
@@ -902,7 +988,7 @@ function woocommerce_razorpay_init()
          * @param  string $orderId WC Order Id
          * @return array payment params
          */
-        protected function getRazorpayPaymentParams($orderId)
+        protected function getRazorpayPaymentParams($order, $orderId)
         {
             $getWebhookFlag =  get_option('webhook_enable_flag');
             $time = time();
@@ -920,7 +1006,7 @@ function woocommerce_razorpay_init()
             }
 
             rzpLogInfo("getRazorpayPaymentParams $orderId");
-            $razorpayOrderId = $this->createOrGetRazorpayOrderId($orderId);
+            $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderId);
 
             if ($razorpayOrderId === null)
             {
@@ -948,7 +1034,7 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $params = $this->getRazorpayPaymentParams($orderId);
+                $params = $this->getRazorpayPaymentParams($order, $orderId);
             }
             catch (Exception $e)
             {
@@ -1067,10 +1153,18 @@ function woocommerce_razorpay_init()
             rzpLogInfo(json_encode($data));
             try
             {
+                if ($data['currency'] === "KWD" or
+                    $data['currency'] === "OMR" or
+                    $data['currency'] === "BHD")
+                {
+                    throw new Exception($data['currency'] . " currency is not supported at the moment.");
+                }
+                
                 $razorpayOrder = $api->order->create($data);
             }
             catch (Exception $e)
             {
+                rzpLogInfo("rzp order error " . $e->getMessage());
                 return $e;
             }
 
@@ -1154,13 +1248,21 @@ function woocommerce_razorpay_init()
 
         private function getOrderCreationData($orderId)
         {
+            global $wpdb;
+            
             rzpLogInfo("Called getOrderCreationData with params orderId $orderId");
             $order = wc_get_order($orderId);
 
-            $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            $orderMetaTable = $wpdb->prefix . 'wc_orders_meta';
+
+            if ($this->isHposEnabled) {
+               $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+            }else{
+                $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+            }
 
             $data = array(
-                'receipt'         => $orderId,
+                'receipt'         => (string)$orderId,
                 'amount'          => (int) round($order->get_total() * 100),
                 'currency'        => $this->getOrderCurrency($order),
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
@@ -1230,15 +1332,16 @@ function woocommerce_razorpay_init()
 
                $data['line_items'][$i]['type'] =  $type;
                $data['line_items'][$i]['sku'] = $product->get_sku();
-               $data['line_items'][$i]['variant_id'] = $item->get_variation_id();
+               $data['line_items'][$i]['variant_id'] = (string)$item->get_variation_id();
+               $data['line_items'][$i]['product_id'] = (string)$product->get_parent_id();
                $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
                $data['line_items'][$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $productDetails['price']*100;
                $data['line_items'][$i]['quantity'] = (int)$item->get_quantity();
                $data['line_items'][$i]['name'] = mb_substr($item->get_name(), 0, 125, "UTF-8");
                $data['line_items'][$i]['description'] = mb_substr($item->get_name(), 0, 250,"UTF-8");
                $productImage = $product->get_image_id()?? null;
-               $data['line_items'][$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
-               $data['line_items'][$i]['product_url'] = $product->get_permalink();
+               $data['line_items'][$i]['image_url'] = (string)($productImage? wp_get_attachment_url( $productImage ) : "");
+               $data['line_items'][$i]['product_url'] = (string)$product->get_permalink();
 
                $i++;
             }
@@ -1541,23 +1644,54 @@ EOT;
 
             $meta_key = '_order_key';
 
-            $postMetaData = $wpdb->get_row( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password ) );
+            $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
+            $orderTable = $wpdb->prefix . 'wc_orders';
 
-            $postData = $wpdb->get_row( $wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $postMetaData->post_id) );
+            if ($this->isHposEnabled) 
+            {
+                $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
+            
+                $orderData = $wpdb->get_row($wpdb->prepare("SELECT status FROM $orderTable AS P WHERE id = %s", $orderOperationalData->order_id));
+            } else 
+            {
+                $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password));
 
-            $arrayPost = json_decode(json_encode($postMetaData), true);
+                $orderData = $wpdb->get_row($wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $orderOperationalData->post_id));
+            }
+            
+            $arrayPost = json_decode(json_encode($orderOperationalData), true);
 
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                $orderId = $postMetaData->post_id;
-
-                if ($postData->post_status === 'draft')
+                if ($this->isHposEnabled) 
                 {
-                    updateOrderStatus($orderId, 'wc-pending');
-                }
+                    $orderId = $orderOperationalData->order_id;
+                    
+                    $order = wc_get_order($orderId);
 
-                $order = wc_get_order($orderId);
+                    if ($orderData->status === 'wc-checkout-draft')
+                    {
+                        $order->set_status('wc-pending');
+                        $order->save();
+                    }
+                    $orderStatus = $order->get_status();
+                    rzpLogInfo("HPOS is enabled and order status: $orderStatus");
+                } 
+                else
+                {
+                    $orderId = $orderOperationalData->post_id;
+
+                    $order = wc_get_order($orderId);
+
+                    if ($orderData->post_status === 'draft')
+                    {
+                        updateOrderStatus($orderId, 'wc-pending');
+                    }
+                    $orderStatus = $order->get_status();
+                    rzpLogInfo("HPOS is disabled and order status: $orderStatus");
+                }
+                
                 rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
             }
 
@@ -1578,10 +1712,12 @@ EOT;
 
             // If the order has already been paid for
             // redirect user to success page
-            if ($order->needs_payment() === false)
+            if (($order->needs_payment() === false) and 
+                ($orderStatus != 'draft') and 
+                ($orderStatus != 'wc-checkout-draft'))
             {
-                rzpLogInfo("Order payment is already done for the orderId: $orderId");
-
+                rzpLogInfo("Order payment is already done for the orderId: " . $orderId . " order status " . $orderStatus);
+                
                 $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
                 if ($cartHash != false)
@@ -1634,7 +1770,11 @@ EOT;
                     $error = "Payment Failed.";
                 }
 
-                $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                if ($this->isHposEnabled) {
+                    $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+                }else{
+                    $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                }
 
                 if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                 {
@@ -1768,7 +1908,11 @@ EOT;
                 {
                     $wcOrderId = $order->get_id();
 
-                    $is1ccOrder = get_post_meta( $wcOrderId, 'is_magic_checkout_order', true );
+                    if ($this->isHposEnabled) {
+                        $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+                    }else{
+                        $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                    }
 
                     rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
 
@@ -1896,7 +2040,7 @@ EOT;
             }
 
             // update gift card and coupons
-            $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
+            $rzpPromotionAmount = $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -1924,7 +2068,13 @@ EOT;
                 else
                 {
                     $isStoreShippingEnabled = "";
-                    $shippingData = get_post_meta( $wcOrderId, '1cc_shippinginfo', true );
+                    if ($this->isHposEnabled) 
+                    {
+                         $shippingData = $order->get_meta('1cc_shippinginfo');
+
+                    }else{
+                        $shippingData = get_post_meta( $wcOrderId, '1cc_shippinginfo', true );
+                    }
 
                     if (class_exists('WCFMmp'))
                     {
@@ -2004,9 +2154,10 @@ EOT;
 
             $paymentDoneBy = $razorpayPaymentData['method'];
 
+            $codFee = 0;  
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
             {
-                $codKey = $razorpayData['cod_fee']/100;
+                $codFee = $razorpayData['cod_fee']/100;
                 $payment_method = 'cod';
                 $payment_method_title = 'Cash on delivery';
             }
@@ -2022,10 +2173,10 @@ EOT;
                 $itemFee = new WC_Order_Item_Fee();
 
                 $itemFee->set_name('COD Fee'); // Generic fee name
-                $itemFee->set_amount($codKey); // Fee amount
+                $itemFee->set_amount($codFee); // Fee amount
                 // $itemFee->set_tax_class(''); // default for ''
                 $itemFee->set_tax_status( 'none' ); // If we don't set tax status then it will consider by dafalut tax class.
-                $itemFee->set_total($codKey); // Fee amount
+                $itemFee->set_total($codFee); // Fee amount
 
                 // Calculating Fee taxes
                 // $itemFee->calculate_taxes( $calculateTaxFor );
@@ -2036,6 +2187,22 @@ EOT;
                 $order->save();
             }
 
+           if(!empty($razorpayData['offers']))
+            {
+                $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codFee*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
+
+                if($offerDiff > 0){
+                    $offerDiscount = ($offerDiff/100);
+                    $title = 'Razorpay_offers_'. $wcOrderId .'(₹'. $offerDiscount .')';
+
+                    $this->createRzpOfferCoupon($title, $offerDiscount);
+                    $this->applyCoupon($order, $title, $offerDiff);
+
+                }
+
+            }
+
+
             //For abandon cart Lite recovery plugin recovery function
             if(is_plugin_active( 'woocommerce-abandoned-cart/woocommerce-ac.php'))
             {
@@ -2044,6 +2211,21 @@ EOT;
 
             $note = __('Order placed through Razorpay Magic Checkout');
             $order->add_order_note( $note );
+            if ($paymentDoneBy === 'cod')
+            {
+                try
+                {
+                    $body = ['order_id' => $razorpayOrderId];
+                    rzpLogInfo("making prepay API Call for order : $razorpayOrderId");
+                    $response = $api->request->request('POST', self::PREPAY_COD_URL , $body);
+                    rzpLogInfo("makeAPICall: url: ". self::PREPAY_COD_URL . " is success");
+                }
+                catch (\Razorpay\Api\Errors\Error $e)
+                {
+                    $statusCode = $e->getHttpStatusCode();
+                    rzpLogError("make prepayAPICall failed: message:" . $e->getMessage() . ", url: " . self::PREPAY_COD_URL . ", statusCode : " . $statusCode . ", stacktrace : " . $e->getTraceAsString());
+                }
+            }
         }
 
         public function updateGiftAndCoupon($razorpayData, $order, $orderId, $razorpayPaymentId)
@@ -2053,6 +2235,8 @@ EOT;
 
             foreach($razorpayData['promotions'] as $promotion)
             {
+                $rzpGiftAndCouponAmount += $promotion['value'];
+
                 if($promotion['type'] == 'gift_card'){
 
                     $usedAmt = $promotion['value']/100;
@@ -2125,30 +2309,13 @@ EOT;
 
                     if (empty($couponKey) === false)
                     {
-                        // Remove the same coupon, if already being added to order.
-                        $order->remove_coupon($couponKey);
-
-                        //TODO: Convert all razorpay amount in paise to rupees
-                        $discount_total = $promotion['value']/100;
-
-                        //TODO: Verify source code implementation
-                        // Loop through products and apply the coupon discount
-                        foreach($order->get_items() as $order_item)
-                        {
-                            $total = $order_item->get_total();
-                            $order_item->set_subtotal($total);
-                            $order_item->set_total($total - $discount_total);
-                            $order_item->save();
-                        }
-                        // TODO: Test if individual use coupon fails by hardcoding here
-                        $isApplied = $order->apply_coupon($couponKey);
-                        $order->save();
-
+                        $this->applyCoupon($order, $couponKey, $promotion['value']);
                         rzpLogInfo("Coupon details updated for orderId: $orderId");
                     }
                 }
 
             }
+            return $rzpGiftAndCouponAmount;
         }
 
         protected function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
@@ -2273,7 +2440,8 @@ EOT;
                 $userId  = wp_create_user( $username, $random_password, $email );
                 $user = get_user_by('id', $userId);
 
-                update_post_meta($order->get_id(), '_customer_user', $userId);
+                $order->set_customer_id( $userId );
+                $order->save();
 
                 // Get all WooCommerce emails Objects from WC_Emails Object instance
                 $emails = wc()->mailer()->emails;
@@ -2362,7 +2530,8 @@ EOT;
             global $woocommerce;
             global $wpdb;
 
-            $userId = get_post_meta($wcOrderId, '_customer_user', true);
+            $order = wc_get_order($wcOrderId);
+            $userId = $order->get_customer_id();
             $currentTime  = current_time('timestamp'); // phpcs:ignore
             $cutOffTime  = get_option('ac_lite_cart_abandoned_time');
 
@@ -2383,7 +2552,12 @@ EOT;
             else
             {
                 $userType = 'GUEST';
-                $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+                if ($this->isHposEnabled) {
+                   $userId = $order->get_meta('abandoned_user_id');
+                }else{
+                  $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
+                }
+                
             }
 
             $results = $wpdb->get_results( // phpcs:ignore
@@ -2405,8 +2579,13 @@ EOT;
             }
 
             $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
-
-            add_post_meta($wcOrderId, 'abandoned_id', $abandonedOrderId);
+            
+            if ($this->isHposEnabled) {
+                $order->update_meta_data( 'abandoned_id', $abandonedOrderId);
+                $order->save();
+            }else{
+               add_post_meta($wcOrderId, 'abandoned_id', $abandonedOrderId);
+            }
             $wpdb->query( // phpcS:ignore
             $wpdb->prepare(
                 'UPDATE `' . $wpdb->prefix . 'ac_abandoned_cart_history_lite` SET recovered_cart = %s, cart_ignored = %s WHERE id = %s',
@@ -2480,6 +2659,59 @@ EOT;
                     'integration_type' => 'plugin',
                 );
             }
+        }
+
+        public function applyCoupon($order, $couponKey, $couponValue) {
+            // Remove the same coupon, if already being added to order.
+            $order->remove_coupon($couponKey);
+
+            //TODO: Convert all razorpay amount in paise to rupees
+            $discount_total = $couponValue/100;
+
+            //TODO: Verify source code implementation
+            // Loop through products and apply the coupon discount
+            foreach($order->get_items() as $order_item)
+            {
+                $total = $order_item->get_total();
+                $order_item->set_total($total - $discount_total);
+                $order_item->save();
+            }
+            // TODO: Test if individual use coupon fails by hardcoding here
+            $isApplied = $order->apply_coupon($couponKey);
+            $order->save();
+        }
+
+        //TODO: create a common function to create a coupon functionality
+        public function createRzpOfferCoupon($couponCode, $amount) : bool {
+
+            $coupon = array(
+                'post_title' => $couponCode,
+                'post_content' => '',
+                'post_status' => 'publish',
+                'post_author' => 1,
+                'post_type' => 'shop_coupon');
+
+            $newCouponId = wp_insert_post( $coupon );
+
+            if( $newCouponId === 0) {
+                return false;
+            }
+
+            $input = [
+                'discount_type' => 'fixed_cart',
+                'coupon_amount' => $amount,
+                'usage_limit' => 1,
+                'minimum_amount' => $amount,
+            ];
+
+            foreach ($input as $key => $value) {
+                $isSuccess = update_post_meta($newCouponId, $key, $value);
+                if($isSuccess === false) {
+                    rzpLogError("rzp offer create coupon : update post meta error, key : " . $key . ", value : " . $value);
+                    return false;
+                }
+            }
+            return true;
         }
 
     }

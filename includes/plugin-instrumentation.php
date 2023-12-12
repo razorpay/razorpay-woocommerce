@@ -2,6 +2,7 @@
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use Automattic\WooCommerce\Utilities\OrderUtil;
 
 class TrackPluginInstrumentation
 {
@@ -29,15 +30,47 @@ class TrackPluginInstrumentation
 
         $this->rzpTrackDataLake('plugin activate', $activateProperties);
 
+        $this->hposInstrumentation();
+
         $this->initRzpCronJobs();
 
         return 'success';
+    }
+
+    function hposInstrumentation()
+    {
+        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() and
+            (empty(get_option('rzp_hpos')) or
+            get_option('rzp_hpos') === 'no'))
+        {
+            $properties = [
+                'isHposEnabled' => true
+            ];
+
+            $response = $this->rzpTrackSegment('hpos.interacted', $properties);
+            $this->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'yes');
+        }
+        else if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled() === false and
+                get_option('rzp_hpos') === 'yes')
+        {
+            $properties = [
+                'isHposEnabled' => false
+            ];
+
+            $response = $this->rzpTrackSegment('hpos.interacted', $properties);
+            $this->rzpTrackDataLake('hpos.interacted', $properties);
+
+            update_option('rzp_hpos', 'no');
+        }
     }
 
     // initCronJobs initialize all cron jobs needed for this Plugin
     function initRzpCronJobs()
     {
         createOneCCAddressSyncCron();
+        syncPluginFetchCron();
     }
 
     function razorpayPluginDeactivated()
@@ -45,7 +78,16 @@ class TrackPluginInstrumentation
         global $wpdb;
         $isTransactingUser = false;
 
-        $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+        $orderTable = $wpdb->prefix . 'wc_orders';
+
+        if(class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && OrderUtil::custom_orders_table_usage_is_enabled()) 
+        {
+            $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
+        }
+        else 
+        {
+            $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
+        }
 
         $arrayPost = json_decode(json_encode($rzpTrancationData), true);
 
@@ -73,6 +115,7 @@ class TrackPluginInstrumentation
     function deleteRzpCronJobs()
     {
         deleteOneCCAddressSyncCron('deactivated');
+        deletePluginFetchCron('one_cc_plugin_sync_cron');
     }
 
     function razorpayPluginUpgraded()
@@ -88,10 +131,13 @@ class TrackPluginInstrumentation
 
         $this->rzpTrackDataLake('plugin upgrade', $upgradeProperties);
 
+        $this->hposInstrumentation();
+
         // TODO: Update correct version
         if (isset($prevVersion) && strcmp($prevVersion, '4.5.0') <= 0)
         {
             createOneCCAddressSyncCron();
+            syncPluginFetchCron();
         }
 
         if ($response['status'] === 'success')

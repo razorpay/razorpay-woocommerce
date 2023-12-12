@@ -5,15 +5,36 @@ require_once __DIR__ .'/../razorpay-sdk/Razorpay.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
+use Automattic\WooCommerce\Utilities\OrderUtil;
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 
 add_action('setup_extra_setting_fields', 'addRouteModuleSettingFields');
-add_action('admin_post_rzp_direct_transfer', 'razorpayDirectTransfer');
-add_action('admin_post_rzp_reverse_transfer', 'razorpayReverseTransfer');
-add_action('admin_post_rzp_settlement_change', 'razorpaySettlementUpdate');
-add_action('admin_post_rzp_payment_transfer', 'razorpayPaymentTransfer');
-
 add_action( 'check_route_enable_status', 'razorpayRouteModule',0 );
 do_action('check_route_enable_status');
+
+add_action('admin_post_rzp_direct_transfer', function(){
+    $routeAction = new RZP_Route_Action();
+
+    $routeAction->directTransfer();
+});
+
+add_action('admin_post_rzp_reverse_transfer', function(){
+    $routeAction = new RZP_Route_Action();
+
+    $routeAction->reverseTransfer();
+});
+
+add_action('admin_post_rzp_settlement_change', function(){
+    $routeAction = new RZP_Route_Action();
+
+    $routeAction->updateTransferSettlement();
+});
+
+add_action('admin_post_rzp_payment_transfer', function(){
+    $routeAction = new RZP_Route_Action();
+
+    $routeAction->createPaymentTransfer();
+});
 
 function addRouteModuleSettingFields(&$defaultFormFields){
     if( get_woocommerce_currency() == "INR") {
@@ -164,6 +185,7 @@ class RZP_Route extends WP_List_Table
                             <div>
                             <button type="submit" onclick="' . $hide . '" name="trf_create" class="btn btn-primary">Create</button>
                             <input type="hidden" name="action" value="rzp_direct_transfer">
+                            <input type="hidden" name="nonce" value="' . wp_create_nonce('rzp_direct_transfer') . '">
                             </div>
                             </form>
                         </div>
@@ -437,7 +459,7 @@ class RZP_Route extends WP_List_Table
                                 <input type="hidden" name="action" value="rzp_reverse_transfer">
                                 <input type="hidden" name="transfer_id" value="' . $transferDetail['id'] . '">
                                 <input type="hidden" name="transfer_amount" value="' . $transferDetail['amount'] . '">
-
+                                <input type="hidden" name="nonce" value="' . wp_create_nonce('rzp_reverse_transfer') . '">
                                 </div>
                                 </form>
                             </div>
@@ -505,6 +527,7 @@ class RZP_Route extends WP_List_Table
                                 <button type="submit" onclick="' . $hideSetl . '" name="update_setl_status"  class="btn btn-primary">Save</button>
                                 <input type="hidden" name="action" value="rzp_settlement_change">
                                 <input type="hidden" name="transfer_id" value="' . $transferDetail['id'] . '">
+                                <input type="hidden" name="nonce" value="' . wp_create_nonce('rzp_settlement_change') . '">
                                 </div>
                                 </form>
                             </div>
@@ -823,6 +846,13 @@ class RZP_Route extends WP_List_Table
         }
     }
 
+    public function fetchPayment($paymentId)
+    {
+        $api = $this->fetchRazorpayApiInstance();
+
+        return $api->payment->fetch($paymentId);
+    }
+    
     function rzpPaymentDetails()
     {
         if (empty(sanitize_text_field($_REQUEST['id'])) || null == (sanitize_text_field($_REQUEST['id']))) {
@@ -833,7 +863,7 @@ class RZP_Route extends WP_List_Table
             
             $api = $this->fetchRazorpayApiInstance();
 
-            $paymentDetail = $api->payment->fetch($paymentId);
+            $paymentDetail = $this->fetchPayment($paymentId);
 
             $paymentTransfers = $api->payment->fetch($paymentId)->transfers();
 
@@ -968,6 +998,7 @@ class RZP_Route extends WP_List_Table
                                 <button type="submit" onclick="' . $hide . '" name="trf_create" class="btn btn-primary" id="payment_transfer_btn">Create</button>
                                 <input type="hidden" name="payment_id" value="' . $paymentDetail['id'] . '">
                                 <input type="hidden" name="action" value="rzp_payment_transfer">
+                                <input type="hidden" name="nonce" value="' . wp_create_nonce('rzp_payment_transfer') . '">
                                 </div>
                                 </form>
                             </div>
@@ -1161,11 +1192,15 @@ function woocommerce_process_transfer_meta_fields_save( $post_id ){
 //fetch transfers of order/payment in order edit page
 
 function paymentTransferMetaBox() {
+    $screen = (class_exists('Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController') and wc_get_container()->get(CustomOrdersTableController::class)->custom_orders_table_usage_is_enabled())
+		? wc_get_page_screen_id('shop-order')
+		: 'shop_order';
+    
     add_meta_box(
         'rzp_trf_payment_meta',
         esc_html__( 'Razorpay transfers from Order / Payment', 'text-domain' ),
         'renderPaymentTransferMetaBox',
-        'shop_order', // shop_order is the post type of the admin order page
+        $screen, // shop_order is the post type of the admin order page
         'normal', // change to 'side' to move box to side column
         'low'
     );
@@ -1174,7 +1209,7 @@ function paymentTransferMetaBox() {
         'rzp_payment_meta',
         esc_html__( 'Razorpay Payment ID', 'text-domain' ),
         'renderPaymentMetaBox',
-        'shop_order', // shop_order is the post type of the admin order page
+        $screen, // shop_order is the post type of the admin order page
         'normal', // change to 'side' to move box to side column
         'low'
     );
@@ -1183,8 +1218,19 @@ function paymentTransferMetaBox() {
 
 function renderPaymentTransferMetaBox() {
     global $woocommerce, $post;
-    $orderId= $post->ID;
-    $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
+    
+    if (isHposEnabled()) 
+    {
+        $orderId = $_GET['id'];
+        $order = wc_get_order($orderId);
+        $rzpPaymentId = $order->get_transaction_id();
+    }
+    else 
+    {
+        $orderId = $post->ID;
+        $rzpPaymentId = get_post_meta($orderId, '_transaction_id', true);
+    }
+    
 
     $rzp = new WC_Razorpay();
 
@@ -1229,37 +1275,20 @@ function renderPaymentTransferMetaBox() {
 function renderPaymentMetaBox(){
 
     global $woocommerce, $post;
-    $orderId= $post->ID;
-    $rzpPaymentId = get_post_meta($orderId,'_transaction_id',true);
+
+    if (isHposEnabled()) 
+    {
+        $orderId = $_GET['id'];
+        $order = wc_get_order($orderId);
+        $rzpPaymentId = $order->get_transaction_id();
+    }
+    else 
+    {
+        $orderId = $post->ID;
+        $rzpPaymentId = get_post_meta($orderId, '_transaction_id', true);
+    }
 
     echo '<p>'.$rzpPaymentId.' <span><a href="?page=razorpayPaymentsView&id='.$rzpPaymentId.'"><input type="button" class="button" value="View"></a></span></p>';
 
 }
 
-function razorpayDirectTransfer()
-{
-    $routeAction = new RZP_Route_Action();
-
-    $routeAction->directTransfer();
-}
-
-function razorpayReverseTransfer()
-{
-    $routeAction = new RZP_Route_Action();
-
-    $routeAction->reverseTransfer();
-}
-
-function razorpaySettlementUpdate()
-{
-    $routeAction = new RZP_Route_Action();
-
-    $routeAction->updateTransferSettlement();
-}
-
-function razorpayPaymentTransfer()
-{
-    $routeAction = new RZP_Route_Action();
-
-    $routeAction->createPaymentTransfer();
-}

@@ -11,15 +11,47 @@ class RZP_Route_Action
     public function __construct()
     {
         $this->Wc_Razorpay_Loader = new WC_Razorpay();
-        $this->api = $this->Wc_Razorpay_Loader->getRazorpayApiInstance();
+    }
 
+    protected function fetchRazorpayApiInstance()
+    {
+        return $this->Wc_Razorpay_Loader->getRazorpayApiInstance(); 
+    }
+    
+    public function redirect($pageUrl)
+    {
+        wp_redirect($pageUrl);
+    }
+
+    public function authorizeAndAuthenticate($nonce, $action)
+    {
+        if(current_user_can('manage_woocommerce') === false)
+        {
+            rzpLogError("Authorization Failed");
+            wp_die('<div class="error notice">
+                <p>RAZORPAY ERROR: User is not Authorized to perform Operation</p>
+             </div>');
+        }
+
+        $verifyReq = wp_verify_nonce($nonce, $action);
+
+        if ($verifyReq === false)
+        {
+            rzpLogError("nonce Authentication failed");
+            wp_die('<div class="error notice">
+                <p>RAZORPAY ERROR: Authentication Failed</p>
+             </div>');
+        }
     }
 
     function directTransfer()
     {
-
         $trfAccount = sanitize_text_field($_POST['drct_trf_account']);
         $trfAmount = sanitize_text_field($_POST['drct_trf_amount']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_direct_transfer');
+
         $pageUrl = admin_url('admin.php?page=razorpayRouteWoocommerce');
         try {
             $transferData = array(
@@ -29,6 +61,8 @@ class RZP_Route_Action
                 'currency' => 'INR'
             );
 
+            $this->api = $this->fetchRazorpayApiInstance();
+
             $this->api->transfer->create($transferData);
         } catch (Exception $e) {
             $message = $e->getMessage();
@@ -37,19 +71,24 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Transfers create failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($pageUrl);
+        $this->redirect($pageUrl);
     }
 
     function reverseTransfer()
     {
-
         $transferId = sanitize_text_field($_POST['transfer_id']);
         $reversalAmount = sanitize_text_field($_POST['reversal_amount']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_reverse_transfer');
+
         $pageUrl = admin_url('admin.php?page=razorpayTransfers&id=' . $transferId);
         try {
             $reversalData = array(
                 'amount' => (int)round($reversalAmount * 100),
             );
+
+            $this->api = $this->fetchRazorpayApiInstance();
 
             $this->api->transfer->fetch($transferId)->reverse($reversalData);
         } catch (Exception $e) {
@@ -59,14 +98,17 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Reverse Transfer failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($pageUrl);
+        $this->redirect($pageUrl);
     }
 
     function updateTransferSettlement()
     {
-
         $transferId = sanitize_text_field($_POST['transfer_id']);
         $trfHoldStatus = sanitize_text_field($_POST['on_hold']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_settlement_change');
+
         if ($trfHoldStatus == "on_hold_until") {
             $trfHoldUntil = sanitize_text_field($_POST['hold_until']);
             $unixTime = strtotime($trfHoldUntil);
@@ -82,6 +124,9 @@ class RZP_Route_Action
             );
 
             $url = "transfers/" . $transferId;
+
+            $this->api = $this->fetchRazorpayApiInstance();
+
             $this->api->request->request("PATCH", $url, $updateData);
 
         } catch (Exception $e) {
@@ -91,15 +136,18 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Change settlement schedule failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($pageUrl);
+        $this->redirect($pageUrl);
     }
 
     function createPaymentTransfer()
     {
-
         $paymentId = sanitize_text_field($_POST['payment_id']);
         $trfAccount = sanitize_text_field($_POST['pay_trf_account']);
         $trfAmount = sanitize_text_field($_POST['pay_trf_amount']);
+        $nonce = sanitize_text_field($_POST['nonce']);
+
+        $this->authorizeAndAuthenticate($nonce, 'rzp_payment_transfer');
+
         $pageUrl = admin_url('admin.php?page=razorpayPaymentsView&id=' . $paymentId);
 
         $trfHoldStatus = sanitize_text_field($_POST['on_hold']);
@@ -122,6 +170,8 @@ class RZP_Route_Action
                 )
             );
 
+            $this->api = $this->fetchRazorpayApiInstance();
+
             $this->api->payment->fetch($paymentId)->transfer($data);
 
         } catch (Exception $e) {
@@ -131,7 +181,7 @@ class RZP_Route_Action
                     <p>RAZORPAY ERROR: Transfers create failed with the following message: ' . $message . '</p>
                  </div>');
         }
-        wp_redirect($pageUrl);
+        $this->redirect($pageUrl);
     }
 
     function getOrderTransferData($orderId){
@@ -154,7 +204,6 @@ class RZP_Route_Action
                     $LA_transfer_count = count($LA_number_arr);
                     for($i=0;$i<$LA_transfer_count;$i++){
                         if(!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])){
-
                             $transferArr = array(
 
                                 'account'=> $LA_number_arr[$i],
@@ -218,6 +267,8 @@ class RZP_Route_Action
             );
 
             $url = "payments/".$razorpayPaymentId."/transfers";
+
+            $this->api = $this->fetchRazorpayApiInstance();
 
             $this->api->request->request("POST", $url, $data);
 

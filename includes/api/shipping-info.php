@@ -7,8 +7,11 @@
  * @return array|WP_Error|WP_REST_Response
  * @throws Exception If failed to add items to cart or no shipping options available for address.
  */
+use Automattic\WooCommerce\Utilities\OrderUtil;
+
 function calculateShipping1cc(WP_REST_Request $request)
 {
+     global $wpdb;
     $params = $request->get_params();
 
     $logObj           = array();
@@ -16,7 +19,7 @@ function calculateShipping1cc(WP_REST_Request $request)
     $logObj['params'] = $params;
 
     $validateInput = validateInput('shipping', $params);
-
+    
     if ($validateInput != null) {
         $response['failure_reason'] = $validateInput;
         $response['failure_code']   = 'VALIDATION_ERROR';
@@ -216,7 +219,13 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
         return array();
     }
     // add shipping in postmeta for multivendor plugin
-    add_post_meta($orderId, '1cc_shippinginfo', $response);
+    if (isHposEnabled()) {
+        $order = wc_get_order($orderId);
+        $order->update_meta_data( '1cc_shippinginfo', $response);
+        $order->save();
+    }else{
+       add_post_meta($orderId, '1cc_shippinginfo', $response);
+    }
 
     // Choosing the lowest shipping rate
     $price = array();
@@ -474,7 +483,7 @@ function smartCodRestriction($addresses, $order)
 
     // zip code restriction
     $postals         = explode(',', trim($restriction['restrict_postals']));
-    $postals         = array_map('trim', $postals);
+    $postals         = array_map('codTrim', $postals);
     $customerZipcode = $addresses['zipcode'];
     $flag            = 0;
 
@@ -550,8 +559,8 @@ function smartCodRestriction($addresses, $order)
     // city based restriction
     if (!empty($restriction['city_restrictions'])) {
         $cityRes         = explode(',', trim($restriction['city_restrictions']));
-        $restrict        = array_map('trim', $cityRes);
-        $cityRestriction = array_map('strtolower', $restrict);
+        $restrict        = array_map('codTrim', $cityRes);
+        $cityRestriction = array_map('codStrtolower', $restrict);
         if ($restrictionSettings->city_restrictions === 0) {
             if (in_array($addresses['city'], $cityRestriction)) {
                 return false;
@@ -638,6 +647,17 @@ function smartCodRestriction($addresses, $order)
     return true;
 }
 
+function codTrim($str){
+
+  $str=trim($str);
+  return $str;
+}
+
+function codStrtolower($str){
+
+   $str=strtolower($str);
+   return $str;
+}
 
 function restictPaymentGetway($rzpOrderId){
 
