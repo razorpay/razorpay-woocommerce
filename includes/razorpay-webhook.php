@@ -159,18 +159,18 @@ class RZP_Webhook
                         update_post_meta($orderId, "rzp_webhook_notified_at", time());
                     }
 
-                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
+                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
                 elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
                 {
-                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
+                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
 
-                error_log("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
+                rzpLogInfo("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
 
