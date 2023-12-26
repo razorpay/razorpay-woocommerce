@@ -12,12 +12,12 @@ class RZP_Webhook
     /**
      * @var HTTP CONFLICT Request
      */
-    protected const HTTP_CONFLICT_STATUS = 409;
+    const HTTP_CONFLICT_STATUS = 409;
 
     /**
      * @var Webhook Notify Wait Time
      */
-    protected const WEBHOOK_NOTIFY_WAIT_TIME = (5 * 60);
+    const WEBHOOK_NOTIFY_WAIT_TIME = (5 * 60);
 
     /**
      * Instance of the razorpay payments class
