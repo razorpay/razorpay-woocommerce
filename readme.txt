@@ -71,6 +71,8 @@ Razorpay is available for Store Owners and Merchants in
 
 = 4.5.8 =
 * Bug fix, plugin not activating in php 7.0.
+* Add option fix for 1cc address pull cron job script.
+* Webhook conflict error message as info
 
 = 4.5.7 =
 * Added nonce and user capability check for route
