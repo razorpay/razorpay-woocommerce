@@ -421,8 +421,14 @@ function woocommerce_razorpay_init()
                     }
 
                     update_option('rzp_afd_enable', 'no');
+                    update_option('rzp_rtb_enable', 'no');
+                    
+                    $myfile = fopen("newfile.txt", "w") or die("Unable to open file!");
+
+
                     foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
+                        fwrite($myfile, json_encode($preference['name']).',');
                         if ($preference['name'] === 'affordability_widget' or
                             $preference['name'] === 'affordability_widget_set')
                         {
@@ -433,8 +439,32 @@ function woocommerce_razorpay_init()
                             break;
                         }
                     }
+                    fclose($myfile);
+                    foreach ($merchantPreferences['assigned_features'] as $preference)
+                    {
+                        if($preference['name']  === 'rtb_widget_enabled')
+                        {
+                            $this->form_fields['rtb_widget_title'] =  array(
+                                'title' => '<span style="font-size: 20px;">' . __('Razorpay Trusted Badge'). '</span>',
+                                'type' => 'title'
+                            );
+
+                            $this->form_fields['enable_rtb_widget'] =  array(
+                                'title'                 => __('RTB Widget Enable/Disable'),
+                                'type'                  => 'checkbox',
+                                'desc'                  => __('Enable RTB Widget?'),
+                                'default'               => 'no',
+                                'id'                    => 'rzp_rtb_enable'
+                            );
+                            update_option('rzp_rtb_enable', 'yes');
+
+                            break;
+                        }
+
+                    }
 
                     update_option('rzp_afd_feature_checked', 'yes');
+                    update_option('rzp_rtb_feature_checked', 'yes');
                 }
                 catch (\Exception $e)
                 {
@@ -2760,6 +2790,8 @@ EOT;
 
     add_action( 'woocommerce_before_single_product', 'trigger_affordability_widget', 10 );
 
+    add_action( 'woocommerce_before_single_product', 'trigger_rtb_widget', 10 );
+
     function trigger_affordability_widget()
     {
         if (empty(get_option('rzp_afd_enable')) === false and
@@ -2803,6 +2835,56 @@ EOT;
             {
                 add_action ('woocommerce_before_add_to_cart_form', 'addAffordabilityWidgetHTML');
             }
+        }
+    }
+
+    function trigger_rtb_widget()
+    {
+        if (empty(get_option('rzp_rtb_feature_checked')) === true or
+            get_option('rzp_rtb_feature_checked') === 'no')
+        {
+            try
+            {
+                $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
+                $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+                if (isset($merchantPreferences) === false or
+                    isset($merchantPreferences['assigned_features']) === false)
+                {
+                    throw new Exception("Error in Api call.");
+                }
+
+                update_option('rzp_rtb_enable', 'no');
+                foreach ($merchantPreferences['assigned_features'] as $preference)
+                {
+                    if ($preference['name'] === 'rtb_widget_enabled')
+                    {
+                        update_option('rzp_rtb_enable', 'yes');
+                        break;
+                    }
+                }
+
+                update_option('rzp_rtb_feature_checked', 'yes');
+            }
+            catch(\Exception $e)
+            {
+                rzpLogError($e->getMessage());
+                return;
+            }
+        }
+
+        if (empty(get_option('woocommerce_razorpay_settings')) === false and
+            get_option('woocommerce_razorpay_settings')['enable_rtb_widget'] === 'yes' and
+            empty(get_option('rzp_rtb_enable')) === false and
+            get_option('rzp_rtb_enable') === 'yes')
+        {
+            $key_id = get_option('woocommerce_razorpay_settings')['key_id'];
+            echo '<script async src="https://cdn.razorpay.com/widgets/trusted-badge.js" type="text/javascript"></script>
+      
+            <div id="app">
+                <razorpay-trusted-business key="'.$key_id.'">
+                </razorpay-trusted-business>
+            </div>';
+
         }
     }
 }
