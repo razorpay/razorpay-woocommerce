@@ -422,13 +422,9 @@ function woocommerce_razorpay_init()
 
                     update_option('rzp_afd_enable', 'no');
                     update_option('rzp_rtb_enable', 'no');
-                    
-                    $myfile = fopen("newfile.txt", "w") or die("Unable to open file!");
-
 
                     foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
-                        fwrite($myfile, json_encode($preference['name']).',');
                         if ($preference['name'] === 'affordability_widget' or
                             $preference['name'] === 'affordability_widget_set')
                         {
@@ -439,7 +435,7 @@ function woocommerce_razorpay_init()
                             break;
                         }
                     }
-                    fclose($myfile);
+
                     foreach ($merchantPreferences['assigned_features'] as $preference)
                     {
                         if($preference['name']  === 'rtb_widget_enabled')
@@ -2881,7 +2877,7 @@ EOT;
             echo '<script async src="https://cdn.razorpay.com/widgets/trusted-badge.js" type="text/javascript"></script>
       
             <div id="app">
-                <razorpay-trusted-business key="'.$key_id.'">
+                <razorpay-trusted-business key="rzp_live_ILgsfZCZoFIKMb">
                 </razorpay-trusted-business>
             </div>';
 
