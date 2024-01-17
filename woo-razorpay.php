@@ -396,6 +396,15 @@ function woocommerce_razorpay_init()
                 }
             }
 
+            $this->form_fields['rtb_widget_title'] =  array(
+                'title' => '<span style="font-size: 20px;">' . __('Razorpay Trusted Business'). '</span>',
+                'type' => 'title'
+            );
+
+            $this->form_fields['enable_rtb_widget'] =  array(
+                'title' => '<span style="color: red;">' . __('Sorry, your business is currently not eligible for RTB.') . '</span>',
+                'type' => 'title'
+            );
             //Affordability Widget Code
             if (is_admin())
             {
@@ -440,11 +449,6 @@ function woocommerce_razorpay_init()
                     {
                         if($preference['name']  === 'rtb_widget_enabled')
                         {
-                            $this->form_fields['rtb_widget_title'] =  array(
-                                'title' => '<span style="font-size: 20px;">' . __('Razorpay Trusted Badge'). '</span>',
-                                'type' => 'title'
-                            );
-
                             $this->form_fields['enable_rtb_widget'] =  array(
                                 'title'                 => __('RTB Widget Enable/Disable'),
                                 'type'                  => 'checkbox',
@@ -2786,7 +2790,7 @@ EOT;
 
     add_action( 'woocommerce_before_single_product', 'trigger_affordability_widget', 10 );
 
-    add_action( 'woocommerce_before_single_product', 'trigger_rtb_widget', 10 );
+    add_action( 'woocommerce_after_add_to_cart_button', 'trigger_rtb_widget', 10 );
 
     function trigger_affordability_widget()
     {
@@ -2876,7 +2880,7 @@ EOT;
             $key_id = get_option('woocommerce_razorpay_settings')['key_id'];
             echo '<script async src="https://cdn.razorpay.com/widgets/trusted-badge.js" type="text/javascript"></script>
       
-            <div id="app">
+            <div style="padding-top: 60px;" id="app">
                 <razorpay-trusted-business key="rzp_live_ILgsfZCZoFIKMb">
                 </razorpay-trusted-business>
             </div>';
