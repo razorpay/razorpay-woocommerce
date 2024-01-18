@@ -4,7 +4,7 @@ namespace Razorpay\Api;
 
 class Api
 {
-    protected static $baseUrl = 'https://api-web-yashgit891.dev.razorpay.in';
+    protected static $baseUrl = 'https://api.razorpay.com';
 
     protected static $key = null;
 

@@ -2881,7 +2881,7 @@ EOT;
             echo '<script async src="https://cdn.razorpay.com/widgets/trusted-badge.js" type="text/javascript"></script>
       
             <div style="padding-top: 60px;" id="app">
-                <razorpay-trusted-business key="rzp_live_ILgsfZCZoFIKMb">
+                <razorpay-trusted-business key="' . $key_id . '">
                 </razorpay-trusted-business>
             </div>';
 
