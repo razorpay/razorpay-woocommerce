@@ -84,6 +84,7 @@ class RZP_Webhook
         $post = file_get_contents('php://input');
 
         $data = json_decode($post, true);
+        rzpLogInfo("Time:" . time() . " webhook triggered" . json_encode($data));
 
         if (json_last_error() !== 0) {
             return;
@@ -101,15 +102,17 @@ class RZP_Webhook
                 return;
             }
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
-                
+
                 $razorpayWebhookSecret = (empty($this->razorpay->getSetting('webhook_secret')) === false) ? $this->razorpay->getSetting('webhook_secret') : get_option('webhook_secret');
-                
+
+                rzpLogInfo("Time:" . time() . " Order id:" . $orderId . " Webhook secret:" . $razorpayWebhookSecret);
                 //
                 // If the webhook secret isn't set on wordpress, return
                 //
                 if (empty($razorpayWebhookSecret) === true) {
                     $razorpayWebhookSecret = get_option('rzp_webhook_secret');
                     if (empty($razorpayWebhookSecret) === false) {
+                        rzpLogInfo("Time:" . time() . "Order id:" . $orderId . " Webhook secret using get_option():" . $razorpayWebhookSecret);
                         $this->razorpay->update_option('webhook_secret', $razorpayWebhookSecret);
                     } else {
                         rzpLogInfo("Woocommerce orderId: $orderId webhook process exited due to secret not available");
@@ -127,6 +130,7 @@ class RZP_Webhook
                     $log = array(
                         'message' => $e->getMessage(),
                         'data'    => $data,
+                        'signature' => $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'],
                         'event'   => 'razorpay.wc.signature.verify_failed',
                     );
 
@@ -136,25 +140,25 @@ class RZP_Webhook
                     return;
                 }
 
-                if ($this->razorpay->isHposEnabled) 
+                if ($this->razorpay->isHposEnabled)
                 {
                     $order = wc_get_order($orderId);
                     $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
                 }
-                else 
+                else
                 {
                     $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
                 }
 
-                
+
                 if ($rzpWebhookNotifiedAt === '')
                 {
-                    if ($this->razorpay->isHposEnabled) 
+                    if ($this->razorpay->isHposEnabled)
                     {
                         $order->update_meta_data('rzp_webhook_notified_at', time());
                         $order->save();
                     }
-                    else 
+                    else
                     {
                         update_post_meta($orderId, "rzp_webhook_notified_at", time());
                     }

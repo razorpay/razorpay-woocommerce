@@ -467,13 +467,17 @@ function woocommerce_razorpay_init()
 
         public function autoEnableWebhook()
         {
+            rzpLogInfo("Time:" . time() ." at autoEnableWebhook");
             $webhookExist = false;
             $webhookUrl   = $this->getWebhookUrl();
 
             $key_id      = $this->getSetting('key_id');
             $key_secret  = $this->getSetting('key_secret');
             $enabled     = true;
+
             $secret = empty($this->getSetting('webhook_secret')) ? $this->generateSecret() : $this->getSetting('webhook_secret');
+
+            rzpLogInfo("Time:" . time() . " webhook secret:" . $secret);
 
             update_option('webhook_secret', $secret);
             $getWebhookFlag =  get_option('webhook_enable_flag');
@@ -606,6 +610,7 @@ function woocommerce_razorpay_init()
                         ];
                         $webhookExist  = true;
                         $webhookId     = $value['id'];
+                        rzpLogInfo("Time:" . $time . " webhook id:" . $webhookId . " webhook data" . json_encode($data));
                     }
                 }
             }
@@ -981,13 +986,17 @@ function woocommerce_razorpay_init()
             {
                 if ($getWebhookFlag + 86400 < time())
                 {
+                    rzpLogInfo("Time:" . $time . " Order id:" . $orderId . " calling auto enable webhook after 12 hrs");
                     $this->autoEnableWebhook();
+                    rzpLogInfo("Time:" . $time . " Order id:" . $orderId . "webhook secret after auto webhook:".$this->getSetting('webhook_secret'));
                 }
             }
             else
             {
+                rzpLogInfo("Time:" . $time . " Order id:" . $orderId . " calling auto enable webhook as webhook_enable_flag is empty");
                 update_option('webhook_enable_flag', $time);
                 $this->autoEnableWebhook();
+                rzpLogInfo("Time:" . $time . " Order id:" . $orderId . "webhook secret after auto webhook:".$this->getSetting('webhook_secret'));
             }
 
             rzpLogInfo("getRazorpayPaymentParams $orderId");
