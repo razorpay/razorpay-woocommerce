@@ -228,7 +228,7 @@ function woocommerce_razorpay_init()
 
             // file added in woocommerce v7.1.0, maybe removed later
             if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') and
-                OrderUtil::custom_orders_table_usage_is_enabled()) 
+                OrderUtil::custom_orders_table_usage_is_enabled())
             {
                 $this->isHposEnabled = true;
             }
@@ -237,7 +237,7 @@ function woocommerce_razorpay_init()
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
-            
+
             // Load preference API call only for administrative interface page.
             if (current_user_can('administrator'))
             {
@@ -673,15 +673,15 @@ function woocommerce_razorpay_init()
 
                 $orderTable = $wpdb->prefix . 'wc_orders';
 
-                if($this->isHposEnabled) 
+                if($this->isHposEnabled)
                 {
                     $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT id FROM $orderTable AS P WHERE payment_method = %s", "razorpay"));
-                } 
-                else 
+                }
+                else
                 {
                     $rzpTrancationData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", "_payment_method", "razorpay"));
-                }              
-                
+                }
+
                 $arrayPost = json_decode(json_encode($rzpTrancationData), true);
 
                 if (empty($arrayPost) === false and
@@ -1144,7 +1144,7 @@ function woocommerce_razorpay_init()
                 {
                     throw new Exception($data['currency'] . " currency is not supported at the moment.");
                 }
-                
+
                 $razorpayOrder = $api->order->create($data);
             }
             catch (Exception $e)
@@ -1234,7 +1234,7 @@ function woocommerce_razorpay_init()
         private function getOrderCreationData($orderId)
         {
             global $wpdb;
-            
+
             rzpLogInfo("Called getOrderCreationData with params orderId $orderId");
             $order = wc_get_order($orderId);
 
@@ -1496,7 +1496,7 @@ EOT;
         }
 
         // process refund for gift card
-        function processGiftCardRefund($orderId, $razorpayPaymentId, $amount = null, $reason = '')
+        function processRefund($orderId, $razorpayPaymentId, $amount = null, $reason = '')
         {
             $order = wc_get_order($orderId);
 
@@ -1632,27 +1632,27 @@ EOT;
             $orderOperationalDataTable = $wpdb->prefix . 'wc_order_operational_data';
             $orderTable = $wpdb->prefix . 'wc_orders';
 
-            if ($this->isHposEnabled) 
+            if ($this->isHposEnabled)
             {
                 $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT order_id FROM $orderOperationalDataTable AS P WHERE order_key = %s", $post_password));
-            
+
                 $orderData = $wpdb->get_row($wpdb->prepare("SELECT status FROM $orderTable AS P WHERE id = %s", $orderOperationalData->order_id));
-            } else 
+            } else
             {
                 $orderOperationalData = $wpdb->get_row($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta AS P WHERE meta_key = %s AND meta_value = %s", $meta_key, $post_password));
 
                 $orderData = $wpdb->get_row($wpdb->prepare("SELECT post_status FROM $wpdb->posts AS P WHERE post_type=%s and ID=%s", $post_type, $orderOperationalData->post_id));
             }
-            
+
             $arrayPost = json_decode(json_encode($orderOperationalData), true);
 
             if (!empty($arrayPost) and
                 $arrayPost != null)
             {
-                if ($this->isHposEnabled) 
+                if ($this->isHposEnabled)
                 {
                     $orderId = $orderOperationalData->order_id;
-                    
+
                     $order = wc_get_order($orderId);
 
                     if ($orderData->status === 'wc-checkout-draft')
@@ -1662,7 +1662,7 @@ EOT;
                     }
                     $orderStatus = $order->get_status();
                     rzpLogInfo("HPOS is enabled and order status: $orderStatus");
-                } 
+                }
                 else
                 {
                     $orderId = $orderOperationalData->post_id;
@@ -1676,7 +1676,7 @@ EOT;
                     $orderStatus = $order->get_status();
                     rzpLogInfo("HPOS is disabled and order status: $orderStatus");
                 }
-                
+
                 rzpLogInfo("Get order id in check_razorpay_response: orderId $orderId");
             }
 
@@ -1697,12 +1697,12 @@ EOT;
 
             // If the order has already been paid for
             // redirect user to success page
-            if (($order->needs_payment() === false) and 
-                ($orderStatus != 'draft') and 
+            if (($order->needs_payment() === false) and
+                ($orderStatus != 'draft') and
                 ($orderStatus != 'wc-checkout-draft'))
             {
                 rzpLogInfo("Order payment is already done for the orderId: " . $orderId . " order status " . $orderStatus);
-                
+
                 $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
                 if ($cartHash != false)
@@ -2025,7 +2025,7 @@ EOT;
             }
 
             // update gift card and coupons
-            $rzpPromotionAmount = $this->updateGiftAndCoupon($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
+            $rzpPromotionAmount = $this->handlePromotions($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
 
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
@@ -2053,7 +2053,7 @@ EOT;
                 else
                 {
                     $isStoreShippingEnabled = "";
-                    if ($this->isHposEnabled) 
+                    if ($this->isHposEnabled)
                     {
                          $shippingData = $order->get_meta('1cc_shippinginfo');
 
@@ -2139,7 +2139,7 @@ EOT;
 
             $paymentDoneBy = $razorpayPaymentData['method'];
 
-            $codFee = 0;  
+            $codFee = 0;
             if (($paymentDoneBy === 'cod') && isset($razorpayData['cod_fee']) == true)
             {
                 $codFee = $razorpayData['cod_fee']/100;
@@ -2213,7 +2213,7 @@ EOT;
             }
         }
 
-        public function updateGiftAndCoupon($razorpayData, $order, $orderId, $razorpayPaymentId)
+        public function handlePromotions($razorpayData, $order, $orderId, $razorpayPaymentId)
         {
             global $woocommerce;
             global $wpdb;
@@ -2238,7 +2238,7 @@ EOT;
 
                         if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance && 'trash' == $status && !$yithCard->exists()){
                             // initiate refund in case gift card faliure
-                            $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                            $this->processRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }else{
                             //Deduct amount of gift card
                             $yithCard->update_balance( $yithCard->get_balance() - $usedAmt );
@@ -2274,21 +2274,53 @@ EOT;
 
                             if($balance == null && $balance >= 0 && $usedAmt > $balance ){
                                 // initiate refund in case gift card faliure
-                                $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                                $this->processRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                             }else{
                                 //Deduct amount of gift card
                                $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftCode);
                             }
 
                         }else{
-                            $this->processGiftCardRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                            $this->processRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }
 
                     }else{
-                       $this->processGiftCardRefund($orderId,  $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                       $this->processRefund($orderId,  $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                     }
 
-                }else{
+                }else if($promotion['type'] == 'terra_wallet') {
+                    if (!is_plugin_active('woo-wallet/woo-wallet.php')) {
+                        $this->processRefund(
+                            $orderId,
+                            $razorpayPaymentId,
+                            $razorpayData['amount_paid'],
+                            'Terra Wallet Plugin is not active');
+                    }
+                    $viaWalletAmount = $promotion['value']/100;
+                    $walletBalance = woo_wallet()->wallet->get_wallet_balance($order->get_user_id(), 'edit');
+                    if ($walletBalance < $viaWalletAmount)
+                    {
+                        $this->processRefund(
+                            $orderId,
+                            $razorpayPaymentId,
+                            $razorpayData['amount_paid'],
+                            'Terra Wallet Insufficient Balance');
+                    }
+                    $this->addTerraWalletAmountAsPartialPaymentFee($viaWalletAmount, $order);
+                    woo_wallet()->wallet->wallet_partial_payment($orderId);
+                    $terraWalletTransactionID = get_post_meta( $orderId, '_partial_pay_through_wallet_compleate', true );
+                    if(!$terraWalletTransactionID) {
+                        $this->processRefund(
+                            $orderId,
+                            $razorpayPaymentId,
+                            $razorpayData['amount_paid'],
+                            'Terra Wallet Transaction Failed');
+                    }else {
+                        rzpLogInfo("TerraWallet TransactionID for order id $orderId is $terraWalletTransactionID");
+                    }
+                }
+                else{
+
 
                     $couponKey = $promotion['code'];
 
@@ -2301,6 +2333,18 @@ EOT;
 
             }
             return $rzpGiftAndCouponAmount;
+        }
+
+        private function addTerraWalletAmountAsPartialPaymentFee($amount, $order) {
+            if ( $amount > 0 ) {
+                $itemFee = new WC_Order_Item_Fee();
+                $itemFee->set_name(__( 'Via wallet', 'woo-wallet' ));
+                $itemFee->set_amount(-1.0 * $amount);
+                $itemFee->set_tax_status('none');
+                $itemFee->set_total(-1.0 * $amount);
+                $order->add_item($itemFee);
+				$order->save();
+            }
         }
 
         protected function debitGiftCards( $orderId, $order, $note, $usedAmt, $giftCardNo) {
@@ -2542,7 +2586,7 @@ EOT;
                 }else{
                   $userId = get_post_meta($wcOrderId, 'abandoned_user_id', true);
                 }
-                
+
             }
 
             $results = $wpdb->get_results( // phpcs:ignore
@@ -2564,7 +2608,7 @@ EOT;
             }
 
             $abandonedOrderId    = wcal_common::wcal_get_cart_session('abandoned_cart_id_lite');
-            
+
             if ($this->isHposEnabled) {
                 $order->update_meta_data( 'abandoned_id', $abandonedOrderId);
                 $order->save();
