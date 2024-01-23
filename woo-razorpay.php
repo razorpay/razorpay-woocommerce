@@ -1,10 +1,10 @@
 <?php
 /*
- * Plugin Name: Razorpay for WooCommerce
+ * Plugin Name: 1 Razorpay: Signup for FREE PG
  * Plugin URI: https://razorpay.com
- * Description: Razorpay Payment Gateway Integration for WooCommerce
- * Version: 4.5.8
- * Stable tag: 4.5.8
+ * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
+ * Version: 4.5.9
+ * Stable tag: 4.5.9
  * Author: Team Razorpay
  * WC tested up to: 7.9.0
  * Author URI: https://razorpay.com
@@ -1502,6 +1502,7 @@ EOT;
 
             $data = array(
                 'amount'    =>  (int) round($amount * 100),
+                'speed'     => "optimum",
                 'notes'     =>  array(
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
@@ -1516,13 +1517,20 @@ EOT;
                     ->fetch( $paymentId )
                     ->refund( $data );
 
-                $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
-                /**
-                 * @var $refund ->id -- Provides the RazorPay Refund ID
-                 * @var $orderId -> Refunded Order ID
-                 * @var $refund -> WooCommerce Refund Instance.
-                 */
-                do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+                if (isset($refund) === true)
+                {
+                    $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
+                    /**
+                     * @var $refund ->id -- Provides the RazorPay Refund ID
+                     * @var $orderId -> Refunded Order ID
+                     * @var $refund -> WooCommerce Refund Instance.
+                     */
+                    do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+
+                    rzpLogInfo( 'Refund ID = ' . $refund->id .
+                                ' , Refund speed requested = ' . $refund->speed_requested .
+                                ' , Refund speed processed = ' . $refund->speed_processed);
+                }
 
                 return true;
             }
