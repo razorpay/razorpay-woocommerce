@@ -1480,17 +1480,20 @@ EOT;
                     ->fetch( $paymentId )
                     ->refund( $data );
 
-                $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
-                /**
-                 * @var $refund ->id -- Provides the RazorPay Refund ID
-                 * @var $orderId -> Refunded Order ID
-                 * @var $refund -> WooCommerce Refund Instance.
-                 */
-                do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+                if (isset($refund) === true)
+                {
+                    $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
+                    /**
+                     * @var $refund ->id -- Provides the RazorPay Refund ID
+                     * @var $orderId -> Refunded Order ID
+                     * @var $refund -> WooCommerce Refund Instance.
+                     */
+                    do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
 
-                rzpLogInfo('Refund ID' . $refund->id);
-                rzpLogInfo('Refund speed requested' . $refund->speed_requested);
-                rzpLogInfo('Refund speed processed' . $refund->speed_processed);
+                    rzpLogInfo( 'Refund ID = ' . $refund->id .
+                                ' , Refund speed requested = ' . $refund->speed_requested .
+                                ' , Refund speed processed = ' . $refund->speed_processed);
+                }
 
                 return true;
             }
