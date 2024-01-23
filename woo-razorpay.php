@@ -1465,6 +1465,7 @@ EOT;
 
             $data = array(
                 'amount'    =>  (int) round($amount * 100),
+                'speed'     => "optimum",
                 'notes'     =>  array(
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
@@ -1486,6 +1487,10 @@ EOT;
                  * @var $refund -> WooCommerce Refund Instance.
                  */
                 do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+
+                rzpLogInfo('Refund ID' . $refund->id);
+                rzpLogInfo('Refund speed requested' . $refund->speed_requested);
+                rzpLogInfo('Refund speed processed' . $refund->speed_processed);
 
                 return true;
             }
