@@ -2337,12 +2337,14 @@ EOT;
 
         private function addTerraWalletAmountAsPartialPaymentFee($amount, $order) {
             if ( $amount > 0 ) {
+				$walletAmount = -1.0 * $amount;
                 $itemFee = new WC_Order_Item_Fee();
                 $itemFee->set_name(__( 'Via wallet', 'woo-wallet' ));
-                $itemFee->set_amount(-1.0 * $amount);
+                $itemFee->set_amount($walletAmount);
                 $itemFee->set_tax_status('none');
-                $itemFee->set_total(-1.0 * $amount);
+                $itemFee->set_total($walletAmount);
                 $order->add_item($itemFee);
+				$order->set_total($order->get_total() - $amount);
 				$order->save();
             }
         }
