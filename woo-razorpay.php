@@ -1495,8 +1495,8 @@ EOT;
             }
         }
 
-        // process refund for gift card
-        function processRefund($orderId, $razorpayPaymentId, $amount = null, $reason = '')
+        // process refund for rzp payment and WC gift card
+        function processRefundForOrdersWithGiftCard($orderId, $razorpayPaymentId, $amount = null, $reason = '')
         {
             $order = wc_get_order($orderId);
 
@@ -2024,9 +2024,6 @@ EOT;
                 $order->add_order_note( "Order Instructions: ". $orderInstructions);
             }
 
-            // update gift card and coupons
-            $rzpPromotionAmount = $this->handlePromotions($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
-
             //Apply shipping charges to woo-order
             if(isset($razorpayData['shipping_fee']) === true)
             {
@@ -2172,7 +2169,10 @@ EOT;
                 $order->save();
             }
 
-           if(!empty($razorpayData['offers']))
+            // handle promotions in order which include handling coupons, gift cards and terra wallet if applicable
+            $rzpPromotionAmount = $this->handlePromotions($razorpayData, $order, $wcOrderId, $razorpayPaymentId);
+
+            if(!empty($razorpayData['offers']))
             {
                 $offerDiff = $razorpayData['line_items_total'] + $razorpayData['shipping_fee'] + $codFee*100 - $razorpayPaymentData['amount'] - $rzpPromotionAmount;
 
@@ -2238,7 +2238,7 @@ EOT;
 
                         if($giftCardBalance == null && $giftCardBalance >= 0 && $usedAmt > $giftCardBalance && 'trash' == $status && !$yithCard->exists()){
                             // initiate refund in case gift card faliure
-                            $this->processRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                            $this->processRefundForOrdersWithGiftCard($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }else{
                             //Deduct amount of gift card
                             $yithCard->update_balance( $yithCard->get_balance() - $usedAmt );
@@ -2274,23 +2274,23 @@ EOT;
 
                             if($balance == null && $balance >= 0 && $usedAmt > $balance ){
                                 // initiate refund in case gift card faliure
-                                $this->processRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                                $this->processRefundForOrdersWithGiftCard($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                             }else{
                                 //Deduct amount of gift card
                                $this->debitGiftCards($orderId, $order, "order_id: $orderId checkout_update_order_meta", $usedAmt, $giftCode);
                             }
 
                         }else{
-                            $this->processRefund($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                            $this->processRefundForOrdersWithGiftCard($orderId, $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                         }
 
                     }else{
-                       $this->processRefund($orderId,  $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
+                       $this->processRefundForOrdersWithGiftCard($orderId,  $razorpayPaymentId, $razorpayData['amount_paid'], $reason = '');
                     }
 
                 }else if($promotion['type'] == 'terra_wallet') {
                     if (!is_plugin_active('woo-wallet/woo-wallet.php')) {
-                        $this->processRefund(
+                        $this->processRefundForOrdersWithGiftCard(
                             $orderId,
                             $razorpayPaymentId,
                             $razorpayData['amount_paid'],
@@ -2300,7 +2300,7 @@ EOT;
                     $walletBalance = woo_wallet()->wallet->get_wallet_balance($order->get_user_id(), 'edit');
                     if ($walletBalance < $viaWalletAmount)
                     {
-                        $this->processRefund(
+                        $this->processRefundForOrdersWithGiftCard(
                             $orderId,
                             $razorpayPaymentId,
                             $razorpayData['amount_paid'],
@@ -2310,7 +2310,7 @@ EOT;
                     woo_wallet()->wallet->wallet_partial_payment($orderId);
                     $terraWalletTransactionID = get_post_meta( $orderId, '_partial_pay_through_wallet_compleate', true );
                     if(!$terraWalletTransactionID) {
-                        $this->processRefund(
+                        $this->processRefundForOrdersWithGiftCard(
                             $orderId,
                             $razorpayPaymentId,
                             $razorpayData['amount_paid'],
