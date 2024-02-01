@@ -1137,6 +1137,8 @@ function woocommerce_razorpay_init()
 
             $args = array_merge($args, $params);
 
+            rzpLogInfo("checkout arguments:" . json_encode($args));
+
             return $args;
         }
 
@@ -1182,8 +1184,7 @@ function woocommerce_razorpay_init()
                     $data['currency'] === "BHD")
                 {
                     throw new Exception($data['currency'] . " currency is not supported at the moment.");
-                }
-                
+                }   
                 $razorpayOrder = $api->order->create($data);
             }
             catch (Exception $e)
@@ -1673,6 +1674,8 @@ EOT;
             $post_password = sanitize_text_field($_GET['order_key']);
 
             rzpLogInfo("Called check_razorpay_response: $post_password");
+            rzpLogInfo("callback payload:" . json_encode($_POST));
+            rzpLogInfo("referer url:" . $_SERVER['HTTP_REFERER']);
 
             $meta_key = '_order_key';
 
@@ -1692,6 +1695,8 @@ EOT;
             }
             
             $arrayPost = json_decode(json_encode($orderOperationalData), true);
+
+            rzpLogInfo("orderOperationalData:" . json_encode($arrayPost));
 
             if (!empty($arrayPost) and
                 $arrayPost != null)
@@ -1766,6 +1771,7 @@ EOT;
 
             if ($orderId  and !empty($_POST[self::RAZORPAY_PAYMENT_ID]))
             {
+                rzpLogInfo("orderId and razorpay_payment_id are not empty");
                 $error = "";
                 $success = false;
 
@@ -1791,14 +1797,45 @@ EOT;
             }
             else
             {
+                    rzpLogInfo("orderId: $orderId razorpay_payment_id:" . $_POST[self::RAZORPAY_PAYMENT_ID]);
+                	
+                    if(isset($_POST['error']))
+                    {
+                        $api = $this->getRazorpayApiInstance(); 
+                                        
+                        $razorpayData = $api->order->fetch($_POST[self::RAZORPAY_ORDER_ID]); 
+    
+                        rzpLogInfo(" razorpay order fetch:" . json_encode($razorpayData)); 
+
+                        if($razorpayData['status'] === 'paid')
+                        {
+                            $rzpPaymentData = $api->order->payment($_POST[self::RAZORPAY_ORDER_ID]);
+
+                            rzpLogInfo(" razorpay order fetch Payment ID :" . json_encode($rzpPaymentData)); 
+
+                            foreach ($rzpPaymentData['items'] as $item) 
+                            {
+                                if ($item['status'] == 'captured' || $item['status'] == 'authorized') {
+                                    
+                                    $razorpayPaymentId = $item['id'];
+                                    $success = true;
+                                }
+                            }
+
+                            rzpLogInfo(" Woocommerce order status updated via Razorpay validation"); 
+                        }
+                    }
+                  
                 if(isset($_POST[self::RAZORPAY_WC_FORM_SUBMIT]) && $_POST[self::RAZORPAY_WC_FORM_SUBMIT] ==1)
                 {
+                    rzpLogInfo("RAZORPAY_WC_FORM_SUBMIT:" . $_POST[self::RAZORPAY_WC_FORM_SUBMIT]);
                     $success = false;
                     $error = 'Customer cancelled the payment';
                 }
                 else
                 {
                     $success = false;
+                    
                     $error = "Payment Failed.";
                 }
 
@@ -1825,6 +1862,8 @@ EOT;
 
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
+                    rzpLogInfo("razorpay order fetch:" . json_encode($razorpayData));
+
                     $this->UpdateOrderAddress($razorpayData, $order);
                 }
 
@@ -1840,7 +1879,7 @@ EOT;
                 wp_redirect(wc_get_checkout_url());
                 exit;
             }
-
+          
             $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
 
             $this->redirectUser($order);
