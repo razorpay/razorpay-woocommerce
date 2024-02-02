@@ -2298,6 +2298,7 @@ EOT;
                                 $razorpayPaymentId,
                                 $razorpayData['amount_paid'],
                                 'Terra Wallet Insufficient Balance');
+                            continue;
                         }
                         $this->addTerraWalletAmountAsPartialPaymentFee($viaWalletAmount, $order);
                         woo_wallet()->wallet->wallet_partial_payment($orderId);
