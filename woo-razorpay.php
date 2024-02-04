@@ -2289,35 +2289,36 @@ EOT;
                     }
 
                 }else if($promotion['type'] == 'terra_wallet') {
-                    if (is_plugin_active('woo-wallet/woo-wallet.php')) {
-                        $viaWalletAmount = $promotion['value'] / 100;
-                        $walletBalance = woo_wallet()->wallet->get_wallet_balance($order->get_user_id(), 'edit');
-                        if ($walletBalance < $viaWalletAmount) {
+                    if (!is_plugin_active('woo-wallet/woo-wallet.php')) {
+                        $this->processRefundForOrdersWithGiftCard(
+                            $orderId,
+                            $razorpayPaymentId,
+                            $razorpayData['amount_paid'],
+                            'Terra Wallet Plugin is not active');
+                        continue;
+                    }
+                    $viaWalletAmount = $promotion['value'] / 100;
+                    $walletBalance = woo_wallet()->wallet->get_wallet_balance($order->get_user_id(), 'edit');
+                    if ($walletBalance < $viaWalletAmount)
+                    {
                             $this->processRefundForOrdersWithGiftCard(
                                 $orderId,
                                 $razorpayPaymentId,
                                 $razorpayData['amount_paid'],
                                 'Terra Wallet Insufficient Balance');
                             continue;
-                        }
-                        $this->addTerraWalletAmountAsPartialPaymentFee($viaWalletAmount, $order);
-                        woo_wallet()->wallet->wallet_partial_payment($orderId);
-                        $terraWalletTransactionID = get_post_meta($orderId, '_partial_pay_through_wallet_compleate', true);
-                        if (!$terraWalletTransactionID) {
-                            $this->processRefundForOrdersWithGiftCard(
-                                $orderId,
-                                $razorpayPaymentId,
-                                $razorpayData['amount_paid'],
-                                'Terra Wallet Transaction Failed');
-                        } else {
-                            rzpLogInfo("TerraWallet TransactionID for order id $orderId is $terraWalletTransactionID");
-                        }
-                    } else {
+                    }
+                    $this->addTerraWalletAmountAsPartialPaymentFee($viaWalletAmount, $order);
+                    woo_wallet()->wallet->wallet_partial_payment($orderId);
+                    $terraWalletTransactionID = get_post_meta($orderId, '_partial_pay_through_wallet_compleate', true);
+                    if (!$terraWalletTransactionID) {
                         $this->processRefundForOrdersWithGiftCard(
                             $orderId,
                             $razorpayPaymentId,
                             $razorpayData['amount_paid'],
-                            'Terra Wallet Plugin is not active');
+                            'Terra Wallet Transaction Failed');
+                    } else {
+                        rzpLogInfo("TerraWallet TransactionID for order id $orderId is $terraWalletTransactionID");
                     }
                 }
                 else{
