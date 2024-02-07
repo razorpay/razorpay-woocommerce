@@ -5,7 +5,7 @@
 
 // Fetch cart data on cart and mini cart page
 
-use Automattic\WooCommerce\Utilities\OrderUtil; 
+use Automattic\WooCommerce\Utilities\OrderUtil;
 
 function fetchCartData(WP_REST_Request $request)
 {
@@ -38,6 +38,10 @@ function fetchCartData(WP_REST_Request $request)
     }
 
     $response = cartResponse($couponCode);
+
+    $response['user'] = getCartUserObject();
+
+    $response['plugins'] = getPluginsDetails();
 
     return new WP_REST_Response($response, 200);
 }
@@ -90,7 +94,32 @@ function createCartData(WP_REST_Request $request)
 
     $response = cartResponse($couponCode);
 
+    $response['user'] = getCartUserObject();
+
+    $response['plugins'] = getPluginsDetails();
+
     return new WP_REST_Response($response, 200);
+}
+
+function getCartUserObject(): array {
+    $user = [
+        "logged_in" => false,
+    ];
+    if (is_user_logged_in()) {
+        $current_user = wp_get_current_user();
+        $user['logged_in'] = true;
+        $user['email'] = $current_user->user_email;
+    }
+    return $user;
+}
+
+function getPluginsDetails(): array {
+    $pluginData = [];
+    if (is_plugin_active('woo-wallet/woo-wallet.php'))
+    {
+        $pluginData['terra-wallet'] = ['active' => true];
+    }
+    return $pluginData;
 }
 
 /**
@@ -134,8 +163,8 @@ function getCartLineItem()
     $cart = WC()->cart->get_cart();
     $i = 0;
 
-    foreach($cart as $item_id => $item) { 
-        $product =  wc_get_product( $item['product_id']); 
+    foreach($cart as $item_id => $item) {
+        $product =  wc_get_product( $item['product_id']);
         $price = round($item['line_subtotal']*100) + round($item['line_subtotal_tax']*100);
 
         $type = "e-commerce";
@@ -146,7 +175,7 @@ function getCartLineItem()
            if($product->is_type('variation')){
                 $parentProductId = $product->get_parent_id();
                 $parentProduct = wc_get_product($parentProductId);
-             
+
                 if($parentProduct->get_type() == 'pw-gift-card' || $parentProduct->get_type() == 'gift-card'){
                     $type = 'gift_card';
                 }
@@ -154,7 +183,7 @@ function getCartLineItem()
            }else{
 
                if($product->get_type() == 'pw-gift-card' || $product->get_type() == 'gift-card'){
-                      $type = 'gift_card'; 
+                      $type = 'gift_card';
                }
            }
        }
@@ -172,7 +201,7 @@ function getCartLineItem()
        $data[$i]['variant_id'] = $item['variation_id'];
        $data[$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $price/$item['quantity'];
        $i++;
-    } 
+    }
 
     return $data;
 }
@@ -220,7 +249,7 @@ function cartResponse($couponCode){
 
     $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
     $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
-    
+
     $response += ['redirect' => true, 'one_click_checkout' => true, 'mandatory_login' => false, 'key' => get_option('woocommerce_razorpay_settings')['key_id'], 'name' => html_entity_decode(get_bloginfo('name'), ENT_QUOTES), 'currency' => 'INR'];
 
     return $response;
