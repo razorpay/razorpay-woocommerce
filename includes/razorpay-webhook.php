@@ -12,12 +12,12 @@ class RZP_Webhook
     /**
      * @var HTTP CONFLICT Request
      */
-    protected const HTTP_CONFLICT_STATUS = 409;
+    const HTTP_CONFLICT_STATUS = 409;
 
     /**
      * @var Webhook Notify Wait Time
      */
-    protected const WEBHOOK_NOTIFY_WAIT_TIME = (5 * 60);
+    const WEBHOOK_NOTIFY_WAIT_TIME = (5 * 60);
 
     /**
      * Instance of the razorpay payments class
@@ -159,18 +159,18 @@ class RZP_Webhook
                         update_post_meta($orderId, "rzp_webhook_notified_at", time());
                     }
 
-                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
+                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
                 elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
                 {
-                    error_log("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
+                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
                     header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
                     return;
                 }
 
-                error_log("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
+                rzpLogInfo("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
 
