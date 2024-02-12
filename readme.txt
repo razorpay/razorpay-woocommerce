@@ -71,6 +71,7 @@ Razorpay is available for Store Owners and Merchants in
 
 = 4.6.0 =
 * Support for Tera Wallet.
+* Added RTB widget.
 
 = 4.5.9 =
 * Plugin name and description updated.
