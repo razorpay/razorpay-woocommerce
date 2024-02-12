@@ -1504,7 +1504,6 @@ EOT;
 
             $data = array(
                 'amount'    =>  (int) round($amount * 100),
-                'speed'     => "optimum",
                 'notes'     =>  array(
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
