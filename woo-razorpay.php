@@ -49,21 +49,22 @@ add_action('before_woocommerce_init', function() {
 });
 
 add_action('before_woocommerce_init', function() {
-    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) 
+    {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
     }
 });
 
-add_action( 'woocommerce_blocks_loaded', 'razorpay_woocommerce_block_support' );
+add_action('woocommerce_blocks_loaded', 'razorpay_woocommerce_block_support');
 
 function razorpay_woocommerce_block_support() {
-    if ( class_exists( 'Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType' ) ) 
+    if (class_exists('Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType')) 
     {
         require_once dirname( __FILE__ ) . '/checkout-block.php';
 
         add_action(
           'woocommerce_blocks_payment_method_type_registration',
-          function( PaymentMethodRegistry $payment_method_registry ) {
+          function(PaymentMethodRegistry $payment_method_registry) {
             $container = Automattic\WooCommerce\Blocks\Package::container();
             $container->register(
                 WC_Razorpay_Blocks::class,

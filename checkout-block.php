@@ -1,15 +1,14 @@
-
 <?php
 
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
 
 final class WC_Razorpay_Blocks extends AbstractPaymentMethodType 
 {
-    protected $name = 'razorpay';// your payment gateway name
+    protected $name = 'razorpay';
 
     public function initialize()
     {
-        $this->settings = get_option( 'woocommerce_razorpay_settings', [] );
+        $this->settings = get_option('woocommerce_razorpay_settings', []);
     }
 
     public function get_payment_method_script_handles()
@@ -28,8 +27,9 @@ final class WC_Razorpay_Blocks extends AbstractPaymentMethodType
             true
         );
 
-        if(function_exists( 'wp_set_script_translations' ) ) {
-                wp_set_script_translations( 'razorpay-blocks-integration');
+        if (function_exists('wp_set_script_translations')) 
+        {
+            wp_set_script_translations('razorpay-blocks-integration');
         }
 
         return ['razorpay-blocks-integration'];
