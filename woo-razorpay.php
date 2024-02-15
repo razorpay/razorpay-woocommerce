@@ -57,7 +57,8 @@ add_action('before_woocommerce_init', function() {
 
 add_action('woocommerce_blocks_loaded', 'razorpay_woocommerce_block_support');
 
-function razorpay_woocommerce_block_support() {
+function razorpay_woocommerce_block_support() 
+{
     if (class_exists('Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType')) 
     {
         require_once dirname( __FILE__ ) . '/checkout-block.php';
@@ -72,7 +73,7 @@ function razorpay_woocommerce_block_support() {
                     return new WC_Razorpay_Blocks();
                 }
             );
-            $payment_method_registry->register($container->get( WC_Razorpay_Blocks::class ));
+            $payment_method_registry->register($container->get(WC_Razorpay_Blocks::class));
           },
           5
         );
