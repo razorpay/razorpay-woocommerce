@@ -1504,6 +1504,7 @@ EOT;
 
             $data = array(
                 'amount'    =>  (int) round($amount * 100),
+                'speed'     => 'optimum',
                 'notes'     =>  array(
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
@@ -1517,8 +1518,26 @@ EOT;
                 $refund = $client->payment
                     ->fetch( $paymentId )
                     ->refund( $data );
+                
+                if (isset($refund) === true and
+                    isset($refund->error) === true)
+                {
+                    rzpLogInfo('Refund failed with error message :- ' . $refund->error->description);
 
-                if (isset($refund) === true)
+                    if($refund->error->code === 'BAD_REQUEST_INSTANT_REFUND_NOT_SUPPORTED')
+                    {
+                        rzpLogInfo('Refund re initiated with normal speed.');
+
+                        $data['speed'] = 'normal';
+
+                        $refund = $client->payment
+                                        ->fetch($paymentId)
+                                        ->refund($data);
+                    }
+                }
+
+                if (isset($refund) === true and
+                    isset($refund->id) === true)
                 {
                     $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
                     /**
@@ -1532,7 +1551,7 @@ EOT;
                                 ' , Refund speed requested = ' . $refund->speed_requested .
                                 ' , Refund speed processed = ' . $refund->speed_processed);
                 }
-
+            
                 return true;
             }
             catch(Exception $e)
