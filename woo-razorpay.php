@@ -1504,21 +1504,21 @@ EOT;
             try
             {
                 $refund = $client->payment
-                    ->fetch( $paymentId )
-                    ->refund( $data );
+                    ->fetch($paymentId)
+                    ->refund($data);
 
                 if (isset($refund) === true and
                     isset($refund->id) === true)
                 {
-                    $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
+                    $order->add_order_note(__('Refund Id: ' . $refund->id, 'woocommerce'));
                     /**
                      * @var $refund ->id -- Provides the RazorPay Refund ID
                      * @var $orderId -> Refunded Order ID
                      * @var $refund -> WooCommerce Refund Instance.
                      */
-                    do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+                    do_action('woo_razorpay_refund_success', $refund->id, $orderId, $refund);
 
-                    rzpLogInfo( 'Refund ID = ' . $refund->id .
+                    rzpLogInfo('Refund ID = ' . $refund->id .
                                 ' , Refund speed requested = ' . $refund->speed_requested .
                                 ' , Refund speed processed = ' . $refund->speed_processed);
                 }
@@ -1527,7 +1527,7 @@ EOT;
             }
             catch(Exception $e)
             {
-                if($e->getMessage() === 'Instant refund not supported for the payment')
+                if ($e->getMessage() === 'Instant refund not supported for the payment')
                 {
                     rzpLogInfo('Refund failed with error message :- ' . $e->getMessage());
 
@@ -1538,17 +1538,17 @@ EOT;
                         $data['speed'] = 'normal';
 
                         $refund = $client->payment
-                                        ->fetch( $paymentId )
-                                        ->refund( $data );
+                                        ->fetch($paymentId)
+                                        ->refund($data);
                         
                         if (isset($refund) === true and
                             isset($refund->id) === true)
                         {
-                            $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
+                            $order->add_order_note(__('Refund Id: ' . $refund->id, 'woocommerce'));
                             
-                            do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+                            do_action('woo_razorpay_refund_success', $refund->id, $orderId, $refund);
 
-                            rzpLogInfo( 'Refund ID = ' . $refund->id .
+                            rzpLogInfo('Refund ID = ' . $refund->id .
                                         ' , Refund speed requested = ' . $refund->speed_requested .
                                         ' , Refund speed processed = ' . $refund->speed_processed);
                         }
