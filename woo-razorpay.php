@@ -1531,7 +1531,7 @@ EOT;
                 {
                     rzpLogInfo('Refund failed with error message :- ' . $e->getMessage());
 
-                    rzpLogInfo('Refund re initiated with normal speed.');
+                    rzpLogInfo('Refund reinitiated with normal speed.');
 
                     try
                     {
