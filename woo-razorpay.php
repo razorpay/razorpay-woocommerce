@@ -1518,23 +1518,6 @@ EOT;
                 $refund = $client->payment
                     ->fetch( $paymentId )
                     ->refund( $data );
-                
-                if (isset($refund) === true and
-                    isset($refund->error) === true)
-                {
-                    rzpLogInfo('Refund failed with error message :- ' . $refund->error->description);
-
-                    if($refund->error->code === 'BAD_REQUEST_INSTANT_REFUND_NOT_SUPPORTED')
-                    {
-                        rzpLogInfo('Refund re initiated with normal speed.');
-
-                        $data['speed'] = 'normal';
-
-                        $refund = $client->payment
-                                        ->fetch($paymentId)
-                                        ->refund($data);
-                    }
-                }
 
                 if (isset($refund) === true and
                     isset($refund->id) === true)
@@ -1556,6 +1539,40 @@ EOT;
             }
             catch(Exception $e)
             {
+                if($e->getMessage() === 'Instant refund not supported for the payment')
+                {
+                    rzpLogInfo('Refund failed with error message :- ' . $e->getMessage());
+
+                    rzpLogInfo('Refund re initiated with normal speed.');
+
+                    try
+                    {
+                        $data['speed'] = 'normal';
+
+                        $refund = $client->payment
+                                        ->fetch( $paymentId )
+                                        ->refund( $data );
+                        
+                        if (isset($refund) === true and
+                            isset($refund->id) === true)
+                        {
+                            $order->add_order_note( __( 'Refund Id: ' . $refund->id, 'woocommerce' ) );
+                            
+                            do_action( 'woo_razorpay_refund_success', $refund->id, $orderId, $refund );
+
+                            rzpLogInfo( 'Refund ID = ' . $refund->id .
+                                        ' , Refund speed requested = ' . $refund->speed_requested .
+                                        ' , Refund speed processed = ' . $refund->speed_processed);
+                        }
+                    
+                        return true;
+                    }
+                    catch(Exception $e)
+                    {
+                        return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
+                    }
+                }
+
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
         }
