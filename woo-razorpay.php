@@ -37,6 +37,7 @@ require_once __DIR__.'/includes/cron/plugin-fetch.php';
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 use Automattic\WooCommerce\Utilities\OrderUtil;
+use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
@@ -46,6 +47,38 @@ add_action('before_woocommerce_init', function() {
 		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
 	}
 });
+
+add_action('before_woocommerce_init', function() {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) 
+    {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
+    }
+});
+
+add_action('woocommerce_blocks_loaded', 'razorpay_woocommerce_block_support');
+
+function razorpay_woocommerce_block_support() 
+{
+    if (class_exists('Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType')) 
+    {
+        require_once dirname( __FILE__ ) . '/checkout-block.php';
+
+        add_action(
+          'woocommerce_blocks_payment_method_type_registration',
+          function(PaymentMethodRegistry $payment_method_registry) {
+            $container = Automattic\WooCommerce\Blocks\Package::container();
+            $container->register(
+                WC_Razorpay_Blocks::class,
+                function() {
+                    return new WC_Razorpay_Blocks();
+                }
+            );
+            $payment_method_registry->register($container->get(WC_Razorpay_Blocks::class));
+          },
+          5
+        );
+    }
+}
 
 function woocommerce_razorpay_init()
 {
