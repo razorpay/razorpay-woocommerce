@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, curlec, malaysia, ecommerce, international, cross border
 Requires at least: 3.9.2
-Tested up to: 6.3.1
-Stable tag: 4.6.0
+Tested up to: 6.4.2
+Stable tag: 4.6.1
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -68,6 +68,12 @@ Razorpay is available for Store Owners and Merchants in
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 4.6.1 =
+* Added support for Checkout Blocks on Woocommerce.
+* Added instant refund with fallback.
+* Removed RTB widget ineligibility message.
+* Fixed RTB widget eligibility check.
 
 = 4.6.0 =
 * Support for Tera Wallet.
