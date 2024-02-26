@@ -2221,6 +2221,11 @@ EOT;
                         // $item->set_method_id( "flat_rate:1" );
                         $item->set_total( $razorpayData['shipping_fee']/100 );
 
+                        if (isset($razorpayData['shipping_method']))
+                        {
+                            $item->set_method_title($razorpayData['shipping_method']['name']);
+                        }
+
                         $order->add_item( $item );
 
                         $item->save();
