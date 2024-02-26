@@ -49,7 +49,7 @@ add_action('before_woocommerce_init', function() {
 });
 
 add_action('before_woocommerce_init', function() {
-    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) 
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil'))
     {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
     }
@@ -57,9 +57,9 @@ add_action('before_woocommerce_init', function() {
 
 add_action('woocommerce_blocks_loaded', 'razorpay_woocommerce_block_support');
 
-function razorpay_woocommerce_block_support() 
+function razorpay_woocommerce_block_support()
 {
-    if (class_exists('Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType')) 
+    if (class_exists('Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType'))
     {
         require_once dirname( __FILE__ ) . '/checkout-block.php';
 
@@ -480,7 +480,7 @@ function woocommerce_razorpay_init()
                             'title' => '<span style="font-size: 20px;">' . __('Razorpay Trusted Business'). '</span>',
                             'type' => 'title'
                         );
-                        
+
                         $this->form_fields['enable_rtb_widget'] =  array(
                             'title'                 => __('RTB Widget Enable/Disable'),
                             'type'                  => 'checkbox',
@@ -1378,7 +1378,12 @@ function woocommerce_razorpay_init()
                $data['line_items'][$i]['type'] =  $type;
                $data['line_items'][$i]['sku'] = $product->get_sku();
                $data['line_items'][$i]['variant_id'] = (string)$item->get_variation_id();
-               $data['line_items'][$i]['product_id'] = (string)$product->get_parent_id();
+               $product_id = $product->get_id();
+               if (is_a($product, 'WC_Product_Variation')) {
+                   $product_id = $product->get_parent_id();
+               }
+               $data['line_items'][$i]['product_id'] = (string)$product_id;
+			   $data['line_items'][$i]['weight'] = $product->get_weight()*1000*(int)$item->get_quantity();
                $data['line_items'][$i]['price'] = (empty($productDetails['price'])=== false) ? round(wc_get_price_excluding_tax($product)*100) + round($item->get_subtotal_tax()*100 / $item->get_quantity()) : 0;
                $data['line_items'][$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $productDetails['price']*100;
                $data['line_items'][$i]['quantity'] = (int)$item->get_quantity();
@@ -1555,7 +1560,7 @@ EOT;
                                 ' , Refund speed requested = ' . $refund->speed_requested .
                                 ' , Refund speed processed = ' . $refund->speed_processed);
                 }
-            
+
                 return true;
             }
             catch(Exception $e)
@@ -1571,19 +1576,19 @@ EOT;
                     $refund = $client->payment
                                     ->fetch($paymentId)
                                     ->refund($data);
-                    
+
                     if (isset($refund) === true and
                         isset($refund->id) === true)
                     {
                         $order->add_order_note(__('Refund Id: ' . $refund->id, 'woocommerce'));
-                        
+
                         do_action('woo_razorpay_refund_success', $refund->id, $orderId, $refund);
 
                         rzpLogInfo('Refund ID = ' . $refund->id .
                                     ' , Refund speed requested = ' . $refund->speed_requested .
                                     ' , Refund speed processed = ' . $refund->speed_processed);
                     }
-                
+
                     return true;
                 }
                 catch(Exception $e)
@@ -2964,7 +2969,7 @@ EOT;
                 $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
 
                 update_option('rzp_rtb_enable', 'no');
-                
+
                 $rtbActivationStatus = $api->request->request('GET', 'rtb?key_id=' . get_option('woocommerce_razorpay_settings')['key_id']);
 
                 if (isset($rtbActivationStatus['widget_enabled']) and
