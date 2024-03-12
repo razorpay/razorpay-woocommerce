@@ -1383,7 +1383,6 @@ function woocommerce_razorpay_init()
                    $product_id = $product->get_parent_id();
                }
                $data['line_items'][$i]['product_id'] = (string)$product_id;
-
                // wc_get_weight is a woocommerce function which will help us to get weight in desired metric
                // Magic Order expects weight in weight * quantity of line item hence doing the same
                $data['line_items'][$i]['weight'] = round(wc_get_weight($product->get_weight(), 'g', get_option( 'woocommerce_weight_unit', 'g')) * $item->get_quantity());
