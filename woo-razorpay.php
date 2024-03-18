@@ -2150,6 +2150,10 @@ EOT;
                 if($razorpayData['shipping_fee'] == 0)
                 {
                     $item->set_method_title( 'Free Shipping' );
+                    if(isset($razorpayData['notes']) && isset($razorpayData['notes']['shipping_method_name']))
+                    {
+                        $item->set_method_title($razorpayData['notes']['shipping_method_name']);
+                    }
                 }
                 else
                 {
@@ -2221,9 +2225,9 @@ EOT;
                         // $item->set_method_id( "flat_rate:1" );
                         $item->set_total( $razorpayData['shipping_fee']/100 );
 
-                        if (isset($razorpayData['shipping_method']))
+                        if(isset($razorpayData['notes']) && isset($razorpayData['notes']['shipping_method_name']))
                         {
-                            $item->set_method_title($razorpayData['shipping_method']['name']);
+                            $item->set_method_title($razorpayData['notes']['shipping_method_name']);
                         }
 
                         $order->add_item( $item );
