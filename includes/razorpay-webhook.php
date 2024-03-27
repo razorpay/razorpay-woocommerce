@@ -188,7 +188,7 @@ class RZP_Webhook
                     rzpLogInfo("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
                 }
 
-                rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
+                rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for event: ". $data['event']);
 
                 switch ($data['event']) {
                     case self::PAYMENT_AUTHORIZED:
