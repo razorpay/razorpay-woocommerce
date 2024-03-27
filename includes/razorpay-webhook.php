@@ -101,7 +101,7 @@ class RZP_Webhook
             $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
             $razorpayOrderId = $data['payload']['payment']['entity']['order_id'];
 
-            if(in_array($data['event'], $this->subscriptionEvents) == true)
+            if (in_array($data['event'], $this->subscriptionEvents) === true)
             {
                 $orderId = $data['payload']['subscription']['entity']['notes']['woocommerce_order_id'];
                 $razorpayOrderId = ($data['event'] == self::SUBSCRIPTION_CHARGED) ? $razorpayOrderId : "No payment id in subscription event";
@@ -150,7 +150,7 @@ class RZP_Webhook
                     return;
                 }
 
-                if(in_array($data['event'], $this->subscriptionEvents) == false)
+                if (in_array($data['event'], $this->subscriptionEvents) === false)
                 {
                     if ($this->razorpay->isHposEnabled) 
                     {
