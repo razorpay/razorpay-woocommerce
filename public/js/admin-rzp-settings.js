@@ -41,7 +41,7 @@ window.onload = function() {
 	{
 		var rzpElement = document.getElementById(item);
 
-		if(rzpElement == null)
+		if (rzpElement == null)
 		{
 			return;
 		}
