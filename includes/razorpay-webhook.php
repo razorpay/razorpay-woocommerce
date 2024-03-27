@@ -56,6 +56,13 @@ class RZP_Webhook
         self::SUBSCRIPTION_CHARGED,
     ];
 
+    protected $subscriptionEvents = [
+        self::SUBSCRIPTION_CANCELLED,
+        self::SUBSCRIPTION_PAUSED,
+        self::SUBSCRIPTION_RESUMED,
+        self::SUBSCRIPTION_CHARGED,
+    ];
+
     public function __construct()
     {
         $this->razorpay = new WC_Razorpay(false);
@@ -93,6 +100,13 @@ class RZP_Webhook
 
             $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
             $razorpayOrderId = $data['payload']['payment']['entity']['order_id'];
+
+            if (in_array($data['event'], $this->subscriptionEvents) === true)
+            {
+                $orderId = $data['payload']['subscription']['entity']['notes']['woocommerce_order_id'];
+                $razorpayOrderId = ($data['event'] == self::SUBSCRIPTION_CHARGED) ? $razorpayOrderId : "No payment id in subscription event";
+            }
+
 
             // Skip the webhook if not the valid data and event
             if ($this->shouldConsumeWebhook($data) === false) {
@@ -136,43 +150,45 @@ class RZP_Webhook
                     return;
                 }
 
-                if ($this->razorpay->isHposEnabled) 
-                {
-                    $order = wc_get_order($orderId);
-                    $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
-                }
-                else 
-                {
-                    $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
-                }
-
-                
-                if ($rzpWebhookNotifiedAt === '')
+                if (in_array($data['event'], $this->subscriptionEvents) === false)
                 {
                     if ($this->razorpay->isHposEnabled) 
                     {
-                        $order->update_meta_data('rzp_webhook_notified_at', time());
-                        $order->save();
+                        $order = wc_get_order($orderId);
+                        $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
                     }
                     else 
                     {
-                        update_post_meta($orderId, "rzp_webhook_notified_at", time());
+                        $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
                     }
 
-                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
-                    header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
-                    return;
-                }
-                elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
-                {
-                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
-                    header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
-                    return;
+                    if ($rzpWebhookNotifiedAt === '')
+                    {
+                        if ($this->razorpay->isHposEnabled) 
+                        {
+                            $order->update_meta_data('rzp_webhook_notified_at', time());
+                            $order->save();
+                        }
+                        else 
+                        {
+                            update_post_meta($orderId, "rzp_webhook_notified_at", time());
+                        }
+
+                        rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
+                        header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
+                        return;
+                    }
+                    elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
+                    {
+                        rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
+                        header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
+                        return;
+                    }
+
+                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
                 }
 
-                rzpLogInfo("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
-
-                rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated");
+                rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for event: ". $data['event']);
 
                 switch ($data['event']) {
                     case self::PAYMENT_AUTHORIZED:
