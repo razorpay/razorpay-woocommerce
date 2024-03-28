@@ -72,6 +72,7 @@ Razorpay is available for Store Owners and Merchants in
 = 4.6.2 =
 * Fixed, Subscription events webhook bug.
 * Fixed, console errors due to instrumentation.
+* Added Shipping Method Name for Shipping Engine support.
 
 = 4.6.1 =
 * Added support for Checkout Blocks on Woocommerce.
