@@ -335,7 +335,7 @@ function woocommerce_razorpay_init()
         {
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
-            add_action( 'admin_notices', array($this, 'add_magic_banner' ));
+            add_action('admin_notices', array($this, 'add_magic_banner'));
 
             add_action('woocommerce_api_' . $this->id, array($this, 'check_razorpay_response'));
 
