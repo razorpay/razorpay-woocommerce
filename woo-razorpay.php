@@ -3,8 +3,8 @@
  * Plugin Name: 1 Razorpay: Signup for FREE PG
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
- * Version: 4.6.3
- * Stable tag: 4.6.3
+ * Version: 4.6.4
+ * Stable tag: 4.6.4
  * Author: Team Razorpay
  * WC tested up to: 7.9.0
  * Author URI: https://razorpay.com
@@ -335,8 +335,6 @@ function woocommerce_razorpay_init()
         {
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
-            add_action('admin_notices', array($this, 'add_magic_banner'));
-
             add_action('woocommerce_api_' . $this->id, array($this, 'check_razorpay_response'));
 
             $cb = array($this, 'process_admin_options');
@@ -361,13 +359,6 @@ function woocommerce_razorpay_init()
             }
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
-        }
-
-        // Magic checkout admin banner has been added.
-        public function add_magic_banner()
-        {
-            echo '<div class="notice notice-info is-dismissible">
-			<a href="https://razorpay.com/magic/?utm_source=WooCommerce&utm_medium=banner" target="_blank"><img src="https://cdn.razorpay.com/static/assets/magic-checkout/platforms/wooc_banner.png"  style="width: 100%;"/></a></div>';
         }
 
         public function init_form_fields()
