@@ -82,9 +82,9 @@ function razorpay_woocommerce_block_support()
 
 function woocommerce_razorpay_init()
 {
-    add_action("woocommerce_update_options_advanced", 'hposInstrumentation');
+    add_action("woocommerce_update_options_advanced", 'hposInstrumentationRzp');
 
-    function hposInstrumentation()
+    function hposInstrumentationRzp()
     {
         $rzp = new WC_Razorpay();
 
