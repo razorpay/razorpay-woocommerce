@@ -85,9 +85,9 @@ class Test_Instrumentation extends WP_UnitTestCase
     public function testUpdateCurrentVersion()
     {
         $this->expectNotToPerformAssertions();
-        
+
         add_option('rzp_woocommerce_current_version', get_plugin_data(__FILE__)['Version']);
-        
+
         $_POST['woocommerce_razorpay_key_id'] = 'key_id';
         $_POST['woocommerce_razorpay_key_secret'] = 'key_secret';
         $_POST['woocommerce_razorpay_enabled'] = 'yes';
@@ -248,7 +248,7 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->assertSame('error', $response['status']);
         $this->assertSame('properties given as input is not valid', $response['message']);
     }
-    
+
     public function testGetDefaultPropertiesWithTimeStamp()
     {
         $response = $this->instrumentationMock->getDefaultProperties();
@@ -256,7 +256,7 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->assertSame('WordPress', $response['platform']);
         $this->assertNotNull($response['platform_version']);
         $this->assertNotNull($response['woocommerce_version']);
-        $this->assertSame('Razorpay for WooCommerce', $response['plugin_name']);
+        $this->assertSame('1 Razorpay: Signup for FREE PG', $response['plugin_name']);
         $this->assertNotNull($response['plugin_version']);
         $this->assertNotNull($response['unique_id']);
         $this->assertNotNull($response['event_timestamp']);
