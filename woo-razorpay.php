@@ -82,9 +82,7 @@ function razorpay_woocommerce_block_support()
 
 function woocommerce_razorpay_init()
 {
-    add_action("woocommerce_update_options_advanced", 'hposInstrumentationRzp');
-
-    function hposInstrumentationRzp()
+    add_action("woocommerce_update_options_advanced", function()
     {
         $rzp = new WC_Razorpay();
 
@@ -119,7 +117,7 @@ function woocommerce_razorpay_init()
 
             update_option('rzp_hpos', 'no');
         }
-    }
+    });
 
     if (!class_exists('WC_Payment_Gateway') || class_exists('WC_Razorpay'))
     {
