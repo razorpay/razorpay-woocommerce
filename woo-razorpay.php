@@ -523,8 +523,6 @@ function woocommerce_razorpay_init()
 
         public function autoEnableWebhook()
         {
-            rzpLogInfo("Time:" . time() ." at autoEnableWebhook");
-
             $webhookExist = false;
             $webhookUrl   = $this->getWebhookUrl();
 

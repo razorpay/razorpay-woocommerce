@@ -51,7 +51,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         //After the webhook flag is set
 
-        $this->assertEquals(['order_id' => 'order_test'], $this->instance->getRazorpayPaymentParams($order, $wcOrderId));
+        $this->assertEquals(['order_id' => 'razorpay_order_id'], $this->instance->getRazorpayPaymentParams($order, $wcOrderId));
 
 
     }
