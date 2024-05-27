@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../../includes/razorpay-affordability-widget.php';
+require_once('includes/admin/wc-admin-functions.php');
 
 use Razorpay\MockApi\MockApi;
 
