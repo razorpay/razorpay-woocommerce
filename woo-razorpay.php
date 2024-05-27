@@ -1050,6 +1050,7 @@ function woocommerce_razorpay_init()
 
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderId);
+            echo 'createOrGetRazorpayOrderId with order: ' . json_encode($order) . ' and orderId: ' . $orderId . ' and $razorpayOrderId: ' . $razorpayOrderId;
 
             if ($razorpayOrderId === null)
             {
@@ -1074,10 +1075,12 @@ function woocommerce_razorpay_init()
         public function generate_razorpay_form($orderId)
         {
             $order = wc_get_order($orderId);
+            echo 'generate_razorpay_form with orderId: ' . $orderId . ' and order: ' . json_encode($order);
 
             try
             {
                 $params = $this->getRazorpayPaymentParams($order, $orderId);
+                echo '$params from getRazorpayPaymentParams: ' . json_encode($params);
             }
             catch (Exception $e)
             {
