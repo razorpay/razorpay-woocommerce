@@ -458,7 +458,6 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         displayAffordabilityWidgetSettings();
         $result = ob_get_contents();
         ob_end_clean();
-        $result = null;
 
         $response = getAffordabilityWidgetSettings();
 
