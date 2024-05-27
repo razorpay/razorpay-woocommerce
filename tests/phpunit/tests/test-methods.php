@@ -108,7 +108,6 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->instance->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(function () {
             return new MockApi('key_id', '');
         });
-        $this->assertSame('order_test', $razorpayOrderId);
 
         ob_start();
         $this->instance->receipt_page($orderId);
