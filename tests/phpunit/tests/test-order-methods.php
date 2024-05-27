@@ -67,7 +67,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         });
         $this->instance->shouldReceive('autoEnableWebhook');
 
-        $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($wcOrderId)->andReturn(null);
+        $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($order, $wcOrderId)->andReturn(null);
 
         $message = 'RAZORPAY ERROR: Razorpay API could not be reached';
 

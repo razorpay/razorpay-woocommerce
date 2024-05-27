@@ -512,9 +512,7 @@ function getAffordabilityWidgetSettings()
 
 function displayAffordabilityWidgetSettings()
 {
-    $afdWidgetSettings = getAffordabilityWidgetSettings();
-    rzpLogInfo("afdWidgetSettings: " . json_encode($afdWidgetSettings));
-    woocommerce_admin_fields($afdWidgetSettings);
+    woocommerce_admin_fields(getAffordabilityWidgetSettings());
 }
 
 function updateAffordabilityWidgetSettings()
