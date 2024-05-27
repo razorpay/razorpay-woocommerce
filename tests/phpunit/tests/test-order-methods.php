@@ -277,8 +277,9 @@ class Test_OrderMethods extends WP_UnitTestCase
 
     public function testProcessRefund()
     {
-        $orderArgs = array('transaction_id' => '1236');
-        $order = wc_create_order($orderArgs);
+        $order = wc_create_order();
+        $order->set_transaction_id('1236');
+        $order->save();
 
         $wcOrderId = $order->get_id();
 
