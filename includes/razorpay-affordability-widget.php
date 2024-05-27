@@ -512,6 +512,7 @@ function getAffordabilityWidgetSettings()
 
 function displayAffordabilityWidgetSettings()
 {
+    initAdminFunctions();
     woocommerce_admin_fields(getAffordabilityWidgetSettings());
 }
 

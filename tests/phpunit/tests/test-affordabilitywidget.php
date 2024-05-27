@@ -454,15 +454,13 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
     public function testdisplayAffordabilityWidgetSettings()
     {
-//        ob_start();
-//        displayAffordabilityWidgetSettings();
-//        $result = ob_get_contents();
-//        ob_end_clean();
+        ob_start();
+        displayAffordabilityWidgetSettings();
+        $result = ob_get_contents();
+        ob_end_clean();
         $result = null;
 
         $response = getAffordabilityWidgetSettings();
-
-        initAdminFunctions();
 
         ob_start();
         woocommerce_admin_fields($response);
