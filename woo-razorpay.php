@@ -950,6 +950,8 @@ function woocommerce_razorpay_init()
             global $woocommerce;
             rzpLogInfo("createOrGetRazorpayOrderId $orderId and is1ccCheckout is set to $is1ccCheckout");
 
+            echo "createOrGetRazorpayOrderId " . $orderId . " and is1ccCheckout is set to " . $is1ccCheckout;
+
             $create = false;
 
             if($is1ccCheckout == 'no')
