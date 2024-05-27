@@ -103,7 +103,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
 
         $this->instance->shouldReceive('autoEnableWebhook');
         echo 'orderId in testReceiptPage: '.$orderId;
-        $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with(Mockery::any(), Mockery::any(), 'no')->andReturn('order_test');
+        $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($order, $orderId, 'no')->andReturn('order_test');
         $this->instance->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(function () {
             return new MockApi('key_id', '');
         });
