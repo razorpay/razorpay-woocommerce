@@ -1551,7 +1551,6 @@ EOT;
                 $refund = $client->payment
                     ->fetch($paymentId)
                     ->refund($data);
-                echo 'process refund: line 1555: refund: '.$refund;
 
                 if (isset($refund) === true)
                 {
