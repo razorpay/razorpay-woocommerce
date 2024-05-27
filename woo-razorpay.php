@@ -950,8 +950,6 @@ function woocommerce_razorpay_init()
             global $woocommerce;
             rzpLogInfo("createOrGetRazorpayOrderId $orderId and is1ccCheckout is set to $is1ccCheckout");
 
-            echo "createOrGetRazorpayOrderId " . $orderId . " and is1ccCheckout is set to " . $is1ccCheckout;
-
             $create = false;
 
             if($is1ccCheckout == 'no')
@@ -1052,7 +1050,6 @@ function woocommerce_razorpay_init()
 
             rzpLogInfo("getRazorpayPaymentParams $orderId");
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderId);
-            echo 'createOrGetRazorpayOrderId with order: ' . json_encode($order) . ' and orderId: ' . $orderId . ' and $razorpayOrderId: ' . $razorpayOrderId;
 
             if ($razorpayOrderId === null)
             {
@@ -1077,12 +1074,10 @@ function woocommerce_razorpay_init()
         public function generate_razorpay_form($orderId)
         {
             $order = wc_get_order($orderId);
-            echo 'generate_razorpay_form with orderId: ' . $orderId . ' and order: ' . json_encode($order);
 
             try
             {
                 $params = $this->getRazorpayPaymentParams($order, $orderId);
-                echo '$params from getRazorpayPaymentParams: ' . json_encode($params);
             }
             catch (Exception $e)
             {
@@ -1523,18 +1518,14 @@ EOT;
         {
             $order = wc_get_order($orderId);
 
-            echo 'process refund: line 1526: orderId: '.$orderId.' amount: '.$amount.' reason: '.$reason;
-
             if (! $order or ! $order->get_transaction_id())
             {
                 return new WP_Error('error', __('Refund failed: No transaction ID', 'woocommerce'));
             }
-            echo 'process refund: line 1532';
 
             $client = $this->getRazorpayApiInstance();
 
             $paymentId = $order->get_transaction_id();
-            echo 'process refund: line 1538: paymentId: '.$paymentId;
 
             $data = array(
                 'amount'    =>  (int) round($amount * 100),
@@ -1554,10 +1545,7 @@ EOT;
 
                 if (isset($refund) === true)
                 {
-                    echo 'process refund: line 1559';
-
                     $order->add_order_note(__('Refund Id: ' . $refund->id, 'woocommerce'));
-                    echo 'process refund: line 1562';
 
                     /**
                      * @var $refund ->id -- Provides the RazorPay Refund ID
@@ -1565,7 +1553,6 @@ EOT;
                      * @var $refund -> WooCommerce Refund Instance.
                      */
                     do_action('woo_razorpay_refund_success', $refund->id, $orderId, $refund);
-                    echo 'process refund: line 1570';
 
                     rzpLogInfo('Refund ID = ' . $refund->id .
                                 ' , Refund speed requested = ' . $refund->speed_requested .
@@ -1576,7 +1563,6 @@ EOT;
             }
             catch(Exception $e)
             {
-                echo 'error message: line 1582: '.$e->getMessage();
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
         }

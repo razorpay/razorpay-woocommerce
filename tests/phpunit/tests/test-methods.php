@@ -102,7 +102,6 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $orderId = $order->get_id();
 
         $this->instance->shouldReceive('autoEnableWebhook');
-        echo 'orderId in testReceiptPage: '.$orderId;
         $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->andReturn('order_test');
 
         $this->instance->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(function () {

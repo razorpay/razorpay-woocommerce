@@ -289,14 +289,6 @@ class Test_OrderMethods extends WP_UnitTestCase
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
         });
-        if(! $order)
-        {
-            echo 'order is null';
-        }
-        if(! $order->get_transaction_id())
-        {
-            echo 'order transaction_id is null: '.$order->get_transaction_id();
-        }
 
         $response = $this->instance->process_refund($wcOrderId, 25.25, "not interested anymore");
 
