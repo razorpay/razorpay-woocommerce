@@ -102,7 +102,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $wcOrderId = $order->get_id();
 
         $this->instance->shouldReceive('autoEnableWebhook');
-        echo 'orderId in testReceiptPage: '.$orderId;
+        echo 'orderId in testReceiptPage: '.$wcOrderId;
         $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($order, $wcOrderId)->andReturn('order_test');
 
         $this->instance->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(function () {
@@ -110,7 +110,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         });
 
         ob_start();
-        $this->instance->receipt_page($orderId);
+        $this->instance->receipt_page($wcOrderId);
         $result = ob_get_contents();
         ob_end_clean();
 
