@@ -1523,14 +1523,20 @@ EOT;
         {
             $order = wc_get_order($orderId);
 
+            echo 'process refund: line 1526: orderId: '.$orderId.' amount: '.$amount.' reason: '.$reason;
+
             if (! $order or ! $order->get_transaction_id())
             {
                 return new WP_Error('error', __('Refund failed: No transaction ID', 'woocommerce'));
             }
+            echo 'process refund: line 1532';
 
             $client = $this->getRazorpayApiInstance();
 
+            echo 'process refund: line 1535: client: '.$client;
+
             $paymentId = $order->get_transaction_id();
+            echo 'process refund: line 1538: paymentId: '.$paymentId;
 
             $data = array(
                 'amount'    =>  (int) round($amount * 100),
@@ -1547,16 +1553,22 @@ EOT;
                 $refund = $client->payment
                     ->fetch($paymentId)
                     ->refund($data);
+                echo 'process refund: line 1555: refund: '.$refund;
 
                 if (isset($refund) === true)
                 {
+                    echo 'process refund: line 1559';
+
                     $order->add_order_note(__('Refund Id: ' . $refund->id, 'woocommerce'));
+                    echo 'process refund: line 1562';
+
                     /**
                      * @var $refund ->id -- Provides the RazorPay Refund ID
                      * @var $orderId -> Refunded Order ID
                      * @var $refund -> WooCommerce Refund Instance.
                      */
                     do_action('woo_razorpay_refund_success', $refund->id, $orderId, $refund);
+                    echo 'process refund: line 1570';
 
                     rzpLogInfo('Refund ID = ' . $refund->id .
                                 ' , Refund speed requested = ' . $refund->speed_requested .
@@ -1567,6 +1579,7 @@ EOT;
             }
             catch(Exception $e)
             {
+                echo 'error message: line 1582: '.$e->getMessage();
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
         }
