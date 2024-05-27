@@ -45,7 +45,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $this->instance->shouldReceive('autoEnableWebhook');
 
-        $razorpayOrderId = $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($wcOrderId)->andReturn('order_test');
+        $razorpayOrderId = $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($order, $wcOrderId)->andReturn('order_test');
 
         $this->assertEquals(['order_id' => 'razorpay_order_id'], $this->instance->getRazorpayPaymentParams($order, $wcOrderId));
 
