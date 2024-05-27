@@ -1,7 +1,6 @@
 <?php
 
 require_once __DIR__ . '/../../../includes/razorpay-affordability-widget.php';
-require_once('includes/admin/wc-admin-functions.php');
 
 use Razorpay\MockApi\MockApi;
 
@@ -462,6 +461,8 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $result = null;
 
         $response = getAffordabilityWidgetSettings();
+
+        initAdminFunctions();
 
         ob_start();
         woocommerce_admin_fields($response);

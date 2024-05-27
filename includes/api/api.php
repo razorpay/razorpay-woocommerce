@@ -179,6 +179,13 @@ function initCartCommon()
 
 }
 
+function initAdminFunctions()
+{
+    if (defined('WC_ABSPATH')) {
+        include_once WC_ABSPATH . 'includes/admin/wc-admin-functions.php';
+    }
+}
+
 add_action('setup_extra_setting_fields', 'addMagicCheckoutSettingFields');
 
 function addMagicCheckoutSettingFields(&$defaultFormFields)
