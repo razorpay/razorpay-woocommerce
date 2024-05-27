@@ -1533,8 +1533,6 @@ EOT;
 
             $client = $this->getRazorpayApiInstance();
 
-            echo 'process refund: line 1535: client: '.$client;
-
             $paymentId = $order->get_transaction_id();
             echo 'process refund: line 1538: paymentId: '.$paymentId;
 
