@@ -147,6 +147,7 @@ function woocommerce_razorpay_init()
         const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
 
         const PREPAY_COD_URL = '1cc/orders/cod/convert';
+        const ONE_CC_MERCHANT_PREF = 'one_cc_merchant_preference';
 
         protected $supportedWebhookEvents = array(
             'payment.authorized',
@@ -270,9 +271,16 @@ function woocommerce_razorpay_init()
             // 1cc flags should be enabled only if merchant has access to 1cc feature
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
+            $merchantPreferences = [];
 
-            // Load preference API call only for administrative interface page.
-            if (current_user_can('administrator'))
+            $merchantPreferences = get_transient(self::ONE_CC_MERCHANT_PREF);
+
+            // Load preference API call only for administrative interface + razorpay payment settings page.
+            if (current_user_can('administrator') &&
+                isset($_GET['tab']) === true &&
+                $_GET['tab'] === 'checkout' &&
+                isset($_GET['section']) === true &&
+                $_GET['section'] === 'razorpay')
             {
                 if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                 {
@@ -280,19 +288,18 @@ function woocommerce_razorpay_init()
 
                       $api = $this->getRazorpayApiInstance();
                       $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
-
-                      if (!empty($merchantPreferences['features']['one_click_checkout'])) {
-                        $is1ccAvailable = true;
-                      }
-
-                      if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
-                        $isAccCreationAvailable = true;
-                      }
+                      set_transient( self::ONE_CC_MERCHANT_PREF, $merchantPreferences, 7200 );
 
                     } catch (\Exception $e) {
                       rzpLogError($e->getMessage());
                     }
+                }
+                if (!empty($merchantPreferences['features']['one_click_checkout'])) {
+                    $is1ccAvailable = true;
+                }
 
+                if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
+                    $isAccCreationAvailable = true;
                 }
             }
 
