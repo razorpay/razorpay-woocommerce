@@ -510,6 +510,13 @@ function getAffordabilityWidgetSettings()
     return apply_filters('wc_affordability_widget_settings', $settings);
 }
 
+function initAdminFunctions()
+{
+    if (defined('WC_ABSPATH')) {
+        include_once WC_ABSPATH . 'includes/admin/wc-admin-functions.php';
+    }
+}
+
 function displayAffordabilityWidgetSettings()
 {
     initAdminFunctions();
