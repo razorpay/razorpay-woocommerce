@@ -82,7 +82,8 @@ function razorpay_woocommerce_block_support()
 
 function woocommerce_razorpay_init()
 {
-    add_action("woocommerce_update_options_advanced", function()
+    add_action("woocommerce_update_options_advanced", 'hposInstrumentation');
+    function hposInstrumentation()
     {
         $rzp = new WC_Razorpay();
 
@@ -117,7 +118,7 @@ function woocommerce_razorpay_init()
 
             update_option('rzp_hpos', 'no');
         }
-    });
+    }
 
     if (!class_exists('WC_Payment_Gateway') || class_exists('WC_Razorpay'))
     {
@@ -1546,7 +1547,6 @@ EOT;
                 if (isset($refund) === true)
                 {
                     $order->add_order_note(__('Refund Id: ' . $refund->id, 'woocommerce'));
-
                     /**
                      * @var $refund ->id -- Provides the RazorPay Refund ID
                      * @var $orderId -> Refunded Order ID
