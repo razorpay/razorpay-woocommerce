@@ -277,6 +277,7 @@ function woocommerce_razorpay_init()
 
             // Load preference API call only for administrative interface + razorpay payment settings page.
             if (current_user_can('administrator') &&
+                empty($merchantPreferences) === true &&
                 isset($_GET['tab']) === true &&
                 $_GET['tab'] === 'checkout' &&
                 isset($_GET['section']) === true &&
