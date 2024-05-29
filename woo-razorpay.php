@@ -299,6 +299,7 @@ function woocommerce_razorpay_init()
             if ($is1ccAvailable) {
               $this->visibleSettings = array_merge($this->visibleSettings, array(
                 'enable_1cc',
+                '1cc_plan',
                 'enable_1cc_mandatory_login',
                 'enable_1cc_test_mode',
                 'enable_1cc_pdp_checkout',
@@ -315,8 +316,23 @@ function woocommerce_razorpay_init()
                     '1cc_account_creation',
                 ));
               }
-
+              
+              if ($this->getSetting('enable_1cc') === 'yes')
+              {
+                if (get_option('razorpay_magicx_first_check') === false)
+                {
+                    $this->update_option('1cc_plan', [
+                        'one_click_lite',
+                        'one_click_premium'
+                    ]);
+                }
+              }
             }
+
+            update_option('razorpay_magicx_first_check', true);
+
+
+            wp_enqueue_style('custom-gateway-admin-css', plugin_dir_url(__FILE__) .'public/css/1cc-plan-hide.css');
 
             $this->init_form_fields();
             $this->init_settings();
@@ -359,6 +375,89 @@ function woocommerce_razorpay_init()
             }
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
+        }
+
+        public function generate_custom_checkboxes_html( $key, $data )
+        {
+            $field = $this->get_field_key( $key );
+            $defaults = array(
+                'title'       => '',
+                'type'        => 'custom_checkboxes',
+                'description' => '',
+                'desc_tip'    => false,
+                'options'     => array(),
+            );
+
+            $hidden_class = '';
+            if ($this->getSetting('enable_1cc') === 'no')
+            {
+                $hidden_class = 'hidden-field';
+            }
+
+
+            $data = wp_parse_args( $data, $defaults );
+            
+
+            $value = $this->get_option($key, array());
+
+            ob_start();
+            ?>
+            <tr valign="top" class="<?php echo esc_attr( $hidden_class ); ?>" id="woocommerce_razorpay_1cc_plan">
+                <th scope="row" class="titledesc">
+                    <label><?php echo wp_kses_post($data['title']); ?></label>
+                    <?php echo $this->get_tooltip_html($data); ?>
+                </th>
+                <td class="forminp">
+                    <fieldset>
+                        <?php foreach ($data['options'] as $option_key => $option_label) : ?>
+                            <label for="<?php echo esc_attr($field . '_' . $option_key); ?>">
+                                <input type="checkbox" name="<?php echo esc_attr($field . '[]'); ?>" id="<?php echo esc_attr($field . '_' . $option_key); ?>" value="<?php echo esc_attr($option_key); ?>" <?php checked(in_array($option_key, $value), true); ?> <?php disabled($this->check1ccFeatureFlag($option_key), true); ?>>
+                                <?php echo esc_html($option_label); ?>
+                            </label><br>
+                        <?php endforeach; ?>
+                        <?php echo $this->get_description_html($data); ?>
+                    </fieldset>
+                </td>
+            </tr>
+            <?php
+            return ob_get_clean();
+        }
+
+        public function check1ccFeatureFlag($featureFlag)
+        {
+            if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
+            {
+                return false;
+                try 
+                {
+                    $api = $this->getRazorpayApiInstance();
+                    $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
+
+                    if (!empty($merchantPreferences['features'][$featureFlag])) {
+                        return false;
+                    }
+
+                } catch (\Exception $e) {
+                    rzpLogError($e->getMessage());
+                }
+
+                return true;
+            }
+        }
+        // public function process_admin_options() {
+        //     $saved = parent::process_admin_options();
+        //     // Ensure the custom checkboxes field is properly saved as an array
+        //     $custom_checkboxes = isset( $_POST[ $this->plugin_id . $this->id . '_custom_checkboxes' ] ) ? (array) $_POST[ $this->plugin_id . $this->id . '_custom_checkboxes' ] : array();
+        //     update_option( $this->plugin_id . $this->id . '_custom_checkboxes', $custom_checkboxes );
+        //     return $saved;
+        // }
+
+        public function validate_custom_checkboxes_field( $key, $value ) {
+            // Ensure the value is an array
+            if ( ! is_array( $value ) ) {
+                $value = array();
+            }
+            return $value;
         }
 
         public function init_form_fields()

@@ -1,6 +1,8 @@
 window.onload = function() {
 	// for confirmation of toggling 1cc
 	var enableRzpCheckout = document.getElementById('woocommerce_razorpay_enable_1cc');
+	var oneCCPlan = document.getElementById('woocommerce_razorpay_1cc_plan');
+	
 	if (enableRzpCheckout) {
 		enableRzpCheckout.onclick = function(e) {
 			var current_val = enableRzpCheckout.checked;
@@ -9,7 +11,17 @@ window.onload = function() {
 			} else {
 				var message = 'Are you sure you want to deactivate Magic Checkout?'
 			}
-			if (!confirm(message)) {
+			if (confirm(message)) {
+				if (current_val == false) {
+					oneCCPlan.classList.add('hidden-field');
+					// console.log('print in false', oneCCPlan);
+				} else {
+					oneCCPlan.classList.remove('hidden-field');
+					// console.log('print in true', oneCCPlan);
+				}
+			}
+			else
+			{
 				if (current_val) {
 					enableRzpCheckout.checked = false;
 				} else {
