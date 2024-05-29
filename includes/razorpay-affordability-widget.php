@@ -519,7 +519,10 @@ function initAdminFunctions()
 
 function displayAffordabilityWidgetSettings()
 {
-    initAdminFunctions();
+    if(function_exists('woocommerce_admin_fields') === false)
+    {
+        initAdminFunctions();
+    }
     woocommerce_admin_fields(getAffordabilityWidgetSettings());
 }
 
