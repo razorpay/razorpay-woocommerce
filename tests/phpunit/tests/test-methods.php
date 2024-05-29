@@ -102,7 +102,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $orderId = $order->get_id();
 
         $this->instance->shouldReceive('autoEnableWebhook');
-        $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->andReturn('order_test');
+        $razorpayOrderId = $this->instance->shouldReceive('createOrGetRazorpayOrderId')->andReturn('order_test');
 
         $this->instance->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(function () {
             return new MockApi('key_id', '');
