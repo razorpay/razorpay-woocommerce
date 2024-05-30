@@ -40,7 +40,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
 
         $_POST = array();
     }
-    
+
     public function testaddAffordabilityWidgetHTML()
     {
         $current_user = wp_get_current_user();
@@ -48,13 +48,13 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $current_user->add_cap('administrator');
 
         update_option('woocommerce_razorpay_settings', array('key_id' => 'key_id_2', 'key_secret' => 'key_secret2'));
-        
+
         global $product;
         $product = new WC_Product_Simple();
         $product->set_regular_price(15);
         $product->set_sale_price(10);
         $product->save();
-       
+
         add_option('rzp_afd_limited_offers', "offer_ABC,offer_XYZ");
         add_option('rzp_afd_show_discount_amount', 'yes');
 
@@ -93,7 +93,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         delete_option('rzp_afd_limited_cardless_emi_providers');
         delete_option('rzp_afd_limited_pay_later_providers');
     }
-    
+
     public function testgetThemeColor()
     {
         $response = getThemeColor();
@@ -160,7 +160,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     public function testgetCustomisation()
     {
         add_option('rzp_afd_theme_color', '#8BBFFF');
-        
+
         $response = getCustomisation('rzp_afd_theme_color');
 
         $this->assertSame('#8BBFFF', $response);
@@ -171,7 +171,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         update_option('woocommerce_razorpay_settings', array('key_id' => 'key_id_2', 'key_secret' => 'key_secret2'));
 
         $this->assertSame('key_id_2', getKeyId());
-        
+
         delete_option('woocommerce_razorpay_settings');
     }
 
@@ -190,7 +190,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     public function testgetPriceVariableProduct()
     {
         global $product;
-        
+
         $product = new WC_Product_Variable();
         $product->set_price(20);
         $product->save();
@@ -229,7 +229,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     }
 
     public function testisAffordabilityWidgetTestModeEnabledNo()
-    {   
+    {
         update_option('rzp_afd_enable_test_mode', 'no');
 
         $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
@@ -238,14 +238,14 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     public function testisAffordabilityWidgetTestModeNotEnabled()
     {
         delete_option('rzp_afd_enable_test_mode');
-        
+
         $this->assertFalse(isAffordabilityWidgetTestModeEnabled());
     }
-    
+
     public function testisEnabledYes()
     {
         add_option('rzp_afd_enable_dark_logo', 'yes');
-        
+
         $this->assertSame('true', isEnabled('rzp_afd_enable_dark_logo'));
 
         delete_option('rzp_afd_enable_dark_logo');
@@ -254,7 +254,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
     public function testisEnabledNo()
     {
         add_option('rzp_afd_enable_dark_logo', 'no');
-        
+
         $this->assertSame('false', isEnabled('rzp_afd_enable_dark_logo'));
 
         delete_option('rzp_afd_enable_dark_logo');
@@ -402,7 +402,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $current_section = 'affordability-widget';
 
         $response = getAffordabilityWidgetSettings();
-        
+
         $this->assertSame('rzp_afd_section_title', $response['section_title']['id']);
 
         $this->assertSame('rzp_afd_enable', $response['enable']['id']);
@@ -458,7 +458,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         displayAffordabilityWidgetSettings();
         $result = ob_get_contents();
         ob_end_clean();
-    
+
         $response = getAffordabilityWidgetSettings();
 
         ob_start();
