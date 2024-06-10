@@ -18,7 +18,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 {
     private $instance;
     private $rzpPaymentObj;
-    
+
     public function setup(): void
     {
         parent::setup();
@@ -29,11 +29,11 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $_POST = array();
     }
-    
+
     public function testGetRazorpayPaymentParams()
-    {    
+    {
         global $woocommerce;
-        
+
         $order = wc_create_order();
 
         $wcOrderId = $order->get_id();
@@ -45,13 +45,13 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $this->instance->shouldReceive('autoEnableWebhook');
 
-        $razorpayOrderId = $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($wcOrderId)->andReturn('order_test');
+        $razorpayOrderId = $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($order, $wcOrderId)->andReturn('order_test');
 
-        $this->assertEquals(['order_id' => 'order_test'], $this->instance->getRazorpayPaymentParams($wcOrderId));
+        $this->assertEquals(['order_id' => 'order_test'], $this->instance->getRazorpayPaymentParams($order, $wcOrderId));
 
         //After the webhook flag is set
 
-        $this->assertEquals(['order_id' => 'order_test'], $this->instance->getRazorpayPaymentParams($wcOrderId));
+        $this->assertEquals(['order_id' => 'order_test'], $this->instance->getRazorpayPaymentParams($order, $wcOrderId));
 
 
     }
@@ -67,20 +67,20 @@ class Test_OrderMethods extends WP_UnitTestCase
         });
         $this->instance->shouldReceive('autoEnableWebhook');
 
-        $razorpayOrderId=$this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($wcOrderId)->andReturn(null);
+        $razorpayOrderId = $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($order, $wcOrderId)->andReturn(null);
 
         $message = 'RAZORPAY ERROR: Razorpay API could not be reached';
 
-        try 
+        try
         {
-            $this->instance->getRazorpayPaymentParams($wcOrderId);
+            $this->instance->getRazorpayPaymentParams($order, $wcOrderId);
 
             $this->fail("Expected Exception has not been raised.");
         }
-        catch (Exception $ex) 
+        catch (Exception $ex)
         {
             $this->assertEquals($message, $ex->getMessage());
-        }  
+        }
     }
 
     public function testGetCustomOrderCreationMessage()
@@ -103,11 +103,11 @@ class Test_OrderMethods extends WP_UnitTestCase
         $order = wc_create_order();
 
         $defaultmessage = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
-        
+
         $this->instance->shouldReceive('getSetting')->with('order_success_message');
-        
+
         $response = $this->instance->getCustomOrdercreationMessage("", $order);
-        
+
         $this->assertSame($defaultmessage, $response);
     }
 
@@ -148,7 +148,7 @@ class Test_OrderMethods extends WP_UnitTestCase
             'email'   => $order->get_billing_email(),
             'contact' => $order->get_billing_phone(),
         );
-        
+
         $this->instance->shouldReceive('getOrderSessionKey')->with($orderId)->andReturn($sessionKey);
 
         $response = $this->instance->getDefaultCheckoutArguments($order);
@@ -167,7 +167,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $this->assertSame($args, $response['prefill']);
     }
-    
+
     public function testUpdateOrder()
     {
         global $woocommerce;
@@ -278,6 +278,8 @@ class Test_OrderMethods extends WP_UnitTestCase
     public function testProcessRefund()
     {
         $order = wc_create_order();
+        $order->set_transaction_id('1236');
+        $order->save();
 
         $wcOrderId = $order->get_id();
 
@@ -345,7 +347,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         $wpdb->insert($wpdb->posts, array('post_status' => 'Pending', 'post_type' => 'shop_order', 'ID' => 22));
 
         $this->instance->shouldReceive('verifySignature');
-        
+
         $this->instance->shouldReceive('redirectUser');
 
         $this->instance->shouldReceive('updateOrder');
