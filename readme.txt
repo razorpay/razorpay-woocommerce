@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, curlec, malaysia, ecommerce, international, cross border
 Requires at least: 3.9.2
 Tested up to: 6.4.2
-Stable tag: 4.6.6
+Stable tag: 4.6.7
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -69,9 +69,13 @@ Razorpay is available for Store Owners and Merchants in
 
 == Changelog ==
 
+= 4.6.7 =
+* Fixed, Reduced 1cc preferences API features check.
+
 = 4.6.6 =
 * Added, UT fixes.
 * Fixed, Reduced 1cc preferences API calls.
+* ( Bug present, for 1cc settings, please use 4.6.7)
 
 = 4.6.5 =
 * Added, UT to SVN ignore list.
