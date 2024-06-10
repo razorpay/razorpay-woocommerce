@@ -3,8 +3,8 @@
  * Plugin Name: 1 Razorpay: Signup for FREE PG
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
- * Version: 4.6.6
- * Stable tag: 4.6.6
+ * Version: 4.6.7
+ * Stable tag: 4.6.7
  * Author: Team Razorpay
  * WC tested up to: 7.9.0
  * Author URI: https://razorpay.com
@@ -275,11 +275,11 @@ function woocommerce_razorpay_init()
 
             // Load preference API call only for administrative interface + razorpay payment settings page.
             if (current_user_can('administrator') &&
-                empty($merchantPreferences) === true &&
-                isset($_GET['tab']) === true &&
-                $_GET['tab'] === 'checkout' &&
-                isset($_GET['section']) === true &&
-                $_GET['section'] === 'razorpay')
+                (empty($merchantPreferences['features']['one_click_checkout']) === true) &&
+                (isset($_GET['tab']) === true) &&
+                ($_GET['tab'] === 'checkout') &&
+                (isset($_GET['section']) === true) &&
+                ($_GET['section'] === 'razorpay'))
             {
                 if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                 {
@@ -293,14 +293,16 @@ function woocommerce_razorpay_init()
                       rzpLogError($e->getMessage());
                     }
                 }
-                if (!empty($merchantPreferences['features']['one_click_checkout'])) {
-                    $is1ccAvailable = true;
-                }
-
-                if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
-                    $isAccCreationAvailable = true;
-                }
             }
+
+            if (!empty($merchantPreferences['features']['one_click_checkout'])) {
+                $is1ccAvailable = true;
+            }
+
+            if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
+                $isAccCreationAvailable = true;
+            }
+            
 
             if ($is1ccAvailable) {
               $this->visibleSettings = array_merge($this->visibleSettings, array(
