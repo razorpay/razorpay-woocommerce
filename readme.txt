@@ -69,7 +69,7 @@ Razorpay is available for Store Owners and Merchants in
 
 == Changelog ==
 
-= 4.6.5 =
+= 4.6.6 =
 * Added, UT fixes.
 * Fixed, Reduced 1cc preferences API calls.
 
