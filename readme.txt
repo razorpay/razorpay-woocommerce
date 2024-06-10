@@ -75,6 +75,7 @@ Razorpay is available for Store Owners and Merchants in
 = 4.6.6 =
 * Added, UT fixes.
 * Fixed, Reduced 1cc preferences API calls.
+* ( Bug present, for 1cc settings, please use 4.6.7)
 
 = 4.6.5 =
 * Added, UT to SVN ignore list.
