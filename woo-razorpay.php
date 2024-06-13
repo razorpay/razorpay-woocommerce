@@ -1127,7 +1127,7 @@ function woocommerce_razorpay_init()
             return array(
                 'key'          => $this->getSetting('key_id'),
                 'name'         => html_entity_decode(get_bloginfo('name'), ENT_QUOTES),
-                'currency'     => self::INR,
+                'currency'     => $this->getOrderCurrency($order),
                 'description'  => $productinfo,
                 'notes'        => array(
                     self::WC_ORDER_ID => $orderId,
@@ -1159,8 +1159,6 @@ function woocommerce_razorpay_init()
         private function getCheckoutArguments($order, $params)
         {
             $args = $this->getDefaultCheckoutArguments($order);
-
-            $currency = $this->getOrderCurrency($order);
 
             // The list of valid currencies is at https://razorpay.freshdesk.com/support/solutions/articles/11000065530-what-currencies-does-razorpay-support-
 
