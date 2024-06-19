@@ -1162,6 +1162,11 @@ function woocommerce_razorpay_init()
 
             $currency = $this->getOrderCurrency($order);
 
+            if (empty($currency) === false)
+            {
+                $args['currency'] = $currency;
+            }
+
             // The list of valid currencies is at https://razorpay.freshdesk.com/support/solutions/articles/11000065530-what-currencies-does-razorpay-support-
 
             $args = array_merge($args, $params);
