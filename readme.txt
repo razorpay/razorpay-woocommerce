@@ -2,7 +2,7 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, curlec, malaysia, ecommerce, international, cross border
 Requires at least: 3.9.2
-Tested up to: 6.4.2
+Tested up to: 6.6
 Stable tag: 4.6.7
 Requires PHP: 7.0
 License: GPLv2 or later
