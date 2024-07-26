@@ -6,7 +6,7 @@
  * Version: 4.6.7
  * Stable tag: 4.6.7
  * Author: Team Razorpay
- * WC tested up to: 7.9.0
+ * WC tested up to: 9.1.2
  * Author URI: https://razorpay.com
 */
 
@@ -302,7 +302,7 @@ function woocommerce_razorpay_init()
             if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
                 $isAccCreationAvailable = true;
             }
-            
+
 
             if ($is1ccAvailable) {
               $this->visibleSettings = array_merge($this->visibleSettings, array(
