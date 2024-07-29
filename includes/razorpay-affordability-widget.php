@@ -5,9 +5,9 @@ use Razorpay\Api\Api;
 function addAffordabilityWidgetHTML()
 {
     $current_user = wp_get_current_user();
-    if ((isAffordabilityWidgetTestModeEnabled() === false) or 
+    if ((isAffordabilityWidgetTestModeEnabled() === false) or
         (isAffordabilityWidgetTestModeEnabled() and
-        ($current_user->has_cap('administrator') or 
+        ($current_user->has_cap('administrator') or
         preg_match('/@razorpay.com$/i', $current_user->user_email))))
     {
         echo '<div id="razorpay-affordability-widget" style="display: block;"></div>
@@ -17,7 +17,7 @@ function addAffordabilityWidgetHTML()
         <script>
             const key = "'.getKeyId().'";
             const amount = parseFloat("'.getPrice().'s") * 100;
-            addEventListener("load", 
+            addEventListener("load",
             function() {
                 const widgetConfig = {
                     "key": key,
@@ -62,14 +62,14 @@ function addAffordabilityWidgetHTML()
                 rzpAffordabilitySuite.render();
             });
 
-            jQuery(function($) { 
+            jQuery(function($) {
 
                 $.fn.myFunction = function()
                 {
                     var variants = (document.querySelector("form.variations_form").dataset.product_variations);
                     var selectedVariantID = document.querySelector("input.variation_id").value;
                     var selectedVariant = JSON.parse(variants).filter( variant => variant.variation_id === parseInt(selectedVariantID));
-                    
+
                     if(typeof(selectedVariant[0]) != "undefined")
                     {
                         amt = selectedVariant[0].display_price * 100;
@@ -138,7 +138,7 @@ function getPrice()
     global $product;
     if ($product->is_type('simple') === true)
     {
-        if ($product->is_on_sale()) 
+        if ($product->is_on_sale())
         {
             $price = $product->get_sale_price();
         }
@@ -149,7 +149,7 @@ function getPrice()
     }
     else
     {
-        $price = $product->get_price(); 
+        $price = $product->get_price();
     }
 
     return $price;
@@ -158,8 +158,8 @@ function getPrice()
 function getOffers()
 {
     $offers = isEnabled('rzp_afd_enable_offers');
-    
-    if (empty(get_option('rzp_afd_limited_offers')) === false and 
+
+    if (empty(get_option('rzp_afd_limited_offers')) === false and
         $offers != 'false')
     {
         $offers = '{ "offerIds": [';
@@ -167,17 +167,17 @@ function getOffers()
         {
             $offers = $offers.'"'.$provider.'"';
             $offers = $offers.',';
-        }	
+        }
         $offers = $offers.']';
     }
-    if (empty(get_option('rzp_afd_show_discount_amount')) === false and 
+    if (empty(get_option('rzp_afd_show_discount_amount')) === false and
         $offers != 'false')
     {
         if ($offers != 'true')
         {
             $offers = $offers.',';
         }
-        else 
+        else
         {
             $offers = '{';
         }
@@ -193,7 +193,7 @@ function getOffers()
 function getAdditionalOffers()
 {
     $additionalOffers = '[]';
-    if (empty(get_option('rzp_afd_additional_offers')) === false and 
+    if (empty(get_option('rzp_afd_additional_offers')) === false and
         getOffers() != 'false')
     {
         $additionalOffers = '[';
@@ -201,7 +201,7 @@ function getAdditionalOffers()
         {
             $additionalOffers = $additionalOffers.'"'.$provider.'"';
             $additionalOffers = $additionalOffers.',';
-        }	
+        }
         $additionalOffers = $additionalOffers.']';
     }
 
@@ -211,8 +211,8 @@ function getAdditionalOffers()
 function getEmi()
 {
     $emi = isEnabled('rzp_afd_enable_emi');
-    
-    if (empty(get_option('rzp_afd_limited_emi_providers')) === false and 
+
+    if (empty(get_option('rzp_afd_limited_emi_providers')) === false and
         $emi != 'false')
     {
         $emi = '{ "issuers": [';
@@ -220,7 +220,7 @@ function getEmi()
         {
             $emi = $emi.'"'.$provider.'"';
             $emi = $emi.',';
-        }	
+        }
         $emi = $emi.'] }';
     }
 
@@ -230,8 +230,8 @@ function getEmi()
 function getCardlessEmi()
 {
     $cardlessEmi = isEnabled('rzp_afd_enable_cardless_emi');
-    
-    if (empty(get_option('rzp_afd_limited_cardless_emi_providers')) === false and 
+
+    if (empty(get_option('rzp_afd_limited_cardless_emi_providers')) === false and
         $cardlessEmi != 'false')
     {
         $cardlessEmi = '{ "providers": [';
@@ -239,7 +239,7 @@ function getCardlessEmi()
         {
             $cardlessEmi = $cardlessEmi.'"'.$provider.'"';
             $cardlessEmi = $cardlessEmi.',';
-        }	
+        }
         $cardlessEmi = $cardlessEmi.'] }';
     }
 
@@ -249,8 +249,8 @@ function getCardlessEmi()
 function getPayLater()
 {
     $payLater = isEnabled('rzp_afd_enable_pay_later');
-    
-    if (empty(get_option('rzp_afd_limited_pay_later_providers')) === false and 
+
+    if (empty(get_option('rzp_afd_limited_pay_later_providers')) === false and
         $payLater != 'false')
     {
         $payLater = '{ "providers": [';
@@ -258,7 +258,7 @@ function getPayLater()
         {
             $payLater = $payLater.'"'.$provider.'"';
             $payLater = $payLater.',';
-        }	
+        }
         $payLater = $payLater.'] }';
     }
 
@@ -313,11 +313,11 @@ function getFooterFontSize()
 function getFooterDarkLogo()
 {
     $footerDarkLogo = isEnabled('rzp_afd_enable_dark_logo');
-    
+
     return $footerDarkLogo;
 }
 
-function addSubSection() 
+function addSubSection()
 {
     global $current_section;
 
@@ -332,9 +332,9 @@ function addSubSection()
 
     $array_keys = array_keys($sections);
 
-    foreach ($sections as $id => $label) 
+    foreach ($sections as $id => $label)
     {
-        if ($current_section === 'razorpay' or 
+        if ($current_section === 'razorpay' or
             $current_section === 'affordability-widget')
         {
             echo '<li><a href="'.admin_url('admin.php?page=wc-settings&tab='.$tab_id.
@@ -342,16 +342,16 @@ function addSubSection()
             $label.'</a> '.(end($array_keys) === $id ? '' : '|').' </li>';
         }
     }
-   
+
     echo '</ul><br class="clear" />';
 }
 
-function getAffordabilityWidgetSettings() 
+function getAffordabilityWidgetSettings()
 {
     global $current_section;
     $settings = array();
 
-    if ($current_section === 'affordability-widget') 
+    if ($current_section === 'affordability-widget')
     {
         $settings = array(
             'section_title' => array(
@@ -505,17 +505,23 @@ function getAffordabilityWidgetSettings()
                  'id'                   => 'wc_settings_tab_demo_section_end'
             ),
         );
-    } 
+    }
 
     return apply_filters('wc_affordability_widget_settings', $settings);
 }
 
-function displayAffordabilityWidgetSettings() 
+function displayAffordabilityWidgetSettings()
 {
-    woocommerce_admin_fields(getAffordabilityWidgetSettings()); 
+    if (function_exists('woocommerce_admin_fields') === false)
+    {
+        if (defined('WC_ABSPATH')) {
+            include_once WC_ABSPATH . 'includes/admin/wc-admin-functions.php';
+        }
+    }
+    woocommerce_admin_fields(getAffordabilityWidgetSettings());
 }
 
-function updateAffordabilityWidgetSettings() 
+function updateAffordabilityWidgetSettings()
 {
     woocommerce_update_options(getAffordabilityWidgetSettings());
     try
@@ -531,9 +537,9 @@ function updateAffordabilityWidgetSettings()
         {
             $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'],get_option('woocommerce_razorpay_settings')['key_secret']);
         }
-        
+
         $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-        
+
         if (isset($merchantPreferences) === false or
             isset($merchantPreferences['assigned_features']) === false)
         {
@@ -550,7 +556,7 @@ function updateAffordabilityWidgetSettings()
                 break;
             }
         }
-        
+
     }
     catch (\Exception $e)
     {
@@ -567,12 +573,12 @@ function isEnabled($feature)
     }
     $value = 'false';
 
-    if (empty(get_option($feature)) === false and 
+    if (empty(get_option($feature)) === false and
         get_option($feature) === 'yes')
     {
         $value = 'true';
     }
-    
+
     return $value;
 }
 
@@ -595,7 +601,7 @@ function getCustomisation($customisation)
     {
         $customisationValue = get_option($customisation);
     }
-    
+
     return $customisationValue;
 }
 
@@ -609,4 +615,4 @@ function isAffordabilityWidgetTestModeEnabled()
         empty(get_option('rzp_afd_enable_test_mode')) === false and
         get_option('rzp_afd_enable_test_mode') === 'yes'
     );
-}	
+}

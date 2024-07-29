@@ -102,7 +102,8 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $orderId = $order->get_id();
 
         $this->instance->shouldReceive('autoEnableWebhook');
-        $this->instance->shouldReceive('createOrGetRazorpayOrderId')->with($orderId)->andReturn('order_test');
+        $razorpayOrderId = $this->instance->shouldReceive('createOrGetRazorpayOrderId')->andReturn('order_test');
+
         $this->instance->shouldReceive('getRazorpayApiPublicInstance')->andReturnUsing(function () {
             return new MockApi('key_id', '');
         });
@@ -122,7 +123,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->assertStringContainsString('<button id="btn-razorpay">Pay Now</button>', $result);
         $this->assertStringContainsString('<button id="btn-razorpay-cancel" onclick="document.razorpayform.submit()">Cancel</button>', $result);
     }
-    
+
     public function testCreateRazorpayOrderId()
     {
         $order = wc_create_order();
@@ -133,7 +134,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         });
         $this->instance->shouldReceive('autoEnableWebhook');
 
-        $response = $this->instance->createOrGetRazorpayOrderId($orderId);
+        $response = $this->instance->createOrGetRazorpayOrderId($order, $orderId);
         $this->assertStringContainsString('razorpay_test_id', $response);
     }
 
@@ -148,10 +149,10 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->instance->shouldReceive('autoEnableWebhook');
 
         add_option('webhook_enable_flag', 2400);
-        $response = $this->instance->createOrGetRazorpayOrderId($orderId);
+        $response = $this->instance->createOrGetRazorpayOrderId($order, $orderId);
         $this->assertStringContainsString('razorpay_test_id', $response );
     }
-    
+
     public function testGetRazorpayOrderId()
     {
         $order = wc_create_order();
@@ -164,7 +165,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         });
         $this->instance->shouldReceive('autoEnableWebhook');
 
-        $response = $this->instance->createOrGetRazorpayOrderId($orderId);
+        $response = $this->instance->createOrGetRazorpayOrderId($order, $orderId);
         $this->assertStringContainsString('razorpay_test_id', $response);
     }
 
@@ -236,7 +237,7 @@ class Test_Class_Fuctions extends WP_UnitTestCase
         $this->assertStringContainsString("<input type='hidden' name='_[integration_type]' value='plugin'>", $response);
         $this->assertStringContainsString("</form>", $response);
     }
- 
+
     public function testGetShippingZone()
     {
         $response = $this->instance->getShippingZone(0);

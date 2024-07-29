@@ -6,7 +6,7 @@ class Test_Plugin_Metadata extends WP_UnitTestCase
     {
         $pluginData = get_plugin_data(PLUGIN_DIR . '/woo-razorpay.php');
 
-        $this->assertSame('Razorpay for WooCommerce', $pluginData['Name']);
+        $this->assertSame('1 Razorpay: Signup for FREE PG', $pluginData['Name']);
 
         $version = $pluginData['Version'];
         $v = explode(".", $version);
@@ -18,7 +18,7 @@ class Test_Plugin_Metadata extends WP_UnitTestCase
 
         $this->assertSame('https://razorpay.com', $pluginData['PluginURI']);
 
-        $this->assertSame('Razorpay Payment Gateway Integration for WooCommerce <cite>By <a href="https://razorpay.com">Team Razorpay</a>.</cite>', $pluginData['Description']);
+        $this->assertSame('Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer. <cite>By <a href="https://razorpay.com">Team Razorpay</a>.</cite>', $pluginData['Description']);
     }
 }
 

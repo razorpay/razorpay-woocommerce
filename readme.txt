@@ -2,8 +2,8 @@
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, curlec, malaysia, ecommerce, international, cross border
 Requires at least: 3.9.2
-Tested up to: 6.3.1
-Stable tag: 4.5.7
+Tested up to: 6.6
+Stable tag: 4.6.7
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -17,7 +17,7 @@ Allows you to accept credit cards, debit cards, netbanking, wallet, and UPI paym
 This is the official Razorpay payment gateway plugin for WooCommerce. A system designed to handle end-to-end payments. Accept payments via 100+ payment modes - domestic & international credit & debit cards, EMIs, paylater, net banking, UPI & mobile wallets  including JioMoney, Mobikwik, Airtel Money, FreeCharge, Ola Money and PayZapp  in India, and FPX, Duitnow and eWallets including GrabPay, Touch N Go, Boost in Malaysia, with the WooCommerce plugin.
 Get a feature-filled and easy to integrate checkout with cards (Visa, MasterCard, American Express, UnionPay etc) saved across businesses so that customers can pay seamlessly everywhere, both domestic and international. This plugin allows for refunds, works across all browsers, and is compatible with the latest WooCommerce. Boost conversions with international customers paying in their local currency. Keep your data safe with robust security that comes with PCI DSS Level 1 compliance.
 
-This is compatible with WooCommerce>=4.0, including the new 8.0 release. It has been tested up to the 8.0.3 WooCommerce release.
+This is compatible with WooCommerce>=4.0, including the new 9.0 release. It has been tested up to the 9.1.2 WooCommerce release.
 
 BENEFITS OF USING RAZORPAY
 
@@ -68,6 +68,47 @@ Razorpay is available for Store Owners and Merchants in
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 4.6.7 =
+* Fixed, Reduced 1cc preferences API features check.
+
+= 4.6.6 =
+* Added, UT fixes.
+* Fixed, Reduced 1cc preferences API calls.
+* ( Bug present, for 1cc settings, please use 4.6.7)
+
+= 4.6.5 =
+* Added, UT to SVN ignore list.
+
+= 4.6.4 =
+* Reverted, Magic checkout banner on woocommerce dashboard.
+
+= 4.6.3 =
+* Added, Magic checkout banner on woocommerce dashboard.
+* Reverted, Instand Refund.
+
+= 4.6.2 =
+* Fixed, Subscription events webhook bug.
+* Fixed, console errors due to instrumentation.
+* Added Shipping Method Name for Shipping Engine support.
+
+= 4.6.1 =
+* Added support for Checkout Blocks on Woocommerce.
+* Added instant refund with fallback.
+* Removed RTB widget ineligibility message.
+* Fixed RTB widget eligibility check.
+
+= 4.6.0 =
+* Support for Tera Wallet.
+* Added RTB widget.
+
+= 4.5.9 =
+* Plugin name and description updated.
+
+= 4.5.8 =
+* Bug fix, plugin not activating in php 7.0.
+* Add option fix for 1cc address pull cron job script.
+* Webhook conflict error message as info
 
 = 4.5.7 =
 * Added nonce and user capability check for route

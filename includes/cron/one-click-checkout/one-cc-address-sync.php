@@ -426,7 +426,7 @@ function createOneCCAddressSyncCron()
         rzpLogInfo("createOneCCAddressSyncCron:426 - Adding option: ONE_CC_ADDRESS_SYNC_CRON_HOOK");
         add_option(
             Constants::ONE_CC_ADDRESS_SYNC_CRON_HOOK,
-            $data,
+            $data
         );
         rzpLogInfo("createOneCCAddressSyncCron:432 - Successfully Added option: ONE_CC_ADDRESS_SYNC_CRON_HOOK");
     }

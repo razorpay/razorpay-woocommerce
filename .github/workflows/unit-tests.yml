@@ -12,7 +12,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: root
         # Ensure docker waits for mariadb to start
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1

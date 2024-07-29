@@ -41,6 +41,11 @@ window.onload = function() {
 	{
 		var rzpElement = document.getElementById(item);
 
+		if (rzpElement == null)
+		{
+			return;
+		}
+		
 		var data = {
 			'action' : 'rzpInstrumentation',
 			'event' : 'formfield.interacted',
