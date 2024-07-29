@@ -1,20 +1,25 @@
 #btn-1cc {
   display: block !important;
   width: 100%;
-  margin-bottom: 10px;
 }
 #btn-1cc-mini-cart {
   display: block !important;
   width: 100%;
+  border-radius: 5px;
+  overflow: hidden;
 }
 #btn-1cc-pdp {
-  margin-left: 5px;
+  position: relative;
+  top: 11px;
+  border-radius: 5px;
+  overflow: hidden;
 }
+
 #rzp-spinner-backdrop {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 999999999999999;
+  z-index: 9999;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0);
@@ -35,7 +40,7 @@
   bottom: 0;
   right: 0;
   margin: auto;
-  z-index: 999999999999999;
+  z-index: 10000;
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -77,4 +82,13 @@
   #rzp-logo {
     height: 45px !important;
   }
+}
+
+
+.single_add_to_cart_button.button{
+z-index: 2 !important;
+}
+
+.quantity{
+z-index: 2 !important;
 }
