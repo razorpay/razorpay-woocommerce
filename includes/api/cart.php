@@ -197,9 +197,12 @@ function getCartLineItem()
        $data[$i]['product_id'] = $item['product_id'];
        $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
-       $data[$i]['price'] = (empty($product->get_price())=== false) ? $price/$item['quantity'] : 0;
+       $data[$i]['price'] = (empty($productDetails['price']) === false) ? (int)$productDetails['price'] * 100 / $item['quantity'] : 0;
        $data[$i]['variant_id'] = $item['variation_id'];
-       $data[$i]['offer_price'] = (empty($productDetails['sale_price'])=== false) ? (int) $productDetails['sale_price']*100 : $price/$item['quantity'];
+       $data[$i]['offer_price'] = (empty($productDetails['sale_price']) === false) ? (int)$productDetails['sale_price'] * 100 : $price / $item['quantity'];
+       if ($data[$i]['price'] < $data[$i]['offer_price']) {
+           $data[$i]['price'] = $data[$i]['offer_price'];
+       }
        $i++;
     }
 
