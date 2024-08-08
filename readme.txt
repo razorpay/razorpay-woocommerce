@@ -70,7 +70,7 @@ Razorpay is available for Store Owners and Merchants in
 == Changelog ==
 
 = 4.6.8 =
-* Removed default currency as INR.
+* Fixed default currency bug.
 * Sent config integration value in magic inline script.
 * Bug fix for offer price data in magic checkout cart API.
 
