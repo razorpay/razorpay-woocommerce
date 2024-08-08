@@ -3027,8 +3027,10 @@ function enqueueScriptsFor1cc()
 
     wp_register_script( '1cc_razorpay_config', '' );
     wp_enqueue_script( '1cc_razorpay_config' );
-    wp_add_inline_script( '1cc_razorpay_config', '!function(){var o=document.querySelector("meta[name=rzp_merchant_key]");o&&(window.Razorpay||(window.Razorpay={}),"object"==typeof window.Razorpay&&(window.Razorpay.config||(window.Razorpay.config={}),window.Razorpay.config.merchant_key=o.getAttribute("value")))}();');
-
+    wp_add_inline_script(
+        "1cc_razorpay_config",
+        '!function(){var o=document.querySelector("meta[name=rzp_merchant_key]");o&&(window.Razorpay||(window.Razorpay={}),"object"==typeof window.Razorpay&&(window.Razorpay.config||(window.Razorpay.config={}),window.Razorpay.config.integration="magic-wooc",window.Razorpay.config.merchant_key=o.getAttribute("value")))}();',
+    );
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
     wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
