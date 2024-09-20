@@ -366,6 +366,10 @@ function woocommerce_razorpay_init()
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
             }
 
+            add_action('wp_enqueue_scripts', array($this, 'enqueue_checkout_js_script_on_checkout'));
+
+            add_filter('script_loader_tag', array($this, 'add_defer_to_checkout_js'), 10, 3);
+
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
         }
 
@@ -710,6 +714,30 @@ function woocommerce_razorpay_init()
             $api = $this->getRazorpayApiInstance($key, $secret);
 
             return new TrackPluginInstrumentation($api, $key);
+        }
+
+        public function enqueue_checkout_js_script_on_checkout()
+        {
+            if (is_checkout()) 
+            {
+                wp_enqueue_script(
+                    'razorpay-checkout-js',
+                    'https://checkout.razorpay.com/v1/checkout.js',
+                    [],
+                    null,
+                    false // Load script in footer
+                );
+            }
+        }
+
+        public function add_defer_to_checkout_js($tag, $handle, $src)
+        {
+            if ('razorpay-checkout-js' === $handle)
+            {
+                return '<script src="' . esc_url($src) . '" defer="defer"></script>' . "\n";
+            }
+
+            return $tag;
         }
 
         public function pluginInstrumentation()
