@@ -67,6 +67,13 @@ function calculateShipping1cc(WP_REST_Request $request)
     WC()->cart->empty_cart();
     $logObj['response'] = $response;
     rzpLogInfo(json_encode($logObj));
+
+    add_action('rzp_shipping_rate','modifyShippingValue',10,1);
+
+    function modifyShippingValue($rate) {
+        $response['0']['shipping_fee'] = $rate * $response['0']['shipping_fee'];
+    }
+
     return new WP_REST_Response(array('addresses' => $response), 200);
 }
 
