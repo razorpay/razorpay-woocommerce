@@ -308,6 +308,38 @@ function woocommerce_razorpay_init()
             return ob_get_clean();
         }
 
+        public function toggleRtbWidget($action ,$widgetEnabled = false)
+        {
+            $data = [
+                'rtb_widget_enabled' => $widgetEnabled,
+            ];
+
+            $rtbEnable = $this->rzpPostInstallationCall('save', $data);
+
+            // Experiment returned false
+            if (isset($rtbEnable['checkout360_status']) === true and
+                $rtbEnable['checkout360_status'] == false)
+            {
+                update_option('rzp_checkout360_status', 'no');
+                return;
+            }
+
+            if (empty($rtbEnable) === false)
+            {
+                if ($rtbEnable['rtb_eligibility'] === true)
+                {
+                    $value = ($action === 'activate') ? 'yes' : 'no';
+                    update_option('rzp_rtb_enable', $value);
+                }
+                elseif ($rtbEnable['rtb_eligibility'] === false)
+                {
+                    echo "<div class='notice error is-dismissible'>
+                        <p><b>We are sorry you are not Eligible to opt RTB.</b></p>
+                      </div>";
+                }
+            }
+        }
+
         public function process_admin_options()
         {
             $data = parent::get_post_data();
@@ -347,25 +379,19 @@ function woocommerce_razorpay_init()
 
                 foreach ($checkout360Settings as $c360Field => $c360Flag)
                 {
-                    if ($c360Field === 'enable_razorpay_trusted_business_widget' and
-                        isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === true)
+                    if ($c360Field === 'enable_razorpay_trusted_business_widget')
                     {
-                        $data = [
-                            "rtb_widget_enabled" => true,
-                        ];
-                        $rtbEnable = $this->rzpPostInstallationCall('save', $data);
+                        if (isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === true and
+                            (empty(get_option('rzp_rtb_enable')) === true) or (get_option('rzp_rtb_enable') === 'no'))
+                        {
+                            $this->toggleRtbWidget('activate' , true);
+                        }
+                        elseif (isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === false and
+                            get_option('rzp_rtb_enable') === 'yes')
+                        {
+                            $this->toggleRtbWidget('deactivate' , false);
+                        }
 
-                        if (isset($rtbEnable['rtb_eligibility']) === false)
-                        {
-                            update_option($c360Flag, "yes");
-                        }
-                        else
-                        {
-                            echo "<div class='notice error is-dismissible' >
-                                <p><b>We are sorry you are not Eligible to opt RTB.</b></p>
-                            </div>";
-                            update_option($c360Flag, "no");
-                        }
                     }
                     elseif (isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === true)
                     {
@@ -396,7 +422,7 @@ function woocommerce_razorpay_init()
                     "data"  => $data
                 ];
 
-                $result = $api->request->request('POST', 'app/woocommerce/api/woocommerce-post-installation', $postInstallationPayload);
+                $result = $api->request->request('POST', 'app/woocommerce/api/post-installation-workflow', $postInstallationPayload);
 
                 return $result;
             }
@@ -404,7 +430,7 @@ function woocommerce_razorpay_init()
             {
                 rzpLogError($e->getMessage());
 
-                return ['checkout360_status' => 'no'];
+                return ['error' => $e->getMessage()];
             }
         }
 
@@ -466,8 +492,11 @@ function woocommerce_razorpay_init()
             if (empty($checkout360Available) === true)
             {
                 $response = $this->rzpPostInstallationCall('install');
-                $checkout360Available = ($response['checkout360_status'] === true) ? 'yes' : 'no';
-                update_option('rzp_checkout360_status', $checkout360Available);
+                if (isset($response['error']) === false)
+                {
+                    $checkout360Available = ($response['checkout360_status'] === true) ? 'yes' : 'no';
+                    update_option('rzp_checkout360_status', $checkout360Available);
+                }
             }
 
             if ($is1ccAvailable) {
@@ -489,32 +518,32 @@ function woocommerce_razorpay_init()
                     '1cc_account_creation',
                 ));
               }
+            }
 
-              if ($checkout360Available === "yes")
-              {
-                  //remove 1cc fields
-                  $magicSettingsToRemove = [
-                      'enable_1cc',
-                      'enable_1cc_test_mode',
-                      'enable_1cc_pdp_checkout',
-                      'enable_1cc_mini_cart_checkout',
-                      '1cc_min_cart_amount',
-                      '1cc_min_COD_slab_amount',
-                      '1cc_max_COD_slab_amount',
-                  ];
-                  $this->visibleSettings = array_diff($this->visibleSettings, $magicSettingsToRemove);
+            if ($checkout360Available === "yes")
+            {
+                //remove 1cc fields
+                $magicSettingsToRemove = [
+                    'enable_1cc',
+                    'enable_1cc_test_mode',
+                    'enable_1cc_pdp_checkout',
+                    'enable_1cc_mini_cart_checkout',
+                    '1cc_min_cart_amount',
+                    '1cc_min_COD_slab_amount',
+                    '1cc_max_COD_slab_amount',
+                ];
+                $this->visibleSettings = array_diff($this->visibleSettings, $magicSettingsToRemove);
 
-                  //add checkout 360 fields
-                  $checkout360VisibleFields = [
-                      'checkout360_header',
-                      'checkout360_subheader',
-                      'configure_checkout360',
-                      'enable_magic_checkout_group',
-                      'enable_cod_configurations_group',
-                      'enhance_your_checkout_group',
-                  ];
-                  $this->visibleSettings = array_merge($this->visibleSettings, $checkout360VisibleFields);
-              }
+                //add checkout 360 fields
+                $checkout360VisibleFields = [
+                    'checkout360_header',
+                    'checkout360_subheader',
+                    'configure_checkout360',
+                    'enable_magic_checkout_group',
+                    'enable_cod_configurations_group',
+                    'enhance_your_checkout_group',
+                ];
+                $this->visibleSettings = array_merge($this->visibleSettings, $checkout360VisibleFields);
             }
 
             $this->init_form_fields();
@@ -824,18 +853,18 @@ function woocommerce_razorpay_init()
                 $checkout360Available === 'no')
             {
                 $checkout360Fields = [
-                        'enable_1cc',
-                        'enable_1cc_test_mode',
-                        'enable_1cc_pdp_checkout',
-                        'enable_1cc_mini_cart_checkout',
-                        'rzp_cod_intelligence_enable'
+                    'enable_1cc',
+                    'enable_1cc_test_mode',
+                    'enable_1cc_pdp_checkout',
+                    'enable_1cc_mini_cart_checkout',
+                    'rzp_cod_intelligence_enable'
                 ];
                 $optionKey = parent::get_option_key();
                 $savedData = get_option($optionKey);
 
                 foreach ($checkout360Fields as $field)
                 {
-                    if ($field === 'rzp_cod_intelligence_enable'))
+                    if ($field === 'rzp_cod_intelligence_enable')
                     {
                         delete_option($field);
                     }
