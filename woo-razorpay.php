@@ -1473,6 +1473,22 @@ function woocommerce_razorpay_init()
             return $html;
         }
 
+        public function getDisplayConfig()
+        {
+            $checkout360_status = get_option('rzp_checkout360_status');
+            $rzp_cod_intelligence_enable = get_option('rzp_cod_intelligence_enable');
+
+            if (isset($checkout360_status) === true and
+                $checkout360_status === 'yes' and
+                (empty($rzp_cod_intelligence_enable) === true or
+                    $rzp_cod_intelligence_enable === 'no'))
+            {
+                return [$config['display']['hide'] = ['method' => 'cod']];
+            }
+
+            return [];
+        }
+
         /**
          * default parameters passed to checkout
          * @param  WC_Order $order WC Order
@@ -1494,15 +1510,7 @@ function woocommerce_razorpay_init()
 
             $productinfo = "Order $orderId";
 
-            $config = [];
-
-            if (isset(get_option('rzp_checkout360_status')) === true and
-                get_option('rzp_checkout360_status') === 'yes' and
-                (empty(get_option('rzp_cod_intelligence_enable')) === true or
-                    get_option('rzp_cod_intelligence_enable') === 'no'))
-            {
-                $config['display']['hide'] = ['method' => 'cod'];
-            }
+            $config = $this->getDisplayConfig();
 
             return array(
                 'key'          => $this->getSetting('key_id'),
