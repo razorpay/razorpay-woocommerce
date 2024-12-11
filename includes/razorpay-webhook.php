@@ -526,9 +526,8 @@ class RZP_Webhook
     protected function shouldConsumeWebhook($data)
     {
         if ((isset($data['event']) === true) and
-            ((in_array($data['event'], $this->eventsArray) === true) or
-            (in_array($data['event'], $this->subscriptionEvents) === true)) and
-            ((isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true) or (isset($data['payload']['subscription']['entity']['notes']['woocommerce_order_id']) === true))) {
+            (in_array($data['event'], $this->eventsArray) === true) and
+            (isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true or isset($data['payload']['subscription']['entity']['notes']['woocommerce_order_id']) === true)) {
             return true;
         }
 
