@@ -1494,10 +1494,14 @@ function woocommerce_razorpay_init()
 
             $productinfo = "Order $orderId";
 
-            $hidePaymentMethods = [];
-            if (get_option('enable_cod_intelligence') === 'yes')
+            $config = [];
+
+            if (isset(get_option('rzp_checkout360_status')) === true and
+                get_option('rzp_checkout360_status') === 'yes' and
+                (empty(get_option('rzp_cod_intelligence_enable')) === true or
+                    get_option('rzp_cod_intelligence_enable') === 'no'))
             {
-                $hidePaymentMethods['method'] = "cod";
+                $config['display']['hide'] = ['method' => 'cod'];
             }
 
             return array(
@@ -1512,13 +1516,7 @@ function woocommerce_razorpay_init()
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
                 'prefill'      => $this->getCustomerInfo($order),
-                'config'=> [
-                    'display'=> [
-                        'hide'=> [
-                            $hidePaymentMethods
-                        ]
-                    ]
-                ]
+                'config'       => $config
             );
         }
 
