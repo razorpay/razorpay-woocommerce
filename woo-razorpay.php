@@ -698,7 +698,7 @@ function woocommerce_razorpay_init()
                         'enable_cod_configuratiopn' => array(
                             'label'         => __('Set-up smart COD rules & RTO Prediction here', $this->id),
                             'description'   => __("Use Razorpay's RTO intelligence to block COD for high risk users", $this->id),
-                            'link'          => 'http://dashboard.razorpay.com/magic'
+                            'link'          => 'http://dashboard.razorpay.com/app/magic'
                         )
                     )
                 ),
@@ -717,15 +717,17 @@ function woocommerce_razorpay_init()
                         'enable_giftcards_coupons' => array(
                             'label'         => __('Set-up gift cards and coupons here', $this->id),
                             'description'   => __("", $this->id),
-                            'link'          => 'http://dashboard.razorpay.com/magic'
+                            'link'          => 'https://dashboard.razorpay.com/app/magic/settings'
                         )
                     )
                 )
             );
 
+            do_action_ref_array( 'setup_extra_setting_fields', array( &$defaultFormFields ) );
+
             $defaultFormFields = array_merge( $defaultFormFields, $checkout360Settings );
 
-            do_action_ref_array( 'setup_extra_setting_fields', array( &$defaultFormFields ) );
+            do_action_ref_array( 'setup_extra_setting_fields_1cc', array( &$defaultFormFields ) );
 
             foreach ($defaultFormFields as $key => $value)
             {
