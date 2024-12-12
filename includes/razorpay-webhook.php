@@ -99,7 +99,7 @@ class RZP_Webhook
         // Skip the webhook if not the valid data and event
         if ($this->shouldConsumeWebhook($data) === false) {
 
-            rzpLogDebug("Webhook process exited in shouldConsumeWebhook function");
+            rzpLogDebug("Invalid webhook trigger: " . json_encode($data));
             return;
         }
 
