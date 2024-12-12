@@ -1475,6 +1475,7 @@ function woocommerce_razorpay_init()
 
         public function getDisplayConfig()
         {
+            $config = [];
             $checkout360_status = get_option('rzp_checkout360_status');
             $rzp_cod_intelligence_enable = get_option('rzp_cod_intelligence_enable');
 
@@ -1483,10 +1484,10 @@ function woocommerce_razorpay_init()
                 (empty($rzp_cod_intelligence_enable) === true or
                     $rzp_cod_intelligence_enable === 'no'))
             {
-                return [$config['display']['hide'] = ['method' => 'cod']];
+                $config['display']['hide'][] = ['method' => 'cod'];
             }
 
-            return [];
+            return $config;
         }
 
         /**
