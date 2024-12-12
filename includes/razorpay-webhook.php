@@ -96,6 +96,13 @@ class RZP_Webhook
             return;
         }
 
+        // Skip the webhook if not the valid data and event
+        if ($this->shouldConsumeWebhook($data) === false) {
+
+            rzpLogDebug("Invalid webhook trigger: " . json_encode($data));
+            return;
+        }
+
         if (empty($data['event']) === false) {
 
             $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
@@ -107,13 +114,6 @@ class RZP_Webhook
                 $razorpayOrderId = ($data['event'] == self::SUBSCRIPTION_CHARGED) ? $razorpayOrderId : "No payment id in subscription event";
             }
 
-
-            // Skip the webhook if not the valid data and event
-            if ($this->shouldConsumeWebhook($data) === false) {
-                rzpLogInfo("Woocommerce orderId: $orderId webhook process exited in shouldConsumeWebhook function");
-
-                return;
-            }
             if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']) === true) {
                 
                 $razorpayWebhookSecret = (empty($this->razorpay->getSetting('webhook_secret')) === false) ? $this->razorpay->getSetting('webhook_secret') : get_option('webhook_secret');
