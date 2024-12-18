@@ -661,7 +661,7 @@ function woocommerce_razorpay_init()
                     'type'  => 'title',
                 ),
                 'configure_checkout360' => array(
-                    'title' => '<span style="font-size: 17px;"><a href="https://dashboard.razorpay.com" target="_blank">' . __('Configure Checkout360 Settings').'</a></span>',
+                    'title' => '<span style="font-size: 17px;"><a href="https://dashboard.razorpay.com/app/magic/settings" target="_blank">' . __('Configure Checkout360 Settings').'</a></span>',
                     'type'  => 'title',
                 ),
                 'enable_magic_checkout_group' => array(
