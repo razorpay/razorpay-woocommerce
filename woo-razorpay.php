@@ -324,7 +324,8 @@ function woocommerce_razorpay_init()
                 return;
             }
 
-            if (empty($rtbEnable) === false)
+            if ((empty($rtbEnable) === false) and
+                (isset($rtbEnable['rtb_eligibility']) === true))
             {
                 if ($rtbEnable['rtb_eligibility'] === true)
                 {
@@ -853,38 +854,46 @@ function woocommerce_razorpay_init()
 
         public function autoPostInstallationCheck()
         {
-            $response = $this->rzpPostInstallationCall('evaluate');
-
-            $checkout360Available = ($response['checkout360_status'] === true) ? 'yes' : 'no';
-
-            update_option('rzp_checkout360_status', $checkout360Available);
-
-            // remove all checkou360 settings
-            if ($response['merchant_status'] === 'existing_checkout360_merchant' and
-                $checkout360Available === 'no')
+            try
             {
-                $checkout360Fields = [
-                    'enable_1cc',
-                    'enable_1cc_test_mode',
-                    'enable_1cc_pdp_checkout',
-                    'enable_1cc_mini_cart_checkout',
-                    'rzp_cod_intelligence_enable'
-                ];
-                $optionKey = parent::get_option_key();
-                $savedData = get_option($optionKey);
+                $response = $this->rzpPostInstallationCall('evaluate');
 
-                foreach ($checkout360Fields as $field)
+                $checkout360Available = ((isset($response['checkout360_status']) === true) and ($response['checkout360_status'] === true)) ? 'yes' : 'no';
+
+                update_option('rzp_checkout360_status', $checkout360Available);
+
+                // remove all checkout360 settings
+                if ((isset($response['merchant_status']) === true) and
+                    ($response['merchant_status'] === 'existing_checkout360_merchant') and
+                    ($checkout360Available === 'no'))
                 {
-                    if ($field === 'rzp_cod_intelligence_enable')
+                    $checkout360Fields = [
+                        'enable_1cc',
+                        'enable_1cc_test_mode',
+                        'enable_1cc_pdp_checkout',
+                        'enable_1cc_mini_cart_checkout',
+                        'rzp_cod_intelligence_enable'
+                    ];
+                    $optionKey = parent::get_option_key();
+                    $savedData = get_option($optionKey);
+
+                    foreach ($checkout360Fields as $field)
                     {
-                        delete_option($field);
+                        if ($field === 'rzp_cod_intelligence_enable')
+                        {
+                            delete_option($field);
+                        }
+                        else
+                        {
+                            $savedData[$field] = 'no';
+                        }
                     }
-                    else
-                    {
-                        $savedData[$field] = 'no';
-                    }
+                    update_option($optionKey, apply_filters('woocommerce_settings_api_sanitized_fields_' . $this->id, $savedData), 'yes');
                 }
-                update_option($optionKey, apply_filters('woocommerce_settings_api_sanitized_fields_' . $this->id, $savedData), 'yes');
+            }
+            catch (\Exception $e)
+            {
+                rzpLogError($e->getMessage());
             }
         }
 
