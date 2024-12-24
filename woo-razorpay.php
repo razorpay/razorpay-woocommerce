@@ -382,13 +382,13 @@ function woocommerce_razorpay_init()
                 {
                     if ($c360Field === 'enable_razorpay_trusted_business_widget')
                     {
-                        if (isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === true and
-                            (empty(get_option('rzp_rtb_enable')) === true) or (get_option('rzp_rtb_enable') === 'no'))
+                        if ((isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === true) and
+                            ((empty(get_option('rzp_rtb_enable')) === true) or (get_option('rzp_rtb_enable') === 'no')))
                         {
                             $this->toggleRtbWidget('activate' , true);
                         }
-                        elseif (isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === false and
-                            get_option('rzp_rtb_enable') === 'yes')
+                        elseif ((isset($data[$this->plugin_id . $this->id . '_' . $c360Field]) === false) and
+                            (get_option('rzp_rtb_enable') === 'yes'))
                         {
                             $this->toggleRtbWidget('deactivate' , false);
                         }
