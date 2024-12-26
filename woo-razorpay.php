@@ -852,6 +852,7 @@ function woocommerce_razorpay_init()
                 $checkout360Available = ((isset($response['checkout360_status']) === true) and ($response['checkout360_status'] === true)) ? 'yes' : 'no';
 
                 update_option('rzp_checkout360_status', $checkout360Available);
+                update_option('rzp_post_installation_update_at', time());
 
                 // remove all checkout360 settings
                 if ((isset($response['merchant_status']) === true) and
