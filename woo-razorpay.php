@@ -1394,6 +1394,21 @@ function woocommerce_razorpay_init()
             {
                 try
                 {
+                    // Every hour post installation check
+                    $getPostInstallationFlag = get_option('rzp_post_installation_update_at');
+                    if (empty($getPostInstallationFlag) == false)
+                    {
+                        if ($getPostInstallationFlag + 3600 < time())
+                        {
+                            $this->autoPostInstallationCheck();
+                        }
+                    }
+                    else
+                    {
+                        update_option('rzp_post_installation_update_at', $time);
+                        $this->autoPostInstallationCheck();
+                    }
+
                     return $this->createRazorpayOrderId($orderId, $sessionKey);
                 }
                     // For the bad request errors, it's safe to show the message to the customer.
@@ -1660,21 +1675,6 @@ function woocommerce_razorpay_init()
             {
                     update_option('webhook_enable_flag', $time);
                     $this->autoEnableWebhook();
-            }
-
-            // Every hour post installation check
-            $getPostInstallationFlag = get_option('rzp_post_installation_update_at');
-            if (empty($getPostInstallationFlag) == false)
-            {
-                if ($getPostInstallationFlag + 3600 < time())
-                {
-                    $this->autoPostInstallationCheck();
-                }
-            }
-            else
-            {
-                update_option('rzp_post_installation_update_at', $time);
-                $this->autoPostInstallationCheck();
             }
 
             $razorpayOrderId = $razorpayOrder['id'];
