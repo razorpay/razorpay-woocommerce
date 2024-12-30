@@ -1556,8 +1556,6 @@ function woocommerce_razorpay_init()
 
             $productinfo = "Order $orderId";
 
-            $config = $this->getDisplayConfig();
-
             return array(
                 'key'          => $this->getSetting('key_id'),
                 'name'         => html_entity_decode(get_bloginfo('name'), ENT_QUOTES),
@@ -1569,8 +1567,7 @@ function woocommerce_razorpay_init()
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
-                'prefill'      => $this->getCustomerInfo($order),
-                'config'       => $config
+                'prefill'      => $this->getCustomerInfo($order)
             );
         }
 

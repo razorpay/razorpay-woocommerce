@@ -250,6 +250,8 @@ function cartResponse($couponCode){
     $prefillData = getPrefillCartData($couponCode);
     $response['prefill'] = $prefillData;
 
+    $response['config'] = $razorpay->getDisplayConfig();
+
     $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
     $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
 
