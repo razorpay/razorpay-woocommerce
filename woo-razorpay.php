@@ -466,7 +466,8 @@ function woocommerce_razorpay_init()
                 (isset($_GET['tab']) === true) &&
                 ($_GET['tab'] === 'checkout') &&
                 (isset($_GET['section']) === true) &&
-                ($_GET['section'] === 'razorpay'))
+                ($_GET['section'] === 'razorpay') &&
+                ($checkout360Available !== 'yes'))
             {
                 if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                 {
@@ -484,6 +485,16 @@ function woocommerce_razorpay_init()
 
             if (!empty($merchantPreferences['features']['one_click_checkout'])) {
                 $is1ccAvailable = true;
+            }
+            else
+            {
+                $optionKey = parent::get_option_key();
+                $razorpay_settings = get_option($optionKey);
+
+                $razorpay_settings['enable_1cc'] = 'no';
+                $razorpay_settings['enable_1cc_mini_cart_checkout'] = 'no';
+                $razorpay_settings['enable_1cc_pdp_checkout'] = 'no';
+                update_option($optionKey, apply_filters('woocommerce_settings_api_sanitized_fields_' . $this->id, $razorpay_settings), 'yes');
             }
 
             if (!empty($merchantPreferences['features']['one_cc_store_account'])) {
@@ -1072,7 +1083,7 @@ function woocommerce_razorpay_init()
 
         public function enqueue_checkout_js_script_on_checkout()
         {
-            if (is_checkout()) 
+            if (is_checkout())
             {
                 wp_enqueue_script(
                     'razorpay-checkout-js',
@@ -1385,21 +1396,6 @@ function woocommerce_razorpay_init()
             {
                 try
                 {
-                    // Every hour post installation check
-                    $getPostInstallationFlag = get_option('rzp_post_installation_update_at');
-                    if (empty($getPostInstallationFlag) == false)
-                    {
-                        if ($getPostInstallationFlag + 3600 < time())
-                        {
-                            $this->autoPostInstallationCheck();
-                        }
-                    }
-                    else
-                    {
-                        update_option('rzp_post_installation_update_at', $time);
-                        $this->autoPostInstallationCheck();
-                    }
-
                     return $this->createRazorpayOrderId($orderId, $sessionKey);
                 }
                     // For the bad request errors, it's safe to show the message to the customer.
