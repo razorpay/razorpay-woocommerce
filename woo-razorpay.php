@@ -858,7 +858,7 @@ function woocommerce_razorpay_init()
         {
             try
             {
-                $response = $this->rzpPostInstallationCall('evaluate');
+                $response = $this->rzpPostInstallationCall('install');
 
                 $checkout360Available = ((isset($response['checkout360_status']) === true) and ($response['checkout360_status'] === true)) ? 'yes' : 'no';
 
