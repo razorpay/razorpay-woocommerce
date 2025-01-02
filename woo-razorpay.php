@@ -456,9 +456,9 @@ function woocommerce_razorpay_init()
             $is1ccAvailable = false;
             $isAccCreationAvailable = false;
             $merchantPreferences = [];
-            $checkout360Available = get_option('rzp_checkout360_status');
+            $checkout360Available = get_option('rzp_checkout360_status', "");
 
-            $merchantPreferences = get_transient(self::ONE_CC_MERCHANT_PREF);
+            $merchantPreferences = get_transient(self::ONE_CC_MERCHANT_PREF . "_" . $checkout360Available);
 
             // Load preference API call only for administrative interface + razorpay payment settings page.
             if (current_user_can('administrator') &&
@@ -466,8 +466,7 @@ function woocommerce_razorpay_init()
                 (isset($_GET['tab']) === true) &&
                 ($_GET['tab'] === 'checkout') &&
                 (isset($_GET['section']) === true) &&
-                ($_GET['section'] === 'razorpay') &&
-                ($checkout360Available !== 'yes'))
+                ($_GET['section'] === 'razorpay'))
             {
                 if (!empty($this->getSetting('key_id')) && !empty($this->getSetting('key_secret')))
                 {
@@ -475,7 +474,7 @@ function woocommerce_razorpay_init()
 
                       $api = $this->getRazorpayApiInstance();
                       $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
-                      set_transient( self::ONE_CC_MERCHANT_PREF, $merchantPreferences, 7200 );
+                        set_transient( self::ONE_CC_MERCHANT_PREF . "_" . $checkout360Available, $merchantPreferences, 7200 );
 
                     } catch (\Exception $e) {
                       rzpLogError($e->getMessage());
