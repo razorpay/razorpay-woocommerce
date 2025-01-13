@@ -446,7 +446,7 @@ function woocommerce_razorpay_init()
 
             if (is_admin() and
                 (($currentSection === "razorpay") or
-                    ($currentSection === "affordability-widget")))
+                ($currentSection === "affordability-widget")))
             {
                 try
                 {
