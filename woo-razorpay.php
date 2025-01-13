@@ -442,7 +442,11 @@ function woocommerce_razorpay_init()
             }
 
             //Affordability Widget Code
-            if (is_admin())
+            $currentSection = isset($_GET["section"]) ? sanitize_text_field($_GET["section"]) : "";
+
+            if (is_admin() and
+                (($currentSection === "razorpay") or
+                ($currentSection === "affordability-widget")))
             {
                 try
                 {
