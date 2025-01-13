@@ -460,6 +460,11 @@ function woocommerce_razorpay_init()
                         $api = $this->getRazorpayApiInstance();
                     }
 
+                    if (empty($key_id) === true)
+                    {
+                        return;
+                    }
+
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
