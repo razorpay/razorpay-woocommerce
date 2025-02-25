@@ -2019,7 +2019,8 @@ EOT;
                     if ($this->isHposEnabled) {
                         $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                     }else{
-                        $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                        // $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
+                        $is1ccOrder = get_post_meta( $wcOrderId, 'is_magic_checkout_order', true );
                     }
 
                     rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
