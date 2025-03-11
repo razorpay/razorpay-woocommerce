@@ -909,6 +909,7 @@ function woocommerce_razorpay_init()
             try
             {
                 $api = $this->getRazorpayApiInstance();
+                $api->setHeader('Content-Type', 'application/x-www-form-urlencoded');
 
                 $webhook = $api->request->request($method, $url, $data);
             }
