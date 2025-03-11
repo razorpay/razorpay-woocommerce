@@ -909,6 +909,7 @@ function woocommerce_razorpay_init()
             try
             {
                 $api = $this->getRazorpayApiInstance();
+                $api->setHeader('Content-Type', 'application/x-www-form-urlencoded');
 
                 $webhook = $api->request->request($method, $url, $data);
             }
@@ -1080,22 +1081,8 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($order, $orderId)
         {
-            $getWebhookFlag =  get_option('webhook_enable_flag');
-            $time = time();
-            if (empty($getWebhookFlag) == false)
-            {
-                if ($getWebhookFlag + 86400 < time())
-                {
-                    $this->autoEnableWebhook();
-                }
-            }
-            else
-            {
-                update_option('webhook_enable_flag', $time);
-                $this->autoEnableWebhook();
-            }
-
             rzpLogInfo("getRazorpayPaymentParams $orderId");
+
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderId);
 
             if ($razorpayOrderId === null)
@@ -1236,7 +1223,6 @@ function woocommerce_razorpay_init()
         protected function createRazorpayOrderId($orderId, $sessionKey)
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
-
 
             // Calls the helper function to create order data
             global $woocommerce;
