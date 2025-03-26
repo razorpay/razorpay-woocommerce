@@ -1016,11 +1016,12 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $razorpayOrderId = get_transient($sessionKey);
+                // $razorpayOrderId = get_transient($sessionKey);
+                $razorpayOrderId = $order->get_meta($sessionKey);
                 rzpLogInfo("razorpayOrderId $razorpayOrderId | sessionKey $sessionKey");
                 // If we don't have an Order
                 // or the if the order is present in transient but doesn't match what we have saved
-                if (($razorpayOrderId === false) or
+                if (($razorpayOrderId === false || $razorpayOrderId == "") or
                     (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId, $is1ccCheckout)) === false)))
                 {
                     $create = true;
@@ -1144,8 +1145,14 @@ function woocommerce_razorpay_init()
 
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
 
-            $razorpayOrderId = get_transient($sessionKey);
+            // $razorpayOrderId = get_transient($sessionKey);
+            // Retrieve the order using the order ID.
+            $orderData = wc_get_order($wcOrderId);
 
+            if ($orderData) {
+                // Get the Razorpay Order ID from the order meta using the session key.
+                $razorpayOrderId = $orderData->get_meta($sessionKey);
+            } 
             $productinfo = "Order $orderId";
 
             return array(
@@ -1154,8 +1161,8 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    self::WC_ORDER_ID => $orderId,
-                    self::WC_ORDER_NUMBER => $wcOrderId
+                    self::WC_ORDER_ID => $wcOrderId,
+                    self::WC_ORDER_NUMBER => $orderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
@@ -1268,7 +1275,21 @@ function woocommerce_razorpay_init()
             $razorpayOrderId = $razorpayOrder['id'];
 
             // Storing the razorpay order id in transient for 5 hours time.
-            set_transient($sessionKey, $razorpayOrderId, 18000);
+            // set_transient($sessionKey, $razorpayOrderId, 18000);
+            $order = wc_get_order($orderId);
+			if ($order) {
+                // Update or create the meta data using the session key
+                $order->update_meta_data($sessionKey, $razorpayOrderId);
+                $order->save();
+                rzpLogInfo("Meta data saved for Order ID {$orderId} with key {$sessionKey} and value {$razorpayOrderId}.");
+
+                // Retrieve and log the saved meta value
+                $savedMetaValue = $order->get_meta($sessionKey);
+                rzpLogInfo("Retrieved Meta Data for Order ID {$orderId}: Key: {$sessionKey}, Value: {$savedMetaValue}");
+    
+            } else {
+                rzpLogInfo("Order not found for order ID {$orderId}. Unable to update order meta.");
+            }
 
             // By default woocommerce session TTL is 48 hours.
             $woocommerce->session->set($sessionKey, $razorpayOrderId);
@@ -1876,14 +1897,17 @@ EOT;
                     $sessionKey = $this->getOrderSessionKey($orderId);
 
                     //Check the transient data for razorpay order id, if it's not available then look into session data.
-                    if(get_transient($sessionKey))
-                    {
-                        $razorpayOrderId = get_transient($sessionKey);
-                    }
-                    else
-                    {
-                        $razorpayOrderId = $woocommerce->session->get($sessionKey);
-                    }
+                    // if(get_transient($sessionKey))
+                    // {
+                    //     $razorpayOrderId = get_transient($sessionKey);
+                    // }
+                    // else
+                    // {
+                    //     $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                    // }
+                    $order = wc_get_order($orderId);
+                    $razorpayOrderId = $order->get_meta($sessionKey);
+					rzpLogInfo("RAZORPAYID from meta '{$razorpayOrderId}'.");
 
                     $razorpayData = $api->order->fetch($razorpayOrderId);
 
@@ -1931,14 +1955,16 @@ EOT;
 
             $sessionKey = $this->getOrderSessionKey($orderId);
             //Check the transient data for razorpay order id, if it's not available then look into session data.
-            if(get_transient($sessionKey))
-            {
-                $razorpayOrderId = get_transient($sessionKey);
-            }
-            else
-            {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
-            }
+            // if(get_transient($sessionKey))
+            // {
+            //     $razorpayOrderId = get_transient($sessionKey);
+            // }
+            // else
+            // {
+            //     $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            // }
+            $order = wc_get_order($orderId);
+			$razorpayOrderId = $order->get_meta($sessionKey);
 
             $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId?? '';
             rzpLogInfo("verifySignature attr");
@@ -2110,14 +2136,16 @@ EOT;
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
 
             //Check the transient data for razorpay order id, if it's not available then look into session data.
-            if(get_transient($sessionKey))
-            {
-                $razorpayOrderId = get_transient($sessionKey);
-            }
-            else
-            {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
-            }
+            // if(get_transient($sessionKey))
+            // {
+            //     $razorpayOrderId = get_transient($sessionKey);
+            // }
+            // else
+            // {
+            //     $razorpayOrderId = $woocommerce->session->get($sessionKey);
+            // }
+            $razorpayOrderId = $order->get_meta($sessionKey);
+			rzpLogInfo("For order ID {$orderId}, retrieved meta value for session key '{$sessionKey}': " . $razorpayOrderId);
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
 
