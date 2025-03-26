@@ -312,7 +312,7 @@ class RZP_Webhook
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
-
+//change required
         $amount = $this->getOrderAmountAsInteger($order);
 
         $success      = false;
@@ -541,6 +541,7 @@ class RZP_Webhook
      */
     public function getOrderAmountAsInteger($order)
     {
+        // change required
         if (version_compare(WOOCOMMERCE_VERSION, '3.0.0', '>=')) {
             return (int) round($order->get_total() * 100);
         }
@@ -602,7 +603,7 @@ class RZP_Webhook
 
             error_log(json_encode($log));
         }
-
+        //change required
         $refundAmount = round(($data['payload']['refund']['entity']['amount'] / 100), 2);
 
         $refundReason = $data['payload']['refund']['entity']['notes']['comment'];
