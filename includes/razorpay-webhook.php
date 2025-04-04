@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../woo-razorpay.php';
 require_once __DIR__ . '/../razorpay-sdk/Razorpay.php';
+require_once ABSPATH . '/wp-admin/includes/upgrade.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -150,49 +151,19 @@ class RZP_Webhook
                     return;
                 }
 
-                if (in_array($data['event'], $this->subscriptionEvents) === false)
-                {
-                    if ($this->razorpay->isHposEnabled) 
-                    {
-                        $order = wc_get_order($orderId);
-                        $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
-                    }
-                    else 
-                    {
-                        $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
-                    }
-
-                    if ($rzpWebhookNotifiedAt === '')
-                    {
-                        if ($this->razorpay->isHposEnabled) 
-                        {
-                            $order->update_meta_data('rzp_webhook_notified_at', time());
-                            $order->save();
-                        }
-                        else 
-                        {
-                            update_post_meta($orderId, "rzp_webhook_notified_at", time());
-                        }
-
-                        rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
-                        header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
-                        return;
-                    }
-                    elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
-                    {
-                        rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
-                        header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
-                        return;
-                    }
-
-                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
-                }
-
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for event: ". $data['event']);
 
                 switch ($data['event']) {
                     case self::PAYMENT_AUTHORIZED:
-                        return $this->paymentAuthorized($data);
+                        $webhookFilteredData = [
+                            'invoice_id'                => $data['payload']['payment']['entity']['invoice_id'],
+                            'woocommerce_order_number'  => $data['payload']['payment']['entity']['notes']['woocommerce_order_number'],
+                            'razorpay_order_id'     => $data['payload']['payment']['entity']['order_id'],
+                            'razorpay_payment_id'       => $data['payload']['payment']['entity']['id'],
+                            'event'                     => $data['event']
+                        ];
+                        $this->saveWebhookEvent($webhookFilteredData);
+                        return;
 
                     case self::VIRTUAL_ACCOUNT_CREDITED:
                         return $this->virtualAccountCredited($data);
@@ -223,6 +194,35 @@ class RZP_Webhook
                 }
             }
         }
+    }
+
+    /**
+     * saves triggered webhook event in rzp_webhook_data table
+     * @param array $data Webook event Data
+     */
+    protected function saveWebhookEvent($data)
+    {
+        global $wpdb;
+
+        $tableName = $wpdb->prefix . 'rzp_webhook_data';
+
+        $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $webhookFilteredData['gravity_forms_order_id'] . ";");
+
+        $rzpWebhookData = (array) json_decode($webhookEvents['rzp_webhook_data']);
+
+        $rzpWebhookData[] = $webhookFilteredData;
+
+        $wpdb->update(
+            $tableName,
+            array(
+                'rzp_webhook_data'          => json_encode($rzpWebhookData),
+                'rzp_webhook_notified_at'   => time()
+            ),
+            array(
+                'order_id'      => $data['woocommerce_order_number'],
+                'rzp_order_id'  => $data['rzp_order_id']
+            )
+        );
     }
 
     /**
