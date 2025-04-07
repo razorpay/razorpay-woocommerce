@@ -158,11 +158,10 @@ class RZP_Webhook
                         $webhookFilteredData = [
                             'invoice_id'                => $data['payload']['payment']['entity']['invoice_id'],
                             'woocommerce_order_number'  => $data['payload']['payment']['entity']['notes']['woocommerce_order_number'],
-                            'razorpay_order_id'     => $data['payload']['payment']['entity']['order_id'],
                             'razorpay_payment_id'       => $data['payload']['payment']['entity']['id'],
                             'event'                     => $data['event']
                         ];
-                        $this->saveWebhookEvent($webhookFilteredData);
+                        $this->saveWebhookEvent($webhookFilteredData, $data['payload']['payment']['entity']['order_id']);
                         return;
 
                     case self::VIRTUAL_ACCOUNT_CREDITED:
@@ -200,29 +199,36 @@ class RZP_Webhook
      * saves triggered webhook event in rzp_webhook_data table
      * @param array $data Webook event Data
      */
-    protected function saveWebhookEvent($data)
+    protected function saveWebhookEvent($data, $rzpOrderId)
     {
         global $wpdb;
 
-        $tableName = $wpdb->prefix . 'rzp_webhook_data';
+        try
+        {
+            $tableName = $wpdb->prefix . 'rzp_webhook_requests';
 
-        $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $webhookFilteredData['gravity_forms_order_id'] . ";");
+            $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $data['woocommerce_order_number'] . "rzp_order_id=". $rzpOrderId .";");
 
-        $rzpWebhookData = (array) json_decode($webhookEvents['rzp_webhook_data']);
+            $rzpWebhookData = (array) json_decode($webhookEvents['rzp_webhook_data']);
 
-        $rzpWebhookData[] = $webhookFilteredData;
+            $rzpWebhookData[] = $data;
 
-        $wpdb->update(
-            $tableName,
-            array(
-                'rzp_webhook_data'          => json_encode($rzpWebhookData),
-                'rzp_webhook_notified_at'   => time()
-            ),
-            array(
-                'order_id'      => $data['woocommerce_order_number'],
-                'rzp_order_id'  => $data['rzp_order_id']
-            )
-        );
+            $wpdb->update(
+                $tableName,
+                array(
+                    'rzp_webhook_data'          => json_encode($rzpWebhookData),
+                    'rzp_webhook_notified_at'   => time()
+                ),
+                array(
+                    'order_id'      => $data['woocommerce_order_number'],
+                    'rzp_order_id'  => $rzpOrderId
+                )
+            );
+        }
+        catch (Exception $e)
+        {
+            rzpLogError("Insert webhook event failed. " . $e->getMessage());
+        }
     }
 
     /**
