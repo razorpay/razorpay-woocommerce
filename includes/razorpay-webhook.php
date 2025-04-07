@@ -281,17 +281,17 @@ class RZP_Webhook
      *
      * @param array $data Webook Data
      */
-    protected function paymentAuthorized(array $data)
+    public function paymentAuthorized(array $data)
     {
         // We don't process subscription/invoice payments here
-        if (isset($data['payload']['payment']['entity']['invoice_id']) === true) {
+        if (isset($data['invoice_id']) === true) {
             return;
         }
 
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+        $orderId = $data['woocommerce_order_number'];
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for payment authorized event");
 
@@ -315,7 +315,7 @@ class RZP_Webhook
             updateOrderStatus($orderId, 'wc-pending');
         }
 
-        $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
+        $razorpayPaymentId = $data['razorpay_payment_id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
