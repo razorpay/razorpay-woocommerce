@@ -3124,7 +3124,7 @@ EOT;
                                 $wpdb->update(
                                     $tableName,
                                     array(
-                                        'rzp_update_order_cron_status' => $rzpOrderProcessedByWebhook
+                                        'rzp_update_order_cron_status'  => $rzpOrderProcessedByWebhook
                                     ),
                                     array(
                                         'order_id'      => $row->order_id,

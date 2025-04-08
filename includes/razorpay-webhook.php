@@ -207,7 +207,7 @@ class RZP_Webhook
         {
             $tableName = $wpdb->prefix . 'rzp_webhook_requests';
 
-            $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $data['woocommerce_order_number'] . "rzp_order_id=". $rzpOrderId .";");
+            $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $data['woocommerce_order_number'] . "rzp_order_id=" . $rzpOrderId . ";");
 
             $rzpWebhookData = (array) json_decode($webhookEvents['rzp_webhook_data']);
 
@@ -216,8 +216,7 @@ class RZP_Webhook
             $wpdb->update(
                 $tableName,
                 array(
-                    'rzp_webhook_data'          => json_encode($rzpWebhookData),
-                    'rzp_webhook_notified_at'   => time()
+                    'rzp_webhook_data'  => json_encode($rzpWebhookData)
                 ),
                 array(
                     'order_id'      => $data['woocommerce_order_number'],
