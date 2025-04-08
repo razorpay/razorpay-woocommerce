@@ -361,12 +361,8 @@ class RZP_Webhook
         }
 
         $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
-        rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the update order function");
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the updateOrder function");
-
-        // Graceful exit since payment is now processed.
-        exit;
     }
 
     /**
