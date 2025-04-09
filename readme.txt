@@ -70,7 +70,7 @@ Razorpay is available for Store Owners and Merchants in
 == Changelog ==
 
 = 4.7.2 =
-* Added Cron for webhook.
+* Added cron for webhook.
 
 = 4.7.1 =
 * Updated SDK update to 2.9.0.
