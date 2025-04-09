@@ -3112,6 +3112,7 @@ EOT;
 
             foreach ($ordersData as $row)
             {
+                rzpLogInfo("Webhook cron executing woocommerce order:" . $row->order_id);
                 $events = json_decode($row->rzp_webhook_data);
                 foreach ($events as $event)
                 {
@@ -3150,6 +3151,7 @@ EOT;
         {
             rzpLogError("Webhook cron execution failed: " . $e->getMessage());
         }
+        rzpLogInfo("Webhook cron execution completed.");
     }
 
     add_action('rzp_webhook_exec_cron', 'execRzpWooWebhookEvents');
