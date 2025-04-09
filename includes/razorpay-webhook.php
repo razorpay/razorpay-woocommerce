@@ -227,6 +227,7 @@ class RZP_Webhook
                     'rzp_order_id'  => $rzpOrderId
                 )
             );
+            rzpLogInfo("webhook event saved for order:" . $data['woocommerce_order_number']);
         }
         catch (Exception $e)
         {
@@ -296,7 +297,7 @@ class RZP_Webhook
         //
         $orderId = $data['woocommerce_order_number'];
 
-        rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for payment authorized event");
+        rzpLogInfo("Woocommerce orderId: $orderId, webhook process intitiated for payment authorized event by cron");
 
         if (!empty($orderId)) {
             $order = $this->checkIsObject($orderId);
