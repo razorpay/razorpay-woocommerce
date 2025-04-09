@@ -218,7 +218,8 @@ class RZP_Webhook
             $wpdb->update(
                 $tableName,
                 array(
-                    'rzp_webhook_data'  => json_encode($rzpWebhookData)
+                    'rzp_webhook_data'          => json_encode($rzpWebhookData),
+                    'rzp_webhook_notified_at'   => time()
                 ),
                 array(
                     'integration'   => $integration,
