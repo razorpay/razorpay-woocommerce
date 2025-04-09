@@ -1951,6 +1951,7 @@ EOT;
                         'rzp_update_order_cron_status' => self::RZP_ORDER_PROCESSED_BY_CALLBACK
                     ),
                     array(
+                        'integration'   => self::RZP_INTEGRATION
                         'order_id'      => $orderId,
                         'rzp_order_id'  => $razorpayOrderId
                     )
@@ -3103,12 +3104,13 @@ EOT;
         try
         {
             $rzpOrderProcessedByWebhook = 2;
+            $integration = "woocommerce";
             $tableName = $wpdb->prefix . "rzp_webhook_requests";
 
-            $webhookEvents = $wpdb->get_results("SELECT order_id, rzp_order_id, rzp_webhook_data FROM $tableName WHERE rzp_webhook_notified_at < " . (string)(time() - 300) ." AND rzp_update_order_cron_status=0;");
+            $ordersData = $wpdb->get_results("SELECT order_id, rzp_order_id, rzp_webhook_data FROM $tableName WHERE integration=$integration AND rzp_webhook_notified_at < " . (string)(time() - 300) ." AND rzp_update_order_cron_status=0;");
             $rzpWebhookObj = new RZP_Webhook();
 
-            foreach ($webhookEvents as $row)
+            foreach ($ordersData as $row)
             {
                 $events = json_decode($row->rzp_webhook_data);
                 foreach ($events as $event)
@@ -3127,6 +3129,7 @@ EOT;
                                         'rzp_update_order_cron_status'  => $rzpOrderProcessedByWebhook
                                     ),
                                     array(
+                                        'integration'   => $integration,
                                         'order_id'      => $row->order_id,
                                         'rzp_order_id'  => $row->rzp_order_id
                                     )
