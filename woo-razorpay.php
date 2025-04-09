@@ -3107,7 +3107,7 @@ EOT;
             $integration = "woocommerce";
             $tableName = $wpdb->prefix . "rzp_webhook_requests";
 
-            $ordersData = $wpdb->get_results("SELECT order_id, rzp_order_id, rzp_webhook_data FROM $tableName WHERE integration=$integration AND rzp_webhook_notified_at < " . (string)(time() - 300) ." AND rzp_update_order_cron_status=0;");
+            $ordersData = $wpdb->get_results("SELECT order_id, rzp_order_id, rzp_webhook_data FROM $tableName WHERE integration='" . $integration . "' AND rzp_webhook_notified_at < " . (string)(time() - 300) ." AND rzp_update_order_cron_status=0;");
             $rzpWebhookObj = new RZP_Webhook();
 
             foreach ($ordersData as $row)
