@@ -1951,7 +1951,7 @@ EOT;
                         'rzp_update_order_cron_status' => self::RZP_ORDER_PROCESSED_BY_CALLBACK
                     ),
                     array(
-                        'integration'   => self::RZP_INTEGRATION
+                        'integration'   => self::RZP_INTEGRATION,
                         'order_id'      => $orderId,
                         'rzp_order_id'  => $razorpayOrderId
                     )
