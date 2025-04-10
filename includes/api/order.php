@@ -127,12 +127,13 @@ function createWcOrder(WP_REST_Request $request)
         }
 
         // Pixel your site PRO UTM data
-        if (is_plugin_active('pixelyoursite-pro/pixelyoursite-pro.php')) {
-
+        if (is_plugin_active('pixelyoursite-pro/pixelyoursite-pro.php') || is_plugin_active('pixelyoursite/facebook-pixel-master.php')) {
+            rzpLogInfo("pixelyoursite-pro/pixelyoursite-pro.php is activated for order id-". $orderId);
             $pysData = get_option('pys_core');
 
             // Store UTM data only if config enabled.
             if ($pysData['woo_enabled_save_data_to_orders'] == true) {
+                rzpLogInfo("woo_enabled_save_data_to_orders value is ".$pysData['woo_enabled_save_data_to_orders']);
                 wooSaveCheckoutUTMFields($order, $params);
             }
         }
@@ -275,29 +276,47 @@ function updateOrderStatus($orderId, $orderStatus)
 
 function wooSaveCheckoutUTMFields($order, $params)
 {
-    $pysData                = [];
-    $cookieData             = $params['cookies'];
+	if (!$order) return;
     $getQuery               = $params['requestData'];
     $browserTime            = $params['dateTime'];
-    $pysData['pys_landing'] = isset($cookieData['pys_landing_page']) ? ($cookieData['pys_landing_page']) : "";
-    $pysData['pys_source']  = isset($cookieData['pysTrafficSource']) ? ($cookieData['pysTrafficSource']) : "direct";
-    if ($pysData['pys_source'] == 'direct') {
-        $pysData['pys_source'] = $params['referrerDomain'] != '' ? $params['referrerDomain'] : "direct";
-    }
-    $pysUTMSource   = $cookieData['pys_utm_source'] ?? $getQuery['utm_source'];
-    $pysUTMMedium   = $cookieData['pys_utm_medium'] ?? $getQuery['utm_medium'];
-    $pysUTMCampaign = $cookieData['pys_utm_campaign'] ?? $getQuery['utm_medium'];
-    $pysUTMTerm     = $cookieData['pys_utm_term'] ?? $getQuery['utm_term'];
-    $pysUTMContent  = $cookieData['pys_utm_content'] ?? $getQuery['utm_content'];
+	rzpLogInfo('Razorpay Log: sbjs_current - ' . json_encode($_COOKIE['sbjs_current']));
+    $data = [];
 
-    $pysData['pys_utm']          = "utm_source:" . $pysUTMSource . "|utm_medium:" . $pysUTMMedium . "|utm_campaign:" . $pysUTMCampaign . "|utm_term:" . $pysUTMTerm . "|utm_content:" . $pysUTMContent;
-    $pysData['pys_browser_time'] = $browserTime[0] . "|" . $browserTime[1] . "|" . $browserTime[2];
-
-    if (isHposEnabled()) {
-        $order->update_meta_data( 'pys_enrich_data', $pysData );
-        $order->save();
-    }else{
-        update_post_meta($order->get_id(), "pys_enrich_data", $pysData);
+    // Get data from Sourcebuster.js (sbjs) cookies
+    if (!empty($_COOKIE['sbjs_current'])) {
+        parse_str(str_replace('|', '&', $_COOKIE['sbjs_current']), $sbjs_current);
+        $data['source_type'] = $sbjs_current['typ'] ?? 'direct';
+        $data['utm_source']  = $sbjs_current['src'] ?? '(direct)';
+        $data['utm_medium']  = $sbjs_current['mdm'] ?? '(none)';
+        $data['utm_campaign'] = $sbjs_current['cmp'] ?? '(none)';
+        $data['referrer'] = $sbjs_current['rf'] ?? '';
     }
-   
+
+    // Get data from WooCommerce Order Attribution Script (wc_order_attribution)
+    if (!empty($_COOKIE['wc_order_attribution'])) {
+        $wc_order_attribution = json_decode(stripslashes($_COOKIE['wc_order_attribution']), true);
+        if (!empty($wc_order_attribution['fields'])) {
+            foreach ($wc_order_attribution['fields'] as $key => $cookie_key) {
+                if (isset($_COOKIE[$cookie_key])) {
+                    $data[$key] = $_COOKIE[$cookie_key];
+                }
+            }
+        }
+    }
+
+    // Capture referrer from HTTP headers (fallback)
+    if (empty($data['referrer']) && !empty($_SERVER['HTTP_REFERER'])) {
+        $data['referrer'] = $_SERVER['HTTP_REFERER'];
+    }
+
+    // Capture user agent
+    $data['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
+	rzpLogInfo('Store Cookie Data  - ' . json_encode($data));
+
+    //Save each key-value pair as order meta (WooCommerce format)
+    foreach ($data as $key => $value) {
+        $order->update_meta_data('_wc_order_attribution_' . $key, $value);
+    }
+	$order->save();
+
 }
