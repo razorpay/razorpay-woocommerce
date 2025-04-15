@@ -3,8 +3,8 @@
  * Plugin Name: 1 Razorpay: Signup for FREE PG
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
- * Version: 4.6.9
- * Stable tag: 4.6.9
+ * Version: 4.7.2
+ * Stable tag: 4.7.2
  * Author: Team Razorpay
  * WC tested up to: 9.1.2
  * Author URI: https://razorpay.com
@@ -33,6 +33,7 @@ require_once __DIR__.'/includes/cron/one-click-checkout/Constants.php';
 require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php';
 require_once __DIR__.'/includes/cron/cron.php';
 require_once __DIR__.'/includes/cron/plugin-fetch.php';
+require_once ABSPATH . '/wp-admin/includes/upgrade.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -146,6 +147,10 @@ function woocommerce_razorpay_init()
 
         const PREPAY_COD_URL = '1cc/orders/cod/convert';
         const ONE_CC_MERCHANT_PREF = 'one_cc_merchant_preference';
+
+        const RZP_ORDER_CREATED = 0;
+        const RZP_ORDER_PROCESSED_BY_CALLBACK = 1;
+        const RZP_INTEGRATION = 'woocommerce';
 
         protected $supportedWebhookEvents = array(
             'payment.authorized',
@@ -442,7 +447,11 @@ function woocommerce_razorpay_init()
             }
 
             //Affordability Widget Code
-            if (is_admin())
+            $currentSection = isset($_GET["section"]) ? sanitize_text_field($_GET["section"]) : "";
+
+            if (is_admin() and
+                (($currentSection === "razorpay") or
+                ($currentSection === "affordability-widget")))
             {
                 try
                 {
@@ -458,6 +467,11 @@ function woocommerce_razorpay_init()
                     {
                         $key_id = $this->getSetting('key_id');
                         $api = $this->getRazorpayApiInstance();
+                    }
+
+                    if (empty($key_id) === true)
+                    {
+                        return;
                     }
 
                     $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
@@ -900,6 +914,7 @@ function woocommerce_razorpay_init()
             try
             {
                 $api = $this->getRazorpayApiInstance();
+                $api->setHeader('Content-Type', 'application/x-www-form-urlencoded');
 
                 $webhook = $api->request->request($method, $url, $data);
             }
@@ -1071,22 +1086,8 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($order, $orderId)
         {
-            $getWebhookFlag =  get_option('webhook_enable_flag');
-            $time = time();
-            if (empty($getWebhookFlag) == false)
-            {
-                if ($getWebhookFlag + 86400 < time())
-                {
-                    $this->autoEnableWebhook();
-                }
-            }
-            else
-            {
-                update_option('webhook_enable_flag', $time);
-                $this->autoEnableWebhook();
-            }
-
             rzpLogInfo("getRazorpayPaymentParams $orderId");
+
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderId);
 
             if ($razorpayOrderId === null)
@@ -1228,9 +1229,9 @@ function woocommerce_razorpay_init()
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
 
-
             // Calls the helper function to create order data
             global $woocommerce;
+            global $wpdb;
 
             $api = $this->getRazorpayApiInstance();
 
@@ -1283,6 +1284,25 @@ function woocommerce_razorpay_init()
             $order = wc_get_order($orderId);
 
             $order->add_order_note("Razorpay OrderId: $razorpayOrderId");
+
+            try
+            {
+                // insert record in webhook table
+                $wpdb->insert(
+                    $wpdb->prefix . "rzp_webhook_requests",
+                    array(
+                        'integration'                   => self::RZP_INTEGRATION,
+                        'order_id'                      => $orderId,
+                        'rzp_order_id'                  => $razorpayOrderId,
+                        'rzp_webhook_data'              => '[]',
+                        'rzp_update_order_cron_status'  => self::RZP_ORDER_CREATED
+                    )
+                );
+            }
+            catch (Exception $e)
+            {
+                rzpLogError("Failed to insert order in rzp_webhook_requests table: " . $e->getMessage());
+            }
 
             return $razorpayOrderId;
         }
@@ -1909,6 +1929,38 @@ EOT;
             }
 
             $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
+
+            try
+            {
+                // update order status in webhook table
+                $sessionKey = $this->getOrderSessionKey($orderId);
+                $razorpayOrderId = '';
+
+                if(get_transient($sessionKey))
+                {
+                    $razorpayOrderId = get_transient($sessionKey);
+                }
+                else
+                {
+                    $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                }
+
+                $wpdb->update(
+                    $wpdb->prefix . 'rzp_webhook_requests',
+                    array(
+                        'rzp_update_order_cron_status' => self::RZP_ORDER_PROCESSED_BY_CALLBACK
+                    ),
+                    array(
+                        'integration'   => self::RZP_INTEGRATION,
+                        'order_id'      => $orderId,
+                        'rzp_order_id'  => $razorpayOrderId
+                    )
+                );
+            }
+            catch (Exception $e)
+            {
+                rzpLogError("Failed to update order by callback in rzp_webhook_requests table: " . $e->getMessage());
+            }
 
             $this->redirectUser($order);
         }
@@ -3021,6 +3073,124 @@ EOT;
                 </razorpay-trusted-business>
             </div>';
 
+        }
+    }
+
+    /**
+     * Add Cron schedules/intervals
+     **/
+    function rzpWooCronSchedules($schedules)
+    {
+        if (isset($schedules['rzp_webhook_cron_interval']) === false)
+        {
+            $schedules['rzp_webhook_cron_interval'] = array(
+                'interval'  => 5 * 60,
+                'display'   => __('Every 5 minutes'));
+        }
+
+        return $schedules;
+    }
+
+    add_filter('cron_schedules', 'rzpWooCronSchedules');
+
+    /**
+     * Webhook Cron to execute events
+     **/
+    function execRzpWooWebhookEvents()
+    {
+        global $wpdb;
+        rzpLogInfo("Running webhook cron.");
+
+        try
+        {
+            $rzpOrderProcessedByWebhook = 2;
+            $integration = "woocommerce";
+            $tableName = $wpdb->prefix . "rzp_webhook_requests";
+
+            $ordersData = $wpdb->get_results("SELECT order_id, rzp_order_id, rzp_webhook_data FROM $tableName WHERE integration='" . $integration . "' AND rzp_webhook_notified_at < " . (string)(time() - 300) ." AND rzp_update_order_cron_status=0;");
+            $rzpWebhookObj = new RZP_Webhook();
+
+            foreach ($ordersData as $row)
+            {
+                rzpLogInfo("Webhook cron executing woocommerce order:" . $row->order_id);
+                $events = json_decode($row->rzp_webhook_data);
+                foreach ($events as $event)
+                {
+                    $event = (array) $event;
+                    switch ($event['event'])
+                    {
+                        case 'payment.authorized':
+                            try
+                            {
+                                $rzpWebhookObj->paymentAuthorized($event);
+
+                                $wpdb->update(
+                                    $tableName,
+                                    array(
+                                        'rzp_update_order_cron_status'  => $rzpOrderProcessedByWebhook
+                                    ),
+                                    array(
+                                        'integration'   => $integration,
+                                        'order_id'      => $row->order_id,
+                                        'rzp_order_id'  => $row->rzp_order_id
+                                    )
+                                );
+                                break;
+                            }
+                            catch (Exception $e)
+                            {
+                                rzpLogError("paymentAuthorized event failed for orderID: " . $row->order_id);
+                            }
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        catch (Exception $e)
+        {
+            rzpLogError("Webhook cron execution failed: " . $e->getMessage());
+        }
+        rzpLogInfo("Webhook cron execution completed.");
+    }
+
+    add_action('rzp_webhook_exec_cron', 'execRzpWooWebhookEvents');
+
+    $rzpWebhookSetup = get_option('rzp_webhook_setup');
+
+    if (empty($rzpWebhookSetup) === true)
+    {
+        try
+        {
+            // create table to save triggered webhook events
+            global $wpdb;
+
+            $sql = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}rzp_webhook_requests` (
+                `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `integration` varchar(25) NOT NULL,
+                `order_id` int(11) NOT NULL,
+                `rzp_order_id` varchar(25) NOT NULL,
+                `rzp_webhook_data` text,
+                `rzp_webhook_notified_at` int(11),
+                `rzp_update_order_cron_status` int(11) DEFAULT 0,
+                PRIMARY KEY (`id`)) " . $wpdb->get_charset_collate() . ";";
+
+            // create cron with 5 min interval
+            if (wp_next_scheduled('rzp_webhook_exec_cron') === false)
+            {
+                wp_schedule_event(time(), 'rzp_webhook_cron_interval', 'rzp_webhook_exec_cron');
+            }
+
+            if ((empty(dbDelta($sql)) === false) and
+                (empty(wp_next_scheduled('rzp_webhook_exec_cron')) === false))
+            {
+                update_option('rzp_webhook_setup', true);
+            }
+        }
+        catch (Exception $e)
+        {
+            rzpLogInfo("Webhook table/cron creation failed: ". $e->getMessage());
+            delete_option('rzp_webhook_setup');
         }
     }
 }

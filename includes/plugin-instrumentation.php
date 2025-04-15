@@ -275,7 +275,11 @@ class TrackPluginInstrumentation
 }
 
 $paymentSettings = get_option('woocommerce_razorpay_settings');
-if ($paymentSettings !== false)
+if (($paymentSettings !== false) and
+    (isset($paymentSettings['key_id']) === true) and
+    (empty($paymentSettings['key_id']) === false) and
+    (isset($paymentSettings['key_secret']) === true) and
+    (empty($paymentSettings['key_secret']) === false))
 {
     $api = new Api($paymentSettings['key_id'], $paymentSettings['key_secret']);
 
