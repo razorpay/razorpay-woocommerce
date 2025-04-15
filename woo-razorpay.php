@@ -187,6 +187,12 @@ function woocommerce_razorpay_init()
             'refunds'
         );
 
+        public $threeDecimalCurrencies = [
+            "KWD",
+            "BHD",
+            "OMR"
+        ];
+
         /**
          * Can be set to true if you want payment fields
          * to show on the checkout (if doing a direct integration).
@@ -1367,10 +1373,18 @@ function woocommerce_razorpay_init()
                 $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
             }
 
+            $currency = $this->getOrderCurrency($order);
+            $amount = (int) round($order->get_total() * 100);
+
+            if(in_array($currency, $this->threeDecimalCurrencies) === true)
+            {
+                $amount = (int) round($order->get_total() * 1000);
+            }
+
             $data = array(
                 'receipt'         => (string)$orderId,
-                'amount'          => (int) round($order->get_total() * 100),
-                'currency'        => $this->getOrderCurrency($order),
+                'amount'          => $amount,
+                'currency'        => $currency,
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'app_offer'       => ($order->get_discount_total() > 0) ? 1 : 0,
                 'notes'           => array(
@@ -1590,8 +1604,21 @@ EOT;
 
             $paymentId = $order->get_transaction_id();
 
+            $currency = $this->getOrderCurrency($order);
+            
+
+            if(in_array($currency, $this->threeDecimalCurrencies) === true)
+            {
+                $amount = (int) round($amount * 1000);
+            }
+            else
+            {
+                $amount = (int) round($amount * 100);
+            }
+
+            // changes required
             $data = array(
-                'amount'    =>  (int) round($amount * 100),
+                'amount'    =>  $amount,
                 'notes'     =>  array(
                     'reason'                =>  $reason,
                     'order_id'              =>  $orderId,
