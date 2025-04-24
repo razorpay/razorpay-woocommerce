@@ -3158,7 +3158,7 @@ EOT;
 
     $rzpWebhookSetup = get_option('rzp_webhook_setup');
 
-    if (empty($rzpWebhookSetup) === true)
+    if (($rzpWebhookSetup === 'yes') === false)
     {
         try
         {
@@ -3184,7 +3184,7 @@ EOT;
             if ((empty(dbDelta($sql)) === false) and
                 (empty(wp_next_scheduled('rzp_webhook_exec_cron')) === false))
             {
-                update_option('rzp_webhook_setup', true);
+                update_option('rzp_webhook_setup', 'yes');
             }
         }
         catch (Exception $e)
