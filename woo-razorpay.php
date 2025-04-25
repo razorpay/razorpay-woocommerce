@@ -3094,6 +3094,15 @@ EOT;
     add_filter('cron_schedules', 'rzpWooCronSchedules');
 
     /**
+     * Create cron with 5 min interval
+     **/
+    if (!wp_next_scheduled('rzp_webhook_exec_cron'))
+    {
+        wp_schedule_event(time(), 'rzp_webhook_cron_interval', 'rzp_webhook_exec_cron');
+        rzpLogInfo("rzp_webhook_exec_cron cron created");
+    }
+
+    /**
      * Webhook Cron to execute events
      **/
     function execRzpWooWebhookEvents()
@@ -3164,8 +3173,9 @@ EOT;
         {
             // create table to save triggered webhook events
             global $wpdb;
+            $tableName = $wpdb->prefix . 'rzp_webhook_requests';
 
-            $sql = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}rzp_webhook_requests` (
+            $sql = "CREATE TABLE IF NOT EXISTS $tableName (
                 `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
                 `integration` varchar(25) NOT NULL,
                 `order_id` int(11) NOT NULL,
@@ -3175,21 +3185,17 @@ EOT;
                 `rzp_update_order_cron_status` int(11) DEFAULT 0,
                 PRIMARY KEY (`id`)) " . $wpdb->get_charset_collate() . ";";
 
-            // create cron with 5 min interval
-            if (wp_next_scheduled('rzp_webhook_exec_cron') === false)
-            {
-                wp_schedule_event(time(), 'rzp_webhook_cron_interval', 'rzp_webhook_exec_cron');
-            }
+            dbDelta($sql);
 
-            if ((empty(dbDelta($sql)) === false) and
-                (empty(wp_next_scheduled('rzp_webhook_exec_cron')) === false))
+            if ($wpdb->get_var("SHOW TABLES LIKE '$tableName'" ) === $tableName)
             {
                 update_option('rzp_webhook_setup', 'yes');
+                rzpLogInfo("Webhook table Created.");
             }
         }
         catch (Exception $e)
         {
-            rzpLogInfo("Webhook table/cron creation failed: ". $e->getMessage());
+            rzpLogInfo("Webhook table creation failed: ". $e->getMessage());
             delete_option('rzp_webhook_setup');
         }
     }
