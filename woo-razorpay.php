@@ -3098,21 +3098,10 @@ EOT;
      **/
     try
     {
-        $rzp = new WC_Razorpay();
-        $key_id = $rzp->getSetting('key_id');
-        $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
-
         if (!wp_next_scheduled('rzp_webhook_exec_cron'))
         {
             wp_schedule_event(time(), 'rzp_webhook_cron_interval', 'rzp_webhook_exec_cron');
             rzpLogInfo("rzp_webhook_exec_cron cron created");
-
-            $properties = [
-                'webhookCronCreationSuccess' => true
-            ];
-
-            $response = $trackObject->rzpTrackSegment('webhookCron.creation', $properties);
-            $trackObject->rzpTrackDataLake('webhookCron.creation', $properties);
         }
     }
     catch (Exception $e)
@@ -3125,7 +3114,6 @@ EOT;
             'webhookCronCreationSuccess' => true
         ];
 
-        $response = $trackObject->rzpTrackSegment('webhookCron.creation', $properties);
         $trackObject->rzpTrackDataLake('webhookCron.creation', $properties);
     }
 
@@ -3196,10 +3184,6 @@ EOT;
 
     if (($rzpWebhookSetup === 'yes') === false)
     {
-        $rzp = new WC_Razorpay();
-        $key_id = $rzp->getSetting('key_id');
-        $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
-
         try
         {
             // create table to save triggered webhook events
@@ -3222,13 +3206,6 @@ EOT;
             {
                 update_option('rzp_webhook_setup', 'yes');
                 rzpLogInfo("Webhook table Created.");
-
-                $properties = [
-                    'webhookCronTableSetupSuccess' => true
-                ];
-
-                $response = $trackObject->rzpTrackSegment('webhookCron.tableSetup', $properties);
-                $trackObject->rzpTrackDataLake('webhookCron.tableSetup', $properties);
             }
         }
         catch (Exception $e)
@@ -3236,11 +3213,13 @@ EOT;
             rzpLogInfo("Webhook table creation failed: ". $e->getMessage());
             delete_option('rzp_webhook_setup');
             
+            $rzp = new WC_Razorpay();
+            $key_id = $rzp->getSetting('key_id');
+            $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
             $properties = [
                 'webhookCronTableSetupSuccess' => false
             ];
-
-            $response = $trackObject->rzpTrackSegment('webhookCron.tableSetup', $properties);
+            
             $trackObject->rzpTrackDataLake('webhookCron.tableSetup', $properties);
         }
     }
