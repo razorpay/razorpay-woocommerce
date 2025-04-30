@@ -3096,10 +3096,25 @@ EOT;
     /**
      * Create cron with 5 min interval
      **/
-    if (!wp_next_scheduled('rzp_webhook_exec_cron'))
+    try
     {
-        wp_schedule_event(time(), 'rzp_webhook_cron_interval', 'rzp_webhook_exec_cron');
-        rzpLogInfo("rzp_webhook_exec_cron cron created");
+        if (!wp_next_scheduled('rzp_webhook_exec_cron'))
+        {
+            wp_schedule_event(time(), 'rzp_webhook_cron_interval', 'rzp_webhook_exec_cron');
+            rzpLogInfo("rzp_webhook_exec_cron cron created");
+        }
+    }
+    catch (Exception $e)
+    {
+        $rzp = new WC_Razorpay();
+        $key_id = $rzp->getSetting('key_id');
+        $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+
+        $properties = [
+            'webhookCronCreationSuccess' => false
+        ];
+
+        $trackObject->rzpTrackDataLake('webhookCron.creation', $properties);
     }
 
     /**
@@ -3197,6 +3212,15 @@ EOT;
         {
             rzpLogInfo("Webhook table creation failed: ". $e->getMessage());
             delete_option('rzp_webhook_setup');
+            
+            $rzp = new WC_Razorpay();
+            $key_id = $rzp->getSetting('key_id');
+            $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+            $properties = [
+                'webhookCronTableSetupSuccess' => false
+            ];
+
+            $trackObject->rzpTrackDataLake('webhookCron.tableSetup', $properties);
         }
     }
 }
