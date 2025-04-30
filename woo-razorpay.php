@@ -3111,7 +3111,7 @@ EOT;
         $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
 
         $properties = [
-            'webhookCronCreationSuccess' => true
+            'webhookCronCreationSuccess' => false
         ];
 
         $trackObject->rzpTrackDataLake('webhookCron.creation', $properties);
@@ -3219,7 +3219,7 @@ EOT;
             $properties = [
                 'webhookCronTableSetupSuccess' => false
             ];
-            
+
             $trackObject->rzpTrackDataLake('webhookCron.tableSetup', $properties);
         }
     }
