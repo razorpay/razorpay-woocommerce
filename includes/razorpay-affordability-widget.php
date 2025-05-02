@@ -526,37 +526,41 @@ function updateAffordabilityWidgetSettings()
     woocommerce_update_options(getAffordabilityWidgetSettings());
     try
     {
-        if (isset($_POST['woocommerce_razorpay_key_id']) and
-            empty($_POST['woocommerce_razorpay_key_id']) === false and
-            isset($_POST['woocommerce_razorpay_key_secret']) and
-            empty($_POST['woocommerce_razorpay_key_secret']) === false)
-        {
-            $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
-        }
-        else
-        {
-            $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'],get_option('woocommerce_razorpay_settings')['key_secret']);
-        }
+        $checkout360status = (get_option('rzp_checkout360_status') === 'yes') ? true : false;
 
-        $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-
-        if (isset($merchantPreferences) === false or
-            isset($merchantPreferences['assigned_features']) === false)
+        if ($checkout360status === false)
         {
-            throw new Exception("Error in Api call.");
-        }
-
-        update_option('rzp_afd_enable', 'no');
-        foreach ($merchantPreferences['assigned_features'] as $preference)
-        {
-            if ($preference['name'] === 'affordability_widget' or
-                $preference['name'] === 'affordability_widget_set')
+            if (isset($_POST['woocommerce_razorpay_key_id']) and
+                empty($_POST['woocommerce_razorpay_key_id']) === false and
+                isset($_POST['woocommerce_razorpay_key_secret']) and
+                empty($_POST['woocommerce_razorpay_key_secret']) === false)
             {
-                update_option('rzp_afd_enable', 'yes');
-                break;
+                $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
+            }
+            else
+            {
+                $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'],get_option('woocommerce_razorpay_settings')['key_secret']);
+            }
+
+            $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+
+            if (isset($merchantPreferences) === false or
+                isset($merchantPreferences['assigned_features']) === false)
+            {
+                throw new Exception("Error in Api call.");
+            }
+
+            update_option('rzp_afd_enable', 'no');
+            foreach ($merchantPreferences['assigned_features'] as $preference)
+            {
+                if ($preference['name'] === 'affordability_widget' or
+                    $preference['name'] === 'affordability_widget_set')
+                {
+                    update_option('rzp_afd_enable', 'yes');
+                    break;
+                }
             }
         }
-
     }
     catch (\Exception $e)
     {
