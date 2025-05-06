@@ -1930,36 +1930,39 @@ EOT;
 
             $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
 
-            try
+            if ($success)
             {
-                // update order status in webhook table
-                $sessionKey = $this->getOrderSessionKey($orderId);
-                $razorpayOrderId = '';
-
-                if(get_transient($sessionKey))
+                try
                 {
-                    $razorpayOrderId = get_transient($sessionKey);
-                }
-                else
-                {
-                    $razorpayOrderId = $woocommerce->session->get($sessionKey);
-                }
+                    // update order status in webhook table
+                    $sessionKey = $this->getOrderSessionKey($orderId);
+                    $razorpayOrderId = '';
 
-                $wpdb->update(
-                    $wpdb->prefix . 'rzp_webhook_requests',
-                    array(
-                        'rzp_update_order_cron_status' => self::RZP_ORDER_PROCESSED_BY_CALLBACK
-                    ),
-                    array(
-                        'integration'   => self::RZP_INTEGRATION,
-                        'order_id'      => $orderId,
-                        'rzp_order_id'  => $razorpayOrderId
-                    )
-                );
-            }
-            catch (Exception $e)
-            {
-                rzpLogError("Failed to update order by callback in rzp_webhook_requests table: " . $e->getMessage());
+                    if(get_transient($sessionKey))
+                    {
+                        $razorpayOrderId = get_transient($sessionKey);
+                    }
+                    else
+                    {
+                        $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                    }
+
+                    $wpdb->update(
+                        $wpdb->prefix . 'rzp_webhook_requests',
+                        array(
+                            'rzp_update_order_cron_status' => self::RZP_ORDER_PROCESSED_BY_CALLBACK
+                        ),
+                        array(
+                            'integration'   => self::RZP_INTEGRATION,
+                            'order_id'      => $orderId,
+                            'rzp_order_id'  => $razorpayOrderId
+                        )
+                    );
+                }
+                catch (Exception $e)
+                {
+                    rzpLogError("Failed to update order by callback in rzp_webhook_requests table: " . $e->getMessage());
+                }
             }
 
             $this->redirectUser($order);
