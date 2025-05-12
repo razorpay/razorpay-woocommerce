@@ -45,7 +45,7 @@ curl 'https://omega-api.stage.razorpay.in/v1/customers/status/+918888888888?x_en
 
 
 curl --location --request POST 'https://api.razorpay.com/v1/orders' \
---header 'Authorization: Basic cnpwX3Rlc3RfMURQNW1tT2xGNUc1YWc6dGhpc2lzc3VwZXJzZWNyZXQ=' \
+--header 'Authorization: Basic <base64_encoded_test_key:secret>' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "amount": 100000,
