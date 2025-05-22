@@ -3232,6 +3232,13 @@ EOT;
         catch (Exception $e)
         {
             rzpLogError("Webhook cron execution failed: " . $e->getMessage());
+
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $e->getMessage()
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.webhook.cron.execution.failed', $properties);
         }
         rzpLogInfo("Webhook cron execution completed.");
     }
