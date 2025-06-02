@@ -62,7 +62,13 @@ function createWcOrder(WP_REST_Request $request)
     if (isHposEnabled()) {
         $updateOrderStatus = 'checkout-draft';
     }else{
-        $updateOrderStatus = 'draft';
+        // Handle compatibility for WooCommerce versions where "checkout-draft" may not be used.
+		// Older versions might use "draft" instead of "checkout-draft".
+		if (!isHposEnabled()) { 
+			$updateOrderStatus = 'checkout-draft'; // Fallback for WooCommerce versions that do not support "draft"
+		} else {
+			$updateOrderStatus = 'draft'; // Default for non-HPOS cases where "draft" is supported
+		}
     }
 
     if ($orderIdFromHash == null) {
@@ -265,10 +271,18 @@ function updateOrderStatus($orderId, $orderStatus)
         $order->update_status($orderStatus);
         $order->save();
     }else{
-        wp_update_post(array(
-            'ID'          => $orderId,
-            'post_status' => $orderStatus,
-         ));
+        // Handling order status update for WooCommerce versions that do not support HPOS.
+        // We are unsure if older versions use `wp_update_post()`, while newer versions may use `$order->update_status()`.
+        // To maintain compatibility across different WooCommerce versions, we add an additional if-else condition.
+        if (!isHposEnabled()) { // Explicitly checking if HPOS is NOT enabled
+            $order->update_status($orderStatus);
+			$order->save(); // Save changes
+        } else {
+            wp_update_post([
+                'ID'          => $orderId,
+                'post_status' => $orderStatus,
+            ]);
+        }
     }
     
 }

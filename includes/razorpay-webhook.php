@@ -310,7 +310,7 @@ class RZP_Webhook
             return;
         }
 
-        if ($orderStatus == 'draft') {
+        if ($orderStatus == 'checkout-draft' || $orderStatus == 'draft') {
             updateOrderStatus($orderId, 'wc-pending');
         }
 
@@ -416,7 +416,7 @@ class RZP_Webhook
             return;
         }
 
-        if ($orderStatus == 'draft') {
+        if ($orderStatus == 'checkout-draft' || $orderStatus == 'draft') {
             updateOrderStatus($orderId, 'wc-pending');
         }
 
