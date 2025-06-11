@@ -24,7 +24,7 @@ function createWcOrder(WP_REST_Request $request)
         $expKey = explode('wp_woocommerce_session_', $key);
         $sessionResult = $expKey[1];
     }
-    
+
     //Abandoment cart plugin decode the coupon code from token
     $couponCode = null;
     if (isset($params['token'])) {
@@ -57,7 +57,11 @@ function createWcOrder(WP_REST_Request $request)
 
     $cartHash  = WC()->cart->get_cart_hash();
     $hash = $sessionResult."_".$cartHash;
-    $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
+
+    //Setting the $orderIdFromHash to null, to create a fresh RZP order for each checkout initialisation.
+    //In future if we need to revert back to earlier flow then consider it from transient as mentioned below.
+    //$orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
+    $orderIdFromHash = null;
 
     if (isHposEnabled()) {
         $updateOrderStatus = 'checkout-draft';
@@ -97,7 +101,7 @@ function createWcOrder(WP_REST_Request $request)
     }
 
     $order = wc_get_order($orderId);
-    
+
     if($order){
 
         $disableCouponFlag = false;
@@ -109,7 +113,7 @@ function createWcOrder(WP_REST_Request $request)
                 $dynamicRules = $item->get_meta('_ywdpd_discounts');
 
                 if(empty($dynamicRules) == false){
-                    
+
                     foreach ($dynamicRules['applied_discounts'] as $appliedDiscount) {
                         if (isset( $appliedDiscount['set_id'])){
                             $ruleId = $appliedDiscount['set_id'];
@@ -175,8 +179,6 @@ function createWcOrder(WP_REST_Request $request)
 
             $status                 = 400;
             $logObj['response']     = $response;
-            $logObj['rzp_order_id'] = $rzp_order_id;
-            $logObj['rzp_response'] = $rzp_response;
             rzpLogError(json_encode($logObj));
 
             return new WP_REST_Response($response, $status);
@@ -270,7 +272,7 @@ function updateOrderStatus($orderId, $orderStatus)
             'post_status' => $orderStatus,
          ));
     }
-    
+
 }
 
 function wooSaveCheckoutUTMFields($order, $params)
@@ -299,5 +301,5 @@ function wooSaveCheckoutUTMFields($order, $params)
     }else{
         update_post_meta($order->get_id(), "pys_enrich_data", $pysData);
     }
-   
+
 }
