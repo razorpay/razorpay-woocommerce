@@ -235,10 +235,13 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $rzp = new WC_Razorpay();
         $trackObject = $rzp->newTrackPluginInstrumentation();
         $properties = [
-            'error' => $result['response'] ?? 'Unknown error',
-            'log'   => $logObj ?? [],
+            'error' => $e->getMessage(),
+            'code'  => $e->getCode(),
+            'file'  => $e->getFile(),
+            'line'  => $e->getLine()
         ];
         $trackObject->rzpTrackDataLake('razorpay.1cc.abandon.cart.processing.failed', $properties);
+        rzpLogError(json_encode($properties));
     }
 }
 
