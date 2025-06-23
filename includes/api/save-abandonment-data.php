@@ -230,7 +230,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         }
         return new WP_REST_Response($result['response'], $result['status_code']);
     }
-    catch (Exception $e)
+    catch (Throwable $e)
     {
         $rzp = new WC_Razorpay();
         $trackObject = $rzp->newTrackPluginInstrumentation();
