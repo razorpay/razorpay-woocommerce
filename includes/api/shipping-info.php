@@ -111,7 +111,7 @@ function calculateShipping1cc(WP_REST_Request $request)
         $trackObject->rzpTrackDataLake('razorpay.1cc.shipping.processing.failed', $properties);
         rzpLogError(json_encode($properties));
 
-        return new WP_REST_Response("woocommerce server error : " . $e->getMessage(), 500);
+        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
     }
 }
 
