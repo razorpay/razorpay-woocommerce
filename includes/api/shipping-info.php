@@ -11,63 +11,108 @@ use Automattic\WooCommerce\Utilities\OrderUtil;
 
 function calculateShipping1cc(WP_REST_Request $request)
 {
-     global $wpdb;
-    $params = $request->get_params();
+    try
+    {
+        global $wpdb;
+        $params = $request->get_params();
 
-    $logObj           = array();
-    $logObj['api']    = 'calculateShipping1cc';
-    $logObj['params'] = $params;
+        $logObj           = array();
+        $logObj['api']    = 'calculateShipping1cc';
+        $logObj['params'] = $params;
 
-    $validateInput = validateInput('shipping', $params);
-    
-    if ($validateInput != null) {
-        $response['failure_reason'] = $validateInput;
-        $response['failure_code']   = 'VALIDATION_ERROR';
-        $logObj['response']         = $response;
-        rzpLogError(json_encode($logObj));
-        return new WP_REST_Response($response, 400);
-    }
+        $validateInput = validateInput('shipping', $params);
 
-    $cartResponse = false;
-    $orderId      = (int) sanitize_text_field($params['order_id']);
-    $addresses    = $params['addresses'];
-    $rzpOrderId   = sanitize_text_field($params['razorpay_order_id']);
-
-    initCustomerSessionAndCart();
-    // Cleanup cart.
-    WC()->cart->empty_cart();
-
-    $cartResponse = create1ccCart($orderId);
-
-    if ($cartResponse === false) {
-        $response['status']         = false;
-        $response['failure_reason'] = 'Invalid merchant order id';
-        $response['failure_code']   = 'VALIDATION_ERROR';
-        $logObj['response']         = $response;
-        rzpLogError(json_encode($logObj));
-        return new WP_REST_Response($response, 400);
-    }
-
-    foreach ($addresses as $address) {
-        if ($cartResponse) {
-            $customerResponse = shippingUpdateCustomerInformation1cc($address);
-        }
-
-        if ($customerResponse) {
-            $response[] = shippingCalculatePackages1cc($address['id'], $orderId, $address, $rzpOrderId);
-        } else {
-            $response['failure_reason'] = 'Set customer shipping information failed';
+        if ($validateInput != null) {
+            $response['failure_reason'] = $validateInput;
             $response['failure_code']   = 'VALIDATION_ERROR';
-            $logger->log('info', json_encode($response), array('source' => 'rzp1cc'));
+            $logObj['response']         = $response;
+            rzpLogError(json_encode($logObj));
+
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $validateInput,
+                'log'   => $logObj
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.shipping.validation.error', $properties);
+
             return new WP_REST_Response($response, 400);
         }
-    }
 
-    // Cleanup cart.
-    WC()->cart->empty_cart();
-    $logObj['response'] = $response;
-    rzpLogInfo(json_encode($logObj));
-    return new WP_REST_Response(array('addresses' => $response), 200);
+        $cartResponse = false;
+        $orderId      = (int) sanitize_text_field($params['order_id']);
+        $addresses    = $params['addresses'];
+        $rzpOrderId   = sanitize_text_field($params['razorpay_order_id']);
+
+        initCustomerSessionAndCart();
+        // Cleanup cart.
+        WC()->cart->empty_cart();
+
+        $cartResponse = create1ccCart($orderId);
+
+        if ($cartResponse === false) {
+            $response['status']         = false;
+            $response['failure_reason'] = 'Invalid merchant order id';
+            $response['failure_code']   = 'VALIDATION_ERROR';
+            $logObj['response']         = $response;
+            rzpLogError(json_encode($logObj));
+
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => 'Invalid merchant order id',
+                'log'   => $logObj
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.shipping.validation.error', $properties);
+
+            return new WP_REST_Response($response, 400);
+        }
+
+        foreach ($addresses as $address) {
+            if ($cartResponse) {
+                $customerResponse = shippingUpdateCustomerInformation1cc($address);
+            }
+
+            if ($customerResponse) {
+                $response[] = shippingCalculatePackages1cc($address['id'], $orderId, $address, $rzpOrderId);
+            } else {
+                $response['failure_reason'] = 'Set customer shipping information failed';
+                $response['failure_code']   = 'VALIDATION_ERROR';
+                $logger->log('info', json_encode($response), array('source' => 'rzp1cc'));
+
+                $rzp = new WC_Razorpay();
+                $trackObject = $rzp->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => 'Set customer shipping information failed',
+                    'log'   => $logObj
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.1cc.shipping.validation.error', $properties);
+
+                return new WP_REST_Response($response, 400);
+            }
+        }
+
+        // Cleanup cart.
+        WC()->cart->empty_cart();
+        $logObj['response'] = $response;
+        rzpLogInfo(json_encode($logObj));
+        return new WP_REST_Response(array('addresses' => $response), 200);
+    }
+    catch (Throwable $e)
+    {
+        $rzp = new WC_Razorpay();
+        $trackObject = $rzp->newTrackPluginInstrumentation();
+        $properties = [
+            'error' => $e->getMessage(),
+            'code'  => $e->getCode(),
+            'file'  => $e->getFile(),
+            'line'  => $e->getLine()
+        ];
+        $trackObject->rzpTrackDataLake('razorpay.1cc.shipping.processing.failed', $properties);
+        rzpLogError(json_encode($properties));
+
+        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
+    }
 }
 
 /**
