@@ -3180,6 +3180,12 @@ EOT;
      **/
     function execRzpWooWebhookEvents()
     {
+        if (file_exists( ABSPATH . WPINC . '/certificates/ca-bundle.crt')) {
+            require_once ABSPATH . WPINC . '/Requests/src/Autoload.php';
+            WpOrg\Requests\Autoload::register();
+            WpOrg\Requests\Requests::set_certificate_path( ABSPATH . WPINC . '/certificates/ca-bundle.crt' );
+        }
+
         global $wpdb;
         rzpLogInfo("Running webhook cron.");
 
