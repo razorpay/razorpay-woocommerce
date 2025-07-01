@@ -231,7 +231,7 @@ class RZP_Webhook
 
             $trackObject = $this->razorpay->newTrackPluginInstrumentation();
             $properties = [
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage()
             ];
             $trackObject->rzpTrackDataLake('razorpay.webhook.save.event.failed', $properties);
         }
