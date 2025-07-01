@@ -137,6 +137,13 @@ class RZP_Webhook
 
                     rzpLogError(json_encode($log));
 
+                    $trackObject = $this->razorpay->newTrackPluginInstrumentation();
+                    $properties = [
+                        'error' => $e->getMessage(),
+                        'log'   => $log
+                    ];
+                    $trackObject->rzpTrackDataLake('razorpay.webhook.signature.verification.failed', $properties);
+
                     return;
                 }
 
@@ -221,6 +228,12 @@ class RZP_Webhook
         catch (Exception $e)
         {
             rzpLogError("Insert webhook event failed. " . $e->getMessage());
+
+            $trackObject = $this->razorpay->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $e->getMessage(),
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.webhook.save.event.failed', $properties);
         }
     }
 

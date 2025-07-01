@@ -584,7 +584,7 @@ function woocommerce_razorpay_init()
             if($key_id == null || $key_secret == null)
             {
                 $validationErrorProperties = $this->triggerValidationInstrumentation(
-                    ['error_message' => 'Key Id and or Key Secret is null']);
+                    ['error' => 'Key Id and or Key Secret is null']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
@@ -603,7 +603,7 @@ function woocommerce_razorpay_init()
             catch (Exception $e)
             {
                 $validationErrorProperties = $this->triggerValidationInstrumentation(
-                    ['error_message' => 'Invalid Key Id and Key Secret']);
+                    ['error' => 'Invalid Key Id and Key Secret']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Please check Key Id and Key Secret.'); ?></b></p>
@@ -933,11 +933,12 @@ function woocommerce_razorpay_init()
 
                 $trackObject = $this->newTrackPluginInstrumentation();
                 $properties = [
-                    'error' => $e->getMessage()
+                    'error'     => $e->getMessage(),
+                    'method'    => $method,
+                    'url'       => $url
                 ];
                 $trackObject->rzpTrackDataLake('razorpay.webhook.api.failed', $properties);
 
-                error_log(json_encode($log));
                 rzpLogError(json_encode($log));
             }
 
@@ -1915,7 +1916,9 @@ EOT;
 
                     $trackObject = $this->newTrackPluginInstrumentation();
                     $properties = [
-                        'error' => $e->getMessage()
+                        'error'         => $e->getMessage(),
+                        'order_id'      => $orderId,
+                        'payment_id'    => $_POST[self::RAZORPAY_PAYMENT_ID]
                     ];
                     $trackObject->rzpTrackDataLake('razorpay.callback.signature.verification.failed', $properties);
                 }
@@ -3169,10 +3172,10 @@ EOT;
         $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
 
         $properties = [
-            'webhookCronCreationSuccess' => false
+            'error' => 'webhook cron creation failed' . $e->getMessage()
         ];
 
-        $trackObject->rzpTrackDataLake('webhookCron.creation', $properties);
+        $trackObject->rzpTrackDataLake('webhook.cron.creation.failed', $properties);
     }
 
     /**
@@ -3288,10 +3291,10 @@ EOT;
             $key_id = $rzp->getSetting('key_id');
             $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
             $properties = [
-                'webhookCronTableSetupSuccess' => false
+                'error' => 'webhook cron table setup failed' . $e->getMessage()
             ];
 
-            $trackObject->rzpTrackDataLake('webhookCron.tableSetup', $properties);
+            $trackObject->rzpTrackDataLake('webhook.cron.table.setup.failed', $properties);
         }
     }
 }
