@@ -3294,7 +3294,7 @@ EOT;
                 'error' => 'webhook cron table setup failed' . $e->getMessage()
             ];
 
-            $trackObject->rzpTrackDataLake('webhook.cron.table.setup.failed', $properties);
+            $trackObject->rzpTrackDataLake('razorpay.webhook.cron.table.setup.failed', $properties);
         }
     }
 }
