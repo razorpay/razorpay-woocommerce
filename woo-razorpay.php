@@ -3175,7 +3175,7 @@ EOT;
             'error' => 'webhook cron creation failed' . $e->getMessage()
         ];
 
-        $trackObject->rzpTrackDataLake('webhook.cron.creation.failed', $properties);
+        $trackObject->rzpTrackDataLake('razorpay.webhook.cron.creation.failed', $properties);
     }
 
     /**
