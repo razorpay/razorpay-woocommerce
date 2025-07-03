@@ -1761,16 +1761,8 @@ EOT;
 
             $order = wc_get_order($order_id);
 
-            if ($this->isHposEnabled) 
-            {
-                $order->update_meta_data(self::SESSION_KEY,$razorpayOrderId);
-                $order->save();
-            }
-            else
-            {
-                update_post_meta($order_id,self::SESSION_KEY,$razorpayOrderId);
-            }
-            rzpLogInfo("Set post meta  " . self::SESSION_KEY . " params order_id $order_id");
+            set_transient(self::SESSION_KEY, $order_id, 3600);
+            rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
 
             $orderKey = $this->getOrderKey($order);
 
