@@ -1189,8 +1189,8 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    self::WC_ORDER_ID => $wcOrderId,
-                    self::WC_ORDER_NUMBER => $orderId
+                    self::WC_ORDER_ID       => $wcOrderId,
+                    self::WC_ORDER_NUMBER   => $orderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
