@@ -1040,7 +1040,7 @@ function woocommerce_razorpay_init()
                 }
                 else
                 {
-                    $razorpayOrderId = get_post_meta($orderId,$sessionKey,true);
+                    $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
                 }
                 rzpLogInfo("razorpayOrderId $razorpayOrderId | sessionKey $sessionKey");
                 // If we don't have an Order
@@ -1178,7 +1178,7 @@ function woocommerce_razorpay_init()
                 }
                 else
                 {
-                    $razorpayOrderId = get_post_meta($wcOrderId,$sessionKey,true);
+                    $razorpayOrderId = get_post_meta($wcOrderId, $sessionKey, true);
                 }
             } 
             $productinfo = "Order $orderId";
@@ -1315,12 +1315,12 @@ function woocommerce_razorpay_init()
                 // Update or create the meta data using the session key
                 if ($this->isHposEnabled) 
                 {
-                    $order->update_meta_data($sessionKey,$razorpayOrderId);
+                    $order->update_meta_data($sessionKey, $razorpayOrderId);
                     $order->save();
                 }
                 else
                 {
-                    update_post_meta($orderId,$sessionKey,$razorpayOrderId);
+                    update_post_meta($orderId, $sessionKey, $razorpayOrderId);
                 }
                 rzpLogInfo("Meta data saved for Order ID {$orderId} with key {$sessionKey} and value {$razorpayOrderId}.");
 
@@ -1979,7 +1979,7 @@ EOT;
                     }
                     else
                     {
-                        $razorpayOrderId = get_post_meta($orderId,$sessionKey,true);
+                        $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
                     }
 
                     $razorpayData = $api->order->fetch($razorpayOrderId);
@@ -2017,7 +2017,7 @@ EOT;
                     }
                     else
                     {
-                        $razorpayOrderId = get_post_meta($orderId,$sessionKey,true);
+                        $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
                     }
 
                     $wpdb->update(
@@ -2070,7 +2070,7 @@ EOT;
             }
             else
             {
-                $razorpayOrderId = get_post_meta($orderId,$sessionKey,true);
+                $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
             }
 
             $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId?? '';
@@ -2259,7 +2259,7 @@ EOT;
             }
             else
             {
-                $razorpayOrderId = get_post_meta($wcOrderId,$sessionKey,true);
+                $razorpayOrderId = get_post_meta($wcOrderId, $sessionKey, true);
             }
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
