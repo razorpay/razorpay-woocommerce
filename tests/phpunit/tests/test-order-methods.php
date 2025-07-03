@@ -132,7 +132,7 @@ class Test_OrderMethods extends WP_UnitTestCase
         }
         else
         {
-            $razorpayOrderId = get_post_meta( $wcOrderId, $sessionKey, true );
+            $razorpayOrderId = get_post_meta($wcOrderId, $sessionKey, true);
         }
         $address = array(
             'first_name' => 'Shaina',
