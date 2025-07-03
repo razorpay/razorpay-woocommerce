@@ -1310,11 +1310,23 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $razorpayOrder['id'];
 
-            // Storing the razorpay order id in transient for 5 hours time.
-            set_transient($sessionKey, $razorpayOrderId, 18000);
+            $order = wc_get_order($orderId);
+			if ($order) {
+                // Update or create the meta data using the session key
+                if ($this->isHposEnabled) 
+                {
+                    $order->update_meta_data( $sessionKey, $razorpayOrderId );
+                    $order->save();
+                }
+                else
+                {
+                    update_post_meta($orderId, $sessionKey, $razorpayOrderId);
+                }
+                rzpLogInfo("Meta data saved for Order ID {$orderId} with key {$sessionKey} and value {$razorpayOrderId}.");
 
-            // By default woocommerce session TTL is 48 hours.
-            $woocommerce->session->set($sessionKey, $razorpayOrderId);
+            } else {
+                rzpLogInfo("Order not found for order ID {$orderId}. Unable to update order meta.");
+            }
 
             rzpLogInfo('For order session key ' . $sessionKey);
             //update it in order comments
