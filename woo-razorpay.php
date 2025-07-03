@@ -1034,11 +1034,18 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $razorpayOrderId = get_transient($sessionKey);
+                if ($this->isHposEnabled) 
+                {
+                    $razorpayOrderId = $order->get_meta($sessionKey);
+                }
+                else
+                {
+                    $razorpayOrderId = get_post_meta( $orderId, $sessionKey, true );
+                }
                 rzpLogInfo("razorpayOrderId $razorpayOrderId | sessionKey $sessionKey");
                 // If we don't have an Order
                 // or the if the order is present in transient but doesn't match what we have saved
-                if (($razorpayOrderId === false) or
+                if (($razorpayOrderId === false || $razorpayOrderId == "") or
                     (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId, $is1ccCheckout)) === false)))
                 {
                     $create = true;
@@ -1162,8 +1169,18 @@ function woocommerce_razorpay_init()
 
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
 
-            $razorpayOrderId = get_transient($sessionKey);
+            $orderData = wc_get_order($wcOrderId);
 
+            if ($orderData) {
+                if ($this->isHposEnabled) 
+                {
+                    $razorpayOrderId = $orderData->get_meta($sessionKey);
+                }
+                else
+                {
+                    $razorpayOrderId = get_post_meta( $wcOrderId, $sessionKey, true );
+                }
+            } 
             $productinfo = "Order $orderId";
 
             return array(
@@ -1172,8 +1189,8 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    self::WC_ORDER_ID => $orderId,
-                    self::WC_ORDER_NUMBER => $wcOrderId
+                    self::WC_ORDER_ID => $wcOrderId,
+                    self::WC_ORDER_NUMBER => $orderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
@@ -1944,14 +1961,13 @@ EOT;
                     $api = $this->getRazorpayApiInstance();
                     $sessionKey = $this->getOrderSessionKey($orderId);
 
-                    //Check the transient data for razorpay order id, if it's not available then look into session data.
-                    if(get_transient($sessionKey))
+                    if ($this->isHposEnabled) 
                     {
-                        $razorpayOrderId = get_transient($sessionKey);
+                        $razorpayOrderId = $order->get_meta($sessionKey);
                     }
                     else
                     {
-                        $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                        $razorpayOrderId = get_post_meta( $orderId, $sessionKey, true );
                     }
 
                     $razorpayData = $api->order->fetch($razorpayOrderId);
@@ -1982,13 +1998,14 @@ EOT;
                     $sessionKey = $this->getOrderSessionKey($orderId);
                     $razorpayOrderId = '';
 
-                    if(get_transient($sessionKey))
+                    $order = wc_get_order($orderId);
+                    if ($this->isHposEnabled) 
                     {
-                        $razorpayOrderId = get_transient($sessionKey);
+                        $razorpayOrderId = $order->get_meta($sessionKey);
                     }
                     else
                     {
-                        $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                        $razorpayOrderId = get_post_meta( $orderId, $sessionKey, true );
                     }
 
                     $wpdb->update(
@@ -2034,14 +2051,14 @@ EOT;
             );
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            //Check the transient data for razorpay order id, if it's not available then look into session data.
-            if(get_transient($sessionKey))
+            $order = wc_get_order($orderId);
+            if ($this->isHposEnabled) 
             {
-                $razorpayOrderId = get_transient($sessionKey);
+                $razorpayOrderId = $order->get_meta($sessionKey);
             }
             else
             {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                $razorpayOrderId = get_post_meta( $orderId, $sessionKey, true );
             }
 
             $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId?? '';
@@ -2224,14 +2241,13 @@ EOT;
             $api = $this->getRazorpayApiInstance();
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
 
-            //Check the transient data for razorpay order id, if it's not available then look into session data.
-            if(get_transient($sessionKey))
+            if ($this->isHposEnabled) 
             {
-                $razorpayOrderId = get_transient($sessionKey);
+                $razorpayOrderId = $order->get_meta($sessionKey);
             }
             else
             {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                $razorpayOrderId = get_post_meta( $wcOrderId, $sessionKey, true );
             }
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
