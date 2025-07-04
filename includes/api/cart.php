@@ -277,7 +277,7 @@ function checkCartEmpty($logObj){
         ];
         $trackObject->rzpTrackDataLake('razorpay.1cc.empty.cart.error', $properties);
 
-        return new WP_REST_Response($response, $statusCode);
+        return new WP_REST_Response($response, 400);
     }
 }
 
