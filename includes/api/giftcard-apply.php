@@ -12,6 +12,7 @@ function validateGiftCardData(WP_REST_Request $request)
     $status = 400;
     $giftCard = [];
     $giftCardData= [];
+    $response = [];
 
     $params = $request->get_params();
 
@@ -30,7 +31,7 @@ function validateGiftCardData(WP_REST_Request $request)
         $giftCardRes['response']["failure_code"] = "VALIDATION_ERROR";
         $giftCardRes['status_code'] =  $status;
 
-        $logObj["response"]         = $response;
+        $logObj["response"] = $giftCardRes['response'];
         rzpLogError(json_encode($logObj));
 
         return new WP_REST_Response($giftCardRes, $status);
@@ -144,7 +145,7 @@ function getApplyGiftCardErrors($errCode)
             break;
     }
 
-    $logObj['response']         = $response;
+    $logObj['response']         = $error;
     $logObj['status_code']      = $statusCode;
     rzpLogError(json_encode($logObj));
 
