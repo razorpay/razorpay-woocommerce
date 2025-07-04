@@ -198,7 +198,7 @@ function checkCartEmpty($logObj){
 
         rzpLogError(json_encode($logObj));
 
-        return new WP_REST_Response($response, 400);
+        return new WP_REST_Response($response, $statusCode);
     }
 }
 
