@@ -51,7 +51,7 @@ function createWcOrder(WP_REST_Request $request)
 
             return new WP_REST_Response($response, $statusCode);
         }
-
+        
         initCartCommon();
 
         // check if cart is empty
@@ -59,7 +59,10 @@ function createWcOrder(WP_REST_Request $request)
 
         $cartHash  = WC()->cart->get_cart_hash();
         $hash = $sessionResult."_".$cartHash;
-        $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
+        //Setting the $orderIdFromHash to null, to create a fresh RZP order for each checkout initialisation.
+        //In future if we need to revert back to earlier flow then consider it from transient as mentioned below.
+        // $orderIdFromHash = get_transient(RZP_1CC_CART_HASH . $hash);
+        $orderIdFromHash = null;
 
         if (isHposEnabled()) {
             $updateOrderStatus = 'checkout-draft';
@@ -106,7 +109,6 @@ function createWcOrder(WP_REST_Request $request)
 
             // Woo dynamic discount price plugin
             if(is_plugin_active('yith-woocommerce-dynamic-pricing-and-discounts-premium/init.php')) {
-
                 foreach ($order->get_items() as $itemId => $item) {
                     $dynamicRules = $item->get_meta('_ywdpd_discounts');
 
@@ -303,7 +305,7 @@ function updateOrderStatus($orderId, $orderStatus)
             'post_status' => $orderStatus,
          ));
     }
-    
+
 }
 
 function wooSaveCheckoutUTMFields($order, $params)
@@ -332,5 +334,5 @@ function wooSaveCheckoutUTMFields($order, $params)
     }else{
         update_post_meta($order->get_id(), "pys_enrich_data", $pysData);
     }
-   
+
 }
