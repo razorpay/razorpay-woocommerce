@@ -12,6 +12,11 @@ class TrackPluginInstrumentation
     public function __construct($api, $key_id)
     {
         $this->api = $api;
+
+        if (empty($key_id) === true)
+        {
+            $key_id = get_option('woocommerce_razorpay_settings')['key_id'];
+        }
         $this->mode = (substr($key_id, 0, 8) === 'rzp_live') ? 'live' : 'test';
 
         register_activation_hook(PLUGIN_MAIN_FILE, [$this, 'razorpayPluginActivated'], 10, 2);

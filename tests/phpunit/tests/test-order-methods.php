@@ -125,8 +125,15 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $sessionKey = "razorpay_order_id" . $orderId;
 
-        $razorpayOrderId = get_transient($sessionKey);
-
+        $orderData = wc_get_order($wcOrderId);
+        if ($this->isHposEnabled) 
+        {
+            $razorpayOrderId = $orderData->get_meta($sessionKey);
+        }
+        else
+        {
+            $razorpayOrderId = get_post_meta($wcOrderId, $sessionKey, true);
+        }
         $address = array(
             'first_name' => 'Shaina',
             'last_name'  => 'Mirza',
