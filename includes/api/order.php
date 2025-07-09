@@ -62,13 +62,13 @@ function createWcOrder(WP_REST_Request $request)
     if (isHposEnabled()) {
         $updateOrderStatus = 'checkout-draft';
     }else{
-        // Handle compatibility for WooCommerce versions where "checkout-draft" may not be used.
-		// Older versions might use "draft" instead of "checkout-draft".
-		if (!isHposEnabled()) { 
-			$updateOrderStatus = 'checkout-draft'; // Fallback for WooCommerce versions that do not support "draft"
-		} else {
-			$updateOrderStatus = 'draft'; // Default for non-HPOS cases where "draft" is supported
-		}
+        // Check if WooCommerce supports the "checkout-draft" status (added in newer versions).
+		$postStatus = get_post_status_object('wc-checkout-draft');
+        if ($postStatus) {
+            $updateOrderStatus = 'checkout-draft'; 
+        } else {
+            $updateOrderStatus = 'draft'; // Older WooCommerce versions fallback
+        }
     }
 
     if ($orderIdFromHash == null) {
