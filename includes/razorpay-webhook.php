@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../woo-razorpay.php';
 require_once __DIR__ . '/../razorpay-sdk/Razorpay.php';
+require_once ABSPATH . '/wp-admin/includes/upgrade.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -9,16 +10,6 @@ use Automattic\WooCommerce\Utilities\OrderUtil;
 
 class RZP_Webhook
 {
-    /**
-     * @var HTTP CONFLICT Request
-     */
-    const HTTP_CONFLICT_STATUS = 409;
-
-    /**
-     * @var Webhook Notify Wait Time
-     */
-    const WEBHOOK_NOTIFY_WAIT_TIME = (5 * 60);
-
     /**
      * Instance of the razorpay payments class
      * @var WC_Razorpay
@@ -146,53 +137,28 @@ class RZP_Webhook
 
                     rzpLogError(json_encode($log));
 
-                    error_log(json_encode($log));
+                    $trackObject = $this->razorpay->newTrackPluginInstrumentation();
+                    $properties = [
+                        'error' => $e->getMessage(),
+                        'log'   => $log
+                    ];
+                    $trackObject->rzpTrackDataLake('razorpay.webhook.signature.verification.failed', $properties);
+
                     return;
-                }
-
-                if (in_array($data['event'], $this->subscriptionEvents) === false)
-                {
-                    if ($this->razorpay->isHposEnabled) 
-                    {
-                        $order = wc_get_order($orderId);
-                        $rzpWebhookNotifiedAt = $order->get_meta('rzp_webhook_notified_at');
-                    }
-                    else 
-                    {
-                        $rzpWebhookNotifiedAt = get_post_meta($orderId, "rzp_webhook_notified_at", true);
-                    }
-
-                    if ($rzpWebhookNotifiedAt === '')
-                    {
-                        if ($this->razorpay->isHposEnabled) 
-                        {
-                            $order->update_meta_data('rzp_webhook_notified_at', time());
-                            $order->save();
-                        }
-                        else 
-                        {
-                            update_post_meta($orderId, "rzp_webhook_notified_at", time());
-                        }
-
-                        rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
-                        header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
-                        return;
-                    }
-                    elseif ((time() - $rzpWebhookNotifiedAt) < static::WEBHOOK_NOTIFY_WAIT_TIME)
-                    {
-                        rzpLogInfo("ORDER NUMBER $orderId:webhook conflict due to early execution for razorpay order: $razorpayOrderId ");
-                        header('Status: ' . static::HTTP_CONFLICT_STATUS . ' Webhook conflicts due to early execution.', true, static::HTTP_CONFLICT_STATUS);// nosemgrep : php.lang.security.non-literal-header.non-literal-header
-                        return;
-                    }
-
-                    rzpLogInfo("ORDER NUMBER $orderId:webhook conflict over for razorpay order: $razorpayOrderId");
                 }
 
                 rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for event: ". $data['event']);
 
                 switch ($data['event']) {
                     case self::PAYMENT_AUTHORIZED:
-                        return $this->paymentAuthorized($data);
+                        $webhookFilteredData = [
+                            'invoice_id'                => $data['payload']['payment']['entity']['invoice_id'],
+                            'woocommerce_order_number'  => $data['payload']['payment']['entity']['notes']['woocommerce_order_number'],
+                            'razorpay_payment_id'       => $data['payload']['payment']['entity']['id'],
+                            'event'                     => $data['event']
+                        ];
+                        $this->saveWebhookEvent($webhookFilteredData, $data['payload']['payment']['entity']['order_id']);
+                        return;
 
                     case self::VIRTUAL_ACCOUNT_CREDITED:
                         return $this->virtualAccountCredited($data);
@@ -222,6 +188,52 @@ class RZP_Webhook
                         return;
                 }
             }
+        }
+    }
+
+    /**
+     * saves triggered webhook event in rzp_webhook_data table
+     * @param array $data Webook event Data
+     */
+    protected function saveWebhookEvent($data, $rzpOrderId)
+    {
+        global $wpdb;
+
+        try
+        {
+            $tableName = $wpdb->prefix . 'rzp_webhook_requests';
+
+            $integration = "woocommerce";
+
+            $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $data['woocommerce_order_number'] . " AND rzp_order_id='" . $rzpOrderId . "';");
+
+            $rzpWebhookData = (array) json_decode($webhookEvents['rzp_webhook_data']);
+
+            $rzpWebhookData[] = $data;
+
+            $wpdb->update(
+                $tableName,
+                array(
+                    'rzp_webhook_data'          => json_encode($rzpWebhookData),
+                    'rzp_webhook_notified_at'   => time()
+                ),
+                array(
+                    'integration'   => $integration,
+                    'order_id'      => $data['woocommerce_order_number'],
+                    'rzp_order_id'  => $rzpOrderId
+                )
+            );
+            rzpLogInfo("webhook event saved for order:" . $data['woocommerce_order_number']);
+        }
+        catch (Exception $e)
+        {
+            rzpLogError("Insert webhook event failed. " . $e->getMessage());
+
+            $trackObject = $this->razorpay->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $e->getMessage()
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.webhook.save.event.failed', $properties);
         }
     }
 
@@ -275,22 +287,28 @@ class RZP_Webhook
      *
      * @param array $data Webook Data
      */
-    protected function paymentAuthorized(array $data)
+    public function paymentAuthorized(array $data)
     {
         // We don't process subscription/invoice payments here
-        if (isset($data['payload']['payment']['entity']['invoice_id']) === true) {
+        if (isset($data['invoice_id']) === true) {
+            rzpLogInfo("We don't process subscription/invoice payments here");
             return;
         }
 
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+        $orderId = $data['woocommerce_order_number'];
 
-        rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for payment authorized event");
+        rzpLogInfo("Woocommerce orderId: $orderId, webhook process intitiated for payment authorized event by cron");
 
         if (!empty($orderId)) {
             $order = $this->checkIsObject($orderId);
+
+            if ($order === false)
+            {
+                return;
+            }
         }
 
         $orderStatus = $order->get_status();
@@ -309,9 +327,14 @@ class RZP_Webhook
             updateOrderStatus($orderId, 'wc-pending');
         }
 
-        $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
+        $razorpayPaymentId = $data['razorpay_payment_id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+        if ($payment === false)
+        {
+            return;
+        }
 
         $amount = $this->getOrderAmountAsInteger($order);
 
@@ -341,12 +364,17 @@ class RZP_Webhook
                     'event'      => $data['event'],
                 );
 
-                error_log(json_encode($log));
+                rzpLogError(json_encode($log));
 
                 //
                 // We re-fetch the payment entity and check if the payment is captured now
                 //
                 $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+                if ($payment === false)
+                {
+                    return;
+                }
 
                 if ($payment['status'] === 'captured') {
                     $success = true;
@@ -355,12 +383,8 @@ class RZP_Webhook
         }
 
         $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
-        rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the update order function");
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the updateOrder function");
-
-        // Graceful exit since payment is now processed.
-        exit;
     }
 
     /**
@@ -388,6 +412,11 @@ class RZP_Webhook
 
         if (!empty($orderId)) {
             $order = $this->checkIsObject($orderId);
+
+            if ($order === false)
+            {
+                return;
+            }
         }
 
         $orderStatus = $order->get_status();
@@ -407,6 +436,11 @@ class RZP_Webhook
         $razorpayPaymentId = $data['payload']['payment']['entity']['id'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+        if ($payment === false)
+        {
+            return;
+        }
 
         $success      = false;
         $errorMessage = 'The payment has failed.';
@@ -441,6 +475,11 @@ class RZP_Webhook
 
         if (!empty($orderId)) {
             $order = $this->checkIsObject($orderId);
+
+            if ($order === false)
+            {
+                return;
+            }
         }
         // If it is already marked as paid, ignore the event
         if ($order->needs_payment() === false) {
@@ -452,6 +491,11 @@ class RZP_Webhook
         $amountPaid        = (int) $data['payload']['virtual_account']['entity']['amount_paid'];
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
+
+        if ($payment === false)
+        {
+            return;
+        }
 
         $amount = $this->getOrderAmountAsInteger($order);
 
@@ -488,6 +532,11 @@ class RZP_Webhook
                 //
                 $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
+                if ($payment === false)
+                {
+                    return;
+                }
+
                 if ($payment['status'] === 'captured') {
                     $success = true;
                 }
@@ -512,9 +561,9 @@ class RZP_Webhook
                 'event'      => $data['event'],
             );
 
-            error_log(json_encode($log));
+            rzpLogError(json_encode($log));
 
-            exit;
+            return false;
         }
 
         return $payment;
@@ -572,6 +621,11 @@ class RZP_Webhook
 
         $payment = $this->getPaymentEntity($razorpayPaymentId, $data);
 
+        if ($payment === false)
+        {
+            return;
+        }
+
         //
         // Order entity should be sent as part of the webhook payload
         //
@@ -579,6 +633,11 @@ class RZP_Webhook
 
         if (!empty($orderId)) {
             $order = $this->checkIsObject($orderId);
+
+            if ($order === false)
+            {
+                return;
+            }
         }
 
         // If it is already marked as unpaid, ignore the event
@@ -645,7 +704,7 @@ class RZP_Webhook
             return wc_get_order($orderId);
         } else {
             rzpLogInfo("Woocommerce order Object does not exist");
-            exit();
+            return false;
         }
     }
 }

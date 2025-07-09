@@ -11,203 +11,239 @@ use Automattic\WooCommerce\Utilities\OrderUtil;
 
 function saveCartAbandonmentData(WP_REST_Request $request)
 {
-    global $woocommerce;
-    global $wpdb;
-
-    $params     = $request->get_params();
-    $rzpOrderId = sanitize_text_field($params['order_id']);
-
-    $logObj           = array();
-    $logObj['api']    = "saveCartAbandonmentData";
-    $logObj['params'] = $params;
-
-    $razorpay = new WC_Razorpay(false);
-    $api      = $razorpay->getRazorpayApiInstance();
     try
     {
-        $razorpayData = $api->order->fetch($rzpOrderId);
-    } catch (Exception $e) {
-        $response['status']  = false;
-        $response['message'] = 'RZP order id does not exist';
-        $statusCode          = 400;
+        global $woocommerce;
+        global $wpdb;
 
-        $logObj['response']    = $response;
-        $logObj['status_code'] = $statusCode;
-        rzpLogError(json_encode($logObj));
+        $params     = $request->get_params();
+        $rzpOrderId = sanitize_text_field($params['order_id']);
 
-        return new WP_REST_Response($response, $statusCode);
-    }
-    if (isset($razorpayData['receipt'])) {
-        $wcOrderId = $razorpayData['receipt'];
+        $logObj           = array();
+        $logObj['api']    = "saveCartAbandonmentData";
+        $logObj['params'] = $params;
 
-        $order = wc_get_order($wcOrderId);
+        $razorpay = new WC_Razorpay(false);
+        $api      = $razorpay->getRazorpayApiInstance();
+        try
+        {
+            $razorpayData = $api->order->fetch($rzpOrderId);
+        } catch (Exception $e) {
+            $response['status']  = false;
+            $response['message'] = 'RZP order id does not exist';
+            $statusCode          = 400;
 
-        $orderStatus = $order->get_status();
+            $logObj['response']    = $response;
+            $logObj['status_code'] = $statusCode;
+            rzpLogError(json_encode($logObj));
 
-        if (($orderStatus === 'draft' || $orderStatus ==='checkout-draft') && isset($razorpayData['customer_details']['shipping_address'])) {            //Update the order status to wc-pending as we have the customer address info at this point.
-            updateOrderStatus($wcOrderId, 'wc-pending');
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $response['message'],
+                'log'   => $logObj
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.abandon.cart.validation.error', $properties);
+
+            return new WP_REST_Response($response, $statusCode);
         }
-    }
+        if (isset($razorpayData['receipt'])) {
+            $wcOrderId = $razorpayData['receipt'];
 
-    $razorpay->UpdateOrderAddress($razorpayData, $order);
+            $order = wc_get_order($wcOrderId);
 
-    abandonedPluginHook($razorpayData); // do_action to notify/send the abandonedCart data to 3rd party plugins
+            $orderStatus = $order->get_status();
 
-    initCustomerSessionAndCart();
 
-    if (isHposEnabled()) {
-        $customerEmail  = $order->get_billing_email();
+            if (($orderStatus === 'draft' || $orderStatus ==='checkout-draft') && isset($razorpayData['customer_details']['shipping_address'])) {
+                //Update the order status to wc-pending as we have the customer address info at this point.
+                updateOrderStatus($wcOrderId, 'wc-pending');
+            }
+        }
 
-    }else{
-        $customerEmail = get_post_meta($wcOrderId, '_billing_email', true);
-    }
+        $razorpay->UpdateOrderAddress($razorpayData, $order);
 
-    //Retrieving cart products and their quantities.
-    // check plugin is activated or not
-    rzpLogInfo('Woocommerce order id:');
-    rzpLogInfo(json_encode($wcOrderId));
+        abandonedPluginHook($razorpayData); // do_action to notify/send the abandonedCart data to 3rd party plugins
 
-    $result['response']    = "";
-    $result['status_code'] = 400;
+        initCustomerSessionAndCart();
 
- //check woocommerce cart abandonment recovery plugin is activated or not
- if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
+        if (isHposEnabled()) {
+            $customerEmail  = $order->get_billing_email();
 
-    //save abandonment data
-    $res = saveWooCartAbandonmentRecoveryData($razorpayData);
+        }else{
+            $customerEmail = get_post_meta($wcOrderId, '_billing_email', true);
+        }
 
-    if($res['status_code'] == 200){
-        $result['response']    = "Data inserted for WooCart abandoned recovery plugin";
-        $result['status_code'] = 200;
-    }else{
-        $result['response']    = "Failed to insert data for WooCart abandoned recovery plugin";
+        //Retrieving cart products and their quantities.
+        // check plugin is activated or not
+        rzpLogInfo('Woocommerce order id:');
+        rzpLogInfo(json_encode($wcOrderId));
+
+        $result['response']    = "";
         $result['status_code'] = 400;
-    }
-}
 
-    // Check Wati.io retargetting plugin is active or not
-    if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+        //check woocommerce cart abandonment recovery plugin is activated or not
+        if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
 
-        $res = saveWatiCartAbandonmentData($razorpayData);
-        if($res['status_code'] == 200){
-            $result['response']    = $result['response']."Data inserted for Wati plugin";
-            $result['status_code'] = 200;
-        }else{
-            $result['response']    = $result['response']."Failed to insert data for Wati plugin";
-            $result['status_code'] = 400;
-        }
+            //save abandonment data
+            $res = saveWooCartAbandonmentRecoveryData($razorpayData);
 
-    }
-
-    //Check CartBounty plugin is activated or not
-    if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && (empty($razorpayData['customer_details']['email']) == false || empty($customerEmail) == false)) {
-
-        $res = saveCartBountyData($razorpayData); //save abandonment data
-
-        if($res['status_code'] == 200){
-            $result['response']    = $result['response'].PHP_EOL."Data inserted for CartBounty plugin";
-            $result['status_code'] = 200;
-        }else{
-            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for CartBounty plugin";
-        }
-    }
-
-    // check yith woocommerce recover abandoned cart plugin activated or not
-    if (is_plugin_active('yith-woocommerce-recover-abandoned-cart-premium/init.php') && (empty($razorpayData['customer_details']['email']) == false) && (empty($razorpayData['customer_details']['shipping_address']))== true) {
-        if ((email_exists($razorpayData['customer_details']['email'])) == false) {
-
-            $meta_cart = array(
-                'user_id'         => '0',
-                'user_email'      => $razorpayData['customer_details']['email'],
-                'user_first_name' => '',
-                'user_last_name'  => '',
-                'user_phone'      => $razorpayData['customer_details']['contact'],
-                'language'        => substr( get_bloginfo( 'language' ), 0, 2 ),
-                'email_sent'      => 'no',
-                'cart_status'     => 'open',
-                'user_currency'   => get_woocommerce_currency(),
-            );
-
-            $title = $razorpayData['customer_details']['email'];
-
-            $postId = abandonedCart( $title, $meta_cart );
-
-            if ( $postId ) {
-                // add a cookie to the user.
-                setcookie( 'ywrac_guest_cart', $postId, ywrac_get_timestamp() + $this->delete_abandoned_time * 60, '/' );
-                $result['message']   = $result['response'].PHP_EOL."Data successfully inserted for yith cart abandonment recovery and postid";
-                $result['status_code']           = 200;
+            if($res['status_code'] == 200){
+                $result['response']    = "Data inserted for WooCart abandoned recovery plugin";
+                $result['status_code'] = 200;
             }else{
-                $result['message']   = $result['response'].PHP_EOL."Data falied to inserted for yith cart abandonment recovery";
+                $result['response']    = "Failed to insert data for WooCart abandoned recovery plugin";
+                $result['status_code'] = 400;
+            }
+        }
+
+        // Check Wati.io retargetting plugin is active or not
+        if (is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+
+            $res = saveWatiCartAbandonmentData($razorpayData);
+            if($res['status_code'] == 200){
+                $result['response']    = $result['response']."Data inserted for Wati plugin";
+                $result['status_code'] = 200;
+            }else{
+                $result['response']    = $result['response']."Failed to insert data for Wati plugin";
                 $result['status_code'] = 400;
             }
 
         }
-    
-    }
 
-    if (is_plugin_active('klaviyo/klaviyo.php') && empty($razorpayData['customer_details']['email']) == false) {
-        WC()->cart->empty_cart();
-        $cart1cc = create1ccCart($wcOrderId);
+        //Check CartBounty plugin is activated or not
+        if (is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php') && (empty($razorpayData['customer_details']['email']) == false || empty($customerEmail) == false)) {
 
-        $cart = WC()->cart;
-        //Insert data for tracking started checkout.
-        $eventData = wck_build_cart_data($cart);
-        if (empty($eventData['$extra']['Items'])) {
-            $response['status']    = false;
-            $response['message']   = 'Failed to insert as Cart item does not exist in klaviyo';
-            $statusCode            = 400;
-            $result['response']    = $result['response'].PHP_EOL.$response['message'];
-        }
-        $eventData['$service'] = 'woocommerce';
-        unset($eventData['Tags']);
-        unset($eventData['Quantity']);
-        $email = $customerEmail;
+            $res = saveCartBountyData($razorpayData); //save abandonment data
 
-        //Get token from kalviyo plugin
-        $klaviyoApi  = WooCommerceKlaviyo::instance();
-        $token       = $klaviyoApi->options->get_klaviyo_option('klaviyo_public_api_key');
-        $eventObject = ['token' => $token, 'event' => '$started_checkout', 'customer_properties' => array('$email' => $email), 'properties' => $eventData];
-        $dataParam   = json_encode($eventObject);
-        $data        = base64_encode($dataParam);
-        $event       = 'track';
-
-        $logObj['klaviyoData'] = $eventData;
-        //calling klaviyo plugin public api
-        $url = "https://a.klaviyo.com/api/" . $event . '?data=' . $data;
-        file_get_contents($url);
-    }
-
-    //check Abandonment cart lite plugin active or not
-    if (is_plugin_active('woocommerce-abandoned-cart/woocommerce-ac.php') && empty($razorpayData['customer_details']['email']) == false) {
-        //To verify whether the email id is already exist on WordPress
-        if (email_exists($razorpayData['customer_details']['email'])) {
-            $response['status']    = false;
-            $statusCode            = 400;
-            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin for registered user";
+            if($res['status_code'] == 200){
+                $result['response']    = $result['response'].PHP_EOL."Data inserted for CartBounty plugin";
+                $result['status_code'] = 200;
+            }else{
+                $result['response']    = $result['response'].PHP_EOL."Failed to insert data for CartBounty plugin";
+            }
         }
 
-        // Save Abandonment data for Abandonment cart lite
-        $res = saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId);
+        // check yith woocommerce recover abandoned cart plugin activated or not
+        if (is_plugin_active('yith-woocommerce-recover-abandoned-cart-premium/init.php') && (empty($razorpayData['customer_details']['email']) == false) && (empty($razorpayData['customer_details']['shipping_address']))== true) {
+            if ((email_exists($razorpayData['customer_details']['email'])) == false) {
 
-        if($res['status_code'] == 200){
-            $result['response']    = $result['response'].PHP_EOL."Successfully inserted data for Abandonment Cart Lite plugin";
-            $result['status_code'] = 200;
-        }else{
+                $meta_cart = array(
+                    'user_id'         => '0',
+                    'user_email'      => $razorpayData['customer_details']['email'],
+                    'user_first_name' => '',
+                    'user_last_name'  => '',
+                    'user_phone'      => $razorpayData['customer_details']['contact'],
+                    'language'        => substr( get_bloginfo( 'language' ), 0, 2 ),
+                    'email_sent'      => 'no',
+                    'cart_status'     => 'open',
+                    'user_currency'   => get_woocommerce_currency(),
+                );
+
+                $title = $razorpayData['customer_details']['email'];
+
+                $postId = abandonedCart( $title, $meta_cart );
+
+                if ( $postId ) {
+                    // add a cookie to the user.
+                    setcookie( 'ywrac_guest_cart', $postId, ywrac_get_timestamp() + $this->delete_abandoned_time * 60, '/' );
+                    $result['message']   = $result['response'].PHP_EOL."Data successfully inserted for yith cart abandonment recovery and postid";
+                    $result['status_code']           = 200;
+                }else{
+                    $result['message']   = $result['response'].PHP_EOL."Data falied to inserted for yith cart abandonment recovery";
+                    $result['status_code'] = 400;
+                }
+
+            }
+        
+        }
+
+        if (is_plugin_active('klaviyo/klaviyo.php') && empty($razorpayData['customer_details']['email']) == false) {
+            WC()->cart->empty_cart();
+            $cart1cc = create1ccCart($wcOrderId);
+
+            $cart = WC()->cart;
+            //Insert data for tracking started checkout.
+            $eventData = wck_build_cart_data($cart);
+            if (empty($eventData['$extra']['Items'])) {
+                $response['status']    = false;
+                $response['message']   = 'Failed to insert as Cart item does not exist in klaviyo';
+                $statusCode            = 400;
+                $result['response']    = $result['response'].PHP_EOL.$response['message'];
+            }
+            $eventData['$service'] = 'woocommerce';
+            unset($eventData['Tags']);
+            unset($eventData['Quantity']);
+            $email = $customerEmail;
+
+            //Get token from kalviyo plugin
+            $klaviyoApi  = WooCommerceKlaviyo::instance();
+            $token       = $klaviyoApi->options->get_klaviyo_option('klaviyo_public_api_key');
+            $eventObject = ['token' => $token, 'event' => '$started_checkout', 'customer_properties' => array('$email' => $email), 'properties' => $eventData];
+            $dataParam   = json_encode($eventObject);
+            $data        = base64_encode($dataParam);
+            $event       = 'track';
+
+            $logObj['klaviyoData'] = $eventData;
+            //calling klaviyo plugin public api
+            $url = "https://a.klaviyo.com/api/" . $event . '?data=' . $data;
+            file_get_contents($url);
+        }
+
+        //check Abandonment cart lite plugin active or not
+        if (is_plugin_active('woocommerce-abandoned-cart/woocommerce-ac.php') && empty($razorpayData['customer_details']['email']) == false) {
+            //To verify whether the email id is already exist on WordPress
+            if (email_exists($razorpayData['customer_details']['email'])) {
+                $response['status']    = false;
+                $statusCode            = 400;
+                $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin for registered user";
+            }
+
+            // Save Abandonment data for Abandonment cart lite
+            $res = saveWooAbandonmentCartLiteData($razorpayData, $wcOrderId);
+
+            if($res['status_code'] == 200){
+                $result['response']    = $result['response'].PHP_EOL."Successfully inserted data for Abandonment Cart Lite plugin";
+                $result['status_code'] = 200;
+            }else{
+                $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin";
+            }
+
+        } else {
+            $response['status']    = false;
+            $response['message']   = 'Failed to insert data';
+            $statusCode            = 400;
             $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin";
+            $logObj['response']    = $response;
+            $logObj['status_code'] = $statusCode;
+            rzpLogInfo(json_encode($logObj));
         }
-
-    } else {
-        $response['status']    = false;
-        $response['message']   = 'Failed to insert data';
-        $statusCode            = 400;
-        $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin";
-        $logObj['response']    = $response;
-        $logObj['status_code'] = $statusCode;
-        rzpLogInfo(json_encode($logObj));
+        
+        if (!isset($result['status_code']) || $result['status_code'] !== 200) {
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $result['response'] ?? 'Unknown error',
+                'log'   => $logObj ?? [],
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.abandon.cart.data.insertion.failed', $properties);
+        }
+        return new WP_REST_Response($result['response'], $result['status_code']);
     }
-
-    return new WP_REST_Response($result['response'], $result['status_code']);
+    catch (Throwable $e)
+    {
+        $rzp = new WC_Razorpay();
+        $trackObject = $rzp->newTrackPluginInstrumentation();
+        $properties = [
+            'error' => $e->getMessage(),
+            'code'  => $e->getCode(),
+            'file'  => $e->getFile(),
+            'line'  => $e->getLine()
+        ];
+        $trackObject->rzpTrackDataLake('razorpay.1cc.abandon.cart.processing.failed', $properties);
+        rzpLogError(json_encode($properties));
+        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
+    }
 }
 
 //Save abandonment data for woocommerce Abondonment cart lite plugin

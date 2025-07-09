@@ -9,96 +9,132 @@ use Automattic\WooCommerce\Utilities\OrderUtil;
 
 function fetchCartData(WP_REST_Request $request)
 {
-    rzpLogInfo("fetchCartData");
-    global $woocommerce;
+    try
+    {
+        rzpLogInfo("fetchCartData");
+        global $woocommerce;
 
-    $params = $request->get_params();
-    $logObj = ['api' => 'fetchCartData', 'params' => $params];
+        $params = $request->get_params();
+        $logObj = ['api' => 'fetchCartData', 'params' => $params];
 
-    //Abandoment cart plugin decode the coupon code from token
-    $couponCode = null;
-    if (isset($params['token'])) {
-        $token = sanitize_text_field($params['token']);
-        parse_str(base64_decode(urldecode($token)), $token);
-        if (is_array($token) && array_key_exists('wcf_session_id', $token) && isset($token['wcf_coupon_code'])) {
-            $couponCode = $token['wcf_coupon_code'];
+        //Abandoment cart plugin decode the coupon code from token
+        $couponCode = null;
+        if (isset($params['token'])) {
+            $token = sanitize_text_field($params['token']);
+            parse_str(base64_decode(urldecode($token)), $token);
+            if (is_array($token) && array_key_exists('wcf_session_id', $token) && isset($token['wcf_coupon_code'])) {
+                $couponCode = $token['wcf_coupon_code'];
+            }
         }
+
+        initCartCommon();
+
+        // check if cart is empty
+        checkCartEmpty($logObj);
+
+        // Get coupon if already added on cart.
+        $couponCode = null;
+        $coupons = WC()->cart->get_applied_coupons();
+        if (!empty($coupons)) {
+            $couponCode = $coupons[0];
+        }
+
+        $response = cartResponse($couponCode);
+
+        $response['user'] = getCartUserObject();
+
+        $response['plugins'] = getPluginsDetails();
+
+        return new WP_REST_Response($response, 200);
     }
+    catch (Throwable $e)
+    {
+        $rzp = new WC_Razorpay();
+        $trackObject = $rzp->newTrackPluginInstrumentation();
+        $properties = [
+            'error' => $e->getMessage(),
+            'code'  => $e->getCode(),
+            'file'  => $e->getFile(),
+            'line'  => $e->getLine()
+        ];
+        $trackObject->rzpTrackDataLake('razorpay.1cc.fetch.cart.processing.failed', $properties);
+        rzpLogError(json_encode($properties));
 
-    initCartCommon();
-
-    // check if cart is empty
-    checkCartEmpty($logObj);
-
-    // Get coupon if already added on cart.
-    $couponCode = null;
-    $coupons = WC()->cart->get_applied_coupons();
-    if (!empty($coupons)) {
-        $couponCode = $coupons[0];
+        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
     }
-
-    $response = cartResponse($couponCode);
-
-    $response['user'] = getCartUserObject();
-
-    $response['plugins'] = getPluginsDetails();
-
-    return new WP_REST_Response($response, 200);
 }
 
 // create cart data on product page
 
 function createCartData(WP_REST_Request $request)
 {
-    rzpLogInfo("createCartData");
-    global $woocommerce;
-    $params = $request->get_params();
-    $logObj = ['api' => 'createCartData', 'params' => $params];
+    try
+    {
+        rzpLogInfo("createCartData");
+        global $woocommerce;
+        $params = $request->get_params();
+        $logObj = ['api' => 'createCartData', 'params' => $params];
 
-    $couponCode = null;
-    initCartCommon();
+        $couponCode = null;
+        initCartCommon();
 
-    if (empty($params['pdpCheckout']) === false) {
-        $variations = [];
-        // Cleanup cart.
-        WC()->cart->empty_cart();
+        if (empty($params['pdpCheckout']) === false) {
+            $variations = [];
+            // Cleanup cart.
+            WC()->cart->empty_cart();
 
-        $variationId = (empty($params['variationId']) === false) ? (int) $params['variationId'] : 0;
+            $variationId = (empty($params['variationId']) === false) ? (int) $params['variationId'] : 0;
 
-        if (empty($params['variations']) === false) {
-            $variationsArr = json_decode($params['variations'], true);
+            if (empty($params['variations']) === false) {
+                $variationsArr = json_decode($params['variations'], true);
 
-            foreach ($variationsArr as $key => $value) {
-                $varKey          = explode('_', $key);
-                $variationsKey[] = ucwords(end($varKey));
-                $variationsVal[] = ucwords($value);
+                foreach ($variationsArr as $key => $value) {
+                    $varKey          = explode('_', $key);
+                    $variationsKey[] = ucwords(end($varKey));
+                    $variationsVal[] = ucwords($value);
+                }
+
+                $variations = array_combine($variationsKey, $variationsVal);
             }
 
-            $variations = array_combine($variationsKey, $variationsVal);
-        }
-
-        //To add custom fields to buy now orders
-        if (empty($params['fieldObj']) === false) {
-            foreach ($params['fieldObj'] as $key => $value) {
-                if (!empty($value)) {
-                    $variations[$key] = $value;
+            //To add custom fields to buy now orders
+            if (empty($params['fieldObj']) === false) {
+                foreach ($params['fieldObj'] as $key => $value) {
+                    if (!empty($value)) {
+                        $variations[$key] = $value;
+                    }
                 }
             }
+
+            WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variationId, $variations);
         }
 
-        WC()->cart->add_to_cart($params['productId'], $params['quantity'], $variationId, $variations);
+        // check if cart is empty
+        checkCartEmpty($logObj);
+
+        $response = cartResponse($couponCode);
+
+        $response['user'] = getCartUserObject();
+
+        $response['plugins'] = getPluginsDetails();
+
+        return new WP_REST_Response($response, 200);
     }
+    catch (Throwable $e)
+    {
+        $rzp = new WC_Razorpay();
+        $trackObject = $rzp->newTrackPluginInstrumentation();
+        $properties = [
+            'error' => $e->getMessage(),
+            'code'  => $e->getCode(),
+            'file'  => $e->getFile(),
+            'line'  => $e->getLine()
+        ];
+        $trackObject->rzpTrackDataLake('razorpay.1cc.create.cart.processing.failed', $properties);
+        rzpLogError(json_encode($properties));
 
-    // check if cart is empty
-    checkCartEmpty($logObj);
-
-    $response = cartResponse($couponCode);
-
-    $response['user'] = getCartUserObject();
-
-    $response['plugins'] = getPluginsDetails();
-
-    return new WP_REST_Response($response, 200);
+        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
+    }
 }
 
 function getCartUserObject(): array {
@@ -233,7 +269,15 @@ function checkCartEmpty($logObj){
 
         rzpLogError(json_encode($logObj));
 
-        return new WP_REST_Response($response, $statusCode);
+        $rzp = new WC_Razorpay();
+        $trackObject = $rzp->newTrackPluginInstrumentation();
+        $properties = [
+            'error' => 'Cart cannot be empty',
+            'log'   => $logObj
+        ];
+        $trackObject->rzpTrackDataLake('razorpay.1cc.empty.cart.error', $properties);
+
+        return new WP_REST_Response($response, 400);
     }
 }
 

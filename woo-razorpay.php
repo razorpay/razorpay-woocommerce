@@ -3,8 +3,8 @@
  * Plugin Name: 1 Razorpay: Signup for FREE PG
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
- * Version: 4.7.0
- * Stable tag: 4.7.0
+ * Version: 4.7.4
+ * Stable tag: 4.7.4
  * Author: Team Razorpay
  * WC tested up to: 9.1.2
  * Author URI: https://razorpay.com
@@ -33,6 +33,7 @@ require_once __DIR__.'/includes/cron/one-click-checkout/Constants.php';
 require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php';
 require_once __DIR__.'/includes/cron/cron.php';
 require_once __DIR__.'/includes/cron/plugin-fetch.php';
+require_once ABSPATH . '/wp-admin/includes/upgrade.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -146,6 +147,10 @@ function woocommerce_razorpay_init()
 
         const PREPAY_COD_URL = '1cc/orders/cod/convert';
         const ONE_CC_MERCHANT_PREF = 'one_cc_merchant_preference';
+
+        const RZP_ORDER_CREATED = 0;
+        const RZP_ORDER_PROCESSED_BY_CALLBACK = 1;
+        const RZP_INTEGRATION = 'woocommerce';
 
         protected $supportedWebhookEvents = array(
             'payment.authorized',
@@ -473,7 +478,7 @@ function woocommerce_razorpay_init()
                     if (isset($merchantPreferences) === false or
                         isset($merchantPreferences['assigned_features']) === false)
                     {
-                        throw new Exception("Error in Api call.");
+                        throw new Exception("Error in get features Api call.");
                     }
 
                     update_option('rzp_afd_enable', 'no');
@@ -518,6 +523,13 @@ function woocommerce_razorpay_init()
                 catch (\Exception $e)
                 {
                     rzpLogError($e->getMessage());
+
+                    $trackObject = $this->newTrackPluginInstrumentation();
+                    $properties = [
+                        'error' => $e->getMessage()
+                    ];
+                    $trackObject->rzpTrackDataLake('razorpay.afd.rtb.set.features.failed', $properties);
+
                     return;
                 }
             }
@@ -572,7 +584,7 @@ function woocommerce_razorpay_init()
             if($key_id == null || $key_secret == null)
             {
                 $validationErrorProperties = $this->triggerValidationInstrumentation(
-                    ['error_message' => 'Key Id and or Key Secret is null']);
+                    ['error' => 'Key Id and or Key Secret is null']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Key Id and Key Secret are required.'); ?><b></p>
@@ -591,7 +603,7 @@ function woocommerce_razorpay_init()
             catch (Exception $e)
             {
                 $validationErrorProperties = $this->triggerValidationInstrumentation(
-                    ['error_message' => 'Invalid Key Id and Key Secret']);
+                    ['error' => 'Invalid Key Id and Key Secret']);
                 ?>
                 <div class="notice error is-dismissible" >
                     <p><b><?php _e( 'Please check Key Id and Key Secret.'); ?></b></p>
@@ -718,7 +730,7 @@ function woocommerce_razorpay_init()
             }
         }
 
-        public function newTrackPluginInstrumentation($key, $secret)
+        public function newTrackPluginInstrumentation($key = "", $secret = "")
         {
             $api = $this->getRazorpayApiInstance($key, $secret);
 
@@ -909,6 +921,7 @@ function woocommerce_razorpay_init()
             try
             {
                 $api = $this->getRazorpayApiInstance();
+                $api->setHeader('Content-Type', 'application/x-www-form-urlencoded');
 
                 $webhook = $api->request->request($method, $url, $data);
             }
@@ -918,7 +931,14 @@ function woocommerce_razorpay_init()
                     'message' => $e->getMessage(),
                 );
 
-                error_log(json_encode($log));
+                $trackObject = $this->newTrackPluginInstrumentation();
+                $properties = [
+                    'error'     => $e->getMessage(),
+                    'method'    => $method,
+                    'url'       => $url
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.webhook.api.failed', $properties);
+
                 rzpLogError(json_encode($log));
             }
 
@@ -1015,11 +1035,18 @@ function woocommerce_razorpay_init()
 
             try
             {
-                $razorpayOrderId = get_transient($sessionKey);
+                if ($this->isHposEnabled) 
+                {
+                    $razorpayOrderId = $order->get_meta($sessionKey);
+                }
+                else
+                {
+                    $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
+                }
                 rzpLogInfo("razorpayOrderId $razorpayOrderId | sessionKey $sessionKey");
                 // If we don't have an Order
                 // or the if the order is present in transient but doesn't match what we have saved
-                if (($razorpayOrderId === false) or
+                if (($razorpayOrderId === false || $razorpayOrderId == "") or
                     (($razorpayOrderId and ($this->verifyOrderAmount($razorpayOrderId, $orderId, $is1ccCheckout)) === false)))
                 {
                     $create = true;
@@ -1080,22 +1107,8 @@ function woocommerce_razorpay_init()
          */
         protected function getRazorpayPaymentParams($order, $orderId)
         {
-            $getWebhookFlag =  get_option('webhook_enable_flag');
-            $time = time();
-            if (empty($getWebhookFlag) == false)
-            {
-                if ($getWebhookFlag + 86400 < time())
-                {
-                    $this->autoEnableWebhook();
-                }
-            }
-            else
-            {
-                update_option('webhook_enable_flag', $time);
-                $this->autoEnableWebhook();
-            }
-
             rzpLogInfo("getRazorpayPaymentParams $orderId");
+
             $razorpayOrderId = $this->createOrGetRazorpayOrderId($order, $orderId);
 
             if ($razorpayOrderId === null)
@@ -1157,8 +1170,18 @@ function woocommerce_razorpay_init()
 
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
 
-            $razorpayOrderId = get_transient($sessionKey);
+            $orderData = wc_get_order($wcOrderId);
 
+            if ($orderData) {
+                if ($this->isHposEnabled) 
+                {
+                    $razorpayOrderId = $orderData->get_meta($sessionKey);
+                }
+                else
+                {
+                    $razorpayOrderId = get_post_meta($wcOrderId, $sessionKey, true);
+                }
+            } 
             $productinfo = "Order $orderId";
 
             return array(
@@ -1167,8 +1190,8 @@ function woocommerce_razorpay_init()
                 'currency'     => self::INR,
                 'description'  => $productinfo,
                 'notes'        => array(
-                    self::WC_ORDER_ID => $orderId,
-                    self::WC_ORDER_NUMBER => $wcOrderId
+                    self::WC_ORDER_ID       => $wcOrderId,
+                    self::WC_ORDER_NUMBER   => $orderId
                 ),
                 'order_id'     => $razorpayOrderId,
                 'callback_url' => $callbackUrl,
@@ -1237,9 +1260,9 @@ function woocommerce_razorpay_init()
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
 
-
             // Calls the helper function to create order data
             global $woocommerce;
+            global $wpdb;
 
             $api = $this->getRazorpayApiInstance();
 
@@ -1260,6 +1283,13 @@ function woocommerce_razorpay_init()
             catch (Exception $e)
             {
                 rzpLogInfo("rzp order error " . $e->getMessage());
+
+                $trackObject = $this->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => $e->getMessage()
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.create.order.failed', $properties);
+
                 return $e;
             }
 
@@ -1281,17 +1311,48 @@ function woocommerce_razorpay_init()
 
             $razorpayOrderId = $razorpayOrder['id'];
 
-            // Storing the razorpay order id in transient for 5 hours time.
-            set_transient($sessionKey, $razorpayOrderId, 18000);
+            $order = wc_get_order($orderId);
+			if ($order) {
+                // Update or create the meta data using the session key
+                if ($this->isHposEnabled) 
+                {
+                    $order->update_meta_data($sessionKey, $razorpayOrderId);
+                    $order->save();
+                }
+                else
+                {
+                    update_post_meta($orderId, $sessionKey, $razorpayOrderId);
+                }
+                rzpLogInfo("Meta data saved for Order ID {$orderId} with key {$sessionKey} and value {$razorpayOrderId}.");
 
-            // By default woocommerce session TTL is 48 hours.
-            $woocommerce->session->set($sessionKey, $razorpayOrderId);
+            } else {
+                rzpLogInfo("Order not found for order ID {$orderId}. Unable to update order meta.");
+            }
 
             rzpLogInfo('For order session key ' . $sessionKey);
             //update it in order comments
             $order = wc_get_order($orderId);
 
             $order->add_order_note("Razorpay OrderId: $razorpayOrderId");
+
+            try
+            {
+                // insert record in webhook table
+                $wpdb->insert(
+                    $wpdb->prefix . "rzp_webhook_requests",
+                    array(
+                        'integration'                   => self::RZP_INTEGRATION,
+                        'order_id'                      => $orderId,
+                        'rzp_order_id'                  => $razorpayOrderId,
+                        'rzp_webhook_data'              => '[]',
+                        'rzp_update_order_cron_status'  => self::RZP_ORDER_CREATED
+                    )
+                );
+            }
+            catch (Exception $e)
+            {
+                rzpLogError("Failed to insert order in rzp_webhook_requests table: " . $e->getMessage());
+            }
 
             return $razorpayOrderId;
         }
@@ -1311,6 +1372,12 @@ function woocommerce_razorpay_init()
             {
                 $message = $e->getMessage();
                 rzpLogInfo("Failed at verifyOrderAmount with $message");
+                $trackObject = $this->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => $message
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.order.amount.validation.failed', $properties);
+
                 return "RAZORPAY ERROR: Order fetch failed with the message '$message'";
             }
 
@@ -1614,6 +1681,12 @@ EOT;
             }
             catch(Exception $e)
             {
+                $trackObject = $this->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => $e->getMessage()
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.refund.failed', $properties);
+
                 return new WP_Error('error', __($e->getMessage(), 'woocommerce'));
             }
         }
@@ -1666,6 +1739,12 @@ EOT;
             catch(Exception $e)
             {
                 rzpLogInfo('failure message for refund:' . $e->getMessage());
+
+                $trackObject = $this->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => $e->getMessage()
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.refund.with.giftcard.failed', $properties);
             }
 
             wp_redirect(wc_get_cart_url());
@@ -1863,6 +1942,14 @@ EOT;
                 catch (Errors\SignatureVerificationError $e)
                 {
                     $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. ' . $e->getMessage();
+
+                    $trackObject = $this->newTrackPluginInstrumentation();
+                    $properties = [
+                        'error'         => $e->getMessage(),
+                        'order_id'      => $orderId,
+                        'payment_id'    => $_POST[self::RAZORPAY_PAYMENT_ID]
+                    ];
+                    $trackObject->rzpTrackDataLake('razorpay.callback.signature.verification.failed', $properties);
                 }
             }
             else
@@ -1889,14 +1976,13 @@ EOT;
                     $api = $this->getRazorpayApiInstance();
                     $sessionKey = $this->getOrderSessionKey($orderId);
 
-                    //Check the transient data for razorpay order id, if it's not available then look into session data.
-                    if(get_transient($sessionKey))
+                    if ($this->isHposEnabled) 
                     {
-                        $razorpayOrderId = get_transient($sessionKey);
+                        $razorpayOrderId = $order->get_meta($sessionKey);
                     }
                     else
                     {
-                        $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                        $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
                     }
 
                     $razorpayData = $api->order->fetch($razorpayOrderId);
@@ -1918,6 +2004,42 @@ EOT;
             }
 
             $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
+
+            if ($success)
+            {
+                try
+                {
+                    // update order status in webhook table
+                    $sessionKey = $this->getOrderSessionKey($orderId);
+                    $razorpayOrderId = '';
+
+                    $order = wc_get_order($orderId);
+                    if ($this->isHposEnabled) 
+                    {
+                        $razorpayOrderId = $order->get_meta($sessionKey);
+                    }
+                    else
+                    {
+                        $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
+                    }
+
+                    $wpdb->update(
+                        $wpdb->prefix . 'rzp_webhook_requests',
+                        array(
+                            'rzp_update_order_cron_status' => self::RZP_ORDER_PROCESSED_BY_CALLBACK
+                        ),
+                        array(
+                            'integration'   => self::RZP_INTEGRATION,
+                            'order_id'      => $orderId,
+                            'rzp_order_id'  => $razorpayOrderId
+                        )
+                    );
+                }
+                catch (Exception $e)
+                {
+                    rzpLogError("Failed to update order by callback in rzp_webhook_requests table: " . $e->getMessage());
+                }
+            }
 
             $this->redirectUser($order);
         }
@@ -1944,14 +2066,14 @@ EOT;
             );
 
             $sessionKey = $this->getOrderSessionKey($orderId);
-            //Check the transient data for razorpay order id, if it's not available then look into session data.
-            if(get_transient($sessionKey))
+            $order = wc_get_order($orderId);
+            if ($this->isHposEnabled) 
             {
-                $razorpayOrderId = get_transient($sessionKey);
+                $razorpayOrderId = $order->get_meta($sessionKey);
             }
             else
             {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
             }
 
             $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId?? '';
@@ -2004,109 +2126,120 @@ EOT;
          */
         public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId = null, $webhook = false)
         {
-            global $woocommerce;
-
-            $orderId = $order->get_order_number();
-
-            rzpLogInfo("updateOrder orderId: $orderId , razorpayPaymentId: $razorpayPaymentId , success: $success");
-
-            if ($success === true)
+            try
             {
-                try
+                global $woocommerce;
+
+                $orderId = $order->get_order_number();
+
+                rzpLogInfo("updateOrder orderId: $orderId , razorpayPaymentId: $razorpayPaymentId , success: $success");
+
+                if ($success === true)
                 {
-                    $wcOrderId = $order->get_id();
-
-                    if ($this->isHposEnabled) {
-                        $is1ccOrder = $order->get_meta('is_magic_checkout_order');
-                    }else{
-                        $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
-                    }
-
-                    rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
-
-                    if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
+                    try
                     {
-                        rzpLogInfo("Order details update initiated step 1 for the orderId: $wcOrderId");
+                        $wcOrderId = $order->get_id();
 
-                        //To verify whether the 1cc update order function already under execution or not
-                        if(get_transient('wc_order_under_process_'.$wcOrderId) === false)
-                        {
-                            rzpLogInfo("Order details update initiated step 2 for the orderId: $wcOrderId");
-
-                            $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId);
+                        if ($this->isHposEnabled) {
+                            $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+                        }else{
+                            $is1ccOrder = get_post_meta($wcOrderId, 'is_magic_checkout_order', true);
                         }
 
+                        rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
+
+                        if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
+                        {
+                            rzpLogInfo("Order details update initiated step 1 for the orderId: $wcOrderId");
+
+                            //To verify whether the 1cc update order function already under execution or not
+                            if(get_transient('wc_order_under_process_'.$wcOrderId) === false)
+                            {
+                                rzpLogInfo("Order details update initiated step 2 for the orderId: $wcOrderId");
+
+                                $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId);
+                            }
+
+                        }
+                    } catch (Exception $e) {
+                        $message = $e->getMessage();
+                        rzpLogError("Failed to update 1cc flow with error : $message");
                     }
-                } catch (Exception $e) {
-                    $message = $e->getMessage();
-                    rzpLogError("Failed to update 1cc flow with error : $message");
-                }
 
-                $payment_method=$order->get_payment_method();
+                    $payment_method=$order->get_payment_method();
 
-                // Need to set the status manually to processing incase of COD payment method.
-                if ($payment_method == "cod")
-                {
-                    $order->update_status( 'processing' );
+                    // Need to set the status manually to processing incase of COD payment method.
+                    if ($payment_method == "cod")
+                    {
+                        $order->update_status( 'processing' );
+                    }
+                    else
+                    {
+                        $order->payment_complete($razorpayPaymentId);
+                    }
+
+                    if(is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
+                        handleCBRecoveredOrder($orderId);
+                    }
+
+                    // Check Wati.io retargetting plugin is active or not
+                    if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
+                        handleWatiRecoveredOrder($orderId);
+                    }
+
+                    $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
+
+                    if($this->getSetting('route_enable') == 'yes')
+                    {
+                        $razorpayRoute = new RZP_Route_Action();
+
+                        $wcOrderId = $order->get_id();
+
+                        $razorpayRoute->transferFromPayment($wcOrderId, $razorpayPaymentId); // creates transfers from payment
+                    }
+
+                    if($virtualAccountId != null)
+                    {
+                        $order->add_order_note("Virtual Account Id: $virtualAccountId");
+                    }
+
+                    if (isset($woocommerce->cart) === true)
+                    {
+                        $woocommerce->cart->empty_cart();
+                    }
                 }
                 else
                 {
-                    $order->payment_complete($razorpayPaymentId);
+                    $this->msg['class'] = 'error';
+                    $this->msg['message'] = $errorMessage;
+
+                    if ($razorpayPaymentId)
+                    {
+                        $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpayPaymentId");
+                    }
+
+                    $order->add_order_note("Transaction Failed: $errorMessage<br/>");
+                    $order->update_status('failed');
                 }
 
-                if(is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
-                    handleCBRecoveredOrder($orderId);
-                }
-
-                // Check Wati.io retargetting plugin is active or not
-                if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
-                    handleWatiRecoveredOrder($orderId);
-                }
-
-                $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
-
-                if($this->getSetting('route_enable') == 'yes')
+                if ($webhook === false)
                 {
-                    $razorpayRoute = new RZP_Route_Action();
+                    $this->add_notice($this->msg['message'], $this->msg['class']);
 
-                    $wcOrderId = $order->get_id();
-
-                    $razorpayRoute->transferFromPayment($wcOrderId, $razorpayPaymentId); // creates transfers from payment
+                    rzpLogInfo("Woocommerce orderId: $orderId processed through callback");
                 }
-
-                if($virtualAccountId != null)
+                else
                 {
-                    $order->add_order_note("Virtual Account Id: $virtualAccountId");
-                }
-
-                if (isset($woocommerce->cart) === true)
-                {
-                    $woocommerce->cart->empty_cart();
+                    rzpLogInfo("Woocommerce orderId: $orderId processed through webhook");
                 }
             }
-            else
+            catch (\Exception $e)
             {
-                $this->msg['class'] = 'error';
-                $this->msg['message'] = $errorMessage;
-
-                if ($razorpayPaymentId)
-                {
-                    $order->add_order_note("Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: $razorpayPaymentId");
-                }
-
-                $order->add_order_note("Transaction Failed: $errorMessage<br/>");
-                $order->update_status('failed');
-            }
-
-            if ($webhook === false)
-            {
-                $this->add_notice($this->msg['message'], $this->msg['class']);
-
-                rzpLogInfo("Woocommerce orderId: $orderId processed through callback");
-            }
-            else
-            {
-                rzpLogInfo("Woocommerce orderId: $orderId processed through webhook");
+                $trackObject = $this->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => $e->getMessage()
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.update.order.failed', $properties);
             }
         }
 
@@ -2123,14 +2256,13 @@ EOT;
             $api = $this->getRazorpayApiInstance();
             $sessionKey = $this->getOrderSessionKey($wcOrderId);
 
-            //Check the transient data for razorpay order id, if it's not available then look into session data.
-            if(get_transient($sessionKey))
+            if ($this->isHposEnabled) 
             {
-                $razorpayOrderId = get_transient($sessionKey);
+                $razorpayOrderId = $order->get_meta($sessionKey);
             }
             else
             {
-                $razorpayOrderId = $woocommerce->session->get($sessionKey);
+                $razorpayOrderId = get_post_meta($wcOrderId, $sessionKey, true);
             }
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
@@ -3030,6 +3162,167 @@ EOT;
                 </razorpay-trusted-business>
             </div>';
 
+        }
+    }
+
+    /**
+     * Add Cron schedules/intervals
+     **/
+    function rzpWooCronSchedules($schedules)
+    {
+        if (isset($schedules['rzp_webhook_cron_interval']) === false)
+        {
+            $schedules['rzp_webhook_cron_interval'] = array(
+                'interval'  => 5 * 60,
+                'display'   => __('Every 5 minutes'));
+        }
+
+        return $schedules;
+    }
+
+    add_filter('cron_schedules', 'rzpWooCronSchedules');
+
+    /**
+     * Create cron with 5 min interval
+     **/
+    try
+    {
+        if (!wp_next_scheduled('rzp_webhook_exec_cron'))
+        {
+            wp_schedule_event(time(), 'rzp_webhook_cron_interval', 'rzp_webhook_exec_cron');
+            rzpLogInfo("rzp_webhook_exec_cron cron created");
+        }
+    }
+    catch (Exception $e)
+    {
+        $rzp = new WC_Razorpay();
+        $key_id = $rzp->getSetting('key_id');
+        $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+
+        $properties = [
+            'error' => 'webhook cron creation failed' . $e->getMessage()
+        ];
+
+        $trackObject->rzpTrackDataLake('razorpay.webhook.cron.creation.failed', $properties);
+    }
+
+    /**
+     * Webhook Cron to execute events
+     **/
+    function execRzpWooWebhookEvents()
+    {
+        if (file_exists( ABSPATH . WPINC . '/certificates/ca-bundle.crt')) {
+            require_once ABSPATH . WPINC . '/Requests/src/Autoload.php';
+            WpOrg\Requests\Autoload::register();
+            WpOrg\Requests\Requests::set_certificate_path( ABSPATH . WPINC . '/certificates/ca-bundle.crt' );
+        }
+
+        global $wpdb;
+        rzpLogInfo("Running webhook cron.");
+
+        try
+        {
+            $rzpOrderProcessedByWebhook = 2;
+            $integration = "woocommerce";
+            $tableName = $wpdb->prefix . "rzp_webhook_requests";
+
+            $ordersData = $wpdb->get_results("SELECT order_id, rzp_order_id, rzp_webhook_data FROM $tableName WHERE integration='" . $integration . "' AND rzp_webhook_notified_at < " . (string)(time() - 300) ." AND rzp_update_order_cron_status=0;");
+            $rzpWebhookObj = new RZP_Webhook();
+
+            foreach ($ordersData as $row)
+            {
+                rzpLogInfo("Webhook cron executing woocommerce order:" . $row->order_id);
+                $events = json_decode($row->rzp_webhook_data);
+                foreach ($events as $event)
+                {
+                    $event = (array) $event;
+                    switch ($event['event'])
+                    {
+                        case 'payment.authorized':
+                            try
+                            {
+                                $rzpWebhookObj->paymentAuthorized($event);
+
+                                $wpdb->update(
+                                    $tableName,
+                                    array(
+                                        'rzp_update_order_cron_status'  => $rzpOrderProcessedByWebhook
+                                    ),
+                                    array(
+                                        'integration'   => $integration,
+                                        'order_id'      => $row->order_id,
+                                        'rzp_order_id'  => $row->rzp_order_id
+                                    )
+                                );
+                                break;
+                            }
+                            catch (Exception $e)
+                            {
+                                rzpLogError("paymentAuthorized event failed for orderID: " . $row->order_id);
+                            }
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        catch (Exception $e)
+        {
+            rzpLogError("Webhook cron execution failed: " . $e->getMessage());
+
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $e->getMessage()
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.webhook.cron.execution.failed', $properties);
+        }
+        rzpLogInfo("Webhook cron execution completed.");
+    }
+
+    add_action('rzp_webhook_exec_cron', 'execRzpWooWebhookEvents');
+
+    $rzpWebhookSetup = get_option('rzp_webhook_setup');
+
+    if (($rzpWebhookSetup === 'yes') === false)
+    {
+        try
+        {
+            // create table to save triggered webhook events
+            global $wpdb;
+            $tableName = $wpdb->prefix . 'rzp_webhook_requests';
+
+            $sql = "CREATE TABLE IF NOT EXISTS $tableName (
+                `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `integration` varchar(25) NOT NULL,
+                `order_id` int(11) NOT NULL,
+                `rzp_order_id` varchar(25) NOT NULL,
+                `rzp_webhook_data` text,
+                `rzp_webhook_notified_at` int(11),
+                `rzp_update_order_cron_status` int(11) DEFAULT 0,
+                PRIMARY KEY (`id`)) " . $wpdb->get_charset_collate() . ";";
+
+            dbDelta($sql);
+
+            if ($wpdb->get_var("SHOW TABLES LIKE '$tableName'" ) === $tableName)
+            {
+                update_option('rzp_webhook_setup', 'yes');
+                rzpLogInfo("Webhook table Created.");
+            }
+        }
+        catch (Exception $e)
+        {
+            rzpLogInfo("Webhook table creation failed: ". $e->getMessage());
+            delete_option('rzp_webhook_setup');
+            
+            $rzp = new WC_Razorpay();
+            $key_id = $rzp->getSetting('key_id');
+            $trackObject = $rzp->newTrackPluginInstrumentation($key_id, '');
+            $properties = [
+                'error' => 'webhook cron table setup failed' . $e->getMessage()
+            ];
+
+            $trackObject->rzpTrackDataLake('razorpay.webhook.cron.table.setup.failed', $properties);
         }
     }
 }

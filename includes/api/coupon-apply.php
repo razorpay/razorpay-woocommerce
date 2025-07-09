@@ -6,173 +6,249 @@
 
 function applyCouponOnCart(WP_REST_Request $request)
 {
-    global $woocommerce;
+    try
+    {
+        global $woocommerce;
 
-    $status         = 400;
-    $failure_reason = "";
+        $status         = 400;
+        $failure_reason = "";
 
-    $params = $request->get_params();
-    
-    $logObj           = [];
-    $logObj["api"]    = "applyCouponOnCart";
-    $logObj["params"] = $params;
+        $params = $request->get_params();
 
-    $validateInput = validateApplyCouponApi($params);
+        $logObj           = [];
+        $logObj["api"]    = "applyCouponOnCart";
+        $logObj["params"] = $params;
 
-    if ($validateInput != null) {
-        $response["failure_reason"] = $validateInput;
-        $response["failure_code"]   = "VALIDATION_ERROR";
-        $logObj["response"]         = $response;
+        $validateInput = validateApplyCouponApi($params);
 
-        rzpLogError(json_encode($logObj));
-
-        return new WP_REST_Response($response, 400);
-    }
-
-    $couponCode = sanitize_text_field($params["code"]);
-    $email      = sanitize_text_field($params["email"]) ?? "";
-    $orderId    = sanitize_text_field($params["order_id"]);
-
-    // initializes the session
-    initCustomerSessionAndCart();
-
-    // Set current user for smart coupon plugin
-    if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
-        if (empty($email) === false) {
-            $user = get_user_by('email', $email);
-            wp_set_current_user($user->id);
-        }
-    }
-
-    // check for individual specific coupons
-    // cart->apply does not enforce this
-    $coupon = new WC_Coupon($couponCode);
-
-    // check the enable coupon option
-    if (get_option("woocommerce_enable_coupons") === "no") {
-        $response["failure_reason"] = "Coupon feature disabled";
-        $response["failure_code"]   = "INVALID_COUPON";
-        $logObj["response"]         = $response;
-
-        rzpLogError(json_encode($logObj));
-
-        return new WP_REST_Response($response, 400);
-    }
-
-    //check woo-discount-rule plugin disabling the coupons
-    if (is_plugin_active('woo-discount-rules/woo-discount-rules.php')) {
-        $discountOptions = get_option('woo-discount-config-v2', []);
-        if (!empty($discountOptions)) {
-            $isCouponEnabled = $discountOptions['disable_coupon_when_rule_applied'];
-            if ($isCouponEnabled == 'disable_coupon') {
-                $response["failure_reason"] = "Coupon feature disabled";
-                $response["failure_code"]   = "INVALID_COUPON";
-                $logObj["response"]         = $response;
-
-                rzpLogError(json_encode($logObj));
-
-                return new WP_REST_Response($response, 400);
-            }
-        }
-    }
-
-    if (empty($coupon->get_email_restrictions()) === false) {
-        if ($email == "") {
-            $response["failure_reason"] = "User email is required";
-            $response["failure_code"]   = "LOGIN_REQUIRED";
+        if ($validateInput != null) {
+            $response["failure_reason"] = $validateInput;
+            $response["failure_code"]   = "VALIDATION_ERROR";
             $logObj["response"]         = $response;
 
             rzpLogError(json_encode($logObj));
 
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $validateInput,
+                'log'   => $logObj
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupon.validation.error', $properties);
+
             return new WP_REST_Response($response, 400);
-        } elseif (in_array($email, $coupon->get_email_restrictions()) === false) {
-            $response["failure_reason"] = "Coupon does not exist";
+        }
+
+        $couponCode = sanitize_text_field($params["code"]);
+        $email      = sanitize_text_field($params["email"]) ?? "";
+        $orderId    = sanitize_text_field($params["order_id"]);
+
+        // initializes the session
+        initCustomerSessionAndCart();
+
+        // Set current user for smart coupon plugin
+        if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
+            if (empty($email) === false) {
+                $user = get_user_by('email', $email);
+                wp_set_current_user($user->id);
+            }
+        }
+
+        // check for individual specific coupons
+        // cart->apply does not enforce this
+        $coupon = new WC_Coupon($couponCode);
+
+        // check the enable coupon option
+        if (get_option("woocommerce_enable_coupons") === "no") {
+            $response["failure_reason"] = "Coupon feature disabled";
             $response["failure_code"]   = "INVALID_COUPON";
             $logObj["response"]         = $response;
 
             rzpLogError(json_encode($logObj));
 
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => 'Coupon feature disabled',
+                'log'   => $logObj
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupon.invalid.coupon', $properties);
+
             return new WP_REST_Response($response, 400);
         }
-    }
 
-    // Get coupon usage limit per user
-    $userLimit = $coupon->get_usage_limit_per_user();
-    if (!empty($userLimit)) {
-        $dataStore  = $coupon->get_data_store();
-        $order      = wc_get_order($orderId);
-        $usageCount = $order->get_customer_id() ? $dataStore->get_usage_by_user_id($coupon, $order->get_customer_id()) : $dataStore->get_usage_by_email($coupon, $email);
+        //check woo-discount-rule plugin disabling the coupons
+        if (is_plugin_active('woo-discount-rules/woo-discount-rules.php')) {
+            $discountOptions = get_option('woo-discount-config-v2', []);
+            if (!empty($discountOptions)) {
+                $isCouponEnabled = $discountOptions['disable_coupon_when_rule_applied'];
+                if ($isCouponEnabled == 'disable_coupon') {
+                    $response["failure_reason"] = "Coupon feature disabled";
+                    $response["failure_code"]   = "INVALID_COUPON";
+                    $logObj["response"]         = $response;
 
-        if (!empty($usageCount) && !empty($userLimit)) {
-            // Calculate remaining
-            $remainingCount = $userLimit - $usageCount;
+                    rzpLogError(json_encode($logObj));
 
-            if ($remainingCount <= 0) {
-                $response["failure_reason"] = "Coupon usage limit has been reached";
-                $response["failure_code"]   = "REQUIREMENT_NOT_MET";
+                    return new WP_REST_Response($response, 400);
+                }
+            }
+        }
+
+        if (empty($coupon->get_email_restrictions()) === false) {
+            if ($email == "") {
+                $response["failure_reason"] = "User email is required";
+                $response["failure_code"]   = "LOGIN_REQUIRED";
                 $logObj["response"]         = $response;
 
                 rzpLogError(json_encode($logObj));
 
+                $rzp = new WC_Razorpay();
+                $trackObject = $rzp->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => 'User email is required',
+                    'log'   => $logObj
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupon.login.required', $properties);
+
+                return new WP_REST_Response($response, 400);
+            } elseif (in_array($email, $coupon->get_email_restrictions()) === false) {
+                $response["failure_reason"] = "Coupon does not exist";
+                $response["failure_code"]   = "INVALID_COUPON";
+                $logObj["response"]         = $response;
+
+                rzpLogError(json_encode($logObj));
+
+                $rzp = new WC_Razorpay();
+                $trackObject = $rzp->newTrackPluginInstrumentation();
+                $properties = [
+                    'error' => 'Coupon does not exist',
+                    'log'   => $logObj
+                ];
+                $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupon.invalid.coupon', $properties);
+
                 return new WP_REST_Response($response, 400);
             }
         }
-    }
 
-    // to clear any residual notices
-    $temp = wc_print_notices(true);
+        // Get coupon usage limit per user
+        $userLimit = $coupon->get_usage_limit_per_user();
+        if (!empty($userLimit)) {
+            $dataStore  = $coupon->get_data_store();
+            $order      = wc_get_order($orderId);
+            $usageCount = $order->get_customer_id() ? $dataStore->get_usage_by_user_id($coupon, $order->get_customer_id()) : $dataStore->get_usage_by_email($coupon, $email);
 
-    WC()->cart->empty_cart();
+            if (!empty($usageCount) && !empty($userLimit)) {
+                // Calculate remaining
+                $remainingCount = $userLimit - $usageCount;
 
-    $cart1cc = create1ccCart($orderId);
+                if ($remainingCount <= 0) {
+                    $response["failure_reason"] = "Coupon usage limit has been reached";
+                    $response["failure_code"]   = "REQUIREMENT_NOT_MET";
+                    $logObj["response"]         = $response;
 
-    WC()->cart->remove_coupon($couponCode);
+                    rzpLogError(json_encode($logObj));
 
-    if ($cart1cc) {
-        $applyCoupon = WC()->cart->add_discount($couponCode);
+                    $rzp = new WC_Razorpay();
+                    $trackObject = $rzp->newTrackPluginInstrumentation();
+                    $properties = [
+                        'error' => 'Coupon usage limit has been reached',
+                        'log'   => $logObj
+                    ];
+                    $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupon.requirement.not.met', $properties);
 
-        if ($applyCoupon === true) {
-            $status = true;
-        } else {
-            $markup       = wc_print_notices(true);
-            $errorArray   = explode("<li>", $markup);
-            $errorMessage = preg_replace(
-                "/\t|\n/",
-                "",
-                strip_tags(end($errorArray))
-            );
-            $failureReason = html_entity_decode($errorMessage);
+                    return new WP_REST_Response($response, 400);
+                }
+            }
         }
-    } else {
-        $invalidCartResponse                   = [];
-        $invalidCartResponse["failure_reason"] = "Invalid merchant order id";
-        $invalidCartResponse["failure_code"]   = "VALIDATION_ERROR";
 
-        $logObj["response"] = $invalidCartResponse;
+        // to clear any residual notices
+        $temp = wc_print_notices(true);
 
-        rzpLogError(json_encode($logObj));
-        return new WP_REST_Response($invalidCartResponse, 400);
+        WC()->cart->empty_cart();
+
+        $cart1cc = create1ccCart($orderId);
+
+        WC()->cart->remove_coupon($couponCode);
+
+        if ($cart1cc) {
+            $applyCoupon = WC()->cart->add_discount($couponCode);
+
+            if ($applyCoupon === true) {
+                $status = true;
+            } else {
+                $markup       = wc_print_notices(true);
+                $errorArray   = explode("<li>", $markup);
+                $errorMessage = preg_replace(
+                    "/\t|\n/",
+                    "",
+                    strip_tags(end($errorArray))
+                );
+                $failureReason = html_entity_decode($errorMessage);
+            }
+        } else {
+            $invalidCartResponse                   = [];
+            $invalidCartResponse["failure_reason"] = "Invalid merchant order id";
+            $invalidCartResponse["failure_code"]   = "VALIDATION_ERROR";
+
+            $logObj["response"] = $invalidCartResponse;
+
+            rzpLogError(json_encode($logObj));
+
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => 'Invalid merchant order id',
+                'log'   => $logObj
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupon.validation.error', $properties);
+
+            return new WP_REST_Response($invalidCartResponse, 400);
+        }
+
+        $newAmount      = (WC()->cart->cart_contents_total + WC()->cart->tax_total) * 100;
+        $discountAmount = (WC()->cart->get_cart_discount_tax_total() + WC()->cart->get_cart_discount_total()) * 100;
+
+        $couponError = getApplyCouponErrorCodes($failureReason);
+
+        $promotion                 = [];
+        $promotion["code"]         = $couponCode;
+        $promotion["reference_id"] = $couponCode;
+        $promotion["value"]        = round($discountAmount ?? 0);
+        $response["promotion"]     = $promotion;
+
+        if ($couponError["failure_reason"] === "") {
+            $logObj["response"] = $response;
+            rzpLogInfo(json_encode($logObj));
+            return new WP_REST_Response($response, 200);
+        } else {
+            $logObj["response"] = array_merge($response, $couponError);
+            rzpLogError(json_encode($logObj));
+
+            $rzp = new WC_Razorpay();
+            $trackObject = $rzp->newTrackPluginInstrumentation();
+            $properties = [
+                'error' => $validateInput,
+                'log'   => $logObj
+            ];
+            $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupon.error', $properties);
+
+            return new WP_REST_Response($couponError, 400);
+        }
     }
+    catch (Throwable $e)
+    {
+        $rzp = new WC_Razorpay();
+        $trackObject = $rzp->newTrackPluginInstrumentation();
+        $properties = [
+            'error' => $e->getMessage(),
+            'code'  => $e->getCode(),
+            'file'  => $e->getFile(),
+            'line'  => $e->getLine()
+        ];
+        $trackObject->rzpTrackDataLake('razorpay.1cc.apply.coupons.processing.failed', $properties);
+        rzpLogError(json_encode($properties));
 
-    $newAmount      = (WC()->cart->cart_contents_total + WC()->cart->tax_total) * 100;
-    $discountAmount = (WC()->cart->get_cart_discount_tax_total() + WC()->cart->get_cart_discount_total()) * 100;
-
-    $couponError = getApplyCouponErrorCodes($failureReason);
-
-    $promotion                 = [];
-    $promotion["code"]         = $couponCode;
-    $promotion["reference_id"] = $couponCode;
-    $promotion["value"]        = round($discountAmount ?? 0);
-    $response["promotion"]     = $promotion;
-
-    if ($couponError["failure_reason"] === "") {
-        $logObj["response"] = $response;
-        rzpLogInfo(json_encode($logObj));
-        return new WP_REST_Response($response, 200);
-    } else {
-        $logObj["response"] = array_merge($response, $couponError);
-        rzpLogError(json_encode($logObj));
-        return new WP_REST_Response($couponError, 400);
+        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
     }
 }
 
