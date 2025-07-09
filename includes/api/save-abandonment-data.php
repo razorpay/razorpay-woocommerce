@@ -80,7 +80,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         rzpLogInfo(json_encode($wcOrderId));
 
         $result['response']    = "";
-        $result['status_code'] = 400;
+        $result['status_code'] = 200;
 
         //check woocommerce cart abandonment recovery plugin is activated or not
         if (is_plugin_active('woo-cart-abandonment-recovery/woo-cart-abandonment-recovery.php') && empty($customerEmail) == false) {
@@ -210,10 +210,10 @@ function saveCartAbandonmentData(WP_REST_Request $request)
             }
 
         } else {
-            $response['status']    = false;
-            $response['message']   = 'Failed to insert data';
-            $statusCode            = 400;
-            $result['response']    = $result['response'].PHP_EOL."Failed to insert data for Abandonment Cart Lite plugin";
+            $response['status']    = true;
+            $response['message']   = 'No action performed';
+            $statusCode            = 200;
+            $result['response']    = $result['response'].PHP_EOL." no abandonment plugin configured";
             $logObj['response']    = $response;
             $logObj['status_code'] = $statusCode;
             rzpLogInfo(json_encode($logObj));
