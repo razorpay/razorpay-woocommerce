@@ -3,7 +3,7 @@ Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, curlec, malaysia, ecommerce, international, cross border
 Requires at least: 3.9.2
 Tested up to: 6.8
-Stable tag: 4.7.4
+Stable tag: 4.7.5
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -68,6 +68,11 @@ Razorpay is available for Store Owners and Merchants in
 * Switches from WooCommerce side currency conversion to Razorpay's native multi currency support.
 
 == Changelog ==
+
+= 4.7.5 =
+* Added instrumentation for alerts.
+* Fixed certificate issue in cron.
+* Fixed HPOS and signature verification issue in 1cc.
 
 = 4.7.4 =
 * Added cron instrumentation.
