@@ -1430,8 +1430,9 @@ function woocommerce_razorpay_init()
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'app_offer'       => ($order->get_discount_total() > 0) ? 1 : 0,
                 'notes'           => array(
-                    self::WC_ORDER_NUMBER  => (string) $orderId,
-                ),
+                    self::WC_ORDER_ID      => (string) $orderId,
+                    self::WC_ORDER_NUMBER  => (string) $order->get_order_number()
+                )
             );
 
             if ($this->getSetting('route_enable') == 'yes')
@@ -1578,7 +1579,7 @@ function woocommerce_razorpay_init()
         {
             $data["_"] = $this->getVersionMetaInfo($data);
 
-            $wooOrderId = $data['notes']['woocommerce_order_number'];
+            $wooOrderId = $data['notes']['woocommerce_order_id'];
 
             $redirectUrl = $this->getRedirectUrl($wooOrderId);
 
@@ -2130,7 +2131,7 @@ EOT;
             {
                 global $woocommerce;
 
-                $orderId = $order->get_order_number();
+                $orderId = $order->get_id();
 
                 rzpLogInfo("updateOrder orderId: $orderId , razorpayPaymentId: $razorpayPaymentId , success: $success");
 
@@ -2138,26 +2139,24 @@ EOT;
                 {
                     try
                     {
-                        $wcOrderId = $order->get_id();
-
                         if ($this->isHposEnabled) {
                             $is1ccOrder = $order->get_meta('is_magic_checkout_order');
                         }else{
-                            $is1ccOrder = get_post_meta($wcOrderId, 'is_magic_checkout_order', true);
+                            $is1ccOrder = get_post_meta($orderId, 'is_magic_checkout_order', true);
                         }
 
-                        rzpLogInfo("Order details check initiated step 1 for the orderId: $wcOrderId");
+                        rzpLogInfo("Order details check initiated step 1 for the orderId: $orderId");
 
                         if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
                         {
-                            rzpLogInfo("Order details update initiated step 1 for the orderId: $wcOrderId");
+                            rzpLogInfo("Order details update initiated step 1 for the orderId: $orderId");
 
                             //To verify whether the 1cc update order function already under execution or not
-                            if(get_transient('wc_order_under_process_'.$wcOrderId) === false)
+                            if(get_transient('wc_order_under_process_'.$orderId) === false)
                             {
-                                rzpLogInfo("Order details update initiated step 2 for the orderId: $wcOrderId");
+                                rzpLogInfo("Order details update initiated step 2 for the orderId: $orderId");
 
-                                $this->update1ccOrderWC($order, $wcOrderId, $razorpayPaymentId);
+                                $this->update1ccOrderWC($order, $orderId, $razorpayPaymentId);
                             }
 
                         }
@@ -2193,9 +2192,7 @@ EOT;
                     {
                         $razorpayRoute = new RZP_Route_Action();
 
-                        $wcOrderId = $order->get_id();
-
-                        $razorpayRoute->transferFromPayment($wcOrderId, $razorpayPaymentId); // creates transfers from payment
+                        $razorpayRoute->transferFromPayment($orderId, $razorpayPaymentId); // creates transfers from payment
                     }
 
                     if($virtualAccountId != null)
@@ -2895,7 +2892,7 @@ EOT;
 
         protected function handleErrorCase($order)
         {
-            $orderId = $order->get_order_number();
+            $orderId = $order->get_id();
             rzpLogInfo('handleErrorCase');
             $this->msg['class'] = 'error';
             $this->msg['message'] = $this->getErrorMessage($orderId);
