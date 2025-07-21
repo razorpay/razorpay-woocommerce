@@ -96,7 +96,7 @@ class RZP_Webhook
 
         if (empty($data['event']) === false) {
 
-            $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+            $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
             $razorpayOrderId = $data['payload']['payment']['entity']['order_id'];
 
             if (in_array($data['event'], $this->subscriptionEvents) === true)
@@ -153,7 +153,7 @@ class RZP_Webhook
                     case self::PAYMENT_AUTHORIZED:
                         $webhookFilteredData = [
                             'invoice_id'                => $data['payload']['payment']['entity']['invoice_id'],
-                            'woocommerce_order_number'  => $data['payload']['payment']['entity']['notes']['woocommerce_order_number'],
+                            'woocommerce_order_id'  => $data['payload']['payment']['entity']['notes']['woocommerce_order_id'],
                             'razorpay_payment_id'       => $data['payload']['payment']['entity']['id'],
                             'event'                     => $data['event']
                         ];
@@ -205,7 +205,7 @@ class RZP_Webhook
 
             $integration = "woocommerce";
 
-            $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $data['woocommerce_order_number'] . " AND rzp_order_id='" . $rzpOrderId . "';");
+            $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $data['woocommerce_order_id'] . " AND rzp_order_id='" . $rzpOrderId . "';");
 
             $rzpWebhookData = (array) json_decode($webhookEvents['rzp_webhook_data']);
 
@@ -219,11 +219,11 @@ class RZP_Webhook
                 ),
                 array(
                     'integration'   => $integration,
-                    'order_id'      => $data['woocommerce_order_number'],
+                    'order_id'      => $data['woocommerce_order_id'],
                     'rzp_order_id'  => $rzpOrderId
                 )
             );
-            rzpLogInfo("webhook event saved for order:" . $data['woocommerce_order_number']);
+            rzpLogInfo("webhook event saved for order:" . $data['woocommerce_order_id']);
         }
         catch (Exception $e)
         {
@@ -298,7 +298,7 @@ class RZP_Webhook
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $data['woocommerce_order_number'];
+        $orderId = $data['woocommerce_order_id'];
 
         rzpLogInfo("Woocommerce orderId: $orderId, webhook process intitiated for payment authorized event by cron");
 
@@ -406,7 +406,7 @@ class RZP_Webhook
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process intitiated for COD method payment pending event");
 
@@ -471,7 +471,7 @@ class RZP_Webhook
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_number'];
+        $orderId = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
         if (!empty($orderId)) {
             $order = $this->checkIsObject($orderId);
@@ -576,7 +576,7 @@ class RZP_Webhook
     {
         if ((isset($data['event']) === true) and
             (in_array($data['event'], $this->eventsArray) === true) and
-            (isset($data['payload']['payment']['entity']['notes']['woocommerce_order_number']) === true or isset($data['payload']['subscription']['entity']['notes']['woocommerce_order_id']) === true)) {
+            (isset($data['payload']['payment']['entity']['notes']['woocommerce_order_id']) === true or isset($data['payload']['subscription']['entity']['notes']['woocommerce_order_id']) === true)) {
             return true;
         }
 
@@ -629,7 +629,7 @@ class RZP_Webhook
         //
         // Order entity should be sent as part of the webhook payload
         //
-        $orderId = $payment['notes']['woocommerce_order_number'];
+        $orderId = $payment['notes']['woocommerce_order_id'];
 
         if (!empty($orderId)) {
             $order = $this->checkIsObject($orderId);
