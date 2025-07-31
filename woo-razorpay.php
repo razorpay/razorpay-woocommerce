@@ -3375,12 +3375,27 @@ function enqueueScriptsFor1cc()
     wp_enqueue_script('btn_1cc_checkout');
 }
 
+// Enqueue scripts for cart block 1CC 
+function enqueueCartBlockScriptsFor1cc()
+{
+    if (is_cart() && has_block('woocommerce/cart')) {
+        // Enqueue main 1CC scripts
+        enqueueScriptsFor1cc();
+        
+        // Enqueue cart block specific script
+        wp_register_script('cart_block_1cc', plugin_dir_url(__FILE__) . 'public/js/cart-block-1cc.js', array('jquery'), null, true);
+        wp_enqueue_script('cart_block_1cc');
+    }
+}
+
 //To add 1CC button on cart page.
 add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 
 if(isRazorpayPluginEnabled() && is1ccEnabled()) {
    add_action('wp_head', 'injectMerchantKeyMeta', 1);
    add_action('wp_head', 'addRzpSpinner');
+   // Add support for cart blocks
+   add_action( 'wp_footer', 'addCartBlockSupport');
 }
 
 function addCheckoutButton()
@@ -3404,6 +3419,32 @@ function addCheckoutButton()
   {
     return;
   }
+}
+
+function addCartBlockSupport()
+{
+    if (is_cart() && has_block('woocommerce/cart')) 
+    {
+        if (isTestModeEnabled()) {
+            $current_user = wp_get_current_user();
+            if (!($current_user->has_cap('administrator') || preg_match('/@razorpay.com$/i', $current_user->user_email))) {
+                return;
+            }
+        }
+        // Enqueue cart block specific scripts
+        enqueueCartBlockScriptsFor1cc();
+       ?>
+       <style type="text/css">
+       /* Hide default cart block buttons when Razorpay 1CC is active */
+       .wp-block-woocommerce-cart .wc-block-cart__submit-button:not(#btn-1cc),
+       .wp-block-woocommerce-cart .wc-block-components-checkout-button:not(#btn-1cc),
+       .wc-block-cart .wc-block-cart__submit-button:not(#btn-1cc),
+       .wc-block-cart .wc-block-components-checkout-button:not(#btn-1cc) {
+           display: none !important;
+       }
+       </style>
+       <?php
+    } 
 }
 
 //To add 1CC Mini cart checkout button
