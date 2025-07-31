@@ -1,5 +1,4 @@
 jQuery(document).ready(function($) {
-    console.log('🧱 Razorpay 1CC: Cart Block Support Initialized');
 
     let razorpayCartObserver;
 
@@ -38,9 +37,8 @@ jQuery(document).ready(function($) {
             checkoutButtonContainer.append(magicButton);
             attachMagicCheckoutListener();
 
-            console.log('✅ Razorpay 1CC: Magic checkout button added.');
         } catch (error) {
-            console.error('❌ Razorpay 1CC: Error adding button to cart block:', error);
+            console.error('Razorpay 1CC: Error adding button to cart block:', error);
         }
     }
 
@@ -101,7 +99,6 @@ jQuery(document).ready(function($) {
         $(document.body).on(
             'updated_wc_div updated_cart_totals wc_cart_button_updated wc_blocks_cart_update wc_blocks_cart_loaded',
             function () {
-                console.log('🔄 Razorpay 1CC: Cart updated or re-rendered');
                 setTimeout(addMagicCheckoutButtonToCartBlock, 100);
             }
         );
