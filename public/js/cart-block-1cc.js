@@ -25,7 +25,7 @@ jQuery(document).ready(function($) {
             const buttonLabel = originalButton.length ? originalButton.text().trim() : 'PROCEED TO CHECKOUT';
             const buttonClasses = originalButton.length
                 ? originalButton.attr('class')
-                : 'button alt wc-forward wc-block-cart__submit-button';
+                : 'wc-block-cart__submit-button';
 
             const magicButton = $('<button>', {
                 id: 'btn-1cc',
