@@ -61,36 +61,39 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Observes DOM changes and adds button if cart block is dynamically inserted.
+     * Observes both new elements and updates inside existing cart block (e.g., class changes, re-render)
      */
     function observeCartBlockInsertion() {
         if (!window.MutationObserver) return;
 
         razorpayCartObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    for (let node of mutation.addedNodes) {
-                        if (node.nodeType === 1) {
-                            const $node = $(node);
-                            if (
-                                $node.find('.wp-block-woocommerce-cart, .wc-block-cart').length > 0 ||
-                                $node.hasClass('wp-block-woocommerce-cart') ||
-                                $node.hasClass('wc-block-cart')
-                            ) {
-                                setTimeout(addMagicCheckoutButtonToCartBlock, 100);
-                                break;
-                            }
-                        }
+                // Check if new nodes are added or existing nodes are updated
+                if (
+                    mutation.type === 'childList' ||
+                    mutation.type === 'attributes'
+                ) {
+                    const targetNode = mutation.target;
+
+                    // Look for cart block container on every mutation (added or updated)
+                    if (
+                        $(targetNode).find('.wp-block-woocommerce-cart, .wc-block-cart').length > 0 ||
+                        $(targetNode).hasClass('wp-block-woocommerce-cart') ||
+                        $(targetNode).hasClass('wc-block-cart')
+                    ) {
+                        setTimeout(addMagicCheckoutButtonToCartBlock, 100);
                     }
                 }
             });
         });
 
         razorpayCartObserver.observe(document.body, {
-            childList: true,
-            subtree: true
+            childList: true,     // watch for new elements
+            subtree: true,       // deeply observe all child elements
+            attributes: true     // watch for attribute changes (like class updates)
         });
     }
+
 
     /**
      * Binds event listeners for cart updates (classic + block-based).
