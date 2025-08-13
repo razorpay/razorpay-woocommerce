@@ -3337,6 +3337,9 @@ define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/magic-checkout.js
 define('BTN_CHECKOUTJS_URL', 'https://cdn.razorpay.com/static/wooc/magic-rzp.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
+}, 0);
 
 function enqueueScriptsFor1cc()
 {
@@ -3360,8 +3363,6 @@ function enqueueScriptsFor1cc()
     );
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-    wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
-    wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
     wp_register_script('btn_1cc_checkout', BTN_CHECKOUTJS_URL, null, null);
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
@@ -3385,7 +3386,7 @@ if(isRazorpayPluginEnabled() && is1ccEnabled()) {
 
 function addCheckoutButton()
 {
-  add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
+  enqueueScriptsFor1cc();
 
   if (isRazorpayPluginEnabled() && is1ccEnabled() )
   {
@@ -3424,7 +3425,7 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
 
 function addMiniCheckoutButton()
 {
-    add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
+    enqueueScriptsFor1cc();
 
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
@@ -3465,7 +3466,7 @@ function addRzpSpinner()
 
 function addPdpCheckoutButton()
 {
-    add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
+    enqueueScriptsFor1cc();
 
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
