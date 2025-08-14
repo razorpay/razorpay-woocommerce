@@ -3337,9 +3337,6 @@ define('RZP_CHECKOUTJS_URL', 'https://checkout.razorpay.com/v1/magic-checkout.js
 define('BTN_CHECKOUTJS_URL', 'https://cdn.razorpay.com/static/wooc/magic-rzp.js');
 define('RZP_1CC_CSS_SCRIPT', 'RZP_1CC_CSS_SCRIPT');
 
-add_action('wp_enqueue_scripts', function () {
-    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
-}, 0);
 
 function enqueueScriptsFor1cc()
 {
@@ -3462,6 +3459,9 @@ function addRzpSpinner()
       $tempTest = RZP_PATH . 'templates/rzp-spinner.php';
       load_template( $tempTest, false, array() );
     }
+
+    // loading file as it contains spinner css
+    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
 }
 
 function addPdpCheckoutButton()
