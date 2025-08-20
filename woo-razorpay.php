@@ -2713,6 +2713,19 @@ EOT;
 
                 rzpLogInfo("updateOrderAddress function executed");
 
+                $email = $razorpayData['customer_details']['email'];
+
+                if (empty($email) === false)
+                {
+                    $user = get_user_by('email', $email);
+
+                    if ($user)
+                    {
+                        $user_id = $user->ID;
+                        $order->set_customer_id($user_id);
+                    }
+                }
+
                 $order->save();
             }
         }
