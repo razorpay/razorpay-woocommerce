@@ -3383,8 +3383,6 @@ if(isRazorpayPluginEnabled() && is1ccEnabled()) {
 
 function addCheckoutButton()
 {
-  enqueueScriptsFor1cc();
-
   if (isRazorpayPluginEnabled() && is1ccEnabled() )
   {
     if (isTestModeEnabled()) {
@@ -3413,8 +3411,6 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
         // Removing Buttons
         remove_action( 'woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20 );
 
-        add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
-
         add_action( 'woocommerce_widget_shopping_cart_buttons', 'addMiniCheckoutButton', 20 );
 
     }, 1 );
@@ -3422,8 +3418,6 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
 
 function addMiniCheckoutButton()
 {
-    enqueueScriptsFor1cc();
-
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
@@ -3466,8 +3460,6 @@ function addRzpSpinner()
 
 function addPdpCheckoutButton()
 {
-    enqueueScriptsFor1cc();
-
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
@@ -3510,7 +3502,6 @@ function disable_coupon_field_on_cart($enabled)
 if(is1ccEnabled())
 {
     add_filter('woocommerce_coupons_enabled', 'disable_coupon_field_on_cart');
-    add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
 
@@ -3522,3 +3513,13 @@ function cartbounty_alter_automation_button( $button ){
 if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
     add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
 }
+
+function enqueueScriptsFor1ccConditionally()
+{
+    if (class_exists('WooCommerce') and
+        (is_woocommerce() || is_product() || is_cart()))
+    {
+        enqueueScriptsFor1cc();
+    }
+}
+add_action('wp_enqueue_scripts', 'enqueueScriptsFor1ccConditionally');
