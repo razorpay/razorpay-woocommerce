@@ -3379,6 +3379,17 @@ add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 if(isRazorpayPluginEnabled() && is1ccEnabled()) {
    add_action('wp_head', 'injectMerchantKeyMeta', 1);
    add_action('wp_head', 'addRzpSpinner');
+   add_action('wp_enqueue_scripts', 'enqueueScriptsFor1ccConditionally');
+}
+
+function enqueueScriptsFor1ccConditionally()
+{
+    if (class_exists('WooCommerce'))
+    {
+        enqueueScriptsFor1cc();
+    }
+    // loading file as it contains spinner css
+    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
 }
 
 function addCheckoutButton()
@@ -3511,14 +3522,3 @@ if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
     add_filter( 'cartbounty_automation_button_html', 'cartbounty_alter_automation_button' );
 }
 
-function enqueueScriptsFor1ccConditionally()
-{
-    if (is1ccEnabled() and
-        class_exists('WooCommerce'))
-    {
-        enqueueScriptsFor1cc();
-    }
-    // loading file as it contains spinner css
-    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
-}
-add_action('wp_enqueue_scripts', 'enqueueScriptsFor1ccConditionally');
