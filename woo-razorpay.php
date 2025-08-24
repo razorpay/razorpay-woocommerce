@@ -3453,9 +3453,6 @@ function addRzpSpinner()
       $tempTest = RZP_PATH . 'templates/rzp-spinner.php';
       load_template( $tempTest, false, array() );
     }
-
-    // loading file as it contains spinner css
-    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
 }
 
 function addPdpCheckoutButton()
@@ -3516,10 +3513,12 @@ if(is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
 
 function enqueueScriptsFor1ccConditionally()
 {
-    if (class_exists('WooCommerce') and
-        (is_woocommerce() || is_product() || is_cart()))
+    if (is1ccEnabled() and
+        class_exists('WooCommerce'))
     {
         enqueueScriptsFor1cc();
     }
+    // loading file as it contains spinner css
+    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
 }
 add_action('wp_enqueue_scripts', 'enqueueScriptsFor1ccConditionally');
