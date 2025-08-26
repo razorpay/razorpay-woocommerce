@@ -3373,8 +3373,6 @@ function enqueueScriptsFor1cc()
     );
     wp_register_script('1cc_razorpay_checkout', RZP_CHECKOUTJS_URL, null, null);
     wp_enqueue_script('1cc_razorpay_checkout');
-    wp_register_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', null, null);
-    wp_enqueue_style(RZP_1CC_CSS_SCRIPT);
 
     wp_register_script('btn_1cc_checkout', BTN_CHECKOUTJS_URL, null, null);
     wp_localize_script('btn_1cc_checkout', 'rzp1ccCheckoutData', array(
@@ -3394,12 +3392,21 @@ add_action( 'woocommerce_proceed_to_checkout', 'addCheckoutButton');
 if(isRazorpayPluginEnabled() && is1ccEnabled()) {
    add_action('wp_head', 'injectMerchantKeyMeta', 1);
    add_action('wp_head', 'addRzpSpinner');
+   add_action('wp_enqueue_scripts', 'enqueueScriptsFor1ccConditionally');
+}
+
+function enqueueScriptsFor1ccConditionally()
+{
+    if (class_exists('WooCommerce'))
+    {
+        enqueueScriptsFor1cc();
+    }
+    // loading file as it contains spinner css
+    wp_enqueue_style(RZP_1CC_CSS_SCRIPT, plugin_dir_url(__FILE__)  . 'public/css/1cc-product-checkout.css', [], null);
 }
 
 function addCheckoutButton()
 {
-  add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
-
   if (isRazorpayPluginEnabled() && is1ccEnabled() )
   {
     if (isTestModeEnabled()) {
@@ -3428,8 +3435,6 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
         // Removing Buttons
         remove_action( 'woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20 );
 
-        add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
-
         add_action( 'woocommerce_widget_shopping_cart_buttons', 'addMiniCheckoutButton', 20 );
 
     }, 1 );
@@ -3437,8 +3442,6 @@ if(isRazorpayPluginEnabled() && is1ccEnabled() && isMiniCartCheckoutEnabled())
 
 function addMiniCheckoutButton()
 {
-    add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
-
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
@@ -3478,8 +3481,6 @@ function addRzpSpinner()
 
 function addPdpCheckoutButton()
 {
-    add_action('wp_enqueue_scripts', 'enqueueScriptsFor1cc', 0);
-
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
@@ -3522,7 +3523,6 @@ function disable_coupon_field_on_cart($enabled)
 if(is1ccEnabled())
 {
     add_filter('woocommerce_coupons_enabled', 'disable_coupon_field_on_cart');
-    add_action('woocommerce_cart_updated', 'enqueueScriptsFor1cc', 10);
     add_filter('woocommerce_order_needs_shipping_address', '__return_true');
 }
 
