@@ -3421,6 +3421,7 @@ function addCheckoutButton()
   }
 }
 
+// Adds Magic Checkout button on WooCommerce Cart Block pages
 function addCartBlockSupport()
 {
     if (is_cart() && has_block('woocommerce/cart')) 
