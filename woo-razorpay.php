@@ -3390,9 +3390,6 @@ function enqueueScriptsFor1cc()
 function enqueueCartBlockScriptsFor1cc()
 {
     if (is_cart() && has_block('woocommerce/cart')) {
-        // Enqueue main 1CC scripts
-        enqueueScriptsFor1cc();
-        
         // Enqueue cart block specific script
         wp_register_script('cart_block_1cc', plugin_dir_url(__FILE__) . 'public/js/cart-block-1cc.js', array('jquery'), null, true);
         wp_enqueue_script('cart_block_1cc');
