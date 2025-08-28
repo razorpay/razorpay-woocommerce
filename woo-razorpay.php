@@ -34,11 +34,14 @@ require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php'
 require_once __DIR__.'/includes/cron/cron.php';
 require_once __DIR__.'/includes/cron/plugin-fetch.php';
 require_once ABSPATH . '/wp-admin/includes/upgrade.php';
+require_once __DIR__.'/includes/Errors/ErrorCode.php';
+require_once __DIR__.'/includes/support/woocs-multicurrency.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
+use Razorpay\Woocommerce\Errors as WooErrors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
@@ -1184,10 +1187,16 @@ function woocommerce_razorpay_init()
             } 
             $productinfo = "Order $orderId";
 
+            $currency = self::INR;
+            if ($order->get_currency() !== $currency)
+            {
+                $currency = $this->getOrderCurrency($order);
+            }
+
             return array(
                 'key'          => $this->getSetting('key_id'),
                 'name'         => html_entity_decode(get_bloginfo('name'), ENT_QUOTES),
-                'currency'     => self::INR,
+                'currency'     => $currency,
                 'description'  => $productinfo,
                 'notes'        => array(
                     self::WC_ORDER_ID       => $wcOrderId,
@@ -1463,7 +1472,7 @@ function woocommerce_razorpay_init()
         public function orderArg1CC($data, $order)
         {
             // TODO: trim to 2 deciamls
-            $data['line_items_total'] = $order->get_total()*100;
+            $data['line_items_total'] = (int) round($order->get_total()*100);
 
             $i = 0;
             // Get and Loop Over Order Items
