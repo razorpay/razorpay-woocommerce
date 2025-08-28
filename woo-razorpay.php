@@ -34,14 +34,12 @@ require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php'
 require_once __DIR__.'/includes/cron/cron.php';
 require_once __DIR__.'/includes/cron/plugin-fetch.php';
 require_once ABSPATH . '/wp-admin/includes/upgrade.php';
-require_once __DIR__.'/includes/Errors/ErrorCode.php';
 require_once __DIR__.'/includes/support/woocs-multicurrency.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
-use Razorpay\Woocommerce\Errors as WooErrors;
 
 add_action('plugins_loaded', 'woocommerce_razorpay_init', 0);
 add_action('admin_post_nopriv_rzp_wc_webhook', 'razorpay_webhook_init', 10);
