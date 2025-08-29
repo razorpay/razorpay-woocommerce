@@ -233,34 +233,32 @@ function getCartLineItem()
        $data[$i]['product_id'] = $item['product_id'];
        $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
-        if (function_exists('is_plugin_active') && is_plugin_active('woocommerce-currency-switcher/index.php')) {
-            $regularMinor = (int) round((float) $productDetails['regular_price'] * 100);
+
+       if (razorpay_is_woocs_multiple_allowed_enabled()) 
+       {
             global $WOOCS;
-            $targetCurrency = (isset($WOOCS) && !empty($WOOCS->current_currency)) ? $WOOCS->current_currency : get_woocommerce_currency();
-
-            // Minimal order-like object so currencyConvert knows target currency
-            $orderLike = new class($targetCurrency) {
-                private $currency;
-                public function __construct($currency) { $this->currency = $currency; }
-                public function get_currency() { return $this->currency; }
-            };
-
-            $data[$i]['price'] = currencyConvert($regularMinor, $orderLike);
-        } else {
+            $regularMinor       = (int) round((float) $productDetails['regular_price'] * 100);
+            $targetCurrency     = (isset($WOOCS) && !empty($WOOCS->current_currency)) ? $WOOCS->current_currency : get_woocommerce_currency();
+            $data[$i]['price']  = razorpay_currency_convert($regularMinor, $targetCurrency);
+       } 
+       else 
+       {
             $data[$i]['price'] = (empty($productDetails['price']) === false) ? (int)$productDetails['price'] * 100 / $item['quantity'] : 0;
-        }
+       }
+
        $data[$i]['variant_id'] = $item['variation_id'];
-       if (function_exists('is_plugin_active') && is_plugin_active('woocommerce-currency-switcher/index.php') 
-            && get_option('woocs_is_multiple_allowed', 0) == 1 && (empty($productDetails['sale_price']) === false)) 
+
+       if (razorpay_is_woocs_multiple_allowed_enabled() && (empty($productDetails['sale_price']) === false)) 
        {
             $data[$i]['offer_price'] = (empty($productDetails['sale_price']) === false)
             ? (int) round(((((float) $item['line_total']) + ((float) $item['line_tax'])) / max(1, (int) $item['quantity'])) * 100)
             : (int) round(((((float) $item['line_subtotal']) + ((float) $item['line_subtotal_tax'])) / max(1, (int) $item['quantity'])) * 100);
-        } 
-        else 
-        {
+       } 
+       else 
+       {
             $data[$i]['offer_price'] = (empty($productDetails['sale_price']) === false) ? (int)$productDetails['sale_price'] * 100 : $price / $item['quantity'];
-        }
+       }
+       
        if ($data[$i]['price'] < $data[$i]['offer_price']) {
            $data[$i]['price'] = $data[$i]['offer_price'];
        }

@@ -216,14 +216,13 @@ function applyCouponOnCart(WP_REST_Request $request)
         $promotion["reference_id"] = $couponCode;
         $promotion["value"]        = round($discountAmount ?? 0);
         $response["promotion"]     = $promotion;
-        if(is_plugin_active('woocommerce-currency-switcher/index.php')){ 
-			$is_multiple_allowed = get_option('woocs_is_multiple_allowed', 0);
-			if($is_multiple_allowed==1){
-				$order                          = wc_get_order($orderId);
-				$response['promotion']['value'] = currencyConvert($response['promotion']['value'],$order);
-			}
-		}
-        
+
+        if(razorpay_is_woocs_multiple_allowed_enabled())
+        {
+            $order                          = wc_get_order($orderId);
+            $response['promotion']['value'] = razorpay_currency_convert($response['promotion']['value'], $order->get_currency());
+        }
+
         if ($couponError["failure_reason"] === "") {
             $logObj["response"] = $response;
             rzpLogInfo(json_encode($logObj));

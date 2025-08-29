@@ -95,13 +95,13 @@ function calculateShipping1cc(WP_REST_Request $request)
 
         // Cleanup cart.
         WC()->cart->empty_cart();
-        if(is_plugin_active('woocommerce-currency-switcher/index.php')){ 
-            $is_multiple_allowed = get_option('woocs_is_multiple_allowed', 0);
-            if($is_multiple_allowed==1){
+        
+        if(razorpay_is_woocs_multiple_allowed_enabled())
+        {
               $order                             = wc_get_order($orderId);
-              $response['0']['shipping_fee']     = currencyConvert($response['0']['shipping_fee'],$order);
-          }
+              $response['0']['shipping_fee']     = razorpay_currency_convert($response['0']['shipping_fee'], $order->get_currency());
         }
+        
         $logObj['response'] = $response;
         rzpLogInfo(json_encode($logObj));
         return new WP_REST_Response(array('addresses' => $response), 200);

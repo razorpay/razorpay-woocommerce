@@ -1,18 +1,30 @@
 <?php
-function currencyConvert($amountInPaise,$order){
-    global $WOOCS;
-    $orderCurrency = getOrderCurrencyCS($order);
-    $currencies    = $WOOCS->get_currencies();
-    $orderRate     = $currencies[$orderCurrency]['rate'];
-    return round($orderRate*$amountInPaise,0);
-}
-
-function getOrderCurrencyCS($order)
+// WOOCS plugin active and multiple allowed flag
+function razorpay_is_woocs_multiple_allowed_enabled()
 {
-    if (version_compare(WOOCOMMERCE_VERSION, '2.7.0', '>='))
-     {
-        return $order->get_currency();
-     }
+    if (is_plugin_active('woocommerce-currency-switcher/index.php')) 
+    {
+        return ((int) get_option('woocs_is_multiple_allowed', 0)) === 1;
+    }
 
-  return $order->get_order_currency();
+    return false;
 }
+
+// Convert amount from base currency (paise) to target order currency using WOOCS rates
+function razorpay_currency_convert($amountInPaise, $orderCurrency)
+{
+    global $WOOCS;
+    if (!isset($WOOCS)) 
+    {
+        return $amountInPaise; // fallback if WOOCS not available
+    }
+
+    $currencies    = $WOOCS->get_currencies();
+    if (!isset($currencies[$orderCurrency])) 
+    {
+        return $amount_in_paise; // fallback if currency not found
+    }
+
+    $orderRate     = $currencies[$orderCurrency]['rate'];
+    return round($orderRate * $amountInPaise, 0);
+} 
