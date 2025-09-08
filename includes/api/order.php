@@ -82,6 +82,16 @@ function createWcOrder(WP_REST_Request $request)
 
             if (is_wp_error($orderId)) {
                 $checkout_error = $orderId->get_error_message();
+                rzpLogError("WooCommerce Order Creation Failed: " . $checkout_error);
+
+                $response = [
+                    'status'  => false,
+                    'message' => "Unable to create WooCommerce order: " . $checkout_error,
+                    'code'    => 'ORDER_CREATION_FAILED',
+                ];
+                $status = 500;
+
+                return new WP_REST_Response($response, $status);
             }
             //Keep order in draft status untill customer info available
             updateOrderStatus($orderId, $updateOrderStatus);
