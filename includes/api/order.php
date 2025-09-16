@@ -80,8 +80,8 @@ function createWcOrder(WP_REST_Request $request)
             $checkout = WC()->checkout();
             $orderId  = $checkout->create_order(array());
 
-            if (is_wp_error($orderId)) {
-                $checkout_error = $orderId->get_error_message();
+            if (is_wp_error($orderId) || empty($orderId)) {
+                $checkout_error = is_wp_error($orderId) ? $orderId->get_error_message() : "Invalid order ID returned";
                 rzpLogError("WooCommerce Order Creation Failed: " . $checkout_error);
 
                 $response = [
@@ -104,8 +104,8 @@ function createWcOrder(WP_REST_Request $request)
                 $checkout = WC()->checkout();
                 $orderId  = $checkout->create_order(array());
 
-                if (is_wp_error($orderId)) {
-                    $checkout_error = $orderId->get_error_message();
+                if (is_wp_error($orderId) || empty($orderId)) {
+                    $checkout_error = is_wp_error($orderId) ? $orderId->get_error_message() : "Invalid order ID returned";
                     rzpLogError("WooCommerce Order Creation Failed: " . $checkout_error);
 
                     $response = [
