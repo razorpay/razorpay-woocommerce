@@ -4,7 +4,7 @@
  */
 
 // Fetch cart data on cart and mini cart page
-
+require_once __DIR__ . '/../support/woocs-multicurrency.php';
 use Automattic\WooCommerce\Utilities\OrderUtil;
 
 function fetchCartData(WP_REST_Request $request)
@@ -233,9 +233,32 @@ function getCartLineItem()
        $data[$i]['product_id'] = $item['product_id'];
        $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
-       $data[$i]['price'] = (empty($productDetails['price']) === false) ? (int)$productDetails['price'] * 100 / $item['quantity'] : 0;
+
+       if (razorpay_is_woocs_multiple_allowed_enabled()) 
+       {
+            global $WOOCS;
+            $regularMinor       = (int) round((float) $productDetails['regular_price'] * 100);
+            $targetCurrency     = (isset($WOOCS) && !empty($WOOCS->current_currency)) ? $WOOCS->current_currency : get_woocommerce_currency();
+            $data[$i]['price']  = razorpay_currency_convert($regularMinor, $targetCurrency);
+       } 
+       else 
+       {
+            $data[$i]['price'] = (empty($productDetails['price']) === false) ? (int)$productDetails['price'] * 100 / $item['quantity'] : 0;
+       }
+
        $data[$i]['variant_id'] = $item['variation_id'];
-       $data[$i]['offer_price'] = (empty($productDetails['sale_price']) === false) ? (int)$productDetails['sale_price'] * 100 : $price / $item['quantity'];
+
+       if (razorpay_is_woocs_multiple_allowed_enabled() && (empty($productDetails['sale_price']) === false)) 
+       {
+            $data[$i]['offer_price'] = (empty($productDetails['sale_price']) === false)
+            ? (int) round(((((float) $item['line_total']) + ((float) $item['line_tax'])) / max(1, (int) $item['quantity'])) * 100)
+            : (int) round(((((float) $item['line_subtotal']) + ((float) $item['line_subtotal_tax'])) / max(1, (int) $item['quantity'])) * 100);
+       } 
+       else 
+       {
+            $data[$i]['offer_price'] = (empty($productDetails['sale_price']) === false) ? (int)$productDetails['sale_price'] * 100 : $price / $item['quantity'];
+       }
+       
        if ($data[$i]['price'] < $data[$i]['offer_price']) {
            $data[$i]['price'] = $data[$i]['offer_price'];
        }
@@ -297,7 +320,7 @@ function cartResponse($couponCode){
     $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
     $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
 
-    $response += ['redirect' => true, 'one_click_checkout' => true, 'mandatory_login' => false, 'key' => get_option('woocommerce_razorpay_settings')['key_id'], 'name' => html_entity_decode(get_bloginfo('name'), ENT_QUOTES), 'currency' => 'INR'];
+    $response += ['redirect' => true, 'one_click_checkout' => true, 'mandatory_login' => false, 'key' => get_option('woocommerce_razorpay_settings')['key_id'], 'name' => html_entity_decode(get_bloginfo('name'), ENT_QUOTES), 'currency' => get_woocommerce_currency()];
 
     return $response;
 }
