@@ -3520,6 +3520,11 @@ function addRzpSpinner()
 
 function addPdpCheckoutButton()
 {
+    // Runs only on the main single product page (not loops, quick view, or upsells)
+    if ( ! is_product() || ! did_action( 'woocommerce_before_single_product' ) ) {
+        return;
+    }
+
     if (isTestModeEnabled()) {
       $current_user = wp_get_current_user();
       if ($current_user->has_cap( 'administrator' ) || preg_match( '/@razorpay.com$/i', $current_user->user_email )) {
