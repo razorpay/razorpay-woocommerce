@@ -2983,6 +2983,18 @@ EOT;
                 $order_item->set_total($total - $discount_total);
                 $order_item->save();
             }
+
+            // Apply Smart Coupon if allowed for selected payment method (e.g., Razorpay)
+            if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
+				try 
+				{
+                    smart_coupon_payment_restriction($couponKey);
+				} 
+				catch ( Throwable $e ) 
+				{
+                    rzpLogError('Smart Coupon restricted by payment method  : ' . $e->getMessage());
+				}
+			}
             // TODO: Test if individual use coupon fails by hardcoding here
             $isApplied = $order->apply_coupon($couponKey);
             $order->save();
