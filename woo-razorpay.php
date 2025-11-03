@@ -2988,7 +2988,7 @@ EOT;
             if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
 				try 
 				{
-                    smart_coupon_payment_restriction($couponKey);
+                    smartCouponPaymentRestriction($couponKey);
 				} 
 				catch ( Throwable $e ) 
 				{

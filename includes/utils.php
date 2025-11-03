@@ -116,7 +116,7 @@ function validateInput($route, $param)
     return $failure_reason;
 }
 //Support for smart coupon plugin - restricted by payment method options
-function smart_coupon_payment_restriction($couponCode){
+function smartCouponPaymentRestriction($couponCode){
     $coupon = new WC_Coupon($couponCode);
 
     // Get payment methods meta

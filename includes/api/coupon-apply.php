@@ -56,7 +56,7 @@ function applyCouponOnCart(WP_REST_Request $request)
             // Apply Smart Coupon if allowed for selected payment method (e.g., Razorpay)
             try 
 			{
-                smart_coupon_payment_restriction($couponCode);
+                smartCouponPaymentRestriction($couponCode);
 			} 
 			catch ( Throwable $e ) 
 			{
