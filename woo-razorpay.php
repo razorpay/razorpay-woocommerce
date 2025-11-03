@@ -34,6 +34,8 @@ require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php'
 require_once __DIR__.'/includes/cron/cron.php';
 require_once __DIR__.'/includes/cron/plugin-fetch.php';
 require_once ABSPATH . '/wp-admin/includes/upgrade.php';
+require_once __DIR__.'/includes/support/smart-coupons.php';
+
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
