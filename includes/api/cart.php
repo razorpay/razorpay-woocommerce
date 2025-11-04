@@ -205,7 +205,18 @@ function getCartLineItem()
 
         $type = "e-commerce";
         $productDetails = $product->get_data();
+        $sku          = $product->get_sku();
+        $productImage = $product->get_image_id()?? null;
 
+        // If variation exists, use its image and SKU instead of parent product
+        if (!empty($item['variation_id'])) {
+			$variation_id = (int) $item['variation_id'];
+			$variation = wc_get_product( $variation_id );
+			if ( $variation && $variation->is_type( 'variation' ) ) {
+				$productImage = $variation->get_image_id();
+				$sku          = $variation->get_sku() ?: $sku;
+			}
+       	}
        // check product type for gift card plugin
        if(is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php') || is_plugin_active('yith-woocommerce-gift-cards/init.php')){
            if($product->is_type('variation')){
@@ -225,13 +236,12 @@ function getCartLineItem()
        }
 
        $data[$i]['type'] = $type;
-       $data[$i]['sku'] = $product->get_sku();
+       $data[$i]['sku']  = $sku;
        $data[$i]['quantity'] = $item['quantity'];
        $data[$i]['name'] = mb_substr($product->get_title(), 0, 125, "UTF-8");
        $data[$i]['description'] = mb_substr($product->get_title(), 0, 250,"UTF-8");
-       $productImage = $product->get_image_id()?? null;
        $data[$i]['product_id'] = $item['product_id'];
-       $data[$i]['image_url'] = $productImage? wp_get_attachment_url( $productImage ) : null;
+       $data[$i]['image_url']  = $productImage? wp_get_attachment_url( $productImage ) : null;
        $data[$i]['product_url'] = $product->get_permalink();
        $data[$i]['price'] = (empty($productDetails['price']) === false) ? (int)$productDetails['price'] * 100 / $item['quantity'] : 0;
        $data[$i]['variant_id'] = $item['variation_id'];
