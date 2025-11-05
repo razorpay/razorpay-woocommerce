@@ -3,6 +3,7 @@
 /**
  * for coupon related API
  */
+require_once __DIR__ . '/../support/woocs-multicurrency.php';
 
 function applyCouponOnCart(WP_REST_Request $request)
 {
@@ -215,6 +216,12 @@ function applyCouponOnCart(WP_REST_Request $request)
         $promotion["reference_id"] = $couponCode;
         $promotion["value"]        = round($discountAmount ?? 0);
         $response["promotion"]     = $promotion;
+
+        if(razorpay_is_woocs_multiple_allowed_enabled())
+        {
+            $order                          = wc_get_order($orderId);
+            $response['promotion']['value'] = razorpay_currency_convert($response['promotion']['value'], $order->get_currency());
+        }
 
         if ($couponError["failure_reason"] === "") {
             $logObj["response"] = $response;

@@ -7,6 +7,7 @@
  * @return array|WP_Error|WP_REST_Response
  * @throws Exception If failed to add items to cart or no shipping options available for address.
  */
+require_once __DIR__ . '/../support/woocs-multicurrency.php';
 use Automattic\WooCommerce\Utilities\OrderUtil;
 
 function calculateShipping1cc(WP_REST_Request $request)
@@ -94,6 +95,13 @@ function calculateShipping1cc(WP_REST_Request $request)
 
         // Cleanup cart.
         WC()->cart->empty_cart();
+        
+        if(razorpay_is_woocs_multiple_allowed_enabled())
+        {
+              $order                             = wc_get_order($orderId);
+              $response['0']['shipping_fee']     = razorpay_currency_convert($response['0']['shipping_fee'], $order->get_currency());
+        }
+        
         $logObj['response'] = $response;
         rzpLogInfo(json_encode($logObj));
         return new WP_REST_Response(array('addresses' => $response), 200);
