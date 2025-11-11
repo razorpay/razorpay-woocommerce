@@ -3,7 +3,7 @@
 /**
  * for coupon related API
  */
-require_once __DIR__.'/../support/smart-coupon.php';
+require_once __DIR__.'/../support/smart-coupons.php';
 
 function applyCouponOnCart(WP_REST_Request $request)
 {
