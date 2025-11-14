@@ -3,6 +3,7 @@
 /**
  * for coupon related API
  */
+require_once __DIR__.'/../support/smart-coupons.php';
 
 function applyCouponOnCart(WP_REST_Request $request)
 {
@@ -46,12 +47,22 @@ function applyCouponOnCart(WP_REST_Request $request)
         // initializes the session
         initCustomerSessionAndCart();
 
-        // Set current user for smart coupon plugin
         if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
+            // Set current user for smart coupon plugin
             if (empty($email) === false) {
                 $user = get_user_by('email', $email);
                 wp_set_current_user($user->id);
             }
+
+            // Apply Smart Coupon if allowed for selected payment method (e.g., Razorpay)
+            try 
+			{
+                smartCouponPaymentRestriction($couponCode);
+			} 
+			catch ( Throwable $e ) 
+			{
+				rzpLogError('Smart Coupon restricted by payment method  : ' . $e->getMessage());
+			}
         }
 
         // check for individual specific coupons
