@@ -153,7 +153,7 @@ class RZP_Webhook
                     case self::PAYMENT_AUTHORIZED:
                         $webhookFilteredData = [
                             'invoice_id'                => $data['payload']['payment']['entity']['invoice_id'],
-                            'woocommerce_order_id'  => $data['payload']['payment']['entity']['notes']['woocommerce_order_id'],
+                            'woocommerce_order_id'      => $data['payload']['payment']['entity']['notes']['woocommerce_order_id'],
                             'razorpay_payment_id'       => $data['payload']['payment']['entity']['id'],
                             'event'                     => $data['event']
                         ];
@@ -295,20 +295,20 @@ class RZP_Webhook
             return;
         }
 
-        //
-        // Order entity should be sent as part of the webhook payload
-        //
+        if (empty($data['woocommerce_order_id'])) {
+            rzpLogInfo("woocommerce_order_id not found in data:" . json_encode($data));
+            return;
+        }
+
         $orderId = $data['woocommerce_order_id'];
 
-        rzpLogInfo("Woocommerce orderId: $orderId, webhook process intitiated for payment authorized event by cron");
+        rzpLogInfo("Woocommerce orderId: $orderId, webhook process initiated for payment authorized event by cron");
 
-        if (!empty($orderId)) {
-            $order = $this->checkIsObject($orderId);
 
-            if ($order === false)
-            {
-                return;
-            }
+        $order = $this->checkIsObject($orderId);
+        if ($order === false)
+        {
+            return;
         }
 
         $orderStatus = $order->get_status();

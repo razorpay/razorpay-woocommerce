@@ -322,6 +322,11 @@ function createWcOrder(WP_REST_Request $request)
 function updateOrderStatus($orderId, $orderStatus)
 {
     $order = wc_get_order( $orderId );
+
+    if (is_object($order) === false) {
+        return;
+    }
+
     if (isHposEnabled()) {
         $order->update_status($orderStatus);
         $order->save();
