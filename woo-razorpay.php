@@ -34,6 +34,7 @@ require_once __DIR__.'/includes/cron/one-click-checkout/one-cc-address-sync.php'
 require_once __DIR__.'/includes/cron/cron.php';
 require_once __DIR__.'/includes/cron/plugin-fetch.php';
 require_once ABSPATH . '/wp-admin/includes/upgrade.php';
+require_once __DIR__.'/includes/support/smart-coupons.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -2983,6 +2984,18 @@ EOT;
                 $order_item->set_total($total - $discount_total);
                 $order_item->save();
             }
+
+            // Apply Smart Coupon if allowed for selected payment method (e.g., Razorpay)
+            if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
+				try 
+				{
+                    smartCouponPaymentRestriction($couponKey);
+				} 
+				catch ( Throwable $e ) 
+				{
+                    rzpLogError('Smart Coupon restricted by payment method  : ' . $e->getMessage());
+				}
+			}
             // TODO: Test if individual use coupon fails by hardcoding here
             $isApplied = $order->apply_coupon($couponKey);
             $order->save();
