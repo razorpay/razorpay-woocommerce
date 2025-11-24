@@ -6,7 +6,7 @@ class Test_Plugin_Metadata extends WP_UnitTestCase
     {
         $pluginData = get_plugin_data(PLUGIN_DIR . '/woo-razorpay.php');
 
-        $this->assertSame('1 Razorpay: Signup for FREE PG', $pluginData['Name']);
+        $this->assertSame('1 Razorpay', $pluginData['Name']);
 
         $version = $pluginData['Version'];
         $v = explode(".", $version);

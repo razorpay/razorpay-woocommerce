@@ -256,7 +256,7 @@ class Test_Instrumentation extends WP_UnitTestCase
         $this->assertSame('WordPress', $response['platform']);
         $this->assertNotNull($response['platform_version']);
         $this->assertNotNull($response['woocommerce_version']);
-        $this->assertSame('1 Razorpay: Signup for FREE PG', $response['plugin_name']);
+        $this->assertSame('1 Razorpay', $response['plugin_name']);
         $this->assertNotNull($response['plugin_version']);
         $this->assertNotNull($response['unique_id']);
         $this->assertNotNull($response['event_timestamp']);
