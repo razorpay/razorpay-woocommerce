@@ -1,6 +1,6 @@
 <?php
 /*
- * Plugin Name: 1 Razorpay: Signup for FREE PG
+ * Plugin Name: 1 Razorpay
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
  * Version: 4.7.8
