@@ -51,7 +51,7 @@ function getCouponList($request)
         }
 
         $status = $order->get_status();
-        if (in_array($status, array('draft', 'checkout-draft') === false))
+        if (in_array($status, array('draft', 'checkout-draft')) === false)
         {
             $response['failure_reason'] = 'Order not in draft state';
             $response['failure_code']   = 'VALIDATION_ERROR';
