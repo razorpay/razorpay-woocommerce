@@ -22,11 +22,13 @@ function checkAuthCredentials()
 function checkHmacSignature($request)
 {
 	$signature = '';
-	if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE'])) {
+	if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']))
+	{
 		$signature = sanitize_text_field($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']);
 	}
 
-	if (empty($signature)) {
+	if (empty($signature))
+	{
 		return new WP_Error('rest_forbidden', __('Signature missing'), array('status' => 403));
 	}
 
@@ -35,16 +37,20 @@ function checkHmacSignature($request)
     // Retrieve webhook secret similar to webhook processing
     $secret = get_option('webhook_secret');
 
-	if (empty($secret)) {
+	if (empty($secret))
+	{
 		return new WP_Error('rest_forbidden', __('Webhook secret not configured'), array('status' => 403));
 	}
 
 	// Verify using Razorpay SDK (same as webhook)
-	try {
+	try
+	{
 		$rzp = new WC_Razorpay(false);
 		$api = $rzp->getRazorpayApiInstance();
 		$api->utility->verifyWebhookSignature($payload, $signature, $secret);
-	} catch (Errors\SignatureVerificationError $e) {
+	}
+	catch (Errors\SignatureVerificationError $e)
+	{
 		return new WP_Error('rest_forbidden', __('Invalid signature'), array('status' => 403));
 	}
 

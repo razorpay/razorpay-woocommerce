@@ -51,8 +51,13 @@ function getCouponList($request)
         }
 
         $status = $order->get_status();
-        if (in_array($status, array('draft', 'checkout-draft') === false)) {
-            return new WP_Error('rest_forbidden', __('Order not in draft state'), array('status' => 403));
+        if (in_array($status, array('draft', 'checkout-draft') === false))
+        {
+            $response['failure_reason'] = 'Order not in draft state';
+            $response['failure_code']   = 'VALIDATION_ERROR';
+            $statusCode                 = 403;
+
+            return new WP_REST_Response($response, $statusCode);
         }
 
         $amount  = floatval($order->get_total());
