@@ -50,6 +50,11 @@ function getCouponList($request)
             return new WP_REST_Response($response, $statusCode);
         }
 
+        $status = $order->get_status();
+        if (in_array($status, array('draft', 'checkout-draft') === false)) {
+            return new WP_Error('rest_forbidden', __('Order not in draft state'), array('status' => 403));
+        }
+
         $amount  = floatval($order->get_total());
         $email   = sanitize_text_field($request->get_params()['email']);
         $contact = sanitize_text_field($request->get_params()['contact']);

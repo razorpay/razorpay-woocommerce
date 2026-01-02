@@ -51,39 +51,4 @@ function checkHmacSignature($request)
 	return true;
 }
 
-/**
- * Coupon list permission check:
- *  - Validate HMAC signature
- *  - Ensure order is in draft/checkout-draft state
- *
- * @param WP_REST_Request $request
- * @return bool|WP_Error
- */
-function checkCouponListPermission($request)
-{
-	// HMAC validation
-	$hmac = checkHmacSignature($request);
-	if ($hmac instanceof WP_Error) {
-		return $hmac;
-	}
-
-	$params  = $request->get_params();
-	$orderId = isset($params['order_id']) ? sanitize_text_field($params['order_id']) : '';
-	if (empty($orderId)) {
-		return new WP_Error('rest_forbidden', __('Order id missing'), array('status' => 403));
-	}
-
-	$order = wc_get_order($orderId);
-	if (!$order) {
-		return new WP_Error('rest_forbidden', __('Invalid order id'), array('status' => 403));
-	}
-
-	$status = $order->get_status(); 
-	if ($status === 'draft' || $status === 'checkout-draft') {
-		return true;
-	}
-
-	return new WP_Error('rest_forbidden', __('Order not in draft state'), array('status' => 403));
-}
-
 ?>
