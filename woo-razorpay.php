@@ -82,6 +82,55 @@ function razorpay_woocommerce_block_support()
     }
 }
 
+/**
+ * Handle plugin upgrade routines.
+ * - If rzp1cc_hmac_secret is missing, generate and register it via internal API.
+ * - Update stored plugin version.
+ */
+add_action('plugins_loaded', 'rzp_wc_handle_upgrade', 20);
+
+function rzp_wc_handle_upgrade()
+{
+	$current = get_plugin_data(PLUGIN_MAIN_FILE)['Version'];
+	$stored  = get_option('rzp_woocommerce_current_version');
+
+	// Run on first install or version upgrade
+	if (empty($stored) || version_compare($stored, $current, '<'))
+	{
+		// Create and register rzp1cc_hmac_secret if absent
+		if (empty(get_option('rzp1cc_hmac_secret')))
+		{
+			// Only generate/register when Magic Checkout is enabled
+			if (function_exists('is1ccEnabled') && is1ccEnabled())
+			{
+                try
+                {
+                    $rzp = new WC_Razorpay(false);
+                    $hmacSec = $rzp->registerRzp1ccSigningSecret();
+
+                    if ($hmacSec)
+                    {
+                        update_option('rzp1cc_hmac_secret', $hmacSec, false);
+                    }
+                }
+				catch (\Exception $e)
+				{
+                    rzpLogError("Generate 1cc hmac secret failed: ". $e->getMessage());
+				}
+			}
+		}
+
+		if (isset($stored))
+		{
+			update_option('rzp_woocommerce_current_version', $current);
+		}
+		else
+		{
+			add_option('rzp_woocommerce_current_version', $current);
+		}
+	}
+}
+
 function woocommerce_razorpay_init()
 {
     add_action("woocommerce_update_options_advanced", function()
@@ -890,6 +939,74 @@ function woocommerce_razorpay_init()
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
 
             return $secret;
+        }
+
+        /**
+         * Register 1CC signing secret with Razorpay internal API using private auth.
+         * If $secret is empty, generates a new secret first.
+         *
+         * @param string $secret
+         * @return string|false The registered secret on success, false otherwise
+         */
+        public function registerRzp1ccSigningSecret($secret = '')
+        {
+            $keyId  = $this->getSetting('key_id');
+            $keySec = $this->getSetting('key_secret');
+
+            if (empty($keyId) || empty($keySec))
+            {
+                return false;
+            }
+
+            if (empty($secret))
+            {
+                $secret = $this->generateSecret();
+            }
+
+            $payload = array(
+                'key_id'   => $keyId,
+                'platform' => 'woocommerce',
+                'secret'   => $secret,
+            );
+
+            try
+            {
+                $api      = $this->getRazorpayApiInstance();
+                $response = $api->request->request('POST', 'internal/1cc/merchant/signing-secret', $payload);
+
+                if (is_array($response) && isset($response['success']) && $response['success'] === true)
+                {
+                    return $secret;
+                }
+                return false;
+            }
+            catch (\Exception $e)
+            {
+                rzpLogError("Register 1cc signing secret failed: " . $e->getMessage());
+                return false;
+            }
+        }
+
+        /**
+         * Get existing 1CC signing secret or lazily generate+register it when enabled.
+         *
+         * @return string
+         */
+        public function getOrCreateRzp1ccSigningSecret()
+        {
+            $secret = get_option('rzp1cc_hmac_secret');
+
+            if (empty($secret) && function_exists('is1ccEnabled') && is1ccEnabled())
+            {
+                $generated = $this->registerRzp1ccSigningSecret();
+                if ($generated)
+                {
+                    update_option('rzp1cc_hmac_secret', $generated, false);
+                    $secret = $generated;
+                }
+            }
+
+            return $secret ?: '';
         }
 
         // showing notice : status of 1cc active / inactive message in admin dashboard

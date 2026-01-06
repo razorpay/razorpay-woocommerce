@@ -34,12 +34,13 @@ function checkHmacSignature($request)
 
     $payload = file_get_contents('php://input');
 
-    // Retrieve webhook secret similar to webhook processing
-    $secret = get_option('webhook_secret');
+    // Retrieve 1CC signing HMAC secret (generate & register if missing)
+	$rzp    = new WC_Razorpay(false);
+    $secret = $rzp->getOrCreateRzp1ccSigningSecret();
 
 	if (empty($secret))
 	{
-		return new WP_Error('rest_forbidden', __('Webhook secret not configured'), array('status' => 403));
+		return new WP_Error('rest_forbidden', __('Secret not configured'), array('status' => 403));
 	}
 
 	// Verify using Razorpay SDK (same as webhook)
