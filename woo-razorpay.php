@@ -83,13 +83,12 @@ function razorpay_woocommerce_block_support()
 }
 
 /**
- * Handle plugin upgrade routines.
- * - If rzp1cc_hmac_secret is missing, generate and register it via internal API.
- * - Update stored plugin version.
+ * Ensure 1CC signing secret is present and in sync with current keys.
+ * - If rzp1cc_hmac_secret is missing or key_id changed, generate and register it via internal API.
  */
-add_action('plugins_loaded', 'rzpWcHandleUpgrade', 20);
+add_action('plugins_loaded', 'rzpWcEnsure1ccSecret', 20);
 
-function rzpWcHandleUpgrade()
+function rzpWcEnsure1ccSecret()
 {
 	// Only act when Magic Checkout is enabled
 	if (!(function_exists('is1ccEnabled') && is1ccEnabled()))
@@ -109,6 +108,15 @@ function rzpWcHandleUpgrade()
 
 	if ($hasKeyChanged || $isSecretMissing)
 	{
+		// Short-lived lock to avoid concurrent duplicate registrations across rapid requests
+		$lockKey = 'rzp_wc_ensure_1cc_secret_lock';
+		if (get_transient($lockKey))
+		{
+			return;
+		}
+		// hold for 30s to coalesce bursts; will be deleted on completion
+		set_transient($lockKey, 1, 30);
+
 		$secretUpdated = false;
 		try
 		{
@@ -139,6 +147,8 @@ function rzpWcHandleUpgrade()
 			// Persist the observed key to detect future changes (add or update; do not autoload)
 			update_option('rzp_wc_last_key_id', $currentKeyId, 'no');
 		}
+		// Release the lock
+		delete_transient($lockKey);
 	}
 }
 
