@@ -34,9 +34,8 @@ function checkHmacSignature($request)
 
     $payload = file_get_contents('php://input');
 
-    // Retrieve 1CC signing HMAC secret (generate & register if missing)
-	$rzp    = new WC_Razorpay(false);
-    $secret = $rzp->getOrCreateRzp1ccSigningSecret();
+	// Retrieve 1CC signing HMAC secret saved at plugin load time
+    $secret = get_option('rzp1cc_hmac_secret');
 
 	if (empty($secret))
 	{

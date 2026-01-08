@@ -50,11 +50,11 @@ function getCouponList($request)
             return new WP_REST_Response($response, $statusCode);
         }
 
-        $status = $order->get_status();
-        if (in_array($status, array('draft', 'checkout-draft')) === false)
+        // Allow listing coupons only if order still requires payment
+        if ($order->needs_payment() === false)
         {
-            $response['failure_reason'] = 'Order not in draft state';
-            $response['failure_code']   = 'VALIDATION_ERROR';
+            $response['failure_reason'] = 'Order not eligible for coupons';
+            $response['failure_code']   = 'INVALID_STATE';
             $statusCode                 = 403;
 
             return new WP_REST_Response($response, $statusCode);
