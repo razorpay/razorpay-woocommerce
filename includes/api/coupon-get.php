@@ -50,6 +50,16 @@ function getCouponList($request)
             return new WP_REST_Response($response, $statusCode);
         }
 
+        // Allow listing coupons only if order still requires payment
+        if ($order->needs_payment() === false)
+        {
+            $response['failure_reason'] = 'Order not eligible for coupons';
+            $response['failure_code']   = 'INVALID_STATE';
+            $statusCode                 = 403;
+
+            return new WP_REST_Response($response, $statusCode);
+        }
+
         $amount  = floatval($order->get_total());
         $email   = sanitize_text_field($request->get_params()['email']);
         $contact = sanitize_text_field($request->get_params()['contact']);

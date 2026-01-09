@@ -82,6 +82,80 @@ function razorpay_woocommerce_block_support()
     }
 }
 
+/**
+ * Ensure 1CC signing secret is present and in sync with current keys.
+ * - If rzp1cc_hmac_secret is missing or key_id changed, generate and register it via internal API.
+ */
+add_action('plugins_loaded', 'rzpWcEnsure1ccSecret', 20);
+
+function rzpWcEnsure1ccSecret()
+{
+	// Only act when Magic Checkout is enabled
+	if (!(function_exists('is1ccEnabled') && is1ccEnabled()))
+	{
+		return;
+	}
+
+	// Refresh secret if key_id changed since last run OR if secret is missing
+	$settings     = get_option('woocommerce_razorpay_settings');
+	$settings     = (is_array($settings)) ? $settings : array();
+	$currentKeyId = isset($settings['key_id']) ? $settings['key_id'] : '';
+	$lastKeyId    = get_option('rzp_wc_last_key_id');
+	$existingSecret = get_option('rzp1cc_hmac_secret');
+
+	$hasKeyChanged   = (!empty($currentKeyId) && $currentKeyId !== $lastKeyId);
+	$isSecretMissing = empty($existingSecret);
+
+	if ($hasKeyChanged || $isSecretMissing)
+	{
+		// Short-lived lock to avoid concurrent duplicate registrations across rapid requests
+		$lockKey = 'rzp_wc_ensure_1cc_secret_lock';
+		if (get_transient($lockKey))
+		{
+			return;
+		}
+		// hold for 30s to coalesce bursts; will be deleted on completion
+		set_transient($lockKey, 1, 30);
+
+		$secretUpdated = false;
+		try
+		{
+            // Validate credentials once to avoid internal re-fetches
+			$currentKeySec = isset($settings['key_secret']) ? $settings['key_secret'] : '';
+			if (empty($currentKeyId) || empty($currentKeySec))
+			{
+				// Release the lock before exiting early
+				delete_transient($lockKey);
+				return;
+			}
+            
+			$rzp = new WC_Razorpay(false);
+			$newSecret = $rzp->registerRzp1ccSigningSecret($currentKeyId, $currentKeySec);
+			if ($newSecret)
+			{
+				update_option('rzp1cc_hmac_secret', $newSecret, false);
+				$secretUpdated = true;
+                rzpLogInfo("1cc hmac secret is Added/Updated");
+			}
+		}
+		catch (\Exception $e)
+		{
+			rzpLogError("Refresh 1cc hmac secret on key change failed: ". $e->getMessage());
+			// Release the lock on failure as well
+			delete_transient($lockKey);
+            return;
+		}
+
+		if ($hasKeyChanged && $secretUpdated === true)
+		{
+			// Persist the observed key to detect future changes (add or update; do not autoload)
+			update_option('rzp_wc_last_key_id', $currentKeyId, 'no');
+		}
+		// Release the lock
+		delete_transient($lockKey);
+	}
+}
+
 function woocommerce_razorpay_init()
 {
     add_action("woocommerce_update_options_advanced", function()
@@ -890,6 +964,43 @@ function woocommerce_razorpay_init()
             $secret = substr(str_shuffle($alphanumericString), 0, 20);
 
             return $secret;
+        }
+
+        /**
+         * Register 1CC signing secret with Razorpay internal API using private auth.
+         * Caller MUST pass credentials; this method will not fetch from settings.
+         *
+         * @param string $keyId
+         * @param string $keySec
+         * @return string|false The registered secret on success, false otherwise
+         */
+        public function registerRzp1ccSigningSecret($keyId, $keySec)
+        {
+            // Always generate a new secret for registration
+            $secret = $this->generateSecret();
+
+            $payload = array(
+                'key_id'   => $keyId,
+                'platform' => 'woocommerce',
+                'secret'   => $secret,
+            );
+
+            try
+            {
+                $api      = $this->getRazorpayApiInstance($keyId, $keySec);
+                $response = $api->request->request('POST', 'magic/merchant/auth/secret', $payload);
+
+                if (is_array($response) && isset($response['success']) && $response['success'] === true)
+                {
+                    return $secret;
+                }
+                return false;
+            }
+            catch (\Exception $e)
+            {
+                rzpLogError("Register 1cc signing secret failed: " . $e->getMessage());
+                return false;
+            }
         }
 
         // showing notice : status of 1cc active / inactive message in admin dashboard

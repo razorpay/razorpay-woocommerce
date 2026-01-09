@@ -36,7 +36,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'getCouponList',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'checkHmacSignature',
         )
     );
 
