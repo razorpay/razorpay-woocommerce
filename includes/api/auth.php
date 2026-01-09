@@ -47,7 +47,7 @@ function checkHmacSignature($request)
 	{
 		$rzp = new WC_Razorpay(false);
 		$api = $rzp->getRazorpayApiInstance();
-		$api->utility->verifyWebhookSignature($payload, $signature, $secret);
+		$api->utility->verifySignature($payload, $signature, $secret);
 	}
 	catch (Errors\SignatureVerificationError $e)
 	{
