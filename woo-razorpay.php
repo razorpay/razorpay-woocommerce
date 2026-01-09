@@ -124,6 +124,8 @@ function rzpWcEnsure1ccSecret()
 			$currentKeySec = isset($settings['key_secret']) ? $settings['key_secret'] : '';
 			if (empty($currentKeyId) || empty($currentKeySec))
 			{
+				// Release the lock before exiting early
+				delete_transient($lockKey);
 				return;
 			}
             
@@ -139,6 +141,8 @@ function rzpWcEnsure1ccSecret()
 		catch (\Exception $e)
 		{
 			rzpLogError("Refresh 1cc hmac secret on key change failed: ". $e->getMessage());
+			// Release the lock on failure as well
+			delete_transient($lockKey);
             return;
 		}
 
