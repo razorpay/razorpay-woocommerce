@@ -304,6 +304,22 @@ function cartResponse($couponCode){
     $prefillData = getPrefillCartData($couponCode);
     $response['prefill'] = $prefillData;
 
+    $response['config'] = $razorpay->getDisplayConfig();
+
+    // Every hour post installation check
+    $getPostInstallationFlag = get_option('rzp_post_installation_update_at');
+    if (empty($getPostInstallationFlag) == false)
+    {
+        if ($getPostInstallationFlag + 3600 < time())
+        {
+            $razorpay->autoPostInstallationCheck();
+        }
+    }
+    else
+    {
+        $razorpay->autoPostInstallationCheck();
+    }
+
     $response['enable_ga_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_ga_analytics'] === 'yes' ? true : false;
     $response['enable_fb_analytics'] = get_option('woocommerce_razorpay_settings')['enable_1cc_fb_analytics'] === 'yes' ? true : false;
 
