@@ -452,6 +452,41 @@ function woocommerce_razorpay_init()
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
         }
+        
+        private function getGeoBasedTitleAndDescription($key)
+        {
+            $dbValue = ($key === 'label')
+                ? $this->getSetting('title')
+                : (($key === 'description') ? $this->getSetting('description') : '');
+            
+            if (empty($dbValue) === false)
+            {
+                return $dbValue;
+            }
+            
+            $locBasedTitleDes = [
+                'US'    => ['label' => 'Cards', 'description' => 'Pay securely via Razorpay.'],
+                'MY'    => ['label' => 'Cards, FPX, Wallets', 'description' => 'Pay securely via Razorpay.'],
+                'SG'    => ['label' => 'Cards, ApplePay, PayNow, Wallets', 'description' => 'Pay securely via Razorpay.']
+            ];
+            
+            if (function_exists('wc_get_base_location'))
+            {
+                $baseLocation = wc_get_base_location();
+                $country = isset($baseLocation['country']) ? strtoupper($baseLocation['country']) : '';
+                if (isset($locBasedTitleDes[$country][$key]))
+                {
+                    return $locBasedTitleDes[$country][$key];
+                }
+            }
+			
+            // Fallback to class defaults
+            if ($key === 'label')
+            {
+                return static::DEFAULT_LABEL;
+            }
+            return static::DEFAULT_DESCRIPTION;
+        }
 
         public function init_form_fields()
         {
@@ -468,13 +503,13 @@ function woocommerce_razorpay_init()
                     'title' => __('Title', $this->id),
                     'type'=> 'text',
                     'description' => __('This controls the title which the user sees during checkout.', $this->id),
-                    'default' => __(static::DEFAULT_LABEL, $this->id)
+                    'default' => __($this->getGeoBasedTitleAndDescription('label'), $this->id)
                 ),
                 'description' => array(
                     'title' => __('Description', $this->id),
                     'type' => 'textarea',
                     'description' => __('This controls the description which the user sees during checkout.', $this->id),
-                    'default' => __(static::DEFAULT_DESCRIPTION, $this->id)
+                    'default' => __($this->getGeoBasedTitleAndDescription('description'), $this->id)
                 ),
                 'key_id' => array(
                     'title' => __('Key ID', $this->id),
