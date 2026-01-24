@@ -465,7 +465,7 @@ function woocommerce_razorpay_init()
             
             $locBasedTitleDes = [
                 'US'    => ['label' => 'Cards', 'description' => 'Pay securely via Razorpay.'],
-                'MY'    => ['label' => 'Cards, FPX, Wallets', 'description' => 'Pay securely via Razorpay Curlec.'],
+                'MY'    => ['label' => 'Cards, FPX, Wallets', 'description' => 'Pay securely via Razorpay.'],
                 'SG'    => ['label' => 'Cards, ApplePay, PayNow, Wallets', 'description' => 'Pay securely via Razorpay.']
             ];
             
