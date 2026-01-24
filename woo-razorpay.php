@@ -453,7 +453,7 @@ function woocommerce_razorpay_init()
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
         }
         
-        private function getDynamicDefaults($key)
+        private function getGeoBasedTitleAndDescription($key)
         {
             $dbValue = ($key === 'label')
                 ? $this->getSetting('title')
@@ -501,13 +501,13 @@ function woocommerce_razorpay_init()
                     'title' => __('Title', $this->id),
                     'type'=> 'text',
                     'description' => __('This controls the title which the user sees during checkout.', $this->id),
-                    'default' => __($this->getDynamicDefaults('label'), $this->id)
+                    'default' => __($this->getGeoBasedTitleAndDescription('label'), $this->id)
                 ),
                 'description' => array(
                     'title' => __('Description', $this->id),
                     'type' => 'textarea',
                     'description' => __('This controls the description which the user sees during checkout.', $this->id),
-                    'default' => __($this->getDynamicDefaults('description'), $this->id)
+                    'default' => __($this->getGeoBasedTitleAndDescription('description'), $this->id)
                 ),
                 'key_id' => array(
                     'title' => __('Key ID', $this->id),
