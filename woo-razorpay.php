@@ -216,8 +216,8 @@ function woocommerce_razorpay_init()
         const WC_ORDER_ID                    = 'woocommerce_order_id';
         const WC_ORDER_NUMBER                = 'woocommerce_order_number';
 
-        const DEFAULT_LABEL                  = 'Credit Card/Debit Card/NetBanking';
-        const DEFAULT_DESCRIPTION            = 'Pay securely by Credit or Debit card or Internet Banking through Razorpay.';
+        const DEFAULT_LABEL                  = 'UPI, Cards, NetBanking';
+        const DEFAULT_DESCRIPTION            = 'Pay securely via UPI, Credit/Debit Card, or Internet Banking through Razorpay.';
         const DEFAULT_SUCCESS_MESSAGE        = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
 
         const PREPAY_COD_URL = '1cc/orders/cod/convert';
