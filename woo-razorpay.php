@@ -459,7 +459,8 @@ function woocommerce_razorpay_init()
                 ? $this->getSetting('title')
                 : (($key === 'description') ? $this->getSetting('description') : '');
             
-            if (empty($dbValue) === false) {
+            if (empty($dbValue) === false)
+            {
                 return $dbValue;
             }
             
@@ -480,7 +481,8 @@ function woocommerce_razorpay_init()
             }
 			
             // Fallback to class defaults
-            if ($key === 'label') {
+            if ($key === 'label')
+            {
                 return static::DEFAULT_LABEL;
             }
             return static::DEFAULT_DESCRIPTION;
