@@ -1418,12 +1418,12 @@ function woocommerce_razorpay_init()
             rzpLogInfo(json_encode($data));
             try
             {
-                if ($data['currency'] === "KWD" or
-                    $data['currency'] === "OMR" or
-                    $data['currency'] === "BHD")
-                {
-                    throw new Exception($data['currency'] . " currency is not supported at the moment.");
-                }
+                // if ($data['currency'] === "KWD" or
+                //     $data['currency'] === "OMR" or
+                //     $data['currency'] === "BHD")
+                // {
+                //     throw new Exception($data['currency'] . " currency is not supported at the moment.");
+                // }
 
                 $razorpayOrder = $api->order->create($data);
             }
@@ -1570,9 +1570,20 @@ function woocommerce_razorpay_init()
                 $is1ccOrder = get_post_meta( $orderId, 'is_magic_checkout_order', true );
             }
 
+            $api = $this->getRazorpayApiInstance();
+
+            $apiCurrencyConvertResponse = $api->utility->currencyConverter($order->get_total(), $this->getOrderCurrency($order));
+
+            if ($apiCurrencyConvertResponse['success'] === false)
+            {
+                throw new Exception($data['currency'] . " ". $apiCurrencyConvertResponse['errors']);
+            }
+
+            var_dump($apiCurrencyConvertResponse);
+            die;
             $data = array(
                 'receipt'         => (string)$orderId,
-                'amount'          => (int) round($order->get_total() * 100),
+                'amount'          => $apiCurrencyConvertResponse['amount'],
                 'currency'        => $this->getOrderCurrency($order),
                 'payment_capture' => ($this->getSetting('payment_action') === self::AUTHORIZE) ? 0 : 1,
                 'app_offer'       => ($order->get_discount_total() > 0) ? 1 : 0,
