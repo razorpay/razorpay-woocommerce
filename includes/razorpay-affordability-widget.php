@@ -136,23 +136,8 @@ function getKeyId()
 function getPrice()
 {
     global $product;
-    if ($product->is_type('simple') === true)
-    {
-        if ($product->is_on_sale())
-        {
-            $price = $product->get_sale_price();
-        }
-        else
-        {
-            $price = $product->get_regular_price();
-        }
-    }
-    else
-    {
-        $price = $product->get_price();
-    }
 
-    return $price;
+    return wc_get_price_to_display($product);
 }
 
 function getOffers()

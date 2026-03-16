@@ -184,7 +184,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $product->set_sale_price(10);
         $product->save();
 
-        $this->assertSame('10', getPrice());
+        $this->assertEquals(10, getPrice());
     }
 
     public function testgetPriceVariableProduct()
@@ -195,7 +195,7 @@ class Test_AfdWidget extends \PHPUnit_Framework_TestCase
         $product->set_price(20);
         $product->save();
 
-        $this->assertSame('20', getPrice());
+        $this->assertEquals(20, getPrice());
     }
 
     public function testaddSubSection()
