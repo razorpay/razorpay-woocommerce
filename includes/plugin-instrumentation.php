@@ -27,7 +27,7 @@ class TrackPluginInstrumentation
     function razorpayPluginActivated()
     {
         $activateProperties = [
-            'page_url'            => $_SERVER['HTTP_REFERER'],
+            'page_url'            => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'unknown',
             'redirect_to_page'    => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']
         ];
 
@@ -103,7 +103,7 @@ class TrackPluginInstrumentation
         }
 
         $deactivateProperties = [
-            'page_url'            => $_SERVER['HTTP_REFERER'],
+            'page_url'            => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'unknown',
             'is_transacting_user' => $isTransactingUser
         ];
 
@@ -127,7 +127,7 @@ class TrackPluginInstrumentation
     {
         $prevVersion = get_option('rzp_woocommerce_current_version');
         $upgradeProperties = [
-            'page_url'            => $_SERVER['HTTP_REFERER'],
+            'page_url'            => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'unknown',
             'prev_version'        => $prevVersion,
             'new_version'         => get_plugin_data(__FILE__)['Version'],
         ];
