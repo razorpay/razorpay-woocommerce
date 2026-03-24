@@ -451,6 +451,8 @@ function woocommerce_razorpay_init()
             add_filter('script_loader_tag', array($this, 'add_defer_to_checkout_js'), 10, 3);
 
             add_filter( 'woocommerce_thankyou_order_received_text', array($this, 'getCustomOrdercreationMessage'), 20, 2 );
+
+            add_filter('woocommerce_cancel_unpaid_order', array($this, 'prevent_cancel_unpaid_order'), 10, 2);
         }
         
         private function getGeoBasedTitleAndDescription($key)
@@ -870,6 +872,23 @@ function woocommerce_razorpay_init()
 
             return $tag;
         }
+
+        /**                                                                                                                                                                                                       
+         * Prevent WooCommerce from auto-cancelling unpaid Razorpay orders                                                                                                                                        
+         * @param bool $cancel Whether to cancel the order                                                                                                                                                        
+         * @param WC_Order $order The order object                                                                                                                                                                
+         * @return bool                                                                                                                                                                                           
+         */                                                                                                                                                                                                       
+        public function prevent_cancel_unpaid_order($cancel, $order)                                                                                                                                              
+        {                                                                                                                                                                                                         
+            if ('razorpay' === $order->get_payment_method()) 
+            {                                                                                                                                                    
+                return false;                                                                                                                                                                                     
+            }
+                                                                                                                                                                                                            
+            return $cancel;                                                                                                                                                                                       
+        }                                                                                                                                                                                                         
+     
 
         public function pluginInstrumentation()
         {
