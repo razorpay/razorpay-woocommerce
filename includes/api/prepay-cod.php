@@ -33,6 +33,28 @@ function prepayCODOrder(WP_REST_Request $request): WP_REST_Response {
             return new WP_REST_Response(["code" => 'woocommerce_order_payment_signature_verfication_failed'], 400);
         }
         $order = wc_get_order($orderId);
+
+        if (!$order)
+        {
+            return new WP_REST_Response(['code' => 'invalid_order'], 400);
+        }
+        
+        if ($order->is_paid())
+        {
+            return new WP_REST_Response(['code' => 'order_already_paid'], 400);
+        }
+
+        // Fetch stored Razorpay order ID
+        $storedRazorpayOrderId = $order->get_meta(RAZORPAY_ORDER_ID);
+
+        // Validate binding
+        if ($storedRazorpayOrderId !== $razorpayOrderId)
+        {
+            return new WP_REST_Response([
+                'code' => 'razorpay_order_id_mismatch'
+            ], 400);
+        }
+
         if ('on-hold' != $order->get_status())
         {
             return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
