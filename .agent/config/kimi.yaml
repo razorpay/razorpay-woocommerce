@@ -1,0 +1,78 @@
+# kimi.yaml — Kimi Model Configuration for razorpay-woocommerce
+# Use alongside .kimi/KIMI.md for full context.
+
+schema_version: "1.0"
+provider: moonshot
+primary_context_file: ".kimi/KIMI.md"
+skills_directory: ".agent/skills/"
+
+models:
+
+  moonshot-v1-8k:
+    display_name: "Kimi Moonshot v1 (8k)"
+    tier: fast
+    context_window: 8000
+    recommended_for_this_repo:
+      - "Quick single-function explanations"
+      - "Fix a typo or simple string change"
+      - "Generate a short changelog entry"
+    not_recommended_for:
+      - "Any task requiring woo-razorpay.php in context (too large)"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+    max_tokens:
+      code_generation: 1024
+      explanation: 512
+
+  moonshot-v1-32k:
+    display_name: "Kimi Moonshot v1 (32k)"
+    tier: balanced
+    context_window: 32000
+    recommended_for_this_repo:
+      - "Understand a subset of woo-razorpay.php (e.g., just refund methods)"
+      - "Read an entire .ai/context/ file and answer questions"
+      - "Add a setting field in init_form_fields()"
+      - "Write a test for a single class method"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+    max_tokens:
+      code_generation: 2048
+      explanation: 1024
+
+  moonshot-v1-128k:
+    display_name: "Kimi Moonshot v1 (128k)"
+    tier: complex_reasoning
+    context_window: 128000
+    recommended_for_this_repo:
+      - "Load woo-razorpay.php + razorpay-webhook.php together for debugging"
+      - "Full codebase audit with selected .ai/context/ files"
+      - "Debug cross-file issues (callback + webhook interaction)"
+      - "Add a new webhook handler end-to-end"
+      - "Subscription payment failure investigation"
+    temperature:
+      default: 0.15
+      code_generation: 0.1
+      analysis: 0.2
+    max_tokens:
+      code_generation: 4096
+      analysis: 6144
+    notes: >
+      This is the recommended Kimi model for most non-trivial tasks in this
+      repo. The main file woo-razorpay.php is approximately 2800 lines and
+      requires at least a 32k context to load comfortably. For cross-file
+      debugging, prefer 128k.
+
+task_model_map:
+  quick_fix: "moonshot-v1-8k"
+  single_method_edit: "moonshot-v1-32k"
+  add_webhook_handler: "moonshot-v1-128k"
+  debug_payment: "moonshot-v1-128k"
+  full_audit: "moonshot-v1-128k"
+
+system_prompt_prefix: |
+  You are working on the razorpay-woocommerce WordPress plugin (PHP 7.4+).
+  Read .kimi/KIMI.md before making changes.
+  Key rules: HPOS dual-path for order meta, (int) round($amount * 100) for currency,
+  always verify webhook signature before processing.
