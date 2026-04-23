@@ -179,7 +179,7 @@ function initCartCommon()
 
 }
 
-add_action('setup_extra_setting_fields', 'addMagicCheckoutSettingFields');
+add_action('setup_extra_setting_fields_1cc', 'addMagicCheckoutSettingFields');
 
 function addMagicCheckoutSettingFields(&$defaultFormFields)
 {
