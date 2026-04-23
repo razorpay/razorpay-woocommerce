@@ -121,3 +121,95 @@ Also gated by merchant having the feature: `$merchantPreferences['features']['on
 - `.ai/context/DATABASE_SCHEMA.md` — All meta keys and DB tables
 - `.ai/context/WORDPRESS_HOOKS.md` — All hooks registered/fired
 - `.ai/diagrams/LLD_CHECKOUT_SEQUENCE.md` — Detailed checkout sequence
+
+---
+
+## Model Selection Guide for Claude
+
+Use the right Claude model for the task. See `.agent/config/claude.yaml` for full details.
+
+| Task | Recommended Model |
+|---|---|
+| Add a log line, fix a typo, small string edit | `claude-3-5-haiku-20241022` |
+| Add a settings field, write a PHPUnit stub | `claude-3-5-haiku-20241022` |
+| Add a webhook handler, debug a payment | `claude-3-5-sonnet-20241022` |
+| Refund investigation, HPOS dual-path refactor | `claude-3-5-sonnet-20241022` |
+| Multi-file feature (webhook + settings + JS) | `claude-sonnet-4-5` |
+| Code review of a full PR | `claude-sonnet-4-5` |
+| Subscription debug, complex race condition | `claude-sonnet-4-5` |
+| Security audit of webhook/HMAC handling | `claude-opus-4-5` |
+| Architecture planning, full codebase audit | `claude-opus-4-5` |
+
+### Context Window Tips
+
+- `woo-razorpay.php` is ~2800 lines — loads fine in 200k context window
+- For tasks touching 3+ files, prefer `claude-sonnet-4-5` or `claude-opus-4-5`
+- Always load `CLAUDE.md` + `AGENTS.md` at session start
+- For webhook tasks: also load `includes/razorpay-webhook.php`
+- For subscription tasks: also load `.ai/context/SUBSCRIPTION_FLOW.md`
+
+---
+
+## Agent Skills
+
+The `.agent/skills/` directory contains step-by-step runbooks for common tasks. Use them like this:
+
+```
+Follow the steps in .agent/skills/debug-payment.md to investigate order #1234.
+```
+
+### Available Skills
+
+| Skill | When to Use |
+|---|---|
+| `.agent/skills/debug-payment.md` | Payment not reflecting in WC after being captured in Razorpay |
+| `.agent/skills/add-webhook-handler.md` | Adding support for a new Razorpay webhook event |
+| `.agent/skills/add-payment-method-variant.md` | Adding UPI Autopay, new EMI type, or payment option toggle |
+| `.agent/skills/refund-investigation.md` | Refund stuck or not processed |
+| `.agent/skills/subscription-debug.md` | Subscription renewal payment failures |
+| `.agent/skills/order-status-sync.md` | WC order status out of sync with Razorpay |
+| `.agent/skills/generate-test-payload.md` | Generate test webhook payloads with valid HMAC |
+| `.agent/skills/api-endpoint-audit.md` | Audit all Razorpay API calls for security/error handling |
+
+### Reusable Prompts
+
+- `.agent/prompts/code-review.md` — Standard PR review checklist
+- `.agent/prompts/bug-report-analysis.md` — Analyze and fix bug reports
+- `.agent/prompts/feature-planning.md` — Plan a new feature
+- `.agent/prompts/security-audit.md` — Security audit (use with Opus models)
+
+---
+
+## Agent Workflow Patterns
+
+### Starting a new task
+1. Tell Claude which skill to use (or describe the task)
+2. Provide the specific context (order ID, payment ID, file to edit, etc.)
+3. Claude reads the skill file and the referenced code files
+4. Claude proposes the change and explains the reasoning
+
+### Debugging a production issue
+```
+Read .agent/skills/debug-payment.md and investigate order #1234.
+The customer says they were charged but the order shows pending.
+The Razorpay payment ID is rzp_pay_ABC123.
+```
+
+### Adding a new feature
+```
+Read .agent/skills/add-webhook-handler.md and add support for
+the payment.dispute.created webhook event. It should add an order
+note with the dispute ID and put the order on hold.
+```
+
+### Code review
+```
+Use the prompt at .agent/prompts/code-review.md to review this diff:
+<paste diff>
+```
+
+### Effective Claude Code usage for this repo
+- Start sessions by saying "Read CLAUDE.md" — it gives Claude full context
+- For multi-session tasks, use `/compact` to preserve context efficiently
+- Reference skills by file path so Claude reads the full runbook
+- Always provide order IDs, payment IDs, and error messages when debugging

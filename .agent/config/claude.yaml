@@ -1,0 +1,217 @@
+# claude.yaml — Claude Model Configuration for razorpay-woocommerce
+# Covers all Claude model versions with recommended use cases, temperatures,
+# context window guidance, and max_tokens per task type.
+
+schema_version: "1.0"
+provider: anthropic
+primary_context_file: "CLAUDE.md"
+skills_directory: ".agent/skills/"
+prompts_directory: ".agent/prompts/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Model Definitions
+# ─────────────────────────────────────────────────────────────────────────────
+models:
+
+  # ── Fast / Cheap ────────────────────────────────────────────────────────────
+  claude-3-haiku-20240307:
+    display_name: "Claude 3 Haiku"
+    tier: fast
+    context_window: 200000
+    training_cutoff: "2024-03"
+    recommended_for_this_repo:
+      - "Generate simple order notes or log messages"
+      - "Rename a variable or constant across a small scope"
+      - "Write a quick shell command for releasing the plugin"
+      - "Answer 'what does this function do?' for a single function"
+      - "Format a PHP array or config block"
+    not_recommended_for:
+      - "HPOS dual-path refactors (risk of missing one path)"
+      - "Webhook handler additions (security-sensitive)"
+      - "Debugging complex race conditions"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+      explanation: 0.3
+    max_tokens:
+      code_generation: 1024
+      explanation: 512
+      simple_edit: 512
+
+  claude-3-5-haiku-20241022:
+    display_name: "Claude 3.5 Haiku"
+    tier: fast
+    context_window: 200000
+    training_cutoff: "2024-10"
+    recommended_for_this_repo:
+      - "Write PHPUnit test stubs for existing methods"
+      - "Add a single setting field to init_form_fields()"
+      - "Add a WordPress hook registration in initHooks()"
+      - "Fix a sanitize_text_field() or escaping omission"
+      - "Generate a changelog entry"
+      - "Search the codebase for all uses of a meta key"
+    not_recommended_for:
+      - "Complex multi-file refactors"
+      - "Security audit tasks"
+      - "Subscription payment debugging"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+      explanation: 0.3
+    max_tokens:
+      code_generation: 2048
+      explanation: 1024
+      test_generation: 2048
+
+  # ── Balanced / General Purpose ───────────────────────────────────────────────
+  claude-3-5-sonnet-20241022:
+    display_name: "Claude 3.5 Sonnet (Oct 2024)"
+    tier: balanced
+    context_window: 200000
+    training_cutoff: "2024-10"
+    recommended_for_this_repo:
+      - "Add a new webhook event handler in RZP_Webhook"
+      - "Implement HPOS dual-path for a meta key"
+      - "Debug a payment callback failure from logs"
+      - "Write complete PHPUnit test for a method"
+      - "Add a payment method variant with settings + JS changes"
+      - "Investigate a refund that hasn't processed"
+      - "Generate a test webhook payload with valid HMAC"
+      - "Audit a specific file for security issues"
+      - "Refactor a method to use the standard error handling pattern"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+      debugging: 0.15
+      explanation: 0.4
+    max_tokens:
+      code_generation: 4096
+      debugging_analysis: 2048
+      test_generation: 4096
+      explanation: 2048
+    notes: >
+      This is the default model for most work in this repo. It handles the
+      full WC_Razorpay class (woo-razorpay.php is ~2800 lines) within its
+      context window and understands the HPOS dual-path pattern reliably.
+
+  claude-sonnet-4-5:
+    display_name: "Claude Sonnet 4.5"
+    tier: balanced
+    context_window: 200000
+    training_cutoff: "2025-04"
+    recommended_for_this_repo:
+      - "All tasks suitable for claude-3-5-sonnet-20241022"
+      - "Multi-file feature additions spanning woo-razorpay.php + webhook + tests"
+      - "Code review of a full PR diff"
+      - "Investigate subscription + refund interactions"
+      - "Write end-to-end documentation for a new feature"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+      debugging: 0.1
+      code_review: 0.3
+    max_tokens:
+      code_generation: 8192
+      code_review: 4096
+      debugging_analysis: 4096
+      documentation: 4096
+    notes: >
+      Preferred over claude-3-5-sonnet-20241022 for tasks requiring the
+      entire woo-razorpay.php in context simultaneously or for tasks that
+      touch 3+ files. Use this as the upgraded default.
+
+  # ── Heavy Reasoning ──────────────────────────────────────────────────────────
+  claude-3-opus-20240229:
+    display_name: "Claude 3 Opus"
+    tier: complex_reasoning
+    context_window: 200000
+    training_cutoff: "2024-02"
+    recommended_for_this_repo:
+      - "Audit all Razorpay API calls for error handling gaps"
+      - "Design the architecture for a new major feature"
+      - "Debug a race condition between callback and webhook processing"
+      - "Full security audit of webhook verification and HMAC handling"
+      - "Analyze why a subscription payment is intermittently double-charged"
+      - "Plan migration strategy for a breaking WooCommerce API change"
+    not_recommended_for:
+      - "Simple edits — slower and more expensive than necessary"
+      - "Tasks where claude-3-5-sonnet works fine"
+    temperature:
+      default: 0.15
+      code_generation: 0.1
+      architectural_analysis: 0.2
+      security_audit: 0.1
+    max_tokens:
+      architectural_analysis: 8192
+      security_audit: 8192
+      code_generation: 4096
+      debugging_analysis: 6144
+
+  claude-opus-4-5:
+    display_name: "Claude Opus 4.5"
+    tier: complex_reasoning
+    context_window: 200000
+    training_cutoff: "2025-04"
+    recommended_for_this_repo:
+      - "All tasks suitable for claude-3-opus-20240229"
+      - "Full codebase audit (read all .ai/context/ + woo-razorpay.php)"
+      - "Feature planning for complex changes like adding BNPL payment flows"
+      - "Root cause analysis of production incidents with logs + code"
+      - "Write detailed engineering design documents for new features"
+    temperature:
+      default: 0.15
+      code_generation: 0.1
+      security_audit: 0.1
+      planning: 0.25
+    max_tokens:
+      planning: 8192
+      security_audit: 8192
+      incident_analysis: 6144
+      code_generation: 4096
+    notes: >
+      Most capable model. Use when the problem requires holding the entire
+      payment flow in context simultaneously — e.g., the callback → webhook
+      → cron chain. Expensive; reserve for genuinely complex tasks.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Task → Model Quick Reference
+# ─────────────────────────────────────────────────────────────────────────────
+task_model_map:
+  add_order_note: "claude-3-5-haiku-20241022"
+  add_hook_registration: "claude-3-5-haiku-20241022"
+  add_settings_field: "claude-3-5-haiku-20241022"
+  write_phpunit_stub: "claude-3-5-haiku-20241022"
+  add_webhook_handler: "claude-3-5-sonnet-20241022"
+  hpos_dual_path_refactor: "claude-3-5-sonnet-20241022"
+  debug_payment_failure: "claude-3-5-sonnet-20241022"
+  refund_investigation: "claude-3-5-sonnet-20241022"
+  add_payment_variant: "claude-sonnet-4-5"
+  code_review_pr: "claude-sonnet-4-5"
+  subscription_debug: "claude-sonnet-4-5"
+  security_audit: "claude-opus-4-5"
+  api_endpoint_audit: "claude-3-opus-20240229"
+  architecture_planning: "claude-opus-4-5"
+  incident_root_cause: "claude-opus-4-5"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# System prompt additions (prepend to system prompt when using API)
+# ─────────────────────────────────────────────────────────────────────────────
+system_prompt_prefix: |
+  You are working on the razorpay-woocommerce WordPress plugin (PHP).
+  Before making any changes, read CLAUDE.md and the relevant .ai/context/ files.
+  Always maintain the HPOS dual-path pattern for order meta access.
+  Always use (int) round($amount * 100) for currency amounts.
+  Never break the $hooks=false constructor parameter path in WC_Razorpay.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Skills reference
+# ─────────────────────────────────────────────────────────────────────────────
+skills:
+  debug_payment: ".agent/skills/debug-payment.md"
+  add_webhook_handler: ".agent/skills/add-webhook-handler.md"
+  add_payment_variant: ".agent/skills/add-payment-method-variant.md"
+  refund_investigation: ".agent/skills/refund-investigation.md"
+  subscription_debug: ".agent/skills/subscription-debug.md"
+  order_status_sync: ".agent/skills/order-status-sync.md"
+  generate_test_payload: ".agent/skills/generate-test-payload.md"
+  api_endpoint_audit: ".agent/skills/api-endpoint-audit.md"

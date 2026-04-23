@@ -1,0 +1,131 @@
+# models.yaml — Master Model Configuration for razorpay-woocommerce
+# Covers all supported LLMs with recommended task mappings for this codebase.
+# See individual files (claude.yaml, gemini.yaml, kimi.yaml) for per-model details.
+
+schema_version: "1.0"
+repo: razorpay/razorpay-woocommerce
+plugin: razorpay-woocommerce
+language: php
+framework: wordpress+woocommerce
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Task taxonomy used across all model configs
+# ─────────────────────────────────────────────────────────────────────────────
+task_types:
+  simple:
+    description: "Single-file edits, string changes, formatting, minor fixes"
+    examples:
+      - "Fix a typo in an order note"
+      - "Add a missing sanitize_text_field() call"
+      - "Add a log line"
+    context_depth: low
+
+  moderate:
+    description: "Multi-file changes with known patterns, standard feature additions"
+    examples:
+      - "Add a new setting field in init_form_fields()"
+      - "Add a WooCommerce hook registration"
+      - "Write a PHPUnit test for an existing method"
+    context_depth: medium
+
+  complex:
+    description: "Cross-cutting features, security-sensitive changes, HPOS dual-path work"
+    examples:
+      - "Add a new webhook event handler end-to-end"
+      - "Implement a new payment method variant"
+      - "Debug a payment processing race condition"
+      - "Refactor order meta access for HPOS compatibility"
+    context_depth: high
+
+  research:
+    description: "Codebase exploration, architecture review, audit tasks"
+    examples:
+      - "Audit all Razorpay API calls for error handling gaps"
+      - "Map all WordPress hooks registered by this plugin"
+      - "Identify all places that write to rzp_webhook_requests"
+    context_depth: high
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Model recommendations by provider
+# ─────────────────────────────────────────────────────────────────────────────
+recommended_models:
+
+  claude:
+    config_file: ".agent/config/claude.yaml"
+    primary_context: "CLAUDE.md"
+    simple: "claude-3-5-haiku-20241022"
+    moderate: "claude-3-5-sonnet-20241022"
+    complex: "claude-3-5-sonnet-20241022"
+    research: "claude-3-opus-20240229"
+    latest_capable: "claude-sonnet-4-5"
+
+  gemini:
+    config_file: ".agent/config/gemini.yaml"
+    primary_context: ".gemini/GEMINI.md"
+    simple: "gemini-2.0-flash"
+    moderate: "gemini-2.0-pro"
+    complex: "gemini-2.5-pro"
+    research: "gemini-2.5-pro"
+
+  kimi:
+    config_file: ".agent/config/kimi.yaml"
+    primary_context: ".kimi/KIMI.md"
+    simple: "moonshot-v1-8k"
+    moderate: "moonshot-v1-32k"
+    complex: "moonshot-v1-128k"
+    research: "moonshot-v1-128k"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Mandatory context files (read before any edit)
+# ─────────────────────────────────────────────────────────────────────────────
+mandatory_context:
+  always:
+    - "AGENTS.md"
+    - ".ai/context/CODEBASE_OVERVIEW.md"
+
+  for_payment_changes:
+    - ".ai/context/PAYMENT_FLOW.md"
+    - ".ai/diagrams/LLD_CHECKOUT_SEQUENCE.md"
+
+  for_webhook_changes:
+    - ".ai/context/WEBHOOK_FLOW.md"
+    - ".ai/diagrams/LLD_WEBHOOK_SEQUENCE.md"
+    - "includes/razorpay-webhook.php"
+
+  for_refund_changes:
+    - ".ai/context/REFUND_FLOW.md"
+    - ".ai/diagrams/LLD_REFUND_SEQUENCE.md"
+
+  for_subscription_changes:
+    - ".ai/context/SUBSCRIPTION_FLOW.md"
+    - ".ai/diagrams/LLD_SUBSCRIPTION_SEQUENCE.md"
+
+  for_db_changes:
+    - ".ai/context/DATABASE_SCHEMA.md"
+
+  for_api_changes:
+    - ".ai/context/API_INTEGRATION.md"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Critical invariants — must be upheld in all model outputs
+# ─────────────────────────────────────────────────────────────────────────────
+invariants:
+  - name: currency_conversion
+    rule: "Always use (int) round($amount * 100) for currency, never bare * 100"
+    files_affected: ["woo-razorpay.php", "includes/api/order.php"]
+
+  - name: hpos_dual_path
+    rule: "All order meta reads/writes must have both HPOS ($order->get_meta) and classic (get_post_meta) paths"
+    files_affected: ["woo-razorpay.php", "includes/razorpay-webhook.php", "includes/api/order.php"]
+
+  - name: webhook_signature_check
+    rule: "All webhook handlers must verify HTTP_X_RAZORPAY_SIGNATURE before processing data"
+    files_affected: ["includes/razorpay-webhook.php"]
+
+  - name: hooks_param
+    rule: "WC_Razorpay constructor $hooks=false path must not be broken — subscriptions plugin depends on it"
+    files_affected: ["woo-razorpay.php"]
+
+  - name: session_key_format
+    rule: "Order session key format is razorpay_order_id{orderId} — do not change this"
+    files_affected: ["woo-razorpay.php"]

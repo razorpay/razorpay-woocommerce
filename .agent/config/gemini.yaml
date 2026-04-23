@@ -1,0 +1,79 @@
+# gemini.yaml — Gemini Model Configuration for razorpay-woocommerce
+# Use alongside .gemini/GEMINI.md for full context.
+
+schema_version: "1.0"
+provider: google
+primary_context_file: ".gemini/GEMINI.md"
+skills_directory: ".agent/skills/"
+
+models:
+
+  gemini-2.0-flash:
+    display_name: "Gemini 2.0 Flash"
+    tier: fast
+    context_window: 1000000
+    recommended_for_this_repo:
+      - "Quick explanations of individual methods in woo-razorpay.php"
+      - "Search codebase for all uses of a particular meta key"
+      - "Summarize what a .ai/context/ document says"
+      - "Generate changelog entries"
+      - "Fix simple PHP syntax or formatting issues"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+    max_tokens:
+      code_generation: 2048
+      explanation: 1024
+
+  gemini-2.0-pro:
+    display_name: "Gemini 2.0 Pro"
+    tier: balanced
+    context_window: 1000000
+    recommended_for_this_repo:
+      - "Add a new setting in init_form_fields()"
+      - "Write PHPUnit tests for existing methods"
+      - "Add order notes for a new event"
+      - "Debug a single-file issue from logs"
+      - "Add HPOS dual-path to a method that's missing it"
+    temperature:
+      default: 0.2
+      code_generation: 0.1
+    max_tokens:
+      code_generation: 4096
+      explanation: 2048
+
+  gemini-2.5-pro:
+    display_name: "Gemini 2.5 Pro"
+    tier: complex_reasoning
+    context_window: 1000000
+    recommended_for_this_repo:
+      - "Full codebase audit with all .ai/context/ files loaded"
+      - "Add a new webhook event handler end-to-end"
+      - "Debug subscription payment failures"
+      - "Plan a major feature addition across multiple files"
+      - "Security audit of webhook verification and HMAC handling"
+      - "All tasks requiring reading woo-razorpay.php (~2800 lines) in full"
+    temperature:
+      default: 0.15
+      code_generation: 0.1
+      analysis: 0.2
+    max_tokens:
+      code_generation: 8192
+      analysis: 8192
+    notes: >
+      Gemini 2.5 Pro has a 1M token context window, making it particularly
+      useful for loading the entire codebase at once. Ideal for research
+      and audit tasks where broad context matters.
+
+task_model_map:
+  simple_edit: "gemini-2.0-flash"
+  add_settings_field: "gemini-2.0-pro"
+  write_tests: "gemini-2.0-pro"
+  add_webhook_handler: "gemini-2.5-pro"
+  security_audit: "gemini-2.5-pro"
+  full_codebase_analysis: "gemini-2.5-pro"
+
+system_prompt_prefix: |
+  You are working on the razorpay-woocommerce WordPress plugin.
+  Read .gemini/GEMINI.md before making any code changes.
+  Always maintain HPOS dual-path for order meta. Always use (int) round($amount * 100).
