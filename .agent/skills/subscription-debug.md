@@ -157,7 +157,7 @@ Compare the Razorpay subscription status with the WC subscription status.
 
 ### Step 8 — Check for subscription cancellation events
 
-If the subscription was unexpectedly cancelled, look for the `subscription.cancelled` webhook. The handler `subscriptionCancelled()` (line ~253) updates the WC subscription status.
+If the subscription was unexpectedly cancelled, look for the `subscription.cancelled` webhook. The `subscriptionCancelled()` method in the base `RZP_Webhook` class is a **no-op stub** — it only returns immediately. The companion [Razorpay Subscriptions plugin](https://wordpress.org/plugins/subscriptions-for-razorpay/) overrides this method to actually update the WC subscription status. If debugging subscription cancellation, check the companion plugin first.
 
 Search logs for:
 ```

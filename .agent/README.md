@@ -38,14 +38,14 @@ Skills are step-by-step guides that tell an AI agent exactly how to accomplish a
 
 | Skill | File | Use when... |
 |---|---|---|
-| Debug a failed payment | `skills/debug-payment.md` | A merchant reports a payment not reflecting |
-| Add a new webhook handler | `skills/add-webhook-handler.md` | A new Razorpay event type needs handling |
-| Add a payment method variant | `skills/add-payment-method-variant.md` | Adding UPI Autopay, EMI type, etc. |
-| Investigate a refund | `skills/refund-investigation.md` | A refund hasn't processed or is stuck |
-| Debug subscription failures | `skills/subscription-debug.md` | Recurring payments failing |
-| Sync order status | `skills/order-status-sync.md` | WC order out of sync with Razorpay dashboard |
-| Generate test webhook payloads | `skills/generate-test-payload.md` | Writing tests or debugging locally |
-| Audit all API calls | `skills/api-endpoint-audit.md` | Security review or rate limit analysis |
+| Debug a failed payment | `.agent/skills/debug-payment.md` | A merchant reports a payment not reflecting |
+| Add a new webhook handler | `.agent/skills/add-webhook-handler.md` | A new Razorpay event type needs handling |
+| Add a payment method variant | `.agent/skills/add-payment-method-variant.md` | Adding UPI Autopay, EMI type, etc. |
+| Investigate a refund | `.agent/skills/refund-investigation.md` | A refund hasn't processed or is stuck |
+| Debug subscription failures | `.agent/skills/subscription-debug.md` | Recurring payments failing |
+| Sync order status | `.agent/skills/order-status-sync.md` | WC order out of sync with Razorpay dashboard |
+| Generate test webhook payloads | `.agent/skills/generate-test-payload.md` | Writing tests or debugging locally |
+| Audit all API calls | `.agent/skills/api-endpoint-audit.md` | Security review or rate limit analysis |
 
 ### How to Invoke a Skill
 
@@ -78,10 +78,21 @@ Templates in `.agent/prompts/` are ready-to-use prompts you can paste into any L
 
 | Prompt | File |
 |---|---|
-| Code review | `prompts/code-review.md` |
-| Bug report analysis | `prompts/bug-report-analysis.md` |
-| Feature planning | `prompts/feature-planning.md` |
-| Security audit | `prompts/security-audit.md` |
+| Code review | `.agent/prompts/code-review.md` |
+| Bug report analysis | `.agent/prompts/bug-report-analysis.md` |
+| Feature planning | `.agent/prompts/feature-planning.md` |
+| Security audit | `.agent/prompts/security-audit.md` |
+
+---
+
+## Documentation Structure
+
+The repository has two documentation trees with distinct purposes:
+
+- **`.ai/context/` and `.ai/diagrams/`** — Machine-readable context files for AI agents (concise, structured). These cover architecture, payment flows, database schema, and sequence diagrams in a format optimised for LLM context windows.
+- **`docs/`** — Human-readable reference documentation (detailed, with examples). Intended for developers reading the project manually.
+
+When in doubt, prefer `.ai/context/` files for AI tasks; use `docs/` for human reference.
 
 ---
 

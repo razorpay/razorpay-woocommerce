@@ -19,13 +19,13 @@ Generate valid Razorpay webhook payloads with correct HMAC-SHA256 signatures for
 
 ## Payload Templates
 
-### payment.captured (most common)
+### payment.authorized (most common)
 
 ```json
 {
   "entity": "event",
   "account_id": "acc_TEST1234567890",
-  "event": "payment.captured",
+  "event": "payment.authorized",
   "contains": ["payment"],
   "payload": {
     "payment": {
@@ -34,14 +34,14 @@ Generate valid Razorpay webhook payloads with correct HMAC-SHA256 signatures for
         "entity": "payment",
         "amount": 50000,
         "currency": "INR",
-        "status": "captured",
+        "status": "authorized",
         "order_id": "order_TEST1234567890",
         "invoice_id": null,
         "international": false,
         "method": "upi",
         "amount_refunded": 0,
         "refund_status": null,
-        "captured": true,
+        "captured": false,
         "description": "WooCommerce Order #1234",
         "card_id": null,
         "bank": null,
@@ -65,7 +65,7 @@ Generate valid Razorpay webhook payloads with correct HMAC-SHA256 signatures for
 }
 ```
 
-### payment.authorized (used for webhook table insertion)
+### payment.authorized (deferred/table insertion variant)
 
 ```json
 {
@@ -293,7 +293,8 @@ curl -X POST \
 ```php
 class WebhookTest extends WP_UnitTestCase
 {
-    private string $webhookSecret = 'test_webhook_secret_12345';
+    // This is a test-only value — never use a real secret here
+    private string $webhookSecret = 'TEST_ONLY_DO_NOT_USE_IN_PROD';
 
     private function buildSignedRequest(array $payloadData): array
     {
@@ -366,8 +367,8 @@ $wpdb->insert($table, [
 
 ## Example Prompts
 
-- "Use generate-test-payload skill to create a payment.captured payload for order #1234."
-- "Generate a refund.created webhook payload and the correct signature using webhook secret 'abc123'."
+- "Use generate-test-payload skill to create a payment.authorized payload for order #1234."
+- "Generate a refund.created webhook payload and a valid HMAC signature. Use the webhook secret stored in your WooCommerce Razorpay settings."
 - "Create a test subscription.charged payload with valid HMAC for our PHPUnit tests."
 
 ---

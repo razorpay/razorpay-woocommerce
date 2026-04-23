@@ -1,3 +1,5 @@
+<!-- This file mirrors CLAUDE.md at the repo root. The root CLAUDE.md is the authoritative source — Claude Code auto-loads it. This copy exists for tools that look in .claude/ specifically. When updating, keep both in sync. -->
+
 # Razorpay WooCommerce Plugin - Claude Code Context
 
 ## Project Overview

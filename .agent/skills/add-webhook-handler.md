@@ -111,7 +111,7 @@ protected function paymentDisputeCreated(array $data)
     $orderId   = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
     $disputeId = $data['payload']['dispute']['entity']['id'];
 
-    $order = $this->razorpay->checkIsObject($orderId);
+    $order = $this->checkIsObject($orderId);
 
     if ($order === false)
     {
@@ -142,7 +142,7 @@ protected function paymentDisputeCreated(array $data)
 ```
 
 **Key patterns to follow:**
-- Always check `$this->razorpay->checkIsObject($orderId)` before using the order
+- Always call `$this->checkIsObject($orderId)` before using the order
 - Always add an `$order->add_order_note()` for audit trail
 - Always call `rzpLogInfo()` or `rzpLogError()` with order ID in the message
 - Call `rzpTrackDataLake()` for analytics
@@ -219,7 +219,7 @@ protected function myNewHandler(array $data)
     $paymentId = $data['payload']['payment']['entity']['id'];
     $orderId   = $data['payload']['payment']['entity']['notes']['woocommerce_order_id'];
 
-    $order = $this->razorpay->checkIsObject($orderId);
+    $order = $this->checkIsObject($orderId);
     if ($order === false) { rzpLogError("..."); return; }
 
     $order->add_order_note("Razorpay event: ...");
