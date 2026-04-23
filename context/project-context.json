@@ -1,0 +1,259 @@
+{
+  "project": {
+    "name": "razorpay-woocommerce",
+    "display_name": "Razorpay Payment Gateway for WooCommerce",
+    "version": "4.8.3",
+    "description": "Official Razorpay payment gateway plugin for WooCommerce. Supports standard checkout, Magic Checkout (1CC), subscriptions, refunds, Route transfers, and webhooks.",
+    "language": "PHP",
+    "php_version": "7.4+",
+    "platform": "WordPress",
+    "framework": "WooCommerce",
+    "wc_tested_up_to": "10.6.2",
+    "repository": "razorpay/razorpay-woocommerce",
+    "entry_point": "woo-razorpay.php",
+    "plugin_id": "razorpay",
+    "main_class": "WC_Razorpay",
+    "parent_class": "WC_Payment_Gateway"
+  },
+  "architecture": {
+    "pattern": "WordPress Plugin with WooCommerce Gateway Extension",
+    "components": [
+      {
+        "name": "WC_Razorpay",
+        "file": "woo-razorpay.php",
+        "type": "main_gateway_class",
+        "description": "Primary payment gateway class extending WC_Payment_Gateway. Handles standard checkout flow."
+      },
+      {
+        "name": "RZP_Webhook",
+        "file": "includes/razorpay-webhook.php",
+        "type": "webhook_handler",
+        "description": "Processes incoming Razorpay webhooks. Verifies HMAC signatures. Routes events."
+      },
+      {
+        "name": "RZP_Route",
+        "file": "includes/razorpay-route.php",
+        "type": "admin_ui",
+        "description": "WP_List_Table subclass for Route transfer management admin UI."
+      },
+      {
+        "name": "RZP_Route_Action",
+        "file": "includes/razorpay-route-actions.php",
+        "type": "business_logic",
+        "description": "Handles Route transfer creation, reversals, and settlement operations."
+      },
+      {
+        "name": "TrackPluginInstrumentation",
+        "file": "includes/plugin-instrumentation.php",
+        "type": "analytics",
+        "description": "Tracks plugin events to Segment and Razorpay data lake."
+      },
+      {
+        "name": "WC_Razorpay_Blocks",
+        "file": "checkout-block.php",
+        "type": "gutenberg_block",
+        "description": "Integrates Razorpay with WooCommerce Gutenberg block-based checkout."
+      }
+    ]
+  },
+  "payment_flows": [
+    {
+      "name": "standard_checkout",
+      "description": "Standard WooCommerce checkout with Razorpay modal or redirect",
+      "entry_point": "WC_Razorpay::process_payment()",
+      "steps": [
+        "process_payment() - set transient, redirect to receipt page",
+        "receipt_page() - render checkout form",
+        "createOrGetRazorpayOrderId() - create/fetch Razorpay order via API",
+        "generateOrderForm() - render form + enqueue JS",
+        "Customer pays in Razorpay modal",
+        "check_razorpay_response() - handle callback",
+        "verifySignature() - HMAC verification",
+        "updateOrder() - mark WC order complete"
+      ]
+    },
+    {
+      "name": "magic_checkout_1cc",
+      "description": "One-click checkout from product/cart page via Razorpay hosted experience",
+      "entry_point": "POST /wp-json/1cc/v1/order/create",
+      "steps": [
+        "btn-1cc-checkout.js - button click handler",
+        "createWcOrder() - create WC order in checkout-draft status",
+        "is_magic_checkout_order meta set to yes",
+        "calculateShipping1cc() - calculate shipping for customer address",
+        "Customer completes payment in Razorpay checkout",
+        "check_razorpay_response() - handle callback",
+        "update1ccOrderWC() - sync address, shipping, COD, promotions"
+      ]
+    },
+    {
+      "name": "webhook_async",
+      "description": "Asynchronous payment confirmation via Razorpay webhooks",
+      "entry_point": "admin-post.php?action=rzp_wc_webhook",
+      "steps": [
+        "RZP_Webhook::process() - parse and validate webhook",
+        "verifyWebhookSignature() - HMAC verification",
+        "saveWebhookEvent() - store in rzp_webhook_requests DB table",
+        "WP Cron: paymentAuthorized() - capture if needed",
+        "updateOrder() - finalize WC order"
+      ]
+    },
+    {
+      "name": "refund_wc_initiated",
+      "description": "Refund initiated from WooCommerce admin",
+      "entry_point": "WC_Razorpay::process_refund()",
+      "steps": [
+        "process_refund($orderId, $amount, $reason)",
+        "payment->fetch($paymentId)->refund($data)",
+        "refund_from_website=true in notes to prevent duplicate webhook refund"
+      ]
+    },
+    {
+      "name": "refund_webhook_initiated",
+      "description": "Refund created in Razorpay Dashboard, synced to WC via webhook",
+      "entry_point": "RZP_Webhook::refundedCreated()",
+      "steps": [
+        "refund.created webhook received",
+        "Check refund_from_website != true to avoid duplicates",
+        "wc_create_refund() to sync WC order"
+      ]
+    },
+    {
+      "name": "route_transfer",
+      "description": "Marketplace payment splitting via Razorpay Route",
+      "entry_point": "Enabled via route_enable setting",
+      "steps": [
+        "getOrderTransferData() - fetch product transfer rules",
+        "Include transfers in Razorpay order creation",
+        "Post-payment: transferFromPayment() - execute transfers"
+      ]
+    }
+  ],
+  "database": {
+    "tables": [
+      {
+        "name": "wp_rzp_webhook_requests",
+        "purpose": "Webhook event queue for async processing",
+        "columns": {
+          "integration": "Always 'woocommerce'",
+          "order_id": "WooCommerce order ID",
+          "rzp_order_id": "Razorpay order ID",
+          "rzp_webhook_data": "JSON array of webhook events",
+          "rzp_update_order_cron_status": "0=created, 1=processed_by_callback",
+          "rzp_webhook_notified_at": "Unix timestamp"
+        }
+      }
+    ],
+    "options": {
+      "woocommerce_razorpay_settings": "Plugin settings array",
+      "webhook_secret": "Webhook HMAC secret",
+      "rzp1cc_hmac_secret": "1CC REST API HMAC secret",
+      "rzp_wc_last_key_id": "Last known API key ID",
+      "webhook_enable_flag": "Last webhook setup timestamp",
+      "rzp_hpos": "HPOS tracking (yes/no)",
+      "rzp_afd_enable": "Affordability widget feature flag",
+      "rzp_rtb_enable": "Trusted Business widget flag"
+    },
+    "order_meta": {
+      "razorpay_order_id{wcOrderId}": "Standard checkout Razorpay order ID",
+      "razorpay_order_id_1cc{wcOrderId}": "1CC checkout Razorpay order ID",
+      "is_magic_checkout_order": "yes for 1CC orders",
+      "1cc_shippinginfo": "JSON shipping options for 1CC"
+    }
+  },
+  "rest_api": {
+    "base_path": "/wp-json/1cc/v1",
+    "endpoints": [
+      { "method": "POST", "path": "/coupon/list", "handler": "getCouponList", "auth": "hmac" },
+      { "method": "POST", "path": "/coupon/apply", "handler": "applyCouponOnCart", "auth": "credentials" },
+      { "method": "POST", "path": "/order/create", "handler": "createWcOrder", "auth": "credentials" },
+      { "method": "POST", "path": "/shipping/shipping-info", "handler": "calculateShipping1cc", "auth": "credentials" },
+      { "method": "POST", "path": "/abandoned-cart", "handler": "saveCartAbandonmentData", "auth": "credentials" },
+      { "method": "POST", "path": "/cart/fetch-cart", "handler": "fetchCartData", "auth": "credentials" },
+      { "method": "POST", "path": "/cart/create-cart", "handler": "createCartData", "auth": "credentials" },
+      { "method": "POST", "path": "/giftcard/apply", "handler": "validateGiftCardData", "auth": "credentials" },
+      { "method": "POST", "path": "/cod/order/prepay", "handler": "prepayCODOrder", "auth": "credentials" }
+    ]
+  },
+  "webhook_events": {
+    "payment.authorized": "Primary payment confirmation - stored for async processing",
+    "payment.pending": "COD payment pending",
+    "payment.failed": "No-op",
+    "refund.created": "External refund sync",
+    "virtual_account.credited": "Bank transfer payment",
+    "subscription.charged": "Subscription renewal (companion plugin)",
+    "subscription.cancelled": "No-op",
+    "subscription.paused": "No-op",
+    "subscription.resumed": "No-op"
+  },
+  "settings": {
+    "option_key": "woocommerce_razorpay_settings",
+    "fields": {
+      "enabled": "Enable/disable gateway",
+      "title": "Display title",
+      "description": "Display description",
+      "key_id": "Razorpay API Key ID",
+      "key_secret": "Razorpay API Key Secret",
+      "payment_action": "capture or authorize",
+      "route_enable": "Enable Route module",
+      "enable_1cc": "Enable Magic Checkout",
+      "enable_1cc_test_mode": "1CC test mode",
+      "enable_1cc_debug_mode": "Debug logging",
+      "enable_1cc_pdp_checkout": "Product page button",
+      "enable_1cc_mini_cart_checkout": "Mini cart button",
+      "enable_1cc_mandatory_login": "Require Razorpay login",
+      "1cc_min_cart_amount": "Minimum cart amount for 1CC",
+      "webhook_secret": "Webhook HMAC secret"
+    }
+  },
+  "hooks": {
+    "actions": {
+      "plugins_loaded": "woocommerce_razorpay_init - plugin bootstrap",
+      "woocommerce_receipt_razorpay": "receipt_page - render payment form",
+      "woocommerce_api_razorpay": "check_razorpay_response - payment callback",
+      "woocommerce_update_options_payment_gateways_razorpay": "settings save handlers",
+      "admin_post_nopriv_rzp_wc_webhook": "razorpay_webhook_init - webhook handler",
+      "rest_api_init": "rzp1ccInitRestApi - register 1CC REST routes",
+      "wp_enqueue_scripts": "enqueue checkout.js",
+      "woocommerce_blocks_loaded": "register Gutenberg block",
+      "before_woocommerce_init": "HPOS + block compatibility declarations"
+    },
+    "filters": {
+      "woocommerce_payment_gateways": "Register gateway class",
+      "woocommerce_thankyou_order_received_text": "Custom thank you message",
+      "script_loader_tag": "Add defer to checkout.js"
+    }
+  },
+  "security": {
+    "webhook_verification": "HMAC-SHA256 of raw body using webhook_secret",
+    "payment_signature": "HMAC-SHA256 of {order_id}|{payment_id} using key_secret",
+    "1cc_api_auth": "HMAC-SHA256 of request body using rzp1cc_hmac_secret",
+    "admin_actions": "WordPress nonces + manage_woocommerce capability",
+    "input_sanitization": "sanitize_text_field() for all user input"
+  },
+  "coding_conventions": {
+    "functions": "snake_case (WordPress style)",
+    "methods": "camelCase",
+    "constants": "UPPER_SNAKE_CASE",
+    "classes": "PascalCase",
+    "amounts": "Always in smallest currency unit (paise for INR) when interacting with Razorpay API",
+    "logging": "rzpLogInfo(), rzpLogError(), rzpLogDebug() - never raw error_log()",
+    "hpos": "Always check isHposEnabled before order meta operations"
+  },
+  "external_integrations": {
+    "cartbounty": "includes/support/cartbounty.php",
+    "wati": "includes/support/wati.php",
+    "smart_coupons": "includes/support/smart-coupons.php",
+    "pw_gift_cards": "Gift card type detection in woo-razorpay.php",
+    "yith_gift_cards": "Gift card type detection in woo-razorpay.php",
+    "pixelyoursite_pro": "UTM data in includes/api/order.php",
+    "yith_dynamic_pricing": "Coupon compatibility in includes/api/order.php",
+    "wcfm_marketplace": "Multi-vendor shipping in woo-razorpay.php"
+  },
+  "testing": {
+    "framework": "PHPUnit",
+    "config": "phpunit.xml",
+    "test_directory": "tests/",
+    "run_command": "./vendor/bin/phpunit --configuration phpunit.xml"
+  }
+}
