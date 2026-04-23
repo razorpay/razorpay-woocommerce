@@ -99,7 +99,7 @@ sequenceDiagram
 
     WH->>DB: Get 'webhook_secret' option
     Note over DB: Fallback chain:<br/>1. woocommerce_razorpay_settings[webhook_secret]<br/>2. get_option('webhook_secret')<br/>3. get_option('rzp_webhook_secret')
-    DB-->>WH: "SecretString20Chars"
+    DB-->>WH: "xxxxxxxxx"
 
     WH->>SDK: utility->verifyWebhookSignature(rawBody, receivedSig, secret)
     Note over SDK: expectedSig = HMAC-SHA256(rawBody, secret)<br/>Compare expectedSig === receivedSig (timing-safe)
