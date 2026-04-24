@@ -17,6 +17,14 @@
       "composer/installers": true,
       "woocommerce/woocommerce": true,
       "automattic/jetpack-autoloader": true
+    },
+    "audit": {
+        "ignore": {
+            "PKSA-sgm3-pd55-zhds": {
+                "apply": "all",
+                "reason": "Vulnerability does not affect our specific usage."
+            }
+        }
     }
   },
   "extra": {
