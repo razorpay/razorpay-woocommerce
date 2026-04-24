@@ -50,6 +50,16 @@ git checkout-index -a -f --prefix=$SVNPATH/trunk/
 echo "Ignoring github specific & deployment script"
 svn propset svn:ignore "release.sh
 tests
+.agent
+.ai
+.claude
+.github
+.gemini
+.kimi
+context
+docs
+AGENTS.md
+CLAUDE.md
 .git
 .gitignore" "$SVNPATH/trunk/"
 
