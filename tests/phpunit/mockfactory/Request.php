@@ -12,6 +12,11 @@ use Exception;
 
 class Request
 {
+    public static function addHeader($header, $value)
+    {
+        // no-op in test environment
+    }
+
     public function request($method, $url, $data = array())
     {
         $key_id = MockApi::getKey();
