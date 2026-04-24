@@ -121,7 +121,7 @@ class Test_OrderMethods extends WP_UnitTestCase
 
         $desc = "Order $orderId";
 
-        $notes = array('woocommerce_order_id' => $orderId, 'woocommerce_order_number' => $wcOrderId);
+        $notes = array('woocommerce_order_id' => $wcOrderId, 'woocommerce_order_number' => $orderId);
 
         $sessionKey = "razorpay_order_id" . $orderId;
 
