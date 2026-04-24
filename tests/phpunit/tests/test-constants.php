@@ -34,7 +34,7 @@ class Test_Constants extends WP_UnitTestCase
 
         $this->assertSame('woocommerce_order_number', $this->razorpayTests::WC_ORDER_NUMBER);
 
-        $this->assertSame('Credit Card/Debit Card/NetBanking', $this->razorpayTests::DEFAULT_LABEL);
+        $this->assertSame('UPI, Cards, NetBanking', $this->razorpayTests::DEFAULT_LABEL);
 
         $this->assertSame('Pay securely by Credit or Debit card or Internet Banking through Razorpay.', $this->razorpayTests::DEFAULT_DESCRIPTION);
 
