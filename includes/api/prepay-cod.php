@@ -12,13 +12,57 @@ function prepayCODOrder(WP_REST_Request $request): WP_REST_Response {
         $payload = $request->get_params();
         $wcRazorpay = new WC_Razorpay(false);
 
-        $orderId = $payload[WC_ORDER_ID];
+        $orderId          = $payload[WC_ORDER_ID];
         $razorpayPaymentId = $payload[RAZORPAY_PAYMENT_ID];
-        $razorpayOrderId = $payload[RAZORPAY_ORDER_ID];
-        $signature = $payload[RAZORPAY_SIGNATURE];
-        $razorpayOffer = $payload[RAZORPAY_OFFER];
+        $razorpayOrderId  = $payload[RAZORPAY_ORDER_ID];
+        $signature        = $payload[RAZORPAY_SIGNATURE];
+        $razorpayOffer    = $payload[RAZORPAY_OFFER];
+
+        // Validate the order exists before any further processing
+        $order = wc_get_order($orderId);
+        if (!$order)
+        {
+            return new WP_REST_Response(['code' => 'invalid_order'], 400);
+        }
+
+        // Prevent double-payment on an already-paid order
+        if ($order->is_paid())
+        {
+            return new WP_REST_Response(['code' => 'order_already_paid'], 400);
+        }
+
+        // Validate that the Razorpay order ID in the request matches what was stored
+        // when the WooCommerce order was created. The stored meta key depends on
+        // whether this is a 1CC (Magic Checkout) order or a standard checkout order:
+        //   1CC orders:  "razorpay_order_id_1cc{orderId}"  (WC_Razorpay::RAZORPAY_ORDER_ID_1CC)
+        //   Standard:    "razorpay_order_id{orderId}"      (WC_Razorpay::RAZORPAY_ORDER_ID)
+        // See WC_Razorpay::getOrderSessionKey() in woo-razorpay.php for the authoritative logic.
+        $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+        if ($is1ccOrder === 'yes')
+        {
+            $sessionKey = 'razorpay_order_id_1cc' . $orderId;
+        }
+        else
+        {
+            $sessionKey = 'razorpay_order_id' . $orderId;
+        }
+
+        $storedRazorpayOrderId = $order->get_meta($sessionKey);
+
+        if (empty($storedRazorpayOrderId))
+        {
+            return new WP_REST_Response(['code' => 'razorpay_order_not_found'], 400);
+        }
+
+        if ($storedRazorpayOrderId !== $razorpayOrderId)
+        {
+            return new WP_REST_Response(['code' => 'razorpay_order_id_mismatch'], 400);
+        }
+
+        // Verify the Razorpay payment signature using the stored order ID (not the
+        // client-supplied one) to close the IDOR window.
         $attributes = array(
-            RAZORPAY_ORDER_ID => $razorpayOrderId,
+            RAZORPAY_ORDER_ID   => $storedRazorpayOrderId,
             RAZORPAY_PAYMENT_ID => $razorpayPaymentId,
             RAZORPAY_SIGNATURE  => $signature,
         );
@@ -32,7 +76,7 @@ function prepayCODOrder(WP_REST_Request $request): WP_REST_Response {
         {
             return new WP_REST_Response(["code" => 'woocommerce_order_payment_signature_verfication_failed'], 400);
         }
-        $order = wc_get_order($orderId);
+
         if ('on-hold' != $order->get_status())
         {
             return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
