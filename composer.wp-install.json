@@ -10,7 +10,7 @@
   ],
   "require": {
     "composer/installers": "^1.0",
-    "woocommerce/woocommerce": "^5.9.1"
+    "woocommerce/woocommerce": "^3.0"
   },
   "config": {
     "allow-plugins": {
@@ -23,7 +23,11 @@
             "PKSA-sgm3-pd55-zhds": {
                 "apply": "all",
                 "reason": "Vulnerability does not affect our specific usage."
-            }
+            },
+            "PKSA-5c3v-z6jw-1fgc":"Vulnerability does not affect our specific usage.",
+            "PKSA-m2w3-cj2r-6yn5":"Vulnerability does not affect our specific usage.",
+            "PKSA-drmm-wx7b-585f":"Vulnerability does not affect our specific usage."
+
         }
     }
   },
