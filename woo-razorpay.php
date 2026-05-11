@@ -309,6 +309,48 @@ function woocommerce_razorpay_init()
         public $isHposEnabled;
 
         /**
+        private static $iso3CountryMap = [
+            'AF' => 'AFG', 'AL' => 'ALB', 'DZ' => 'DZA', 'AD' => 'AND', 'AO' => 'AGO',
+            'AG' => 'ATG', 'AR' => 'ARG', 'AM' => 'ARM', 'AU' => 'AUS', 'AT' => 'AUT',
+            'AZ' => 'AZE', 'BS' => 'BHS', 'BH' => 'BHR', 'BD' => 'BGD', 'BB' => 'BRB',
+            'BY' => 'BLR', 'BE' => 'BEL', 'BZ' => 'BLZ', 'BJ' => 'BEN', 'BT' => 'BTN',
+            'BO' => 'BOL', 'BA' => 'BIH', 'BW' => 'BWA', 'BR' => 'BRA', 'BN' => 'BRN',
+            'BG' => 'BGR', 'BF' => 'BFA', 'BI' => 'BDI', 'CV' => 'CPV', 'KH' => 'KHM',
+            'CM' => 'CMR', 'CA' => 'CAN', 'CF' => 'CAF', 'TD' => 'TCD', 'CL' => 'CHL',
+            'CN' => 'CHN', 'CO' => 'COL', 'KM' => 'COM', 'CG' => 'COG', 'CD' => 'COD',
+            'CR' => 'CRI', 'CI' => 'CIV', 'HR' => 'HRV', 'CU' => 'CUB', 'CY' => 'CYP',
+            'CZ' => 'CZE', 'DK' => 'DNK', 'DJ' => 'DJI', 'DM' => 'DMA', 'DO' => 'DOM',
+            'EC' => 'ECU', 'EG' => 'EGY', 'SV' => 'SLV', 'GQ' => 'GNQ', 'ER' => 'ERI',
+            'EE' => 'EST', 'SZ' => 'SWZ', 'ET' => 'ETH', 'FJ' => 'FJI', 'FI' => 'FIN',
+            'FR' => 'FRA', 'GA' => 'GAB', 'GM' => 'GMB', 'GE' => 'GEO', 'DE' => 'DEU',
+            'GH' => 'GHA', 'GR' => 'GRC', 'GD' => 'GRD', 'GT' => 'GTM', 'GN' => 'GIN',
+            'GW' => 'GNB', 'GY' => 'GUY', 'HT' => 'HTI', 'HN' => 'HND', 'HU' => 'HUN',
+            'IS' => 'ISL', 'IN' => 'IND', 'ID' => 'IDN', 'IR' => 'IRN', 'IQ' => 'IRQ',
+            'IE' => 'IRL', 'IL' => 'ISR', 'IT' => 'ITA', 'JM' => 'JAM', 'JP' => 'JPN',
+            'JO' => 'JOR', 'KZ' => 'KAZ', 'KE' => 'KEN', 'KI' => 'KIR', 'KP' => 'PRK',
+            'KR' => 'KOR', 'KW' => 'KWT', 'KG' => 'KGZ', 'LA' => 'LAO', 'LV' => 'LVA',
+            'LB' => 'LBN', 'LS' => 'LSO', 'LR' => 'LBR', 'LY' => 'LBY', 'LI' => 'LIE',
+            'LT' => 'LTU', 'LU' => 'LUX', 'MG' => 'MDG', 'MW' => 'MWI', 'MY' => 'MYS',
+            'MV' => 'MDV', 'ML' => 'MLI', 'MT' => 'MLT', 'MH' => 'MHL', 'MR' => 'MRT',
+            'MU' => 'MUS', 'MX' => 'MEX', 'FM' => 'FSM', 'MD' => 'MDA', 'MC' => 'MCO',
+            'MN' => 'MNG', 'ME' => 'MNE', 'MA' => 'MAR', 'MZ' => 'MOZ', 'MM' => 'MMR',
+            'NA' => 'NAM', 'NR' => 'NRU', 'NP' => 'NPL', 'NL' => 'NLD', 'NZ' => 'NZL',
+            'NI' => 'NIC', 'NE' => 'NER', 'NG' => 'NGA', 'MK' => 'MKD', 'NO' => 'NOR',
+            'OM' => 'OMN', 'PK' => 'PAK', 'PW' => 'PLW', 'PA' => 'PAN', 'PG' => 'PNG',
+            'PY' => 'PRY', 'PE' => 'PER', 'PH' => 'PHL', 'PL' => 'POL', 'PT' => 'PRT',
+            'QA' => 'QAT', 'RO' => 'ROU', 'RU' => 'RUS', 'RW' => 'RWA', 'KN' => 'KNA',
+            'LC' => 'LCA', 'VC' => 'VCT', 'WS' => 'WSM', 'SM' => 'SMR', 'ST' => 'STP',
+            'SA' => 'SAU', 'SN' => 'SEN', 'RS' => 'SRB', 'SC' => 'SYC', 'SL' => 'SLE',
+            'SG' => 'SGP', 'SK' => 'SVK', 'SI' => 'SVN', 'SB' => 'SLB', 'SO' => 'SOM',
+            'ZA' => 'ZAF', 'SS' => 'SSD', 'ES' => 'ESP', 'LK' => 'LKA', 'SD' => 'SDN',
+            'SR' => 'SUR', 'SE' => 'SWE', 'CH' => 'CHE', 'SY' => 'SYR', 'TW' => 'TWN',
+            'TJ' => 'TJK', 'TZ' => 'TZA', 'TH' => 'THA', 'TL' => 'TLS', 'TG' => 'TGO',
+            'TO' => 'TON', 'TT' => 'TTO', 'TN' => 'TUN', 'TR' => 'TUR', 'TM' => 'TKM',
+            'TV' => 'TUV', 'UG' => 'UGA', 'UA' => 'UKR', 'AE' => 'ARE', 'GB' => 'GBR',
+            'US' => 'USA', 'UY' => 'URY', 'UZ' => 'UZB', 'VU' => 'VUT', 'VE' => 'VEN',
+            'VN' => 'VNM', 'YE' => 'YEM', 'ZM' => 'ZMB', 'ZW' => 'ZWE',
+        ];
+
          * Return Wordpress plugin settings
          * @param  string $key setting key
          * @return mixed setting value
@@ -447,6 +489,7 @@ function woocommerce_razorpay_init()
             }
 
             add_action('wp_enqueue_scripts', array($this, 'enqueue_checkout_js_script_on_checkout'));
+            add_filter('wp_headers', array($this, 'addShieldCspHeader'));
 
             add_filter('script_loader_tag', array($this, 'add_defer_to_checkout_js'), 10, 3);
 
@@ -849,7 +892,7 @@ function woocommerce_razorpay_init()
 
         public function enqueue_checkout_js_script_on_checkout()
         {
-            if (is_checkout()) 
+            if (is_checkout())
             {
                 wp_enqueue_script(
                     'razorpay-checkout-js',
@@ -858,7 +901,64 @@ function woocommerce_razorpay_init()
                     null,
                     false // Load script in footer
                 );
+                wp_add_inline_script('razorpay-checkout-js', $this->getShieldDeviceIdJs());
             }
+        }
+
+        private function getShieldDeviceIdJs()
+        {
+            return <<<'SHIELDJS'
+(function() {
+    function generateDeviceId() {
+        try {
+            var stored = localStorage.getItem('rzp_device_id');
+            if (stored) { return Promise.resolve(stored); }
+        } catch(e) {}
+
+        var fingerprint = [
+            navigator.userAgent, navigator.language,
+            new Date().getTimezoneOffset(), navigator.platform,
+            navigator.hardwareConcurrency, screen.colorDepth,
+            screen.width + 'x' + screen.height,
+            screen.width * screen.height, window.devicePixelRatio
+        ].join('|');
+
+        var version = '1';
+
+        if (window.crypto && window.crypto.subtle) {
+            var encoder = new TextEncoder();
+            return window.crypto.subtle.digest('SHA-1', encoder.encode(fingerprint)).then(function(buf) {
+                var hex = Array.from(new Uint8Array(buf)).map(function(b) {
+                    return b.toString(16).padStart(2, '0');
+                }).join('');
+                var id = version + '.' + hex + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
+                try { localStorage.setItem('rzp_device_id', id); } catch(e) {}
+                return id;
+            });
+        }
+
+        var hash = 5381;
+        for (var i = 0; i < fingerprint.length; i++) {
+            hash = ((hash << 5) + hash) + fingerprint.charCodeAt(i);
+            hash = hash & hash;
+        }
+        var id = version + '.' + (hash >>> 0).toString(16) + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
+        try { localStorage.setItem('rzp_device_id', id); } catch(e) {}
+        return Promise.resolve(id);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.querySelector('form.woocommerce-checkout');
+        if (!form) { return; }
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'rzp_device_id';
+        input.value = '';
+        form.appendChild(input);
+        generateDeviceId().then(function(id) { input.value = id; });
+    });
+})();
+SHIELDJS;
         }
 
         public function add_defer_to_checkout_js($tag, $handle, $src)
@@ -1403,6 +1503,101 @@ function woocommerce_razorpay_init()
             return $args;
         }
 
+        private function getClientIp()
+        {
+            if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
+            {
+                $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                return trim($ips[0]);
+            }
+            return isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+        }
+
+        private function buildShieldLineItems($order)
+        {
+            $lineItems = [];
+            foreach ($order->get_items() as $itemId => $item)
+            {
+                $product = $item->get_product();
+                if (!$product)
+                {
+                    continue;
+                }
+                $price      = (int) round(wc_get_price_excluding_tax($product) * 100);
+                $salePrice  = $product->get_sale_price();
+                $offerPrice = ($salePrice !== '' && $salePrice !== null)
+                    ? (int) round((float) $salePrice * 100)
+                    : $price;
+                $productImage = $product->get_image_id() ?? null;
+
+                $lineItems[] = [
+                    'type'        => 'e-commerce',
+                    'sku'         => (string) $product->get_sku(),
+                    'variant_id'  => (string) $item->get_variation_id(),
+                    'price'       => $price,
+                    'offer_price' => max(0, $offerPrice),
+                    'tax_amount'  => 0,
+                    'quantity'    => (int) $item->get_quantity(),
+                    'name'        => mb_substr($item->get_name(), 0, 125, 'UTF-8'),
+                    'description' => mb_substr($item->get_name(), 0, 125, 'UTF-8'),
+                    'image_url'   => (string) ($productImage ? wp_get_attachment_url($productImage) : ''),
+                    'product_url' => (string) $product->get_permalink(),
+                ];
+            }
+            return $lineItems;
+        }
+
+        private function buildShieldCustomerDetails($order)
+        {
+            $name = trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name());
+
+            $shippingCountry  = $order->get_shipping_country();
+            $shippingAddress  = !empty($shippingCountry)
+                ? $this->buildShieldAddress($order, 'shipping')
+                : $this->buildShieldAddress($order, 'billing');
+
+            return [
+                'name'             => $name,
+                'email'            => (string) $order->get_billing_email(),
+                'contact'          => (string) $order->get_billing_phone(),
+                'insights'         => ['has_account' => ($order->get_user_id() > 0)],
+                'billing_address'  => $this->buildShieldAddress($order, 'billing'),
+                'shipping_address' => $shippingAddress,
+            ];
+        }
+
+        private function buildShieldAddress($order, $type)
+        {
+            $iso2 = (string) call_user_func([$order, "get_{$type}_country"]);
+            $iso3 = isset(self::$iso3CountryMap[$iso2]) ? self::$iso3CountryMap[$iso2] : $iso2;
+            $name = trim(
+                call_user_func([$order, "get_{$type}_first_name"]) . ' ' .
+                call_user_func([$order, "get_{$type}_last_name"])
+            );
+
+            return [
+                'line1'     => (string) call_user_func([$order, "get_{$type}_address_1"]),
+                'line2'     => (string) call_user_func([$order, "get_{$type}_address_2"]),
+                'city'      => (string) call_user_func([$order, "get_{$type}_city"]),
+                'state'     => (string) call_user_func([$order, "get_{$type}_state"]),
+                'zipcode'   => (string) call_user_func([$order, "get_{$type}_postcode"]),
+                'country'   => $iso3,
+                'name'      => $name,
+                'contact'   => (string) $order->get_billing_phone(),
+                'latitude'  => null,
+                'longitude' => null,
+            ];
+        }
+
+        public function addShieldCspHeader($headers)
+        {
+            if (isset($headers['Content-Security-Policy']))
+            {
+                $headers['Content-Security-Policy'] .= '; script-src cdn.razorpay.com';
+            }
+            return $headers;
+        }
+
         protected function createRazorpayOrderId($orderId, $sessionKey)
         {
             rzpLogInfo("Called createRazorpayOrderId with params orderId $orderId and sessionKey $sessionKey");
@@ -1602,6 +1797,27 @@ function woocommerce_razorpay_init()
             {
                 $data = $this->orderArg1CC($data, $order);
                 rzpLogInfo("Called getOrderCreationData with params orderId $orderId and adding line_items_total");
+            }
+
+            // Shield fraud detection enrichment
+            $rawDeviceId = isset($_POST['rzp_device_id']) ? (string) $_POST['rzp_device_id'] : '';
+            $deviceId    = (strlen($rawDeviceId) <= 255 && preg_match('/^[a-zA-Z0-9._-]+$/', $rawDeviceId))
+                ? $rawDeviceId : '';
+
+            $data['notes']['shield_device_id']  = $deviceId;
+            $data['notes']['shield_user_agent'] = isset($_SERVER['HTTP_USER_AGENT'])
+                ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+            $data['notes']['shield_client_ip']  = $this->getClientIp();
+
+            $data['line_items_total'] = (int) round(
+                ($order->get_subtotal() - $order->get_discount_total()) * 100
+            );
+            $data['shipping_fee']     = (int) round($order->get_shipping_total() * 100);
+            $data['customer_details'] = $this->buildShieldCustomerDetails($order);
+
+            if (empty($data['line_items']))
+            {
+                $data['line_items'] = $this->buildShieldLineItems($order);
             }
 
             return $data;
