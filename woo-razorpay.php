@@ -925,26 +925,26 @@ function woocommerce_razorpay_init()
 
         var version = '1';
 
+        // SHA-1 is used here for collision-resistance in a device fingerprint, not for cryptographic security
         if (window.crypto && window.crypto.subtle) {
             var encoder = new TextEncoder();
             return window.crypto.subtle.digest('SHA-1', encoder.encode(fingerprint)).then(function(buf) {
                 var hex = Array.from(new Uint8Array(buf)).map(function(b) {
                     return b.toString(16).padStart(2, '0');
                 }).join('');
-                var id = version + '.' + hex + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
-                try { localStorage.setItem('rzp_device_id', id); } catch(e) {}
-                return id;
+                return version + '.' + hex + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
             });
         }
 
-        var hash = 5381;
-        for (var i = 0; i < fingerprint.length; i++) {
-            hash = ((hash << 5) + hash) + fingerprint.charCodeAt(i);
-            hash = hash & hash;
-        }
-        var id = version + '.' + (hash >>> 0).toString(16) + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
+        return Promise.resolve(null); // djb2 fallback is handled synchronously in DOMContentLoaded
+    }
+
+    function setDeviceId(id) {
         try { localStorage.setItem('rzp_device_id', id); } catch(e) {}
-        return Promise.resolve(id);
+        // Also persist in cookie so Block Checkout (Gutenberg) REST requests can read it server-side
+        document.cookie = 'rzp_device_id=' + encodeURIComponent(id) + '; path=/; SameSite=Strict';
+        var input = document.getElementById('rzp_device_id_field');
+        if (input) { input.value = id; }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -953,9 +953,28 @@ function woocommerce_razorpay_init()
         var input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'rzp_device_id';
+        input.id = 'rzp_device_id_field';
         input.value = '';
         form.appendChild(input);
-        generateDeviceId().then(function(id) { input.value = id; });
+
+        // Set synchronous djb2 value immediately so fast submits always have a device ID
+        var fingerprint = [
+            navigator.userAgent, navigator.language,
+            new Date().getTimezoneOffset(), navigator.platform,
+            navigator.hardwareConcurrency, screen.colorDepth,
+            screen.width + 'x' + screen.height,
+            screen.width * screen.height, window.devicePixelRatio
+        ].join('|');
+        var syncHash = 5381;
+        for (var i = 0; i < fingerprint.length; i++) {
+            syncHash = ((syncHash << 5) + syncHash) + fingerprint.charCodeAt(i);
+            syncHash = syncHash & syncHash;
+        }
+        var syncId = '1.' + (syncHash >>> 0).toString(16) + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
+        setDeviceId(syncId);
+
+        // Then upgrade to crypto-based ID asynchronously if available
+        generateDeviceId().then(function(id) { setDeviceId(id); });
     });
 })();
 SHIELDJS;
@@ -1505,6 +1524,8 @@ SHIELDJS;
 
         private function getClientIp()
         {
+            // HTTP_X_FORWARDED_FOR is user-controlled and not validated against a trusted proxy
+            // allowlist — used for fraud-signal analytics only, not as a verified IP.
             if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
             {
                 $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
@@ -1523,12 +1544,14 @@ SHIELDJS;
                 {
                     continue;
                 }
-                $price      = (int) round(wc_get_price_excluding_tax($product) * 100);
+                // Use actual paid price from the order (after discounts), not catalog price
+                $price      = (int) round(($item->get_total() / max(1, $item->get_quantity())) * 100);
                 $salePrice  = $product->get_sale_price();
                 $offerPrice = ($salePrice !== '' && $salePrice !== null)
                     ? (int) round((float) $salePrice * 100)
                     : $price;
-                $productImage = $product->get_image_id() ?? null;
+                // get_image_id() returns 0 (not null) when no image is set — use ?: not ??
+                $productImage = $product->get_image_id() ?: null;
 
                 $lineItems[] = [
                     'type'        => 'e-commerce',
@@ -1591,9 +1614,23 @@ SHIELDJS;
 
         public function addShieldCspHeader($headers)
         {
+            // If no CSP header exists we intentionally don't add one — WP sites commonly omit CSP
+            // and adding a partial one here could break other scripts.
             if (isset($headers['Content-Security-Policy']))
             {
-                $headers['Content-Security-Policy'] .= '; script-src cdn.razorpay.com';
+                $source = 'https://cdn.razorpay.com';
+                $csp    = $headers['Content-Security-Policy'];
+                if (preg_match('/\bscript-src\b/i', $csp))
+                {
+                    // Merge into the existing script-src directive (appending a second script-src
+                    // is invalid; browsers only honour the first occurrence)
+                    $csp = preg_replace('/\bscript-src\b([^;]*)/i', 'script-src$1 ' . $source, $csp, 1);
+                }
+                else
+                {
+                    $csp .= '; script-src ' . $source;
+                }
+                $headers['Content-Security-Policy'] = $csp;
             }
             return $headers;
         }
@@ -1800,13 +1837,15 @@ SHIELDJS;
             }
 
             // Shield fraud detection enrichment
-            $rawDeviceId = (string) ($order->get_meta('rzp_shield_device_id') ?? '');
-            $deviceId    = (strlen($rawDeviceId) <= 255 && preg_match('/^[a-zA-Z0-9._-]+$/', $rawDeviceId))
-                ? $rawDeviceId : '';
+            // Value was already validated and saved to order meta in process_payment()
+            $savedDeviceId = (string) ($order->get_meta('rzp_shield_device_id') ?? '');
+            $deviceId      = (strlen($savedDeviceId) <= 255 && preg_match('/^[a-zA-Z0-9._-]+$/', $savedDeviceId))
+                ? $savedDeviceId : '';
 
             $data['notes']['shield_device_id']  = $deviceId;
+            // Truncate to 254 chars — Razorpay notes values have a 254-char limit per key
             $data['notes']['shield_user_agent'] = isset($_SERVER['HTTP_USER_AGENT'])
-                ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+                ? substr((string) $_SERVER['HTTP_USER_AGENT'], 0, 254) : '';
             $data['notes']['shield_client_ip']  = $this->getClientIp();
 
             $data['line_items_total'] = (int) round(
@@ -2126,7 +2165,13 @@ EOT;
 
             $order = wc_get_order($order_id);
 
+            // Classic checkout submits rzp_device_id in POST; Block Checkout (Gutenberg) uses a
+            // REST API call and doesn't include POST fields — fall back to the cookie set by JS.
             $rawDeviceId = isset($_POST['rzp_device_id']) ? (string) $_POST['rzp_device_id'] : '';
+            if ($rawDeviceId === '' && isset($_COOKIE['rzp_device_id']))
+            {
+                $rawDeviceId = (string) $_COOKIE['rzp_device_id'];
+            }
             if ($rawDeviceId !== '' &&
                 strlen($rawDeviceId) <= 255 &&
                 preg_match('/^[a-zA-Z0-9._-]+$/', $rawDeviceId))
