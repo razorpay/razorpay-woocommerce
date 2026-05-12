@@ -1800,7 +1800,7 @@ SHIELDJS;
             }
 
             // Shield fraud detection enrichment
-            $rawDeviceId = isset($_POST['rzp_device_id']) ? (string) $_POST['rzp_device_id'] : '';
+            $rawDeviceId = (string) ($order->get_meta('rzp_shield_device_id') ?? '');
             $deviceId    = (strlen($rawDeviceId) <= 255 && preg_match('/^[a-zA-Z0-9._-]+$/', $rawDeviceId))
                 ? $rawDeviceId : '';
 
@@ -2125,6 +2125,15 @@ EOT;
             global $woocommerce;
 
             $order = wc_get_order($order_id);
+
+            $rawDeviceId = isset($_POST['rzp_device_id']) ? (string) $_POST['rzp_device_id'] : '';
+            if ($rawDeviceId !== '' &&
+                strlen($rawDeviceId) <= 255 &&
+                preg_match('/^[a-zA-Z0-9._-]+$/', $rawDeviceId))
+            {
+                $order->update_meta_data('rzp_shield_device_id', $rawDeviceId);
+                $order->save();
+            }
 
             set_transient(self::SESSION_KEY, $order_id, 3600);
             rzpLogInfo("Set transient with key " . self::SESSION_KEY . " params order_id $order_id");
