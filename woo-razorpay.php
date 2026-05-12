@@ -308,7 +308,6 @@ function woocommerce_razorpay_init()
          */
         public $isHposEnabled;
 
-        /**
         private static $iso3CountryMap = [
             'AF' => 'AFG', 'AL' => 'ALB', 'DZ' => 'DZA', 'AD' => 'AND', 'AO' => 'AGO',
             'AG' => 'ATG', 'AR' => 'ARG', 'AM' => 'ARM', 'AU' => 'AUS', 'AT' => 'AUT',
@@ -351,6 +350,7 @@ function woocommerce_razorpay_init()
             'VN' => 'VNM', 'YE' => 'YEM', 'ZM' => 'ZMB', 'ZW' => 'ZWE',
         ];
 
+        /**
          * Return Wordpress plugin settings
          * @param  string $key setting key
          * @return mixed setting value
