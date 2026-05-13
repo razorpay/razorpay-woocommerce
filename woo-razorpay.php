@@ -348,6 +348,24 @@ function woocommerce_razorpay_init()
             'TV' => 'TUV', 'UG' => 'UGA', 'UA' => 'UKR', 'AE' => 'ARE', 'GB' => 'GBR',
             'US' => 'USA', 'UY' => 'URY', 'UZ' => 'UZB', 'VU' => 'VUT', 'VE' => 'VEN',
             'VN' => 'VNM', 'YE' => 'YEM', 'ZM' => 'ZMB', 'ZW' => 'ZWE',
+            // WooCommerce-supported territories not in UN member-state list
+            'HK' => 'HKG', 'MO' => 'MAC', 'PS' => 'PSE', 'XK' => 'XKX',
+            'PR' => 'PRI', 'GU' => 'GUM', 'VI' => 'VIR', 'AS' => 'ASM',
+            'MP' => 'MNP', 'UM' => 'UMI',
+            // UK Crown dependencies & Overseas Territories
+            'JE' => 'JEY', 'GG' => 'GGY', 'IM' => 'IMN', 'GI' => 'GIB',
+            'FK' => 'FLK', 'SH' => 'SHN', 'TC' => 'TCA', 'VG' => 'VGB',
+            'MS' => 'MSR', 'AI' => 'AIA', 'KY' => 'CYM', 'BM' => 'BMU',
+            'PN' => 'PCN', 'GS' => 'SGS', 'IO' => 'IOT',
+            // French Overseas territories
+            'GP' => 'GLP', 'MQ' => 'MTQ', 'GF' => 'GUF', 'RE' => 'REU',
+            'YT' => 'MYT', 'PM' => 'SPM', 'BL' => 'BLM', 'MF' => 'MAF',
+            'TF' => 'ATF', 'NC' => 'NCL', 'PF' => 'PYF', 'WF' => 'WLF',
+            // Dutch Caribbean & other territories
+            'AW' => 'ABW', 'CW' => 'CUW', 'BQ' => 'BES', 'SX' => 'SXM',
+            // Other frequently used territories
+            'GL' => 'GRL', 'FO' => 'FRO', 'AX' => 'ALA', 'EH' => 'ESH',
+            'TL' => 'TLS',
         ];
 
         /**
@@ -909,72 +927,71 @@ function woocommerce_razorpay_init()
         {
             return <<<'SHIELDJS'
 (function() {
-    function generateDeviceId() {
-        try {
-            var stored = localStorage.getItem('rzp_device_id');
-            if (stored) { return Promise.resolve(stored); }
-        } catch(e) {}
+    // Single fingerprint — used by both sync djb2 path and async SHA-1 path
+    var fingerprint = [
+        navigator.userAgent, navigator.language,
+        new Date().getTimezoneOffset(), navigator.platform,
+        navigator.hardwareConcurrency, screen.colorDepth,
+        screen.width + 'x' + screen.height,
+        screen.width * screen.height, window.devicePixelRatio
+    ].join('|');
 
-        var fingerprint = [
-            navigator.userAgent, navigator.language,
-            new Date().getTimezoneOffset(), navigator.platform,
-            navigator.hardwareConcurrency, screen.colorDepth,
-            screen.width + 'x' + screen.height,
-            screen.width * screen.height, window.devicePixelRatio
-        ].join('|');
-
-        var version = '1';
-
-        // SHA-1 is used here for collision-resistance in a device fingerprint, not for cryptographic security
+    // SHA-1 is used for collision-resistance in a device fingerprint, not cryptographic security
+    function generateDeviceIdAsync() {
         if (window.crypto && window.crypto.subtle) {
             var encoder = new TextEncoder();
             return window.crypto.subtle.digest('SHA-1', encoder.encode(fingerprint)).then(function(buf) {
                 var hex = Array.from(new Uint8Array(buf)).map(function(b) {
                     return b.toString(16).padStart(2, '0');
                 }).join('');
-                return version + '.' + hex + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
+                return '1.' + hex + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
             });
         }
-
-        return Promise.resolve(null); // djb2 fallback is handled synchronously in DOMContentLoaded
+        return Promise.resolve(null);
     }
 
     function setDeviceId(id) {
+        if (!id) { return; }
         try { localStorage.setItem('rzp_device_id', id); } catch(e) {}
-        // Also persist in cookie so Block Checkout (Gutenberg) REST requests can read it server-side
-        document.cookie = 'rzp_device_id=' + encodeURIComponent(id) + '; path=/; SameSite=Strict';
+        // Persist in cookie so Block Checkout (Gutenberg) REST requests can read it server-side
+        var secure = location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = 'rzp_device_id=' + encodeURIComponent(id)
+            + '; path=/; SameSite=Strict; max-age=31536000' + secure;
         var input = document.getElementById('rzp_device_id_field');
         if (input) { input.value = id; }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Check localStorage first — if a previously stored ID exists, reuse it
+        var stored = null;
+        try { stored = localStorage.getItem('rzp_device_id'); } catch(e) {}
+
+        if (stored) {
+            // Re-apply to cookie/field in case they were cleared
+            setDeviceId(stored);
+        } else {
+            // Set synchronous djb2 value immediately so fast submits always capture a device ID
+            var syncHash = 5381;
+            for (var i = 0; i < fingerprint.length; i++) {
+                syncHash = ((syncHash << 5) + syncHash) + fingerprint.charCodeAt(i);
+                syncHash = syncHash & syncHash;
+            }
+            var syncId = '1.' + (syncHash >>> 0).toString(16) + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
+            setDeviceId(syncId);
+
+            // Then upgrade to crypto-based ID asynchronously if available
+            generateDeviceIdAsync().then(function(id) { setDeviceId(id); });
+        }
+
+        // Inject hidden input for classic checkout form (Block Checkout uses cookie instead)
         var form = document.querySelector('form.woocommerce-checkout');
         if (!form) { return; }
         var input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'rzp_device_id';
-        input.id = 'rzp_device_id_field';
-        input.value = '';
+        input.type  = 'hidden';
+        input.name  = 'rzp_device_id';
+        input.id    = 'rzp_device_id_field';
+        input.value = stored || '';
         form.appendChild(input);
-
-        // Set synchronous djb2 value immediately so fast submits always have a device ID
-        var fingerprint = [
-            navigator.userAgent, navigator.language,
-            new Date().getTimezoneOffset(), navigator.platform,
-            navigator.hardwareConcurrency, screen.colorDepth,
-            screen.width + 'x' + screen.height,
-            screen.width * screen.height, window.devicePixelRatio
-        ].join('|');
-        var syncHash = 5381;
-        for (var i = 0; i < fingerprint.length; i++) {
-            syncHash = ((syncHash << 5) + syncHash) + fingerprint.charCodeAt(i);
-            syncHash = syncHash & syncHash;
-        }
-        var syncId = '1.' + (syncHash >>> 0).toString(16) + '.' + Date.now() + '.' + Math.floor(Math.random() * 100000000);
-        setDeviceId(syncId);
-
-        // Then upgrade to crypto-based ID asynchronously if available
-        generateDeviceId().then(function(id) { setDeviceId(id); });
     });
 })();
 SHIELDJS;
@@ -1550,6 +1567,9 @@ SHIELDJS;
                 $offerPrice = ($salePrice !== '' && $salePrice !== null)
                     ? (int) round((float) $salePrice * 100)
                     : $price;
+                // Cap offer_price at actual paid price — coupon discounts don't set a sale price,
+                // so without this cap offer_price can be higher than the price the customer paid
+                $offerPrice = min($offerPrice, $price);
                 // get_image_id() returns 0 (not null) when no image is set — use ?: not ??
                 $productImage = $product->get_image_id() ?: null;
 
@@ -1559,7 +1579,7 @@ SHIELDJS;
                     'variant_id'  => (string) $item->get_variation_id(),
                     'price'       => $price,
                     'offer_price' => max(0, $offerPrice),
-                    'tax_amount'  => 0,
+                    'tax_amount'  => (int) round(($item->get_total_tax() / max(1, $item->get_quantity())) * 100),
                     'quantity'    => (int) $item->get_quantity(),
                     'name'        => mb_substr($item->get_name(), 0, 125, 'UTF-8'),
                     'description' => mb_substr($item->get_name(), 0, 125, 'UTF-8'),
@@ -1574,17 +1594,19 @@ SHIELDJS;
         {
             $name = trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name());
 
-            $shippingCountry  = $order->get_shipping_country();
-            $shippingAddress  = !empty($shippingCountry)
+            $billingAddress  = $this->buildShieldAddress($order, 'billing');
+            $shippingCountry = $order->get_shipping_country();
+            // Reuse cached billingAddress — avoids building it twice when no shipping country is set
+            $shippingAddress = !empty($shippingCountry)
                 ? $this->buildShieldAddress($order, 'shipping')
-                : $this->buildShieldAddress($order, 'billing');
+                : $billingAddress;
 
             return [
                 'name'             => $name,
                 'email'            => (string) $order->get_billing_email(),
                 'contact'          => (string) $order->get_billing_phone(),
                 'insights'         => ['has_account' => ($order->get_user_id() > 0)],
-                'billing_address'  => $this->buildShieldAddress($order, 'billing'),
+                'billing_address'  => $billingAddress,
                 'shipping_address' => $shippingAddress,
             ];
         }
@@ -1614,23 +1636,32 @@ SHIELDJS;
 
         public function addShieldCspHeader($headers)
         {
+            // Only modify headers on the checkout page where Shield JS is actually injected
+            if (!is_checkout())
+            {
+                return $headers;
+            }
             // If no CSP header exists we intentionally don't add one — WP sites commonly omit CSP
             // and adding a partial one here could break other scripts.
             if (isset($headers['Content-Security-Policy']))
             {
                 $source = 'https://cdn.razorpay.com';
                 $csp    = $headers['Content-Security-Policy'];
-                if (preg_match('/\bscript-src\b/i', $csp))
+                // Guard against duplicate: only modify if source not already present
+                if (strpos($csp, $source) === false)
                 {
-                    // Merge into the existing script-src directive (appending a second script-src
-                    // is invalid; browsers only honour the first occurrence)
-                    $csp = preg_replace('/\bscript-src\b([^;]*)/i', 'script-src$1 ' . $source, $csp, 1);
+                    if (preg_match('/\bscript-src\b/i', $csp))
+                    {
+                        // Merge into the existing script-src directive (appending a second script-src
+                        // is invalid; browsers only honour the first occurrence)
+                        $csp = preg_replace('/\bscript-src\b([^;]*)/i', 'script-src$1 ' . $source, $csp, 1);
+                    }
+                    else
+                    {
+                        $csp .= '; script-src ' . $source;
+                    }
+                    $headers['Content-Security-Policy'] = $csp;
                 }
-                else
-                {
-                    $csp .= '; script-src ' . $source;
-                }
-                $headers['Content-Security-Policy'] = $csp;
             }
             return $headers;
         }
@@ -1837,17 +1868,16 @@ SHIELDJS;
             }
 
             // Shield fraud detection enrichment
-            // Value was already validated and saved to order meta in process_payment()
-            $savedDeviceId = (string) ($order->get_meta('rzp_shield_device_id') ?? '');
-            $deviceId      = (strlen($savedDeviceId) <= 255 && preg_match('/^[a-zA-Z0-9._-]+$/', $savedDeviceId))
-                ? $savedDeviceId : '';
+            // Value was already validated in process_payment() before saving — no re-validation needed
+            $deviceId = (string) ($order->get_meta('rzp_shield_device_id') ?? '');
 
             $data['notes']['shield_device_id']  = $deviceId;
             // Truncate to 254 chars — Razorpay notes values have a 254-char limit per key
             $data['notes']['shield_user_agent'] = isset($_SERVER['HTTP_USER_AGENT'])
                 ? substr((string) $_SERVER['HTTP_USER_AGENT'], 0, 254) : '';
-            $data['notes']['shield_client_ip']  = $this->getClientIp();
+            $data['notes']['shield_client_ip']  = substr($this->getClientIp(), 0, 254);
 
+            // Tax-exclusive subtotal after discounts — matches per-item price basis used in line_items
             $data['line_items_total'] = (int) round(
                 ($order->get_subtotal() - $order->get_discount_total()) * 100
             );
