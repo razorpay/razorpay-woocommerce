@@ -257,6 +257,12 @@ class Request
                                 ]
                             ]
                         ],
+                    'app/merchant/api/verify/2/1' =>
+                        ['enabled' => true],
+                    'app/merchant/api/verify/3/1' =>
+                        ['enabled' => true],
+                    'app/merchant/api/verify/4/1' =>
+                        ['enabled' => true],
                     'webhooks' =>
                         [
                             "entity" => "collection",

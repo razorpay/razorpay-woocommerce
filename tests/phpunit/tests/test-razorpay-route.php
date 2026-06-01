@@ -742,16 +742,10 @@ class Test_RzpRoute extends WP_UnitTestCase
 
     public function testcheckDirectTransferFeature()
     {
-        add_option('key_id', 'key_id_2');
-        add_option('key_secret', 'key_secret2');
         $this->instance->shouldReceive('fetchRazorpayApiInstance')->andReturnUsing(
             function () {
                 return new MockApi('key_id_2', 'key_secret2');
             });
-
-        $data = array('assigned_features' => array('callback' => array('name' => 'direct_transfer')));
-
-        $this->instance->shouldReceive('fetchFileContents')->andReturn(json_encode($data));
 
         ob_start();
         $this->instance->checkDirectTransferFeature();
