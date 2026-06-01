@@ -9,7 +9,7 @@
 | Attribute | Value |
 |-----------|-------|
 | Plugin Name | Razorpay Payment Gateway for WooCommerce |
-| Version | 4.8.3 |
+| Version | 4.8.5 |
 | Language | PHP 7.4+ |
 | Platform | WordPress + WooCommerce |
 | Entry Point | `woo-razorpay.php` |

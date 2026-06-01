@@ -4,7 +4,7 @@ This file provides context for GitHub Copilot to give better suggestions for thi
 
 ## Project Context
 
-This is the **Razorpay Payment Gateway plugin for WooCommerce** (WordPress). Version 4.8.3.
+This is the **Razorpay Payment Gateway plugin for WooCommerce** (WordPress). Version 4.8.5.
 
 - **Language:** PHP 7.4+, JavaScript (vanilla)
 - **Framework:** WordPress Plugin API + WooCommerce Payment Gateway

@@ -2,7 +2,7 @@
   "project": {
     "name": "razorpay-woocommerce",
     "display_name": "Razorpay Payment Gateway for WooCommerce",
-    "version": "4.8.3",
+    "version": "4.8.5",
     "description": "Official Razorpay payment gateway plugin for WooCommerce. Supports standard checkout, Magic Checkout (1CC), subscriptions, refunds, Route transfers, and webhooks.",
     "language": "PHP",
     "php_version": "7.4+",

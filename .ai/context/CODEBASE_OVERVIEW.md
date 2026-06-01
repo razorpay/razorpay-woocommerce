@@ -3,7 +3,7 @@
 ## Plugin Identity
 
 - **Name:** 1 Razorpay (prefixed "1" so it appears first in the gateway list)
-- **Version:** 4.8.3
+- **Version:** 4.8.5
 - **Entry Point:** `woo-razorpay.php`
 - **WC Compatibility:** Tested up to WooCommerce 10.6.2
 - **License:** GPL-2.0-or-later
