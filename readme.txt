@@ -71,6 +71,7 @@ Razorpay is available for Store Owners and Merchants in
 
 = 4.8.5 =
 * Version bump to 4.8.5.
+* Updated internal feature fetch
 
 = 4.8.4 =
 * Fixed unauthenticated IDOR vulnerability in prepayCODOrder endpoint (CVE-2026-3507).
