@@ -516,31 +516,23 @@ function updateAffordabilityWidgetSettings()
             isset($_POST['woocommerce_razorpay_key_secret']) and
             empty($_POST['woocommerce_razorpay_key_secret']) === false)
         {
-            $api = new Api($_POST['woocommerce_razorpay_key_id'], $_POST['woocommerce_razorpay_key_secret']);
+            $keyId = $_POST['woocommerce_razorpay_key_id'];
+            $api   = new Api($keyId, $_POST['woocommerce_razorpay_key_secret']);
         }
         else
         {
-            $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'],get_option('woocommerce_razorpay_settings')['key_secret']);
+            $keyId = get_option('woocommerce_razorpay_settings')['key_id'];
+            $api   = new Api($keyId, get_option('woocommerce_razorpay_settings')['key_secret']);
         }
 
-        $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
+        $modeCode      = (strpos($keyId, 'rzp_test_') === 0) ? 2 : 1;
+        $widgetSetResp = $api->request->request('GET', 'app/merchant/api/verify/3/' . $modeCode);
+        $widgetResp    = $api->request->request('GET', 'app/merchant/api/verify/4/' . $modeCode);
 
-        if (isset($merchantPreferences) === false or
-            isset($merchantPreferences['assigned_features']) === false)
-        {
-            throw new Exception("Error in Api call.");
-        }
+        $afdEnabled = (isset($widgetSetResp['enabled']) and $widgetSetResp['enabled'] === true) or
+                      (isset($widgetResp['enabled'])    and $widgetResp['enabled'] === true);
 
-        update_option('rzp_afd_enable', 'no');
-        foreach ($merchantPreferences['assigned_features'] as $preference)
-        {
-            if ($preference['name'] === 'affordability_widget' or
-                $preference['name'] === 'affordability_widget_set')
-            {
-                update_option('rzp_afd_enable', 'yes');
-                break;
-            }
-        }
+        update_option('rzp_afd_enable', $afdEnabled ? 'yes' : 'no');
 
     }
     catch (\Exception $e)

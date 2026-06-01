@@ -1022,32 +1022,26 @@ class RZP_Route extends WP_List_Table
 
         $api = $this->fetchRazorpayApiInstance();
 
-        $base_url = $api->getBaseUrl();
-
-        $url = $base_url.'accounts/me/features';
-        $context = stream_context_create(array(
-            'http' => array(
-                'header'  => "Authorization: Basic " . base64_encode($this->fetchSetting())
-            ),
-            "ssl"=>array(
-                "verify_peer"=>false,
-                "verify_peer_name"=>false,
-            ),
-        ));
+        $keyId    = (new WC_Razorpay())->getSetting('key_id');
+        $modeCode = (strpos($keyId, 'rzp_test_') === 0) ? 2 : 1;
 
         $directTransferBtn = '';
-        $featuresData = $this->fetchFileContents($url, $context);
-        if($featuresData !== false) {
-            $apiResponse = json_decode($featuresData, true);
-            foreach ($apiResponse['assigned_features'] as $features) {
-                if ($features['name'] == 'direct_transfer') {
 
-                    $show = "jQuery('.overlay').show()";
-                    $directTransferBtn = '<button class="btn btn-primary" onclick="' . $show . '">Create Direct Transfer</button>';
+        try
+        {
+            $response = $api->request->request('GET', 'app/merchant/api/verify/2/' . $modeCode);
 
-                }
+            if (isset($response['enabled']) and $response['enabled'] === true)
+            {
+                $show = "jQuery('.overlay').show()";
+                $directTransferBtn = '<button class="btn btn-primary" onclick="' . $show . '">Create Direct Transfer</button>';
             }
         }
+        catch (\Exception $e)
+        {
+            // flag check failed silently; button stays hidden
+        }
+
         echo  $directTransferBtn;
     }
 

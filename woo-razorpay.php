@@ -584,27 +584,22 @@ function woocommerce_razorpay_init()
                         return;
                     }
 
-                    $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-                    if (isset($merchantPreferences) === false or
-                        isset($merchantPreferences['assigned_features']) === false)
-                    {
-                        throw new Exception("Error in get features Api call.");
-                    }
+                    $modeCode      = (strpos($key_id, 'rzp_test_') === 0) ? 2 : 1;
+                    $widgetSetResp = $api->request->request('GET', 'app/merchant/api/verify/3/' . $modeCode);
+                    $widgetResp    = $api->request->request('GET', 'app/merchant/api/verify/4/' . $modeCode);
+
+                    $afdEnabled = (isset($widgetSetResp['enabled']) and $widgetSetResp['enabled'] === true) or
+                                  (isset($widgetResp['enabled'])    and $widgetResp['enabled'] === true);
 
                     update_option('rzp_afd_enable', 'no');
                     update_option('rzp_rtb_enable', 'no');
 
-                    foreach ($merchantPreferences['assigned_features'] as $preference)
+                    if ($afdEnabled)
                     {
-                        if ($preference['name'] === 'affordability_widget' or
-                            $preference['name'] === 'affordability_widget_set')
-                        {
-                            add_action('woocommerce_sections_checkout', 'addSubSection');
-                            add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
-                            add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
-                            update_option('rzp_afd_enable', 'yes');
-                            break;
-                        }
+                        add_action('woocommerce_sections_checkout', 'addSubSection');
+                        add_action('woocommerce_settings_tabs_checkout', 'displayAffordabilityWidgetSettings');
+                        add_action('woocommerce_update_options_checkout', 'updateAffordabilityWidgetSettings');
+                        update_option('rzp_afd_enable', 'yes');
                     }
 
                     $rtbActivationStatus = $api->request->request('GET', 'rtb?key_id=' . $key_id);
@@ -3253,24 +3248,17 @@ EOT;
             {
                 try
                 {
-                    $api = new Api(get_option('woocommerce_razorpay_settings')['key_id'], get_option('woocommerce_razorpay_settings')['key_secret']);
-                    $merchantPreferences = $api->request->request('GET', 'accounts/me/features');
-                    if (isset($merchantPreferences) === false or
-                        isset($merchantPreferences['assigned_features']) === false)
-                    {
-                        throw new Exception("Error in Api call.");
-                    }
+                    $keyId    = get_option('woocommerce_razorpay_settings')['key_id'];
+                    $api      = new Api($keyId, get_option('woocommerce_razorpay_settings')['key_secret']);
+                    $modeCode = (strpos($keyId, 'rzp_test_') === 0) ? 2 : 1;
 
-                    update_option('rzp_afd_enable', 'no');
-                    foreach ($merchantPreferences['assigned_features'] as $preference)
-                    {
-                        if ($preference['name'] === 'affordability_widget' or
-                            $preference['name'] === 'affordability_widget_set')
-                        {
-                            update_option('rzp_afd_enable', 'yes');
-                            break;
-                        }
-                    }
+                    $widgetSetResp = $api->request->request('GET', 'app/merchant/api/verify/3/' . $modeCode);
+                    $widgetResp    = $api->request->request('GET', 'app/merchant/api/verify/4/' . $modeCode);
+
+                    $afdEnabled = (isset($widgetSetResp['enabled']) and $widgetSetResp['enabled'] === true) or
+                                  (isset($widgetResp['enabled'])    and $widgetResp['enabled'] === true);
+
+                    update_option('rzp_afd_enable', $afdEnabled ? 'yes' : 'no');
 
                     update_option('rzp_afd_feature_checked', 'yes');
                 }
