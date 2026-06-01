@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-**razorpay-woocommerce** is a PHP WordPress plugin (v4.8.3) that connects WooCommerce e-commerce stores to the Razorpay payment gateway. It supports:
+**razorpay-woocommerce** is a PHP WordPress plugin (v4.8.5) that connects WooCommerce e-commerce stores to the Razorpay payment gateway. It supports:
 - Standard checkout (modal/hosted)
 - Magic Checkout / One Click Checkout (1CC) — streamlined checkout with saved addresses
 - Webhooks for async payment confirmation

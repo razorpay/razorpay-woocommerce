@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is the **Razorpay WooCommerce Plugin** (v4.8.3), a WordPress payment gateway that integrates Razorpay's payment infrastructure with WooCommerce stores. Written in PHP, it handles payment collection, webhooks, refunds, and an advanced "Magic Checkout" (1CC) one-click checkout experience.
+This is the **Razorpay WooCommerce Plugin** (v4.8.5), a WordPress payment gateway that integrates Razorpay's payment infrastructure with WooCommerce stores. Written in PHP, it handles payment collection, webhooks, refunds, and an advanced "Magic Checkout" (1CC) one-click checkout experience.
 
 ## Technology Stack
 
