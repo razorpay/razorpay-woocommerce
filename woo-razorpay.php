@@ -26,7 +26,10 @@ if (!defined('RZP_ADDRESS_PUSH_ALLOW_TEST_KEYS')) {
     define('RZP_ADDRESS_PUSH_ALLOW_TEST_KEYS', false);
 }
 // ⚠️ Replace with actual ID from DCS/infra team before release.
-define('RZP_ADDRESS_PUSH_DCS_FEATURE_ID', 0);
+// Pattern: app/merchant/api/verify/{ID}/{modeCode}  (same as affordability widget IDs 3/4)
+if (!defined('RZP_ADDRESS_PUSH_DCS_FEATURE_ID')) {
+    define('RZP_ADDRESS_PUSH_DCS_FEATURE_ID', 0);
+}
 
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
