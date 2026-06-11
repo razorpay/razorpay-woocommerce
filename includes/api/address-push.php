@@ -39,11 +39,8 @@ function rzpBuildAddressFromOrder($order) {
 
     $shippingState = trim($order->get_shipping_state() ?? '');
     $billingState  = trim($order->get_billing_state()  ?? '');
-    $stateName = ($wcStates[$shippingState] ?: null)
-              ?: ($wcStates[$billingState]  ?: null)
-              ?: $shippingState
-              ?: $billingState
-              ?: '';
+    $stateName = ($wcStates[$shippingState] ?? null) ?: ($wcStates[$billingState] ?? null)
+              ?: $shippingState ?: $billingState ?: '';
 
     $shippingName = trim(trim($order->get_shipping_first_name() ?? '') . ' ' . trim($order->get_shipping_last_name() ?? ''));
     $billingName  = trim(trim($order->get_billing_first_name()  ?? '') . ' ' . trim($order->get_billing_last_name()  ?? ''));
