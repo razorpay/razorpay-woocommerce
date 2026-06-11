@@ -17,6 +17,17 @@ if ( ! defined( 'ABSPATH' ) )
 
 define('PLUGIN_MAIN_FILE', __FILE__);
 
+// Overrideable via wp-config.php for stage testing
+if (!defined('RZP_ADDRESS_PUSH_URL')) {
+    define('RZP_ADDRESS_PUSH_URL', 'https://api.razorpay.com/v1/raw_addresses');
+}
+// Set true in wp-config.php ONLY on stage/dev. Never on production.
+if (!defined('RZP_ADDRESS_PUSH_ALLOW_TEST_KEYS')) {
+    define('RZP_ADDRESS_PUSH_ALLOW_TEST_KEYS', false);
+}
+// ⚠️ Replace with actual ID from DCS/infra team before release.
+define('RZP_ADDRESS_PUSH_DCS_FEATURE_ID', 0);
+
 require_once __DIR__.'/includes/razorpay-webhook.php';
 require_once __DIR__.'/razorpay-sdk/Razorpay.php';
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -25,6 +36,7 @@ require_once __DIR__ .'/includes/razorpay-route-actions.php';
 require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
+require_once __DIR__.'/includes/api/address-push.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
@@ -2317,6 +2329,15 @@ EOT;
                     else
                     {
                         $order->payment_complete($razorpayPaymentId);
+                    }
+
+                    // Standard checkout only — Magic Checkout captures its own addresses via update1ccOrderWC().
+                    // $is1ccOrder is already read earlier in updateOrder() (HPOS dual-path).
+                    if (empty($is1ccOrder) || $is1ccOrder !== 'yes') {
+                        $settings  = get_option('woocommerce_razorpay_settings') ?: [];
+                        $keyId     = trim($settings['key_id']     ?? '');
+                        $keySecret = trim($settings['key_secret'] ?? '');
+                        rzpPushAddress($order, $keyId, $keySecret);
                     }
 
                     if(is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('woo-save-abandoned-carts/cartbounty-abandoned-carts.php')){
