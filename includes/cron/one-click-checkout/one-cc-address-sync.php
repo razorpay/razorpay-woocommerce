@@ -15,8 +15,7 @@ class OneCCAddressSync
 
     protected $api;
     private $jobConfig;
-    private $oneCCOnboardedTimestamp;
-    private $checkpoint;
+    private $checkpoint = 0;
 
     public function __construct($api)
     {
@@ -85,8 +84,7 @@ class OneCCAddressSync
             {
                 // No record yet for this merchant — treat as fresh start, proceed normally
                 rzpLogInfo("isMerchantEligible: no config record yet (404), starting fresh");
-                $this->jobConfig               = [];
-                $this->oneCCOnboardedTimestamp = time();
+                $this->jobConfig = [];
                 return true;
             }
             else
@@ -125,9 +123,6 @@ class OneCCAddressSync
             $this->jobConfig = [];
         }
 
-        // For non-1CC merchants onboarded_timestamp is absent — default to now so
-        // getOrders() covers the merchant's entire order history
-        $this->oneCCOnboardedTimestamp = $configs[Constants::ONE_CC_ONBOARDED_TIMESTAMP] ?? time();
         return true;
     }
 
@@ -154,18 +149,27 @@ class OneCCAddressSync
         return strlen(trim((string)($data ?? ''))) === 0;
     }
 
-    // Fetch one page of orders.
-    // Uses $this->oneCCOnboardedTimestamp as upper bound — covers entire order history
-    // for non-1CC merchants (defaults to time()) and up to onboarding date for 1CC merchants.
     private function getOrders()
     {
         return wc_get_orders([
             Constants::SHIPPING_COUNTRY => Constants::IN,
-            Constants::DATE_CREATED     => 1 . '...' . $this->oneCCOnboardedTimestamp,
+            Constants::DATE_CREATED     => '1...' . time(),
             'status'                    => ['processing', 'completed', 'on-hold'],
             Constants::ORDER            => Constants::ASC,
             Constants::LIMIT            => $this->batchSize,
             Constants::PAGED            => $this->checkpoint,
+            'meta_query'                => [
+                'relation' => 'OR',
+                [
+                    'key'     => 'is_magic_checkout_order',
+                    'compare' => 'NOT EXISTS',
+                ],
+                [
+                    'key'     => 'is_magic_checkout_order',
+                    'value'   => 'yes',
+                    'compare' => '!=',
+                ],
+            ],
         ]);
     }
 
@@ -250,12 +254,18 @@ class OneCCAddressSync
                     {
                         // Genuinely no more orders — notify backend and mark complete
                         rzpLogInfo("sync: no more orders at checkpoint=" . $this->checkpoint . ", all caught up");
-                        $this->postAddresses([
+                        $completionResponse = $this->postAddresses([
                             Constants::META_DATA => [
                                 Constants::STATUS  => Constants::COMPLETED,
                                 Constants::MESSAGE => Constants::ADDRESS_SYNC_COMPLETED,
                             ]
                         ]);
+                        if (!$completionResponse[Constants::IS_SUCCESS])
+                        {
+                            rzpLogError("sync: failed to notify backend of completion at checkpoint=" . $this->checkpoint);
+                            updateAddressSyncCronData(Constants::PAUSED, Constants::POST_ADDRESSES_ERROR);
+                            return;
+                        }
                         updateAddressSyncCronData(Constants::COMPLETED, Constants::ADDRESS_SYNC_COMPLETED);
                     }
                     return;
