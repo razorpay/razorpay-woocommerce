@@ -239,9 +239,25 @@ class OneCCAddressSync
 
                 if (empty($addresses))
                 {
-                    // All orders processed up to now — nothing left to do today
-                    rzpLogInfo("sync: no more orders, all caught up");
-                    updateAddressSyncCronData(Constants::COMPLETED, 'all_orders_synced_for_today');
+                    if (time() >= $endTime)
+                    {
+                        // Time ran out inside getNextBatch while scanning pages —
+                        // more orders may exist, resume tomorrow from same checkpoint
+                        rzpLogInfo("sync: time limit reached while scanning pages at checkpoint=" . $this->checkpoint);
+                        updateAddressSyncCronData(Constants::PAUSED, Constants::MAX_RUNNING_TIME_REACHED);
+                    }
+                    else
+                    {
+                        // Genuinely no more orders — notify backend and mark complete
+                        rzpLogInfo("sync: no more orders at checkpoint=" . $this->checkpoint . ", all caught up");
+                        $this->postAddresses([
+                            Constants::META_DATA => [
+                                Constants::STATUS  => Constants::COMPLETED,
+                                Constants::MESSAGE => Constants::ADDRESS_SYNC_COMPLETED,
+                            ]
+                        ]);
+                        updateAddressSyncCronData(Constants::COMPLETED, Constants::ADDRESS_SYNC_COMPLETED);
+                    }
                     return;
                 }
 
