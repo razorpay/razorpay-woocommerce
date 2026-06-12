@@ -138,10 +138,11 @@ class TrackPluginInstrumentation
 
         $this->hposInstrumentation();
 
+        createOneCCAddressSyncCron();
+
         // TODO: Update correct version
         if (isset($prevVersion) && strcmp($prevVersion, '4.5.0') <= 0)
         {
-            createOneCCAddressSyncCron();
             syncPluginFetchCron();
         }
 

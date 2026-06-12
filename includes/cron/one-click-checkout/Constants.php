@@ -19,6 +19,7 @@ class Constants
     const ENABLE_1CC = 'enable_1cc';
     const CRON_STATUS = 'cron_status';
     const INVALID_1CC_MERCHANT = 'invalid_1cc_merchant';
+    const INVALID_RAZORPAY_MERCHANT = 'invalid_razorpay_merchant';
     const ADDRESS_SYNC_OFF_CONFIGURED = 'address_sync_off_configured';
     const MAX_RUNNING_TIME_REACHED = 'max_running_time_reached';
     const CHECKPOINT_NOT_UPDATED = 'checkpoint_not_updated';
@@ -54,4 +55,7 @@ class Constants
     const ASC = 'ASC';
     const ID = 'ID';
     const ADDRESS_SYNC_COMPLETED = 'address_sync_completed';
+
+    // Max seconds the cron runs per day (5 hours)
+    const CRON_MAX_SECONDS = 18000;
 }
