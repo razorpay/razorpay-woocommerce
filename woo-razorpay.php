@@ -433,7 +433,7 @@ function woocommerce_razorpay_init()
                 add_action("woocommerce_update_options_payment_gateways_{$this->id}", $cb);
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}", array($this, 'addAdminCheckoutSettingsAlert'));
-                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createOneCCAddressSyncCron');
+                add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'createAllAddressSyncCrons');
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
             }
             else
@@ -442,7 +442,7 @@ function woocommerce_razorpay_init()
                 add_action('woocommerce_update_options_payment_gateways', $cb);
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'autoEnableWebhook'));
                 add_action( "woocommerce_update_options_payment_gateways", array($this, 'addAdminCheckoutSettingsAlert'));
-                add_action( "woocommerce_update_options_payment_gateways", 'createOneCCAddressSyncCron');
+                add_action( "woocommerce_update_options_payment_gateways", 'createAllAddressSyncCrons');
                 add_action( "woocommerce_update_options_payment_gateways_{$this->id}",  'syncPluginFetchCron');
             }
 
