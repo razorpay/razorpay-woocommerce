@@ -34,6 +34,7 @@ class OneCCAddressSync
     private $batchesSent = 0;
     private $addressesSent = 0;
     private $batchFailures = 0;
+    private $warningLogs = [];
     private $errorLogs = [];
 
     public function __construct($api)
@@ -41,7 +42,7 @@ class OneCCAddressSync
         $this->api = $api;
     }
 
-    private function recordError($stage, $message, $context = [])
+    private function recordLog($bucket, $stage, $message, $context = [])
     {
         $entry = array_merge([
             Constants::MESSAGE => $message,
@@ -49,15 +50,26 @@ class OneCCAddressSync
             Constants::UPDATED_AT => time(),
         ], $context);
 
-        $this->errorLogs[] = $entry;
-        if (count($this->errorLogs) > 20)
+        $this->{$bucket}[] = $entry;
+        if (count($this->{$bucket}) > 20)
         {
-            $this->errorLogs = array_slice($this->errorLogs, -20);
+            $this->{$bucket} = array_slice($this->{$bucket}, -20);
         }
     }
 
-    private function clearErrorLogs()
+    private function recordWarning($stage, $message, $context = [])
     {
+        $this->recordLog('warningLogs', $stage, $message, $context);
+    }
+
+    private function recordError($stage, $message, $context = [])
+    {
+        $this->recordLog('errorLogs', $stage, $message, $context);
+    }
+
+    private function clearSyncLogs()
+    {
+        $this->warningLogs = [];
         $this->errorLogs = [];
     }
 
@@ -82,7 +94,7 @@ class OneCCAddressSync
             {
                 $statusCode = $e->getHttpStatusCode();
                 rzpLogError("makeAPICall: message:" . $e->getMessage() . ", url: " . $url . ", method: " . $method . ", retryCount: " . $retryCount . ", statusCode: " . $statusCode);
-                $this->recordError('api_call', $e->getMessage(), [
+                $this->recordWarning('api_call', $e->getMessage(), [
                     'url'         => $url,
                     'method'      => $method,
                     'retry_count' => $retryCount,
@@ -92,7 +104,7 @@ class OneCCAddressSync
             catch (Exception $e)
             {
                 rzpLogError("makeAPICall: unexpected error: " . $e->getMessage() . ", retryCount: " . $retryCount);
-                $this->recordError('api_call', $e->getMessage(), [
+                $this->recordWarning('api_call', $e->getMessage(), [
                     'url'         => $url,
                     'method'      => $method,
                     'retry_count' => $retryCount,
@@ -152,6 +164,7 @@ class OneCCAddressSync
             rzpLogError("batch phase1 attempt " . ($i + 1) . " failed at order_id=" . $this->pendingCursorOrderId);
         }
         $this->postBatchProgressEvent(Constants::BATCH_RETRY_PHASE1_FAILED, $projectedConsecutiveFailures);
+        $this->clearSyncLogs();
 
         $waited = $this->waitWithinBudget(Constants::BATCH_PHASE1_WAIT_SECONDS, $endTime);
         if ($waited === 0)
@@ -168,6 +181,7 @@ class OneCCAddressSync
             rzpLogError("batch phase2 attempt " . ($i + 1) . " failed at order_id=" . $this->pendingCursorOrderId);
         }
         $this->postBatchProgressEvent(Constants::BATCH_RETRY_PHASE2_FAILED, $projectedConsecutiveFailures);
+        $this->clearSyncLogs();
 
         $waited = $this->waitWithinBudget(Constants::BATCH_PHASE2_WAIT_SECONDS, $endTime);
         if ($waited === 0)
@@ -225,6 +239,13 @@ class OneCCAddressSync
             Constants::MESSAGE => $message,
         ];
 
+        if (!empty($this->warningLogs))
+        {
+            $metaData[Constants::WARNING] = [
+                'logs' => $this->warningLogs,
+            ];
+        }
+
         if (!empty($this->errorLogs))
         {
             $metaData[Constants::ERROR] = [
@@ -279,13 +300,6 @@ class OneCCAddressSync
             {
                 rzpLogError("isMerchantEligible: auth error " . $statusCode . ", removing cron");
                 deleteOneCCAddressSyncCron(Constants::FAILED, $message);
-            }
-            else if ($statusCode === 404)
-            {
-                rzpLogInfo("isMerchantEligible: no config record yet (404), starting fresh");
-                $this->jobConfig = [];
-                $this->loadCursorFromJobConfig();
-                return true;
             }
             else
             {
@@ -471,7 +485,7 @@ class OneCCAddressSync
             {
                 $orderId = method_exists($order, 'get_id') ? $order->get_id() : null;
                 rzpLogError("getAddressFromOrders: failed for order_id=" . $orderId . ", error=" . $e->getMessage());
-                $this->recordError('address_extraction', $e->getMessage(), [
+                $this->recordWarning('address_extraction', $e->getMessage(), [
                     'order_id' => $orderId,
                     'trace'    => substr($e->getTraceAsString(), 0, 4000),
                 ]);
@@ -505,6 +519,13 @@ class OneCCAddressSync
             }
 
             $addresses = $this->getAddressFromOrders($orders);
+            if (empty($addresses) && !empty($this->warningLogs))
+            {
+                $this->recordError('address_extraction', 'no_addresses_extracted_for_batch', [
+                    Constants::CHECKPOINT => $this->pendingCursorOrderId,
+                ]);
+                return [];
+            }
         }
         return $addresses;
     }
@@ -564,6 +585,20 @@ class OneCCAddressSync
 
                 if (empty($addresses))
                 {
+                    if (!empty($this->errorLogs))
+                    {
+                        $failedResponse = $this->postSyncEvent(
+                            Constants::FAILED,
+                            Constants::ADDRESS_INGESTION_FAILED
+                        );
+                        if (!$failedResponse[Constants::IS_SUCCESS])
+                        {
+                            rzpLogError("sync: failed to send extraction failure event at order_id=" . $this->pendingCursorOrderId);
+                        }
+                        updateAddressSyncCronData(Constants::FAILED, Constants::ADDRESS_INGESTION_FAILED);
+                        return;
+                    }
+
                     if (time() >= $endTime)
                     {
                         // Time ran out inside getNextBatch while scanning empty pages.
@@ -638,6 +673,7 @@ class OneCCAddressSync
                     }
 
                     $this->postBatchProgressEvent(Constants::BATCH_FAILED, $consecutiveFailureCount);
+                    $this->clearSyncLogs();
 
                     // Below the stop threshold — retry from the same confirmed cursor.
                     // pendingCursorOrderId is not persisted unless a raw batch succeeds.
@@ -650,7 +686,7 @@ class OneCCAddressSync
                 $consecutiveFailureCount = 0;
                 $this->batchesSent++;
                 $this->addressesSent += count($addresses);
-                $this->clearErrorLogs();
+                $this->clearSyncLogs();
 
                 // Cooldown between consecutive successful batches — prevents hammering the API
                 // and gives the 1cc-address-service headroom to process the goroutine work.

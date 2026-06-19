@@ -53,6 +53,7 @@ class Constants
     const BATCH_INGESTED                 = 'batch_ingested';
     const WOOCOMMERCE_ADDRESS_SYNC_DISABLED = 'woocommerce_address_sync_disabled';
     const ERROR                          = 'error';
+    const WARNING                        = 'warning';
     const ORDER                          = 'order';
     const ASC                            = 'ASC';
     const ID                             = 'ID';
