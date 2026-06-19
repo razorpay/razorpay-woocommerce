@@ -6,7 +6,6 @@ class OneCCAddressSync
 {
     const GET_CONFIGS_API        = 'woocommerce/config'; // checkpoint + job state
     const POST_ADDRESSES_API     = 'woocommerce/ingest'; // lifecycle, retry-progress, and address batches
-    const POST_RAW_ADDRESSES_API = 'woocommerce/ingest'; // address batches
     const GET                    = 'GET';
     const POST                   = 'POST';
 
@@ -87,7 +86,6 @@ class OneCCAddressSync
     // Signal-only events carry top-level checkpoint so backend can update job_execution.
     private function postAddresses($body)
     {
-        $body[Constants::SOURCE] = Constants::WOOCOMMERCE;
         return $this->makeAPICall(self::POST_ADDRESSES_API, self::POST, $body);
     }
 
@@ -98,16 +96,14 @@ class OneCCAddressSync
     // Backend should reject or ignore lower checkpoints if concurrent writers are introduced.
     private function postRawAddresses($addresses)
     {
-        return $this->makeAPICall(self::POST_RAW_ADDRESSES_API, self::POST, [
+        return $this->makeAPICall(self::POST_ADDRESSES_API, self::POST, [
             Constants::ADDRESSES  => $addresses,
             Constants::CHECKPOINT => $this->pendingCursorOrderId,
             Constants::META_DATA  => $this->buildEventMetaData(
-                Constants::PROCESSING,
                 Constants::BATCH_INGESTED,
                 '',
                 null,
-                false,
-                $this->pendingCursorOrderId
+                false
             ),
         ], 1);
     }
@@ -207,13 +203,10 @@ class OneCCAddressSync
         return $dt->format(DateTime::ATOM);
     }
 
-    private function buildEventMetaData($status, $message, $reason = '', $lastError = null, $includeFinishedAt = false, $checkpointOverride = null, $extraMetaData = [])
+    private function buildEventMetaData($message, $reason = '', $lastError = null, $includeFinishedAt = false, $extraMetaData = [])
     {
-        $checkpoint = $checkpointOverride ?? $this->cursorOrderId;
         $metaData = [
-            Constants::STATUS             => $status,
             Constants::MESSAGE            => $message,
-            Constants::CHECKPOINT         => $checkpoint,
             Constants::BATCH_SIZE         => $this->batchSize,
             Constants::BATCHES_SENT       => $this->batchesSent,
             Constants::ADDRESSES_SENT     => $this->addressesSent,
@@ -242,12 +235,12 @@ class OneCCAddressSync
         return $metaData;
     }
 
-    private function postSyncEvent($status, $message, $reason = '', $lastError = null, $includeFinishedAt = false, $checkpointOverride = null, $extraMetaData = [])
+    private function postSyncEvent($message, $reason = '', $lastError = null, $includeFinishedAt = false, $checkpointOverride = null, $extraMetaData = [])
     {
         $checkpoint = $checkpointOverride ?? $this->cursorOrderId;
         $body = [
             Constants::CHECKPOINT => $checkpoint,
-            Constants::META_DATA  => $this->buildEventMetaData($status, $message, $reason, $lastError, $includeFinishedAt, $checkpoint, $extraMetaData),
+            Constants::META_DATA  => $this->buildEventMetaData($message, $reason, $lastError, $includeFinishedAt, $extraMetaData),
         ];
 
         return $this->postAddresses($body);
@@ -256,7 +249,6 @@ class OneCCAddressSync
     private function postBatchProgressEvent($message, $consecutiveFailureCount)
     {
         $response = $this->postSyncEvent(
-            Constants::PROCESSING,
             $message,
             '',
             Constants::POST_ADDRESSES_ERROR,
@@ -306,12 +298,7 @@ class OneCCAddressSync
             $configs[Constants::ONE_CC_ADDRESS_SYNC_OFF] === true)
         {
             rzpLogInfo("isMerchantEligible: address sync off for merchant");
-            $this->postAddresses([
-                Constants::META_DATA => [
-                    Constants::STATUS  => Constants::CANCELLED,
-                    Constants::MESSAGE => Constants::ADDRESS_SYNC_OFF_CONFIGURED,
-                ]
-            ]);
+            $this->postSyncEvent(Constants::ADDRESS_SYNC_OFF_CONFIGURED);
             deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::ADDRESS_SYNC_OFF_CONFIGURED);
             return false;
         }
@@ -327,7 +314,6 @@ class OneCCAddressSync
                 $this->runStartedAt = time();
             }
             $pauseResponse = $this->postSyncEvent(
-                Constants::PAUSED,
                 Constants::ADDRESS_INGESTION_PAUSED,
                 Constants::BACKEND_ACTION_SOFT_DISABLE,
                 Constants::WOOCOMMERCE_ADDRESS_SYNC_DISABLED,
@@ -342,29 +328,6 @@ class OneCCAddressSync
         }
 
         return true;
-    }
-
-    private function isValidAddress($address)
-    {
-        if ($this->isEmpty($address['line1']) && $this->isEmpty($address['line2']))
-        {
-            return false;
-        }
-        if (strlen($address['name'] ?? '') < 3         ||
-            $this->isEmpty($address['city'])            ||
-            $this->isEmpty($address['state'])           ||
-            $this->isEmpty($address['zipcode'])         ||
-            ($address['country'] ?? '') !== Constants::IN ||
-            $this->isEmpty($address['contact']))
-        {
-            return false;
-        }
-        return true;
-    }
-
-    private function isEmpty($data)
-    {
-        return strlen(trim((string)($data ?? ''))) === 0;
     }
 
     private function getOrders()
@@ -549,7 +512,7 @@ class OneCCAddressSync
             rzpLogInfo("sync: confirmed_order_id=" . $this->cursorOrderId . ", maxSeconds=" . $maxSeconds);
             updateAddressSyncCronData(Constants::PROCESSING);
 
-            $startedResponse = $this->postSyncEvent(Constants::PROCESSING, Constants::CONFIG_RECEIVED);
+            $startedResponse = $this->postSyncEvent(Constants::CONFIG_RECEIVED);
             if ($startedResponse[Constants::IS_SUCCESS])
             {
                 rzpLogInfo("sync: config_received event sent at order_id=" . $this->cursorOrderId);
@@ -594,7 +557,6 @@ class OneCCAddressSync
                         // this event carries only the lifecycle state change.
                         rzpLogInfo("sync: time limit reached while scanning pages at order_id=" . $this->pendingCursorOrderId);
                         $pauseResponse = $this->postSyncEvent(
-                            Constants::PAUSED,
                             Constants::ADDRESS_INGESTION_PAUSED,
                             Constants::TIME_WINDOW_ENDED,
                             Constants::MAX_RUNNING_TIME_REACHED,
@@ -616,7 +578,6 @@ class OneCCAddressSync
                             : Constants::ALL_ELIGIBLE_ORDERS_PROCESSED;
                         rzpLogInfo("sync: completed. upper_order_id=" . $this->upperOrderId);
                         $completionResponse = $this->postSyncEvent(
-                            Constants::COMPLETED,
                             Constants::ADDRESS_INGESTION_COMPLETE,
                             $completeReason,
                             null,
@@ -653,7 +614,6 @@ class OneCCAddressSync
                         $failMsg = Constants::CONSECUTIVE_BATCH_FAILURES . '_' . $consecutiveFailureCount;
                         rzpLogError("sync: stopping — " . $consecutiveFailureCount . " consecutive batch failures");
                         $pauseResponse = $this->postSyncEvent(
-                            Constants::PAUSED,
                             Constants::ADDRESS_INGESTION_PAUSED,
                             Constants::TOO_MANY_BATCH_FAILURES,
                             $failMsg,
@@ -695,7 +655,6 @@ class OneCCAddressSync
             // raw batch — this event carries only the lifecycle state change.
             rzpLogInfo("sync: time limit reached at order_id=" . $this->pendingCursorOrderId);
             $pauseResponse = $this->postSyncEvent(
-                Constants::PAUSED,
                 Constants::ADDRESS_INGESTION_PAUSED,
                 Constants::MAX_RUNTIME_NEAR_LIMIT,
                 Constants::MAX_RUNNING_TIME_REACHED,
@@ -713,7 +672,6 @@ class OneCCAddressSync
             $this->batchFailures++;
             $this->lastError = $e->getMessage();
             $failedResponse = $this->postSyncEvent(
-                Constants::FAILED,
                 Constants::ADDRESS_INGESTION_FAILED,
                 Constants::UNHANDLED_EXCEPTION,
                 $e->getMessage(),
