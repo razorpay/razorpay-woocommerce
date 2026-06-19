@@ -31,11 +31,11 @@ class Constants
     const JOB                            = 'job';
     const ONE_CC_ONBOARDED_TIMESTAMP     = 'one_cc_onboarded_timestamp';
     const CHECKPOINT                     = 'checkpoint';
-    const SYNC_UPPER_BOUND               = 'sync_upper_bound';
     const ADDRESSES                      = 'addresses';
     const DELETED                        = 'deleted';
     const ONE_CLICK_CHECKOUT             = 'one_click_checkout';
     const ONE_CC_ADDRESS_SYNC_OFF        = 'one_cc_address_sync_off';
+    const WOOCOMMERCE_ADDRESS_SYNC_ENABLED = 'woocommerce_address_sync_enabled';
     const BODY                           = 'body';
     const STATUS_CODE                    = 'status_code';
     const SOURCE                         = 'source';
@@ -52,35 +52,49 @@ class Constants
     const POST_ADDRESS_MARK_CANCELLED_ERROR    = 'post_address_mark_cancelled_error';
     const UNHANDLED_EXCEPTION_OCCURRED_IN_CRON = 'unhandled_exception_occurred_in_cron';
     const CONSECUTIVE_BATCH_FAILURES     = 'consecutive_batch_failures';
-    const LAST_CHECKPOINT                = 'last_checkpoint';
+    const ADDRESS_INGESTION_STARTED      = 'address_ingestion_started';
+    const CONFIG_RECEIVED                = 'config_received';
+    const ADDRESS_INGESTION_COMPLETE     = 'address_ingestion_complete';
+    const ADDRESS_INGESTION_PAUSED       = 'address_ingestion_paused';
+    const ADDRESS_INGESTION_FAILED       = 'address_ingestion_failed';
+    const BATCH_INGESTED                 = 'batch_ingested';
+    const NO_ELIGIBLE_ORDERS             = 'no_eligible_orders';
+    const ALL_ELIGIBLE_ORDERS_PROCESSED  = 'all_eligible_orders_processed';
+    const MAX_RUNTIME_NEAR_LIMIT         = 'max_runtime_near_limit';
+    const TIME_WINDOW_ENDED              = 'time_window_ended';
+    const TOO_MANY_BATCH_FAILURES        = 'too_many_batch_failures';
+    const BACKEND_ACTION_SOFT_DISABLE    = 'backend_action_soft_disable';
+    const WOOCOMMERCE_ADDRESS_SYNC_DISABLED = 'woocommerce_address_sync_disabled';
+    const UNHANDLED_EXCEPTION            = 'unhandled_exception';
+    const REASON                         = 'reason';
+    const BATCH_SIZE                     = 'batch_size';
+    const BATCHES_SENT                   = 'batches_sent';
+    const ADDRESSES_SENT                 = 'addresses_sent';
+    const FAILURES_COUNT                 = 'failures_count';
+    const LAST_ERROR                     = 'last_error';
+    const RUN_FINISHED_AT                = 'run_finished_at';
     const PENDING_CHECKPOINT             = 'pending_checkpoint';
     const UPPER_BOUND                    = 'upper_bound';
-    const BATCHES_INGESTED              = 'batches_ingested';
-    const ADDRESSES_INGESTED            = 'addresses_ingested';
-    const HEARTBEATS_SENT               = 'heartbeats_sent';
-    const BATCH_FAILURES                = 'batch_failures';
     const RUN_STARTED_AT                = 'run_started_at';
     const TRACE                          = 'trace';
     const ORDER                          = 'order';
     const ASC                            = 'ASC';
     const ID                             = 'ID';
-    const ADDRESS_SYNC_COMPLETED         = 'address_sync_completed';
+    const COOLDOWN_MS                    = 'cooldown_ms';
+    const BATCH_RETRY_PHASE1_FAILED      = 'batch_retry_phase1_failed';
+    const BATCH_RETRY_PHASE2_FAILED      = 'batch_retry_phase2_failed';
+    const BATCH_FAILED                   = 'batch_failed';
 
     // IST scheduling — all time calculations use Asia/Kolkata explicitly so the result
     // is correct regardless of what timezone the merchant's server PHP is configured with.
     const ADDRESS_SYNC_TIMEZONE        = 'Asia/Kolkata';
-    const ADDRESS_SYNC_CRON_START_TIME = '01:00';
+    const ADDRESS_SYNC_CRON_START_TIME = '00:00';
     const ADDRESS_SYNC_HARD_STOP_TIME  = '05:00';
 
-    // Heartbeat sent every 15 minutes only when there has been no successful batch activity.
-    // Server uses TouchRunStatus (direct SQL UPDATE) so updated_at always advances.
-    const HEARTBEAT                  = 'heartbeat';
-    const HEARTBEAT_INTERVAL_SECONDS = 900;
-
     // Cooldown between consecutive successful batches.
-    const BATCH_COOLDOWN_MS = 500;
+    const BATCH_COOLDOWN_MS = 5000;
 
-    // Three-phase batch retry: 3 → wait 10min → 2 → wait 5min → 1 = 6 total attempts.
+    // Three-phase batch retry: 3 -> wait 10min -> 2 -> wait 5min -> 1 = 6 total attempts.
     const BATCH_PHASE1_MAX          = 3;
     const BATCH_PHASE1_WAIT_SECONDS = 600;
     const BATCH_PHASE2_MAX          = 2;
@@ -88,5 +102,5 @@ class Constants
     const BATCH_PHASE3_MAX          = 1;
 
     // Stop cron after this many consecutive failed batches.
-    const MAX_CONSECUTIVE_FAILURES = 3;
+    const MAX_CONSECUTIVE_FAILURES = 10;
 }

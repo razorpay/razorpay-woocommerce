@@ -5,7 +5,7 @@ use Razorpay\Api\Api;
 class OneCCAddressSync
 {
     const GET_CONFIGS_API        = 'woocommerce/config'; // checkpoint + job state
-    const POST_ADDRESSES_API     = 'woocommerce/event';  // heartbeat and lifecycle events
+    const POST_ADDRESSES_API     = 'woocommerce/ingest'; // lifecycle, retry-progress, and address batches
     const POST_RAW_ADDRESSES_API = 'woocommerce/ingest'; // address batches
     const GET                    = 'GET';
     const POST                   = 'POST';
@@ -13,10 +13,10 @@ class OneCCAddressSync
     private $apiRequestRetryCount = 3;
     private $apiRequestRetryDelay = 2; // base delay in seconds — doubles each retry (2, 4, 8)
     private $batchSize            = 50;
+    private $cooldownMs           = Constants::BATCH_COOLDOWN_MS;
 
     protected $api;
     private $jobConfig;
-    private $lastActivityAt = 0; // shared by sync() and getNextBatch() so scans stay live
 
     // Run upper bound — frozen at sync start.
     // upperOrderId = ID of the last qualifying order that existed when the run started,
@@ -32,10 +32,10 @@ class OneCCAddressSync
     // This is the last Woo order ID in the batch currently being sent.
     private $pendingCursorOrderId = 0;
     private $runStartedAt = 0;
-    private $batchesIngested = 0;
-    private $addressesIngested = 0;
-    private $heartbeatsSent = 0;
+    private $batchesSent = 0;
+    private $addressesSent = 0;
     private $batchFailures = 0;
+    private $lastError = null;
 
     public function __construct($api)
     {
@@ -83,10 +83,8 @@ class OneCCAddressSync
         return $this->makeAPICall(self::GET_CONFIGS_API, self::GET, $body);
     }
 
-    // postAddresses sends heartbeat and lifecycle events (completed/paused/failed/cancelled).
-    // It intentionally carries no checkpoint — checkpoint advancement is the sole
-    // responsibility of postRawAddresses() via the WooCommerce ingest endpoint.
-    // Checkpoint progression happens through batch success only.
+    // postAddresses sends lifecycle and retry-progress events through the ingest endpoint.
+    // Signal-only events carry top-level checkpoint so backend can update job_execution.
     private function postAddresses($body)
     {
         $body[Constants::SOURCE] = Constants::WOOCOMMERCE;
@@ -103,20 +101,25 @@ class OneCCAddressSync
         return $this->makeAPICall(self::POST_RAW_ADDRESSES_API, self::POST, [
             Constants::ADDRESSES  => $addresses,
             Constants::CHECKPOINT => $this->pendingCursorOrderId,
+            Constants::META_DATA  => $this->buildEventMetaData(
+                Constants::PROCESSING,
+                Constants::BATCH_INGESTED,
+                '',
+                null,
+                false,
+                $this->pendingCursorOrderId
+            ),
         ], 1);
     }
 
     // Three-phase retry for a single batch. postRawAddresses() is one HTTP attempt,
     // so the total HTTP-level attempts are: 3 + 2 + 1 = 6.
-    // Total wait budget between phases: 10+5 = 15 min.
-    //
-    // Phase 1: 3 attempts  → wait 10 min (heartbeats throughout)
-    // Phase 2: 2 attempts  → wait 5 min  (heartbeats throughout)
-    // Phase 3: 1 attempt   → give up if still failing
-    //
+    // Phase warning events are processing/liveness signals, not terminal failures.
     // Returns IS_SUCCESS=true on any successful attempt, IS_SUCCESS=false if all 6 fail.
-    private function postRawAddressesInPhases($addresses, $endTime)
+    private function postRawAddressesInPhases($addresses, $endTime, $consecutiveFailureCount)
     {
+        $projectedConsecutiveFailures = $consecutiveFailureCount + 1;
+
         // Phase 1 — 3 attempts
         for ($i = 0; $i < Constants::BATCH_PHASE1_MAX; $i++)
         {
@@ -124,8 +127,9 @@ class OneCCAddressSync
             if ($response[Constants::IS_SUCCESS]) { return $response; }
             rzpLogError("batch phase1 attempt " . ($i + 1) . " failed at order_id=" . $this->pendingCursorOrderId);
         }
+        $this->postBatchProgressEvent(Constants::BATCH_RETRY_PHASE1_FAILED, $projectedConsecutiveFailures);
 
-        $waited = $this->waitWithHeartbeats(Constants::BATCH_PHASE1_WAIT_SECONDS, $endTime);
+        $waited = $this->waitWithinBudget(Constants::BATCH_PHASE1_WAIT_SECONDS, $endTime);
         if ($waited === 0)
         {
             rzpLogInfo("batch: no time budget for phase2, giving up at order_id=" . $this->pendingCursorOrderId);
@@ -139,8 +143,9 @@ class OneCCAddressSync
             if ($response[Constants::IS_SUCCESS]) { return $response; }
             rzpLogError("batch phase2 attempt " . ($i + 1) . " failed at order_id=" . $this->pendingCursorOrderId);
         }
+        $this->postBatchProgressEvent(Constants::BATCH_RETRY_PHASE2_FAILED, $projectedConsecutiveFailures);
 
-        $waited = $this->waitWithHeartbeats(Constants::BATCH_PHASE2_WAIT_SECONDS, $endTime);
+        $waited = $this->waitWithinBudget(Constants::BATCH_PHASE2_WAIT_SECONDS, $endTime);
         if ($waited === 0)
         {
             rzpLogInfo("batch: no time budget for phase3, giving up at order_id=" . $this->pendingCursorOrderId);
@@ -157,73 +162,114 @@ class OneCCAddressSync
         return [Constants::IS_SUCCESS => false];
     }
 
-    // Sleeps for up to $waitSeconds (capped by $endTime), firing heartbeats every
-    // HEARTBEAT_INTERVAL_SECONDS throughout so monitoring never sees a stale signal during
-    // an in-run retry wait. Returns the actual seconds waited (0 if no budget was available).
-    private function waitWithHeartbeats($waitSeconds, $endTime)
+    // Sleeps for up to $waitSeconds, capped by the run's end time.
+    // Retry progress is reported through explicit phase events, not periodic heartbeats.
+    private function waitWithinBudget($waitSeconds, $endTime)
     {
-        $waitEnd = min(time() + $waitSeconds, $endTime);
-        $waited  = 0;
-        while (time() < $waitEnd)
+        $sleepSeconds = min($waitSeconds, max(0, $endTime - time()));
+        if ($sleepSeconds <= 0)
         {
-            $chunk = min(Constants::HEARTBEAT_INTERVAL_SECONDS, (int)($waitEnd - time()));
-            if ($chunk > 0)
-            {
-                sleep($chunk);
-                $waited += $chunk;
-            }
-            $this->sendHeartbeatIfStale();
+            return 0;
         }
-        return $waited;
+
+        sleep($sleepSeconds);
+        return $sleepSeconds;
     }
 
-    private function markActivity()
+    private function loadCursorFromJobConfig()
     {
-        $this->lastActivityAt = time();
+        $this->cursorOrderId        = (int)($this->jobConfig[Constants::CHECKPOINT] ?? 0);
+        $this->pendingCursorOrderId = $this->cursorOrderId;
     }
 
-    private function sendHeartbeatIfStale($force = false)
+    private function loadConfigValues($configs)
     {
-        if (!$force &&
-            $this->lastActivityAt > 0 &&
-            time() - $this->lastActivityAt < Constants::HEARTBEAT_INTERVAL_SECONDS)
-        {
-            return;
-        }
+        $this->jobConfig = [
+            Constants::CHECKPOINT => (int)($configs[Constants::CHECKPOINT] ?? 0),
+        ];
+        $this->loadCursorFromJobConfig();
 
-        $this->sendHeartbeat();
-        $this->markActivity();
+        if (isset($configs[Constants::COOLDOWN_MS]) && is_numeric($configs[Constants::COOLDOWN_MS]) && (int)$configs[Constants::COOLDOWN_MS] >= 0)
+        {
+            $this->cooldownMs = (int)$configs[Constants::COOLDOWN_MS];
+        }
     }
 
-    // Sends a lightweight heartbeat to the backend so monitoring can confirm the cron is alive.
-    // A failed heartbeat is logged but never stops the sync — it is fire-and-observe, not blocking.
-    // The server uses TouchRunStatus (direct SQL UPDATE) so updated_at is always stamped,
-    // even when status+message are identical to the previous heartbeat.
-    private function sendHeartbeat()
+    private function formatSyncTime($timestamp)
     {
-        $this->heartbeatsSent++;
-        $response = $this->postAddresses([
-            Constants::META_DATA => [
-                Constants::STATUS             => Constants::PROCESSING,
-                Constants::MESSAGE            => Constants::HEARTBEAT,
-                Constants::LAST_CHECKPOINT    => $this->cursorOrderId,
-                Constants::PENDING_CHECKPOINT => $this->pendingCursorOrderId,
-                Constants::UPPER_BOUND        => $this->upperOrderId,
-                Constants::BATCHES_INGESTED   => $this->batchesIngested,
-                Constants::ADDRESSES_INGESTED => $this->addressesIngested,
-                Constants::HEARTBEATS_SENT    => $this->heartbeatsSent,
-                Constants::BATCH_FAILURES     => $this->batchFailures,
-                Constants::RUN_STARTED_AT     => $this->runStartedAt,
-            ]
-        ]);
-        if ($response[Constants::IS_SUCCESS])
+        if ($timestamp <= 0)
         {
-            rzpLogInfo("sendHeartbeat: sent at order_id=" . $this->pendingCursorOrderId);
+            return null;
         }
-        else
+
+        $dt = new DateTime('@' . $timestamp);
+        $dt->setTimezone(new DateTimeZone(Constants::ADDRESS_SYNC_TIMEZONE));
+        return $dt->format(DateTime::ATOM);
+    }
+
+    private function buildEventMetaData($status, $message, $reason = '', $lastError = null, $includeFinishedAt = false, $checkpointOverride = null, $extraMetaData = [])
+    {
+        $checkpoint = $checkpointOverride ?? $this->cursorOrderId;
+        $metaData = [
+            Constants::STATUS             => $status,
+            Constants::MESSAGE            => $message,
+            Constants::CHECKPOINT         => $checkpoint,
+            Constants::BATCH_SIZE         => $this->batchSize,
+            Constants::BATCHES_SENT       => $this->batchesSent,
+            Constants::ADDRESSES_SENT     => $this->addressesSent,
+            Constants::FAILURES_COUNT     => $this->batchFailures,
+            Constants::LAST_ERROR         => $lastError ?? $this->lastError,
+            Constants::RUN_STARTED_AT     => $this->formatSyncTime($this->runStartedAt),
+            Constants::PENDING_CHECKPOINT => $this->pendingCursorOrderId,
+            Constants::UPPER_BOUND        => $this->upperOrderId,
+        ];
+
+        if (strlen($reason) > 0)
         {
-            rzpLogError("sendHeartbeat: failed at order_id=" . $this->pendingCursorOrderId);
+            $metaData[Constants::REASON] = $reason;
         }
+
+        if ($includeFinishedAt)
+        {
+            $metaData[Constants::RUN_FINISHED_AT] = $this->formatSyncTime(time());
+        }
+
+        foreach ($extraMetaData as $key => $value)
+        {
+            $metaData[$key] = $value;
+        }
+
+        return $metaData;
+    }
+
+    private function postSyncEvent($status, $message, $reason = '', $lastError = null, $includeFinishedAt = false, $checkpointOverride = null, $extraMetaData = [])
+    {
+        $checkpoint = $checkpointOverride ?? $this->cursorOrderId;
+        $body = [
+            Constants::CHECKPOINT => $checkpoint,
+            Constants::META_DATA  => $this->buildEventMetaData($status, $message, $reason, $lastError, $includeFinishedAt, $checkpoint, $extraMetaData),
+        ];
+
+        return $this->postAddresses($body);
+    }
+
+    private function postBatchProgressEvent($message, $consecutiveFailureCount)
+    {
+        $response = $this->postSyncEvent(
+            Constants::PROCESSING,
+            $message,
+            '',
+            Constants::POST_ADDRESSES_ERROR,
+            false,
+            null,
+            [Constants::CONSECUTIVE_BATCH_FAILURES => $consecutiveFailureCount]
+        );
+        if (!$response[Constants::IS_SUCCESS])
+        {
+            rzpLogError("postBatchProgressEvent: failed to send " . $message . " at order_id=" . $this->pendingCursorOrderId);
+        }
+
+        return $response;
     }
 
     private function isMerchantEligible()
@@ -242,6 +288,7 @@ class OneCCAddressSync
             {
                 rzpLogInfo("isMerchantEligible: no config record yet (404), starting fresh");
                 $this->jobConfig = [];
+                $this->loadCursorFromJobConfig();
                 return true;
             }
             else
@@ -269,14 +316,28 @@ class OneCCAddressSync
             return false;
         }
 
-        $this->jobConfig = $configs[Constants::JOB] ?? [];
+        $this->loadConfigValues($configs);
 
-        // Once-per-day guard: skip if already completed today in IST.
-        $todayStartDt = new DateTime('today midnight', new DateTimeZone(Constants::ADDRESS_SYNC_TIMEZONE));
-        if (($this->jobConfig[Constants::STATUS]     ?? '') === Constants::COMPLETED &&
-            ($this->jobConfig[Constants::UPDATED_AT] ?? 0)  >= $todayStartDt->getTimestamp())
+        if (array_key_exists(Constants::WOOCOMMERCE_ADDRESS_SYNC_ENABLED, $configs) &&
+            $configs[Constants::WOOCOMMERCE_ADDRESS_SYNC_ENABLED] === false)
         {
-            rzpLogInfo("isMerchantEligible: already completed today, skipping");
+            rzpLogInfo("isMerchantEligible: woocommerce address sync disabled by remote config");
+            if ($this->runStartedAt === 0)
+            {
+                $this->runStartedAt = time();
+            }
+            $pauseResponse = $this->postSyncEvent(
+                Constants::PAUSED,
+                Constants::ADDRESS_INGESTION_PAUSED,
+                Constants::BACKEND_ACTION_SOFT_DISABLE,
+                Constants::WOOCOMMERCE_ADDRESS_SYNC_DISABLED,
+                true
+            );
+            if (!$pauseResponse[Constants::IS_SUCCESS])
+            {
+                rzpLogError("isMerchantEligible: failed to send remote-disabled paused event");
+            }
+            updateAddressSyncCronData(Constants::PAUSED, Constants::WOOCOMMERCE_ADDRESS_SYNC_DISABLED);
             return false;
         }
 
@@ -437,26 +498,19 @@ class OneCCAddressSync
                 'country' => trim($order->get_shipping_country())   ?: trim($order->get_billing_country()),
                 'zipcode' => trim($order->get_shipping_postcode())  ?: trim($order->get_billing_postcode()),
             ];
-            if ($this->isValidAddress($address))
-            {
-                $addresses[] = $address;
-            }
+            $addresses[] = $address;
         }
         return $addresses;
     }
 
-    // Fetch the next batch of valid addresses using order ID keyset pagination.
+    // Fetch the next batch of order address payloads using order ID keyset pagination.
     // Sets pendingCursorOrderId to the last order fetched but does NOT advance
     // cursorOrderId — that is committed in sync() only after backend returns 202.
-    // For batches where all orders are address-invalid, the confirmed cursor is temporarily
-    // advanced so the next iteration fetches a fresh window, not the same one.
     private function getNextBatch($endTime)
     {
         $addresses = [];
         while (empty($addresses) && time() < $endTime)
         {
-            $this->sendHeartbeatIfStale();
-
             $orders = $this->getOrders();
             rzpLogInfo("getNextBatch: confirmed_order_id=" . $this->cursorOrderId . ", orders=" . count($orders));
 
@@ -474,12 +528,6 @@ class OneCCAddressSync
             }
 
             $addresses = $this->getAddressFromOrders($orders);
-            if (empty($addresses))
-            {
-                // All orders invalid — advance confirmed cursor so next iteration
-                // fetches a genuinely new window, not the same orders again.
-                $this->cursorOrderId   = $this->pendingCursorOrderId;
-            }
         }
         return $addresses;
     }
@@ -495,6 +543,24 @@ class OneCCAddressSync
             }
 
             $this->runStartedAt   = time();
+            $endTime          = time() + $maxSeconds;
+            $consecutiveFailureCount      = 0;
+
+            rzpLogInfo("sync: confirmed_order_id=" . $this->cursorOrderId . ", maxSeconds=" . $maxSeconds);
+            updateAddressSyncCronData(Constants::PROCESSING);
+
+            $startedResponse = $this->postSyncEvent(Constants::PROCESSING, Constants::CONFIG_RECEIVED);
+            if ($startedResponse[Constants::IS_SUCCESS])
+            {
+                rzpLogInfo("sync: config_received event sent at order_id=" . $this->cursorOrderId);
+            }
+            else
+            {
+                rzpLogError("sync: failed to send config_received event at order_id=" . $this->cursorOrderId);
+                updateAddressSyncCronData(Constants::PAUSED, Constants::POST_ADDRESSES_ERROR);
+                return;
+            }
+
             $this->upperCreatedAt = $this->runStartedAt; // frozen upper bound for this run
 
             // Query the last qualifying order that exists right now to freeze upperOrderId.
@@ -513,26 +579,10 @@ class OneCCAddressSync
                 ],
             ]);
             $this->upperOrderId = !empty($upperOrders) ? $upperOrders[0]->get_id() : 0;
-
-            $endTime = time() + $maxSeconds;
-
-            // Stored checkpoint is the last successfully processed Woo order ID.
-            $this->cursorOrderId        = (int)($this->jobConfig[Constants::CHECKPOINT] ?? 0);
-            $this->pendingCursorOrderId = $this->cursorOrderId;
-            $consecutiveFailureCount      = 0;
-
-            rzpLogInfo("sync: upper_order_id=" . $this->upperOrderId . ", confirmed_order_id=" . $this->cursorOrderId . ", maxSeconds=" . $maxSeconds);
-            updateAddressSyncCronData(Constants::PROCESSING);
-
-            // Initial heartbeat so the backend knows the cron fired.
-            $this->sendHeartbeatIfStale(true);
+            rzpLogInfo("sync: upper_order_id=" . $this->upperOrderId . ", confirmed_order_id=" . $this->cursorOrderId);
 
             while (time() < $endTime)
             {
-                // Periodic heartbeat between batches. getNextBatch() also fires heartbeats
-                // internally so long empty-page scans don't appear stale to monitoring.
-                $this->sendHeartbeatIfStale();
-
                 $addresses = $this->getNextBatch($endTime);
 
                 if (empty($addresses))
@@ -543,12 +593,13 @@ class OneCCAddressSync
                         // Checkpoint advancement is handled by postRawAddresses() on batch success;
                         // this event carries only the lifecycle state change.
                         rzpLogInfo("sync: time limit reached while scanning pages at order_id=" . $this->pendingCursorOrderId);
-                        $pauseResponse = $this->postAddresses([
-                            Constants::META_DATA => [
-                                Constants::STATUS  => Constants::PAUSED,
-                                Constants::MESSAGE => Constants::MAX_RUNNING_TIME_REACHED,
-                            ]
-                        ]);
+                        $pauseResponse = $this->postSyncEvent(
+                            Constants::PAUSED,
+                            Constants::ADDRESS_INGESTION_PAUSED,
+                            Constants::TIME_WINDOW_ENDED,
+                            Constants::MAX_RUNNING_TIME_REACHED,
+                            true
+                        );
                         if (!$pauseResponse[Constants::IS_SUCCESS])
                         {
                             rzpLogError("sync: failed to send paused event to backend at order_id=" . $this->pendingCursorOrderId);
@@ -559,29 +610,34 @@ class OneCCAddressSync
                     {
                         // No more orders in the window — sync is complete.
                         // Store the run's exact upper order ID so next run starts strictly after it.
+                        $finalCheckpoint = $this->upperOrderId > 0 ? $this->upperOrderId : $this->cursorOrderId;
+                        $completeReason = $this->batchesSent === 0
+                            ? Constants::NO_ELIGIBLE_ORDERS
+                            : Constants::ALL_ELIGIBLE_ORDERS_PROCESSED;
                         rzpLogInfo("sync: completed. upper_order_id=" . $this->upperOrderId);
-                        $completionResponse = $this->postAddresses([
-                            Constants::META_DATA        => [
-                                Constants::STATUS  => Constants::COMPLETED,
-                                Constants::MESSAGE => Constants::ADDRESS_SYNC_COMPLETED,
-                            ],
-                            Constants::SYNC_UPPER_BOUND => $this->upperOrderId,
-                        ]);
+                        $completionResponse = $this->postSyncEvent(
+                            Constants::COMPLETED,
+                            Constants::ADDRESS_INGESTION_COMPLETE,
+                            $completeReason,
+                            null,
+                            true,
+                            $finalCheckpoint
+                        );
                         if (!$completionResponse[Constants::IS_SUCCESS])
                         {
                             rzpLogError("sync: failed to notify backend of completion at order_id=" . $this->pendingCursorOrderId);
                             updateAddressSyncCronData(Constants::PAUSED, Constants::POST_ADDRESSES_ERROR);
                             return;
                         }
-                        updateAddressSyncCronData(Constants::COMPLETED, Constants::ADDRESS_SYNC_COMPLETED);
+                        updateAddressSyncCronData(Constants::COMPLETED, Constants::ADDRESS_INGESTION_COMPLETE);
                     }
                     return;
                 }
 
                 rzpLogInfo("sync: posting " . count($addresses) . " addresses at order_id=" . $this->pendingCursorOrderId);
 
-                // Six total attempts across three phases: 3 → wait 10min → 2 → wait 5min → 1
-                $response = $this->postRawAddressesInPhases($addresses, $endTime);
+                // Six total attempts across three phases: 3 -> wait 10min -> 2 -> wait 5min -> 1
+                $response = $this->postRawAddressesInPhases($addresses, $endTime, $consecutiveFailureCount);
 
                 if (!$response[Constants::IS_SUCCESS])
                 {
@@ -589,25 +645,31 @@ class OneCCAddressSync
                     // batch remains the resume point until it succeeds or the run stops.
                     $consecutiveFailureCount++;
                     $this->batchFailures++;
+                    $this->lastError = Constants::POST_ADDRESSES_ERROR;
                     rzpLogError("sync: batch failed (consecutive_failures=" . $consecutiveFailureCount . ") at order_id=" . $this->pendingCursorOrderId);
 
                     if ($consecutiveFailureCount >= Constants::MAX_CONSECUTIVE_FAILURES)
                     {
                         $failMsg = Constants::CONSECUTIVE_BATCH_FAILURES . '_' . $consecutiveFailureCount;
                         rzpLogError("sync: stopping — " . $consecutiveFailureCount . " consecutive batch failures");
-                        $failedResponse = $this->postAddresses([
-                            Constants::META_DATA => [
-                                Constants::STATUS  => Constants::FAILED,
-                                Constants::MESSAGE => $failMsg,
-                            ]
-                        ]);
-                        if (!$failedResponse[Constants::IS_SUCCESS])
+                        $pauseResponse = $this->postSyncEvent(
+                            Constants::PAUSED,
+                            Constants::ADDRESS_INGESTION_PAUSED,
+                            Constants::TOO_MANY_BATCH_FAILURES,
+                            $failMsg,
+                            true,
+                            null,
+                            [Constants::CONSECUTIVE_BATCH_FAILURES => $consecutiveFailureCount]
+                        );
+                        if (!$pauseResponse[Constants::IS_SUCCESS])
                         {
-                            rzpLogError("sync: also failed to send failed event to backend");
+                            rzpLogError("sync: also failed to send paused event to backend");
                         }
-                        updateAddressSyncCronData(Constants::FAILED, $failMsg);
+                        updateAddressSyncCronData(Constants::PAUSED, $failMsg);
                         return;
                     }
+
+                    $this->postBatchProgressEvent(Constants::BATCH_FAILED, $consecutiveFailureCount);
 
                     // Below the stop threshold — retry from the same confirmed cursor.
                     // pendingCursorOrderId is not persisted unless a raw batch succeeds.
@@ -618,27 +680,27 @@ class OneCCAddressSync
                 // This is the ONLY place cursorOrderId advances after a valid address batch.
                 $this->cursorOrderId   = $this->pendingCursorOrderId;
                 $consecutiveFailureCount = 0;
-                $this->batchesIngested++;
-                $this->addressesIngested += count($addresses);
-                $this->markActivity();
+                $this->batchesSent++;
+                $this->addressesSent += count($addresses);
 
                 // Cooldown between consecutive successful batches — prevents hammering the API
                 // and gives the 1cc-address-service headroom to process the goroutine work.
-                if (Constants::BATCH_COOLDOWN_MS > 0)
+                if ($this->cooldownMs > 0)
                 {
-                    usleep(Constants::BATCH_COOLDOWN_MS * 1000);
+                    usleep($this->cooldownMs * 1000);
                 }
             }
 
             // Time budget exhausted. Checkpoint is already persisted by the last successful
             // raw batch — this event carries only the lifecycle state change.
             rzpLogInfo("sync: time limit reached at order_id=" . $this->pendingCursorOrderId);
-            $pauseResponse = $this->postAddresses([
-                Constants::META_DATA => [
-                    Constants::STATUS  => Constants::PAUSED,
-                    Constants::MESSAGE => Constants::MAX_RUNNING_TIME_REACHED,
-                ]
-            ]);
+            $pauseResponse = $this->postSyncEvent(
+                Constants::PAUSED,
+                Constants::ADDRESS_INGESTION_PAUSED,
+                Constants::MAX_RUNTIME_NEAR_LIMIT,
+                Constants::MAX_RUNNING_TIME_REACHED,
+                true
+            );
             if (!$pauseResponse[Constants::IS_SUCCESS])
             {
                 rzpLogError("sync: failed to send paused event to backend at order_id=" . $this->pendingCursorOrderId);
@@ -648,12 +710,15 @@ class OneCCAddressSync
         catch (Exception $e)
         {
             rzpLogError("sync: unhandled exception: " . $e->getMessage() . ", trace: " . $e->getTraceAsString());
-            $failedResponse = $this->postAddresses([
-                Constants::META_DATA => [
-                    Constants::STATUS  => Constants::FAILED,
-                    Constants::MESSAGE => Constants::UNHANDLED_EXCEPTION_OCCURRED_IN_CRON . $e->getMessage(),
-                ]
-            ]);
+            $this->batchFailures++;
+            $this->lastError = $e->getMessage();
+            $failedResponse = $this->postSyncEvent(
+                Constants::FAILED,
+                Constants::ADDRESS_INGESTION_FAILED,
+                Constants::UNHANDLED_EXCEPTION,
+                $e->getMessage(),
+                true
+            );
             if (!$failedResponse[Constants::IS_SUCCESS])
             {
                 rzpLogError("sync: also failed to send failed event to backend at order_id=" . $this->cursorOrderId);
@@ -673,6 +738,13 @@ function createOneCCAddressSyncCron()
     if (!isValidRazorpayMerchant($paymentSettings))
     {
         rzpLogInfo('createOneCCAddressSyncCron: invalid razorpay merchant, aborting');
+        return;
+    }
+
+    if (isValidOneCCMerchant($paymentSettings))
+    {
+        rzpLogInfo('createOneCCAddressSyncCron: one cc merchant, deleting cron');
+        deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::INVALID_1CC_MERCHANT, true);
         return;
     }
 
@@ -783,6 +855,13 @@ function runOneCCAddressSync($cronType)
         {
             rzpLogInfo("runOneCCAddressSync: [{$cronType}] invalid razorpay merchant");
             deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::INVALID_RAZORPAY_MERCHANT, true);
+            return;
+        }
+
+        if (isValidOneCCMerchant($paymentSettings))
+        {
+            rzpLogInfo("runOneCCAddressSync: [{$cronType}] one cc merchant");
+            deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::INVALID_1CC_MERCHANT, true);
             return;
         }
 
