@@ -52,7 +52,7 @@ class Constants
     const ADDRESS_INGESTION_FAILED       = 'address_ingestion_failed';
     const BATCH_INGESTED                 = 'batch_ingested';
     const WOOCOMMERCE_ADDRESS_SYNC_DISABLED = 'woocommerce_address_sync_disabled';
-    const LAST_ERROR                     = 'last_error';
+    const ERROR                          = 'error';
     const ORDER                          = 'order';
     const ASC                            = 'ASC';
     const ID                             = 'ID';

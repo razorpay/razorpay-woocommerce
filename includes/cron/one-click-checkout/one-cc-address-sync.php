@@ -34,11 +34,31 @@ class OneCCAddressSync
     private $batchesSent = 0;
     private $addressesSent = 0;
     private $batchFailures = 0;
-    private $lastError = null;
+    private $errorLogs = [];
 
     public function __construct($api)
     {
         $this->api = $api;
+    }
+
+    private function recordError($stage, $message, $context = [])
+    {
+        $entry = array_merge([
+            Constants::MESSAGE => $message,
+            'stage'            => $stage,
+            Constants::UPDATED_AT => time(),
+        ], $context);
+
+        $this->errorLogs[] = $entry;
+        if (count($this->errorLogs) > 20)
+        {
+            $this->errorLogs = array_slice($this->errorLogs, -20);
+        }
+    }
+
+    private function clearErrorLogs()
+    {
+        $this->errorLogs = [];
     }
 
     // makeAPICall — retries with exponential backoff (2s, 4s, 8s by default).
@@ -62,10 +82,22 @@ class OneCCAddressSync
             {
                 $statusCode = $e->getHttpStatusCode();
                 rzpLogError("makeAPICall: message:" . $e->getMessage() . ", url: " . $url . ", method: " . $method . ", retryCount: " . $retryCount . ", statusCode: " . $statusCode);
+                $this->recordError('api_call', $e->getMessage(), [
+                    'url'         => $url,
+                    'method'      => $method,
+                    'retry_count' => $retryCount,
+                    'status_code' => $statusCode,
+                ]);
             }
             catch (Exception $e)
             {
                 rzpLogError("makeAPICall: unexpected error: " . $e->getMessage() . ", retryCount: " . $retryCount);
+                $this->recordError('api_call', $e->getMessage(), [
+                    'url'         => $url,
+                    'method'      => $method,
+                    'retry_count' => $retryCount,
+                    'trace'       => substr($e->getTraceAsString(), 0, 4000),
+                ]);
             }
             // Exponential backoff: 2s → 4s → 8s (skip sleep after the last attempt)
             if ($retryCount < $maxAttempts)
@@ -99,7 +131,7 @@ class OneCCAddressSync
         return $this->makeAPICall(self::POST_ADDRESSES_API, self::POST, [
             Constants::ADDRESSES  => $addresses,
             Constants::CHECKPOINT => $this->pendingCursorOrderId,
-            Constants::STATUS     => Constants::PROCESSING,
+            Constants::STATUS     => empty($this->errorLogs) ? Constants::PROCESSING : Constants::FAILED,
             Constants::META_DATA  => $this->buildEventMetaData(Constants::BATCH_INGESTED),
         ], 1);
     }
@@ -187,16 +219,17 @@ class OneCCAddressSync
         }
     }
 
-    private function buildEventMetaData($message, $lastError = null, $extraMetaData = [])
+    private function buildEventMetaData($message, $extraMetaData = [])
     {
         $metaData = [
             Constants::MESSAGE => $message,
         ];
 
-        $error = $lastError ?? $this->lastError;
-        if (!empty($error))
+        if (!empty($this->errorLogs))
         {
-            $metaData[Constants::LAST_ERROR] = $error;
+            $metaData[Constants::ERROR] = [
+                'logs' => $this->errorLogs,
+            ];
         }
 
         foreach ($extraMetaData as $key => $value)
@@ -207,13 +240,13 @@ class OneCCAddressSync
         return $metaData;
     }
 
-    private function postSyncEvent($status, $message, $lastError = null, $checkpointOverride = null, $extraMetaData = [])
+    private function postSyncEvent($status, $message, $checkpointOverride = null, $extraMetaData = [])
     {
         $checkpoint = $checkpointOverride ?? $this->cursorOrderId;
         $body = [
             Constants::CHECKPOINT => $checkpoint,
-            Constants::STATUS     => $status,
-            Constants::META_DATA  => $this->buildEventMetaData($message, $lastError, $extraMetaData),
+            Constants::STATUS     => empty($this->errorLogs) ? $status : Constants::FAILED,
+            Constants::META_DATA  => $this->buildEventMetaData($message, $extraMetaData),
         ];
 
         return $this->postAddresses($body);
@@ -224,7 +257,6 @@ class OneCCAddressSync
         $response = $this->postSyncEvent(
             Constants::PROCESSING,
             $message,
-            Constants::POST_ADDRESSES_ERROR,
             null,
             [Constants::CONSECUTIVE_BATCH_FAILURES => $consecutiveFailureCount]
         );
@@ -287,8 +319,7 @@ class OneCCAddressSync
             }
             $pauseResponse = $this->postSyncEvent(
                 Constants::PAUSED,
-                Constants::ADDRESS_INGESTION_PAUSED,
-                Constants::WOOCOMMERCE_ADDRESS_SYNC_DISABLED
+                Constants::ADDRESS_INGESTION_PAUSED
             );
             if (!$pauseResponse[Constants::IS_SUCCESS])
             {
@@ -418,21 +449,33 @@ class OneCCAddressSync
         $addresses = [];
         foreach ($orders as $order)
         {
-            $shippingName = trim(trim($order->get_shipping_first_name()) . ' ' . trim($order->get_shipping_last_name()));
-            $billingName  = trim(trim($order->get_billing_first_name())  . ' ' . trim($order->get_billing_last_name()));
-            $address = [
-                'contact' => strlen(trim($order->get_shipping_phone())) > 0
-                                ? trim($order->get_shipping_phone())
-                                : trim($order->get_billing_phone()),
-                'name'    => strlen($shippingName) >= 3 ? $shippingName : $billingName,
-                'line1'   => trim($order->get_shipping_address_1()) ?: trim($order->get_billing_address_1()),
-                'line2'   => trim($order->get_shipping_address_2()) ?: trim($order->get_billing_address_2()),
-                'city'    => trim($order->get_shipping_city())      ?: trim($order->get_billing_city()),
-                'state'   => trim($order->get_shipping_state())     ?: trim($order->get_billing_state()),
-                'country' => trim($order->get_shipping_country())   ?: trim($order->get_billing_country()),
-                'zipcode' => trim($order->get_shipping_postcode())  ?: trim($order->get_billing_postcode()),
-            ];
-            $addresses[] = $address;
+            try
+            {
+                $shippingName = trim(trim($order->get_shipping_first_name()) . ' ' . trim($order->get_shipping_last_name()));
+                $billingName  = trim(trim($order->get_billing_first_name())  . ' ' . trim($order->get_billing_last_name()));
+                $address = [
+                    'contact' => strlen(trim($order->get_shipping_phone())) > 0
+                                    ? trim($order->get_shipping_phone())
+                                    : trim($order->get_billing_phone()),
+                    'name'    => strlen($shippingName) >= 3 ? $shippingName : $billingName,
+                    'line1'   => trim($order->get_shipping_address_1()) ?: trim($order->get_billing_address_1()),
+                    'line2'   => trim($order->get_shipping_address_2()) ?: trim($order->get_billing_address_2()),
+                    'city'    => trim($order->get_shipping_city())      ?: trim($order->get_billing_city()),
+                    'state'   => trim($order->get_shipping_state())     ?: trim($order->get_billing_state()),
+                    'country' => trim($order->get_shipping_country())   ?: trim($order->get_billing_country()),
+                    'zipcode' => trim($order->get_shipping_postcode())  ?: trim($order->get_billing_postcode()),
+                ];
+                $addresses[] = $address;
+            }
+            catch (Exception $e)
+            {
+                $orderId = method_exists($order, 'get_id') ? $order->get_id() : null;
+                rzpLogError("getAddressFromOrders: failed for order_id=" . $orderId . ", error=" . $e->getMessage());
+                $this->recordError('address_extraction', $e->getMessage(), [
+                    'order_id' => $orderId,
+                    'trace'    => substr($e->getTraceAsString(), 0, 4000),
+                ]);
+            }
         }
         return $addresses;
     }
@@ -529,8 +572,7 @@ class OneCCAddressSync
                         rzpLogInfo("sync: time limit reached while scanning pages at order_id=" . $this->pendingCursorOrderId);
                         $pauseResponse = $this->postSyncEvent(
                             Constants::PAUSED,
-                            Constants::ADDRESS_INGESTION_PAUSED,
-                            Constants::MAX_RUNNING_TIME_REACHED
+                            Constants::ADDRESS_INGESTION_PAUSED
                         );
                         if (!$pauseResponse[Constants::IS_SUCCESS])
                         {
@@ -547,7 +589,6 @@ class OneCCAddressSync
                         $completionResponse = $this->postSyncEvent(
                             Constants::COMPLETED,
                             Constants::ADDRESS_INGESTION_COMPLETE,
-                            null,
                             $finalCheckpoint
                         );
                         if (!$completionResponse[Constants::IS_SUCCESS])
@@ -572,7 +613,10 @@ class OneCCAddressSync
                     // batch remains the resume point until it succeeds or the run stops.
                     $consecutiveFailureCount++;
                     $this->batchFailures++;
-                    $this->lastError = Constants::POST_ADDRESSES_ERROR;
+                    $this->recordError('batch_ingestion', Constants::POST_ADDRESSES_ERROR, [
+                        Constants::CONSECUTIVE_BATCH_FAILURES => $consecutiveFailureCount,
+                        Constants::CHECKPOINT => $this->pendingCursorOrderId,
+                    ]);
                     rzpLogError("sync: batch failed (consecutive_failures=" . $consecutiveFailureCount . ") at order_id=" . $this->pendingCursorOrderId);
 
                     if ($consecutiveFailureCount >= Constants::MAX_CONSECUTIVE_FAILURES)
@@ -582,7 +626,6 @@ class OneCCAddressSync
                         $pauseResponse = $this->postSyncEvent(
                             Constants::PAUSED,
                             Constants::ADDRESS_INGESTION_PAUSED,
-                            $failMsg,
                             null,
                             [Constants::CONSECUTIVE_BATCH_FAILURES => $consecutiveFailureCount]
                         );
@@ -607,6 +650,7 @@ class OneCCAddressSync
                 $consecutiveFailureCount = 0;
                 $this->batchesSent++;
                 $this->addressesSent += count($addresses);
+                $this->clearErrorLogs();
 
                 // Cooldown between consecutive successful batches — prevents hammering the API
                 // and gives the 1cc-address-service headroom to process the goroutine work.
@@ -621,8 +665,7 @@ class OneCCAddressSync
             rzpLogInfo("sync: time limit reached at order_id=" . $this->pendingCursorOrderId);
             $pauseResponse = $this->postSyncEvent(
                 Constants::PAUSED,
-                Constants::ADDRESS_INGESTION_PAUSED,
-                Constants::MAX_RUNNING_TIME_REACHED
+                Constants::ADDRESS_INGESTION_PAUSED
             );
             if (!$pauseResponse[Constants::IS_SUCCESS])
             {
@@ -634,11 +677,12 @@ class OneCCAddressSync
         {
             rzpLogError("sync: unhandled exception: " . $e->getMessage() . ", trace: " . $e->getTraceAsString());
             $this->batchFailures++;
-            $this->lastError = $e->getMessage();
+            $this->recordError('unhandled_exception', $e->getMessage(), [
+                'trace' => substr($e->getTraceAsString(), 0, 4000),
+            ]);
             $failedResponse = $this->postSyncEvent(
                 Constants::FAILED,
-                Constants::ADDRESS_INGESTION_FAILED,
-                $e->getMessage()
+                Constants::ADDRESS_INGESTION_FAILED
             );
             if (!$failedResponse[Constants::IS_SUCCESS])
             {
