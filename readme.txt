@@ -1,4 +1,4 @@
-=== Razorpay for WooCommerce ===
+=== Razorpay for WooCommerce ========
 Contributors: razorpay
 Tags: razorpay, payments, india, woocommerce, curlec, malaysia, ecommerce, international, cross border
 Requires at least: 3.9.2
