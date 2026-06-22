@@ -68,6 +68,13 @@ function calculateShipping1cc(WP_REST_Request $request)
             return new WP_REST_Response($response, 400);
         }
 
+        // Ensure shipping rates use the Razorpay order currency (MCC fix)
+        $wcOrder = wc_get_order($orderId);
+        if ($wcOrder) {
+            $orderCurrency = $wcOrder->get_currency();
+            add_filter('woocommerce_currency', function() use ($orderCurrency) { return $orderCurrency; }, 1);
+        }
+
         foreach ($addresses as $address) {
             if ($cartResponse) {
                 $customerResponse = shippingUpdateCustomerInformation1cc($address);
@@ -91,6 +98,9 @@ function calculateShipping1cc(WP_REST_Request $request)
                 return new WP_REST_Response($response, 400);
             }
         }
+
+        // Remove currency override filter after rate calculation (MCC fix cleanup)
+        remove_all_filters('woocommerce_currency', 1);
 
         // Cleanup cart.
         WC()->cart->empty_cart();
@@ -319,7 +329,7 @@ function getRateResponse1cc($rate, $vendorId, $orderId, $address, $order, $rzpOr
             'name'          => prepareHtmlResponse1cc(getRateProp1cc($rate, 'label')),
             'description'   => prepareHtmlResponse1cc(getRateProp1cc($rate, 'description')),
             'delivery_time' => prepareHtmlResponse1cc(getRateProp1cc($rate, 'delivery_time')),
-            'price'         => convertToPaisa(getRateProp1cc($rate, 'cost')),
+            'price'         => convertToSmallestUnit(getRateProp1cc($rate, 'cost')),
             'taxes'         => getRateProp1cc($rate, 'taxes'),
             'instance_id'   => getRateProp1cc($rate, 'instance_id'),
             'method_id'     => getRateProp1cc($rate, 'method_id'),
@@ -749,15 +759,16 @@ function restictPaymentGetway($rzpOrderId){
 }
 
 /**
- * Convert to paisa
+ * Convert price to smallest currency unit (e.g. paisa for INR, cents for USD)
+ * Uses wc_get_price_decimals() to support non-INR currencies (MCC fix).
  * @returns int
  */
-function convertToPaisa($price)
+function convertToSmallestUnit($price)
 {
     if (is_string($price)) {
-        $price = (int) $price;
+        $price = (float) $price;
     }
-    return $price * 100;
+    return (int) round($price * pow(10, wc_get_price_decimals()));
 }
 
 /**
