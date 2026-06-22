@@ -1,0 +1,652 @@
+[
+    {
+        "Currency Name": "United Arab Emirates Dirham",
+        "ISO Code": "AED",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Albanian lek",
+        "ISO Code": "ALL",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Armenian dram",
+        "ISO Code": "AMD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Argentine peso",
+        "ISO Code": "ARS",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Australian dollar",
+        "ISO Code": "AUD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Aruban florin",
+        "ISO Code": "AWG",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Azerbaijan Manat",
+        "ISO Code": "AZN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Convertible Mark",
+        "ISO Code": "BAM",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Barbadian dollar",
+        "ISO Code": "BBD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Bangladeshi taka",
+        "ISO Code": "BDT",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Bulgarian Lev",
+        "ISO Code": "BGN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Bahraini Dinar",
+        "ISO Code": "BHD",
+        "Exponent": "3"
+    },
+    {
+        "Currency Name": "Burundi Franc",
+        "ISO Code": "BIF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Bermudian dollar",
+        "ISO Code": "BMD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Brunei dollar",
+        "ISO Code": "BND",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Bolivian boliviano",
+        "ISO Code": "BOB",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Brazilian Real",
+        "ISO Code": "BRL",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Bahamian dollar",
+        "ISO Code": "BSD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Bhutanese Ngultrum",
+        "ISO Code": "BTN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Botswana pula",
+        "ISO Code": "BWP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Belize dollar",
+        "ISO Code": "BZD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Canadian dollar",
+        "ISO Code": "CAD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Swiss franc",
+        "ISO Code": "CHF",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Chilean Peso",
+        "ISO Code": "CLP",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Chinese yuan renminbi",
+        "ISO Code": "CNY",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Colombian peso",
+        "ISO Code": "COP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Costa Rican colon",
+        "ISO Code": "CRC",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Cuban peso",
+        "ISO Code": "CUP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Cabo Verde Escudo",
+        "ISO Code": "CVE",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Czech koruna",
+        "ISO Code": "CZK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Djibouti Franc",
+        "ISO Code": "DJF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Danish krone",
+        "ISO Code": "DKK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Dominican peso",
+        "ISO Code": "DOP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Algerian dinar",
+        "ISO Code": "DZD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Egyptian pound",
+        "ISO Code": "EGP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Ethiopian birr",
+        "ISO Code": "ETB",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "European euro",
+        "ISO Code": "EUR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Fijian dollar",
+        "ISO Code": "FJD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Pound sterling",
+        "ISO Code": "GBP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Ghanian Cedi",
+        "ISO Code": "GHS",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Gibraltar pound",
+        "ISO Code": "GIP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Gambian dalasi",
+        "ISO Code": "GMD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Guinean Franc",
+        "ISO Code": "GNF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Guatemalan quetzal",
+        "ISO Code": "GTQ",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Guyanese dollar",
+        "ISO Code": "GYD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Hong Kong dollar",
+        "ISO Code": "HKD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Honduran lempira",
+        "ISO Code": "HNL",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Croatian kuna",
+        "ISO Code": "HRK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Haitian gourde",
+        "ISO Code": "HTG",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Hungarian forint",
+        "ISO Code": "HUF",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Indonesian rupiah",
+        "ISO Code": "IDR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Israeli new shekel",
+        "ISO Code": "ILS",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Indian rupee",
+        "ISO Code": "INR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Iraqi Dinar",
+        "ISO Code": "IQD",
+        "Exponent": "3"
+    },
+    {
+        "Currency Name": "Iceland Krona",
+        "ISO Code": "ISK",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Jamaican dollar",
+        "ISO Code": "JMD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Jordanian Dinar",
+        "ISO Code": "JOD",
+        "Exponent": "3"
+    },
+    {
+        "Currency Name": "Japanese Yen",
+        "ISO Code": "JPY",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Kenyan shilling",
+        "ISO Code": "KES",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Kyrgyzstani som",
+        "ISO Code": "KGS",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Cambodian riel",
+        "ISO Code": "KHR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Comorian Franc ",
+        "ISO Code": "KMF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Korean Won",
+        "ISO Code": "KRW",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Kuwaiti Dinar",
+        "ISO Code": "KWD",
+        "Exponent": "3"
+    },
+    {
+        "Currency Name": "Cayman Islands dollar",
+        "ISO Code": "KYD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Kazakhstani tenge",
+        "ISO Code": "KZT",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Lao kip",
+        "ISO Code": "LAK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Sri Lankan rupee",
+        "ISO Code": "LKR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Liberian dollar",
+        "ISO Code": "LRD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Lesotho loti",
+        "ISO Code": "LSL",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Moroccan dirham",
+        "ISO Code": "MAD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Moldovan leu",
+        "ISO Code": "MDL",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Malagasy Ariary",
+        "ISO Code": "MGA",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Macedonian denar",
+        "ISO Code": "MKD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Myanmar kyat",
+        "ISO Code": "MMK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Mongolian tugrik",
+        "ISO Code": "MNT",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Macanese pataca",
+        "ISO Code": "MOP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Mauritian rupee",
+        "ISO Code": "MUR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Maldivian rufiyaa",
+        "ISO Code": "MVR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Malawian kwacha",
+        "ISO Code": "MWK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Mexican peso",
+        "ISO Code": "MXN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Malaysian ringgit",
+        "ISO Code": "MYR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Mozambique Metical",
+        "ISO Code": "MZN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Namibian dollar",
+        "ISO Code": "NAD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Nigerian naira",
+        "ISO Code": "NGN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Nicaraguan cordoba",
+        "ISO Code": "NIO",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Norwegian krone",
+        "ISO Code": "NOK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Nepalese rupee",
+        "ISO Code": "NPR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "New Zealand dollar",
+        "ISO Code": "NZD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Rial Omani",
+        "ISO Code": "OMR",
+        "Exponent": "3"
+    },
+    {
+        "Currency Name": "Peruvian sol",
+        "ISO Code": "PEN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Papua New Guinean kina",
+        "ISO Code": "PGK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Philippine peso",
+        "ISO Code": "PHP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Pakistani rupee",
+        "ISO Code": "PKR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Polish Zloty",
+        "ISO Code": "PLN",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Paraguayan Guarani",
+        "ISO Code": "PYG",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Qatari riyal",
+        "ISO Code": "QAR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Romanian Leu",
+        "ISO Code": "RON",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Serbian Dinar",
+        "ISO Code": "RSD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Russian ruble",
+        "ISO Code": "RUB",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Rwanda Franc",
+        "ISO Code": "RWF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Saudi Arabian riyal",
+        "ISO Code": "SAR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Seychellois rupee",
+        "ISO Code": "SCR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Swedish krona",
+        "ISO Code": "SEK",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Singapore dollar",
+        "ISO Code": "SGD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Sierra Leonean leone",
+        "ISO Code": "SLL",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Somali shilling",
+        "ISO Code": "SOS",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "South Sudanese pound",
+        "ISO Code": "SSP",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Salvadoran col\u00f3n",
+        "ISO Code": "SVC",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Swazi lilangeni",
+        "ISO Code": "SZL",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Thai baht",
+        "ISO Code": "THB",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Tunisian Dinar",
+        "ISO Code": "TND",
+        "Exponent": "3"
+    },
+    {
+        "Currency Name": "Turkish Lira",
+        "ISO Code": "TRY",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Trinidad and Tobago dollar",
+        "ISO Code": "TTD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "New Taiwan Dollar",
+        "ISO Code": "TWD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Tanzanian shilling",
+        "ISO Code": "TZS",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Ukrainian Hryvnia",
+        "ISO Code": "UAH",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Uganda Shilling",
+        "ISO Code": "UGX",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "United States dollar",
+        "ISO Code": "USD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Uruguayan peso",
+        "ISO Code": "UYU",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Uzbekistani so'm",
+        "ISO Code": "UZS",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Vietnamese Dong",
+        "ISO Code": "VND",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Vatu",
+        "ISO Code": "VUV",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "CFA Franc BEAC",
+        "ISO Code": "XAF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "East Caribbean Dollar",
+        "ISO Code": "XCD",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "CFA Franc BCEAO",
+        "ISO Code": "XOF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "CFP Franc",
+        "ISO Code": "XPF",
+        "Exponent": "0"
+    },
+    {
+        "Currency Name": "Yemeni rial",
+        "ISO Code": "YER",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "South African rand",
+        "ISO Code": "ZAR",
+        "Exponent": "2"
+    },
+    {
+        "Currency Name": "Zambian Kwacha",
+        "ISO Code": "ZMW",
+        "Exponent": "2"
+    }
+]

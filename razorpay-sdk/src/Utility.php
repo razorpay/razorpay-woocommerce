@@ -1,11 +1,15 @@
 <?php
 
 namespace Razorpay\Api;
+use Requests;
 
 class Utility
 {
     const SHA256 = 'sha256';
 
+    public static $currencyListCache = [];
+    public static $currencyListCacheTimeout = null;
+    
     public function verifyPaymentSignature($attributes)
     {
         $actualSignature = $attributes['razorpay_signature'];
@@ -87,5 +91,101 @@ class Utility
         }
 
         return false;
+    }
+
+    public function currencyConverter($amount, $currencyCode)
+    {
+
+        // $cacheFile = __DIR__.'/../data.cache';
+        // $cacheLifetime = 6 * 60 * 60;
+
+        // if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheLifetime) {
+
+        //     $csvContent = file_get_contents($cacheFile);
+
+        //     $rows = array_map('str_getcsv', explode("\n", trim($csvContent)));
+
+        //     $header = array_shift($rows); 
+            
+        //     $currencyList = [];
+        //     foreach ($rows as $row) {
+        //         if (count($row) === count($header)) {
+        //             $currencyList[] = array_combine($header, $row);
+        //         }
+        //     }
+        // } else {
+        //     echo "new fetch";
+        //     $url = 'https://4c26-115-110-224-178.ngrok-free.app/fetch-supported-currencies.php';
+
+        //     $csvContent = file_get_contents($url);
+
+        //     $rows = array_map('str_getcsv', explode("\n", trim($csvContent)));
+
+        //     $header = array_shift($rows); 
+            
+        //     $currencyList = [];
+        //     foreach ($rows as $row) {
+        //         if (count($row) === count($header)) {
+        //             $currencyList[] = array_combine($header, $row);
+        //         }
+        //     }
+
+        //     file_put_contents($cacheFile, $csvContent);
+        // }
+        // var_dump(Utility::$currencyListCache);
+        // var_dump(self::$currencyListCacheTimeout);
+
+        // if (isset(Utility::$currencyListCacheTimeout) === false or
+        //     (time() - Utility::$currencyListCacheTimeout) > 6 * 60 * 60)
+        // {
+
+        //     echo "new fetch";
+        //     $url = 'https://4c26-115-110-224-178.ngrok-free.app/fetch-supported-currencies.php';
+
+        //     $csvContent = file_get_contents($url);
+
+        //     $rows = array_map('str_getcsv', explode("\n", trim($csvContent)));
+
+        //     $header = array_shift($rows); 
+            
+        //     $currencyList = [];
+        //     foreach ($rows as $row) {
+        //         if (count($row) === count($header)) {
+        //             $currencyList[] = array_combine($header, $row);
+        //         }
+        //     }
+            
+        //     Utility::$currencyListCache = $currencyList;
+        //     Utility::$currencyListCacheTimeout = time();
+        // }
+
+        // $supportedCurrencies = Utility::$currencyListCache;
+
+        // var_dump(self::$currencyListCache);
+        // var_dump(self::$currencyListCacheTimeout);
+
+        $cacheFile = __DIR__.'/../supported-currencies.json';
+        $jsonList = file_get_contents($cacheFile);
+
+        // Decode the JSON string into a PHP array
+        $currencyList = json_decode($jsonList, true);
+
+        foreach ($currencyList as $currency)
+        {
+            if ($currency['ISO Code'] === $currencyCode)
+            {
+                $orderAmount = $amount * pow(10,$currency['Exponent']);
+
+                return [
+                    'success'   => true,
+                    'amount'    => $orderAmount
+                ];
+            }
+        }
+
+        return [
+            'success'   => false,
+            'error'     => 'Currency code not present in list of supported currencies'
+        ];
     }
 }
