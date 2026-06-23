@@ -120,10 +120,9 @@ class OneCCAddressSync
         return [Constants::IS_SUCCESS => false, Constants::STATUS_CODE => $statusCode];
     }
 
-    private function getAddressSyncConfigs($keys = [])
+    private function getAddressSyncConfigs()
     {
-        $body = [Constants::PLATFORM => Constants::WOOCOMMERCE, Constants::KEYS => $keys];
-        return $this->makeAPICall(self::GET_CONFIGS_API, self::GET, $body);
+        return $this->makeAPICall(self::GET_CONFIGS_API, self::GET, []);
     }
 
     // postAddresses sends lifecycle and retry-progress events through the ingest endpoint.
@@ -226,11 +225,6 @@ class OneCCAddressSync
             Constants::CHECKPOINT => (int)($configs[Constants::CHECKPOINT] ?? 0),
         ];
         $this->loadCursorFromJobConfig();
-
-        if (isset($configs[Constants::COOLDOWN_MS]) && is_numeric($configs[Constants::COOLDOWN_MS]) && (int)$configs[Constants::COOLDOWN_MS] >= 0)
-        {
-            $this->cooldownMs = (int)$configs[Constants::COOLDOWN_MS];
-        }
     }
 
     private function buildEventMetaData($message, $extraMetaData = [])
@@ -251,6 +245,12 @@ class OneCCAddressSync
             $metaData[Constants::ERROR] = [
                 'logs' => $this->errorLogs,
             ];
+
+            if (isset($extraMetaData[Constants::CONSECUTIVE_BATCH_FAILURES]))
+            {
+                $metaData[Constants::ERROR][Constants::CONSECUTIVE_BATCH_FAILURES] =
+                    (int) $extraMetaData[Constants::CONSECUTIVE_BATCH_FAILURES];
+            }
         }
 
         foreach ($extraMetaData as $key => $value)
@@ -311,16 +311,6 @@ class OneCCAddressSync
 
         $configs = $response[Constants::BODY];
 
-        // Merchant explicitly opted out of address sync
-        if (isset($configs[Constants::ONE_CC_ADDRESS_SYNC_OFF]) &&
-            $configs[Constants::ONE_CC_ADDRESS_SYNC_OFF] === true)
-        {
-            rzpLogInfo("isMerchantEligible: address sync off for merchant");
-            $this->postSyncEvent(Constants::CANCELLED, Constants::ADDRESS_SYNC_OFF_CONFIGURED);
-            deleteOneCCAddressSyncCron(Constants::CANCELLED, Constants::ADDRESS_SYNC_OFF_CONFIGURED);
-            return false;
-        }
-
         $this->loadConfigValues($configs);
 
         if (array_key_exists(Constants::WOOCOMMERCE_ADDRESS_SYNC_ENABLED, $configs) &&
@@ -370,14 +360,13 @@ class OneCCAddressSync
             while (true)
             {
                 $queryArgs = [
-                    Constants::SHIPPING_COUNTRY => Constants::IN,
-                    Constants::DATE_CREATED     => '1...' . $this->upperCreatedAt,
-                    'status'                    => ['processing', 'completed', 'on-hold'],
-                    'orderby'                   => 'ID',
-                    Constants::ORDER            => Constants::ASC,
-                    Constants::LIMIT            => $this->batchSize,
-                    Constants::PAGED            => $page,
-                    'meta_query'                => [
+                    Constants::DATE_CREATED => '1...' . $this->upperCreatedAt,
+                    'status'                => ['processing', 'completed', 'on-hold'],
+                    'orderby'               => 'ID',
+                    Constants::ORDER        => Constants::ASC,
+                    Constants::LIMIT        => $this->batchSize,
+                    Constants::PAGED        => $page,
+                    'meta_query'            => [
                         'relation' => 'OR',
                         [
                             'key'     => 'is_magic_checkout_order',
@@ -564,13 +553,12 @@ class OneCCAddressSync
             // Query the last qualifying order that exists right now to freeze upperOrderId.
             // Orders created after this point are excluded from this run.
             $upperOrders = wc_get_orders([
-                Constants::SHIPPING_COUNTRY => Constants::IN,
-                Constants::DATE_CREATED     => '1...' . $this->upperCreatedAt,
-                'status'                    => ['processing', 'completed', 'on-hold'],
-                'orderby'                   => 'ID',
-                Constants::ORDER            => 'DESC',
-                Constants::LIMIT            => 1,
-                'meta_query'                => [
+                Constants::DATE_CREATED => '1...' . $this->upperCreatedAt,
+                'status'                => ['processing', 'completed', 'on-hold'],
+                'orderby'               => 'ID',
+                Constants::ORDER        => 'DESC',
+                Constants::LIMIT        => 1,
+                'meta_query'            => [
                     'relation' => 'OR',
                     ['key' => 'is_magic_checkout_order', 'compare' => 'NOT EXISTS'],
                     ['key' => 'is_magic_checkout_order', 'value' => 'yes', 'compare' => '!='],

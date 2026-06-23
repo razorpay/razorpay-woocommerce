@@ -20,25 +20,16 @@ class Constants
     const CRON_STATUS                    = 'cron_status';
     const INVALID_1CC_MERCHANT           = 'invalid_1cc_merchant';
     const INVALID_RAZORPAY_MERCHANT      = 'invalid_razorpay_merchant';
-    const ADDRESS_SYNC_OFF_CONFIGURED    = 'address_sync_off_configured';
     const MAX_RUNNING_TIME_REACHED       = 'max_running_time_reached';
     const WOOCOMMERCE                    = 'woocommerce';
-    const PLATFORM                       = 'platform';
-    const KEYS                           = 'keys';
     const IS_SUCCESS                     = 'is_success';
     const META_DATA                      = 'meta_data';
-    const JOB                            = 'job';
-    const ONE_CC_ONBOARDED_TIMESTAMP     = 'one_cc_onboarded_timestamp';
     const CHECKPOINT                     = 'checkpoint';
     const ADDRESSES                      = 'addresses';
     const DELETED                        = 'deleted';
-    const ONE_CLICK_CHECKOUT             = 'one_click_checkout';
-    const ONE_CC_ADDRESS_SYNC_OFF        = 'one_cc_address_sync_off';
     const WOOCOMMERCE_ADDRESS_SYNC_ENABLED = 'woocommerce_address_sync_enabled';
     const BODY                           = 'body';
     const STATUS_CODE                    = 'status_code';
-    const SHIPPING_COUNTRY               = 'shipping_country';
-    const IN                             = 'IN';
     const DATE_CREATED                   = 'date_created';
     const LIMIT                          = 'limit';
     const PAGED                          = 'paged';
@@ -56,8 +47,6 @@ class Constants
     const WARNING                        = 'warning';
     const ORDER                          = 'order';
     const ASC                            = 'ASC';
-    const ID                             = 'ID';
-    const COOLDOWN_MS                    = 'cooldown_ms';
     const BATCH_RETRY_PHASE1_FAILED      = 'batch_retry_phase1_failed';
     const BATCH_RETRY_PHASE2_FAILED      = 'batch_retry_phase2_failed';
     const BATCH_FAILED                   = 'batch_failed';
@@ -69,7 +58,7 @@ class Constants
     const ADDRESS_SYNC_HARD_STOP_TIME  = '05:00';
 
     // Cooldown between consecutive successful batches.
-    const BATCH_COOLDOWN_MS = 5000;
+    const BATCH_COOLDOWN_MS = 2000;
 
     // Three-phase batch retry: 3 -> wait 10min -> 2 -> wait 5min -> 1 = 6 total attempts.
     const BATCH_PHASE1_MAX          = 3;
