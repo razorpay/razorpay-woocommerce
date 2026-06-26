@@ -3,8 +3,8 @@
  * Plugin Name: 1 Razorpay
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
- * Version: 4.8.5
- * Stable tag: 4.8.5
+ * Version: 4.8.6
+ * Stable tag: 4.8.6
  * Author: Team Razorpay
  * WC tested up to: 10.6.2
  * Author URI: https://razorpay.com
@@ -1970,7 +1970,14 @@ EOT;
 
             $post_password = sanitize_text_field($_GET['order_key']);
 
-            rzpLogInfo("Called check_razorpay_response: $post_password");
+            rzpLogInfo("Called check_razorpay_response: $post_password and POST data is " . json_encode($_POST));
+
+            if (empty($_POST))
+            {
+                rzpLogInfo("check_razorpay_response: Empty POST data, redirecting to checkout.");
+                wp_redirect(wc_get_checkout_url());
+                exit;
+            }
 
             $meta_key = '_order_key';
 
