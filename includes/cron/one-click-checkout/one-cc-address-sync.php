@@ -2,6 +2,17 @@
 
 use Razorpay\Api\Api;
 
+function getOneCCAddressSyncApiBaseUrl()
+{
+    if ((defined('RZP_WC_DEVSTACK_API_BASE_URL') === true) &&
+        empty(RZP_WC_DEVSTACK_API_BASE_URL) === false)
+    {
+        return rtrim(RZP_WC_DEVSTACK_API_BASE_URL, '/');
+    }
+
+    return Constants::DEV_ADDRESS_SYNC_BASE_URL;
+}
+
 class OneCCAddressSync
 {
     const GET_CONFIGS_API        = 'woocommerce/config'; // checkpoint + job state
@@ -120,6 +131,49 @@ class OneCCAddressSync
         return [Constants::IS_SUCCESS => false, Constants::STATUS_CODE => $statusCode];
     }
 
+    private function makeJSONAPICall($url, $method, $body, $maxAttempts = null)
+    {
+        $maxAttempts = $maxAttempts ?? $this->apiRequestRetryCount;
+        $retryCount = 0;
+        $statusCode = 0;
+        while ($retryCount < $maxAttempts)
+        {
+            $retryCount++;
+            try
+            {
+                $response = $this->api->request->requestJson($method, $url, $body);
+                rzpLogInfo("makeJSONAPICall: url: " . $url . " is success");
+                return [Constants::BODY => $response, Constants::IS_SUCCESS => true];
+            }
+            catch (\Razorpay\Api\Errors\Error $e)
+            {
+                $statusCode = $e->getHttpStatusCode();
+                rzpLogError("makeJSONAPICall: message:" . $e->getMessage() . ", url: " . $url . ", method: " . $method . ", retryCount: " . $retryCount . ", statusCode: " . $statusCode);
+                $this->recordWarning('api_call', $e->getMessage(), [
+                    'url'         => $url,
+                    'method'      => $method,
+                    'retry_count' => $retryCount,
+                    'status_code' => $statusCode,
+                ]);
+            }
+            catch (Exception $e)
+            {
+                rzpLogError("makeJSONAPICall: unexpected error: " . $e->getMessage() . ", retryCount: " . $retryCount);
+                $this->recordWarning('api_call', $e->getMessage(), [
+                    'url'         => $url,
+                    'method'      => $method,
+                    'retry_count' => $retryCount,
+                    'trace'       => substr($e->getTraceAsString(), 0, 4000),
+                ]);
+            }
+            if ($retryCount < $maxAttempts)
+            {
+                sleep($this->apiRequestRetryDelay * pow(2, $retryCount - 1));
+            }
+        }
+        return [Constants::IS_SUCCESS => false, Constants::STATUS_CODE => $statusCode];
+    }
+
     private function getAddressSyncConfigs()
     {
         return $this->makeAPICall(self::GET_CONFIGS_API, self::GET, []);
@@ -129,7 +183,7 @@ class OneCCAddressSync
     // Signal-only events carry top-level checkpoint so backend can update job_execution.
     private function postAddresses($body)
     {
-        return $this->makeAPICall(self::POST_ADDRESSES_API, self::POST, $body);
+        return $this->makeJSONAPICall(self::POST_ADDRESSES_API, self::POST, $body);
     }
 
     // postRawAddresses sends a batch to 1cc-address-service.
@@ -139,7 +193,7 @@ class OneCCAddressSync
     // Backend should reject or ignore lower checkpoints if concurrent writers are introduced.
     private function postRawAddresses($addresses)
     {
-        return $this->makeAPICall(self::POST_ADDRESSES_API, self::POST, [
+        return $this->makeJSONAPICall(self::POST_ADDRESSES_API, self::POST, [
             Constants::ADDRESSES  => $addresses,
             Constants::CHECKPOINT => $this->pendingCursorOrderId,
             Constants::STATUS     => empty($this->errorLogs) ? Constants::PROCESSING : Constants::FAILED,
@@ -336,6 +390,21 @@ class OneCCAddressSync
         return true;
     }
 
+    // Returns true when an order is NOT a Magic/1CC order and should be ingested.
+    // Filtering is done in PHP rather than via meta_query to avoid WordPress's
+    // LEFT JOIN / OR meta_query behaviour that causes LIMIT to undershoot unique
+    // post counts (known WP core issue with OR + NOT EXISTS meta queries).
+    protected function isNonMagicOrder($order): bool
+    {
+        return $order->get_meta('is_magic_checkout_order') !== 'yes';
+    }
+
+    // Filters an array of orders, returning only non-magic orders.
+    protected function filterNonMagicOrders(array $orders): array
+    {
+        return array_values(array_filter($orders, [$this, 'isNonMagicOrder']));
+    }
+
     private function getOrders()
     {
         // Order ID keyset pagination with both bounds applied.
@@ -347,6 +416,8 @@ class OneCCAddressSync
         //
         // The CPT datastore gets the ID range through a temporary posts_where filter.
         // HPOS gets the same range through field_query.
+        // Magic/1CC order filtering is intentionally done in PHP (see isNonMagicOrder)
+        // rather than via meta_query to avoid WordPress OR+NOT EXISTS LIMIT undershoot.
         $page        = 1;
         $useCptWhere = !$this->isHposOrderStorageEnabled();
 
@@ -361,23 +432,11 @@ class OneCCAddressSync
             {
                 $queryArgs = [
                     Constants::DATE_CREATED => '1...' . $this->upperCreatedAt,
-                    'status'                => ['processing', 'completed', 'on-hold'],
+                    'status'                => $this->getAddressSyncOrderStatuses(),
                     'orderby'               => 'ID',
                     Constants::ORDER        => Constants::ASC,
                     Constants::LIMIT        => $this->batchSize,
                     Constants::PAGED        => $page,
-                    'meta_query'            => [
-                        'relation' => 'OR',
-                        [
-                            'key'     => 'is_magic_checkout_order',
-                            'compare' => 'NOT EXISTS',
-                        ],
-                        [
-                            'key'     => 'is_magic_checkout_order',
-                            'value'   => 'yes',
-                            'compare' => '!=',
-                        ],
-                    ],
                 ];
 
                 if (!$useCptWhere)
@@ -408,8 +467,11 @@ class OneCCAddressSync
                 $upperOrderId  = $this->upperOrderId;
                 $filteredOrders = array_values(array_filter($orders, function($order) use ($cursorOrderId, $upperOrderId) {
                     $id = $order->get_id();
-
-                    return $id > $cursorOrderId && $id <= $upperOrderId;
+                    if ($id <= $cursorOrderId || $id > $upperOrderId)
+                    {
+                        return false;
+                    }
+                    return $this->isNonMagicOrder($order);
                 }));
 
                 if (!empty($filteredOrders))
@@ -433,6 +495,15 @@ class OneCCAddressSync
     {
         return class_exists('Automattic\WooCommerce\Utilities\OrderUtil') &&
             \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+    }
+
+    private function getAddressSyncOrderStatuses()
+    {
+        $statuses = array_keys(wc_get_order_statuses());
+
+        return array_map(function($status) {
+            return preg_replace('/^wc-/', '', $status);
+        }, $statuses);
     }
 
     public function filterOrderIdRangeWhere($where, $query)
@@ -552,19 +623,18 @@ class OneCCAddressSync
 
             // Query the last qualifying order that exists right now to freeze upperOrderId.
             // Orders created after this point are excluded from this run.
-            $upperOrders = wc_get_orders([
+            // Fetch the last non-magic order to freeze upperOrderId.
+            // Use a larger LIMIT then filter in PHP to avoid meta_query OR+NOT EXISTS
+            // LIMIT undershoot (same reason as getOrders — see isNonMagicOrder comment).
+            $candidateUpper = wc_get_orders([
                 Constants::DATE_CREATED => '1...' . $this->upperCreatedAt,
-                'status'                => ['processing', 'completed', 'on-hold'],
+                'status'                => $this->getAddressSyncOrderStatuses(),
                 'orderby'               => 'ID',
                 Constants::ORDER        => 'DESC',
-                Constants::LIMIT        => 1,
-                'meta_query'            => [
-                    'relation' => 'OR',
-                    ['key' => 'is_magic_checkout_order', 'compare' => 'NOT EXISTS'],
-                    ['key' => 'is_magic_checkout_order', 'value' => 'yes', 'compare' => '!='],
-                ],
+                Constants::LIMIT        => 50,
             ]);
-            $this->upperOrderId = !empty($upperOrders) ? $upperOrders[0]->get_id() : 0;
+            $nonMagicUpper      = $this->filterNonMagicOrders($candidateUpper);
+            $this->upperOrderId = !empty($nonMagicUpper) ? $nonMagicUpper[0]->get_id() : 0;
             rzpLogInfo("sync: upper_order_id=" . $this->upperOrderId . ", confirmed_order_id=" . $this->cursorOrderId);
 
             while (time() < $endTime)
@@ -606,9 +676,11 @@ class OneCCAddressSync
                     else
                     {
                         // No more orders in the window — sync is complete.
-                        // Store the run's exact upper order ID so next run starts strictly after it.
-                        $finalCheckpoint = $this->upperOrderId > 0 ? $this->upperOrderId : $this->cursorOrderId;
-                        rzpLogInfo("sync: completed. upper_order_id=" . $this->upperOrderId);
+                        // Checkpoint is the last confirmed sent order ID, NOT upperOrderId.
+                        // Using upperOrderId would permanently skip any orders between the
+                        // last sent order and upperOrderId that were missed for any reason.
+                        $finalCheckpoint = $this->cursorOrderId;
+                        rzpLogInfo("sync: completed. cursor_order_id=" . $this->cursorOrderId . ", upper_order_id=" . $this->upperOrderId);
                         $completionResponse = $this->postSyncEvent(
                             Constants::COMPLETED,
                             Constants::ADDRESS_INGESTION_COMPLETE,
@@ -854,7 +926,13 @@ function runOneCCAddressSync($cronType)
             return;
         }
 
-        $api              = new Api($paymentSettings[Constants::KEY_ID], $paymentSettings[Constants::KEY_SECRET]);
+        $api = new Api($paymentSettings[Constants::KEY_ID], $paymentSettings[Constants::KEY_SECRET]);
+        $baseUrl = getOneCCAddressSyncApiBaseUrl();
+        if (empty($baseUrl) === false)
+        {
+            $api->setBaseUrl($baseUrl);
+        }
+
         $oneCCAddressSync = new OneCCAddressSync($api);
         $oneCCAddressSync->sync($budget);
     }

@@ -30,6 +30,7 @@ class Constants
     const WOOCOMMERCE_ADDRESS_SYNC_ENABLED = 'woocommerce_address_sync_enabled';
     const BODY                           = 'body';
     const STATUS_CODE                    = 'status_code';
+    const DEV_ADDRESS_SYNC_BASE_URL      = '';
     const DATE_CREATED                   = 'date_created';
     const LIMIT                          = 'limit';
     const PAGED                          = 'paged';

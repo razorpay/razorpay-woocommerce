@@ -61,6 +61,30 @@ class Request
         return json_decode($response->body, true);
     }
 
+    public function requestJson($method, $url, $data = array(), $apiVersion = "v1")
+    {
+        $url = Api::getFullUrl($url, $apiVersion);
+
+        $hooks = new Requests_Hooks();
+
+        $hooks->register('curl.before_send', array($this, 'setCurlSslOpts'));
+
+        $options = array(
+            'auth' => array(Api::getKey(), Api::getSecret()),
+            'hook' => $hooks,
+            'timeout' => 60
+        );
+
+        $headers = array_merge($this->getRequestHeaders(), array(
+            'Content-Type' => 'application/json',
+        ));
+
+        $response = Requests::request($url, $headers, json_encode($data), $method, $options);
+        $this->checkErrors($response);
+
+        return json_decode($response->body, true);
+    }
+
     public function setCurlSslOpts($curl)
     {
         curl_setopt($curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
