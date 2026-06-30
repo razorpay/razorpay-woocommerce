@@ -581,10 +581,15 @@ class OneCCAddressSync
             $addresses = $this->getAddressFromOrders($orders);
             if (empty($addresses) && !empty($this->warningLogs))
             {
-                $this->recordError('address_extraction', 'no_addresses_extracted_for_batch', [
-                    Constants::CHECKPOINT => $this->pendingCursorOrderId,
-                ]);
-                return [];
+                // Every order in this batch failed extraction (corrupt metadata, etc.).
+                // Advance the confirmed cursor past the batch so we don't loop on the
+                // same broken orders forever. Log a warning and continue to the next
+                // batch — this is recoverable, not a reason to mark the whole sync FAILED.
+                rzpLogError("getNextBatch: all addresses unextractable in batch ending at order_id="
+                    . $this->pendingCursorOrderId . ", skipping batch");
+                $this->cursorOrderId = $this->pendingCursorOrderId;
+                $this->clearSyncLogs();
+                continue;
             }
         }
         return $addresses;
@@ -621,20 +626,20 @@ class OneCCAddressSync
 
             $this->upperCreatedAt = $this->runStartedAt; // frozen upper bound for this run
 
-            // Query the last qualifying order that exists right now to freeze upperOrderId.
-            // Orders created after this point are excluded from this run.
-            // Fetch the last non-magic order to freeze upperOrderId.
-            // Use a larger LIMIT then filter in PHP to avoid meta_query OR+NOT EXISTS
-            // LIMIT undershoot (same reason as getOrders — see isNonMagicOrder comment).
+            // upperOrderId is a time-fence only — the highest order ID that existed
+            // when this run started so orders created mid-run are excluded.
+            // We must NOT filter Magic Checkout orders here: if the most recent orders
+            // are all 1CC, filtering would set upperOrderId=0, causing WHERE ID <= 0
+            // in every batch query and making the sync falsely report COMPLETED.
+            // Per-batch Magic order filtering happens in getOrders() where it belongs.
             $candidateUpper = wc_get_orders([
                 Constants::DATE_CREATED => '1...' . $this->upperCreatedAt,
                 'status'                => $this->getAddressSyncOrderStatuses(),
                 'orderby'               => 'ID',
                 Constants::ORDER        => 'DESC',
-                Constants::LIMIT        => 50,
+                Constants::LIMIT        => 1,
             ]);
-            $nonMagicUpper      = $this->filterNonMagicOrders($candidateUpper);
-            $this->upperOrderId = !empty($nonMagicUpper) ? $nonMagicUpper[0]->get_id() : 0;
+            $this->upperOrderId = !empty($candidateUpper) ? $candidateUpper[0]->get_id() : 0;
             rzpLogInfo("sync: upper_order_id=" . $this->upperOrderId . ", confirmed_order_id=" . $this->cursorOrderId);
 
             while (time() < $endTime)
