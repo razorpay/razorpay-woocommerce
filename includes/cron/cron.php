@@ -15,6 +15,9 @@ function createCron(string $hookName, int $startTime, string $recurrence)
 
 function deleteCron(string $hookName)
 {
-    $timestamp = wp_next_scheduled( $hookName );
-    wp_unschedule_event( $timestamp, $hookName );
+    $timestamp = wp_next_scheduled($hookName);
+    if ($timestamp !== false)
+    {
+        wp_unschedule_event($timestamp, $hookName);
+    }
 }

@@ -74,7 +74,7 @@ class TrackPluginInstrumentation
     // initCronJobs initialize all cron jobs needed for this Plugin
     function initRzpCronJobs()
     {
-        createOneCCAddressSyncCron();
+        createAllAddressSyncCrons();
         syncPluginFetchCron();
     }
 
@@ -138,10 +138,11 @@ class TrackPluginInstrumentation
 
         $this->hposInstrumentation();
 
+        createAllAddressSyncCrons();
+
         // TODO: Update correct version
         if (isset($prevVersion) && strcmp($prevVersion, '4.5.0') <= 0)
         {
-            createOneCCAddressSyncCron();
             syncPluginFetchCron();
         }
 
