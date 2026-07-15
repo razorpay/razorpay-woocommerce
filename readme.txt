@@ -71,7 +71,7 @@ Razorpay is available for Store Owners and Merchants in
 
 = 4.8.7 =
 * Version bump to 4.8.7.
-* Address sync request cleanup.
+* Added standard checkout address sync support.
 
 = 4.8.6 =
 * Fixed empty callback handling to redirect to checkout page.
