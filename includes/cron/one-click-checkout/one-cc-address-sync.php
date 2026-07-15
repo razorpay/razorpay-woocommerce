@@ -13,6 +13,33 @@ function getOneCCAddressSyncApiBaseUrl()
     return Constants::DEV_ADDRESS_SYNC_BASE_URL;
 }
 
+class OneCCAddressSyncRequest extends Razorpay\Api\Request
+{
+    public function requestJson($method, $url, $data = array(), $apiVersion = "v1")
+    {
+        $url = Api::getFullUrl($url, $apiVersion);
+
+        $hooks = new Requests_Hooks();
+
+        $hooks->register('curl.before_send', array($this, 'setCurlSslOpts'));
+
+        $options = array(
+            'auth' => array(Api::getKey(), Api::getSecret()),
+            'hook' => $hooks,
+            'timeout' => 60
+        );
+
+        $headers = array_merge($this->getRequestHeaders(), array(
+            'Content-Type' => 'application/json',
+        ));
+
+        $response = Requests::request($url, $headers, json_encode($data), $method, $options);
+        $this->checkErrors($response);
+
+        return json_decode($response->body, true);
+    }
+}
+
 class OneCCAddressSync
 {
     const GET_CONFIGS_API        = 'woocommerce/config'; // checkpoint + job state
@@ -141,7 +168,7 @@ class OneCCAddressSync
             $retryCount++;
             try
             {
-                $response = $this->api->request->requestJson($method, $url, $body);
+                $response = (new OneCCAddressSyncRequest())->requestJson($method, $url, $body);
                 rzpLogInfo("makeJSONAPICall: url: " . $url . " is success");
                 return [Constants::BODY => $response, Constants::IS_SUCCESS => true];
             }
