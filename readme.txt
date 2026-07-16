@@ -38,6 +38,18 @@ Razorpay is available for Store Owners and Merchants in
 - India
 - Malaysia
 
+== Data Collection Notice ==
+
+As part of Razorpay's fraud detection and risk assessment services, this plugin *collects and transmits the following user data* to Razorpay at the time of order creation:
+
+* Device fingerprint (browser-generated identifier stored in browser local storage)
+* Browser user agent
+* Client IP address
+* Order line items (product details, prices, quantities)
+* Customer details (name, email, phone, billing and shipping address)
+
+This data is used solely for fraud prevention and risk assessment. Please update your store's privacy policy accordingly.
+
 == Screenshots ==
 
 1. Razorpay Payment Gateway for WooCommerce API keys.
