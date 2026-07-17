@@ -269,6 +269,19 @@ var rzp1cc = {
      return str;
    }
  },
+ renderError: function(message) {
+   var errorMessage = document.getElementById('error-message');
+   if (errorMessage == null) {
+     return;
+   }
+
+   errorMessage.textContent = '';
+   var paragraph = document.createElement('p');
+   paragraph.style.marginTop = 'revert';
+   paragraph.style.color = '#e80707';
+   paragraph.textContent = message;
+   errorMessage.appendChild(paragraph);
+ },
  setDisabled: function(id, state) {
    if (typeof state === 'undefined') {
      state = true;
@@ -309,6 +322,7 @@ var rzp1cc = {
        };
        xhr.open('POST', rzp1cc.saveAbandonedCartApi, true);
        xhr.setRequestHeader('Content-Type', 'application/json');
+       xhr.setRequestHeader('X-WP-Nonce', rzp1ccCheckoutData.nonce);
        xhr.send(JSON.stringify(body));
      } catch (e) {
 
@@ -409,8 +423,7 @@ async function openRzpCheckout(e) {
        razorpayCheckout.open();
 
      } catch (e) {
-       document.getElementById('error-message').innerHTML =
-         "<div class='entry-content'><div class='woocommerce'><div class='woocommerce-notices-wrapper'><p class='cart-empty woocommerce-info' style='margin-left: -50px; margin-right: 75px'>Something went wrong, please try again after sometime.</p></div></div></div>";
+       rzp1cc.renderError('Something went wrong, please try again after sometime.');
 
        rzp1cc.enableCheckoutButtons();
        rzp1cc.showSpinner(false);
@@ -421,17 +434,17 @@ async function openRzpCheckout(e) {
      // Response sent to the User when cart is empty or order creation fails
      if (e.status == 400){
        if (e.response.code == 'BAD_REQUEST_EMPTY_CART'){
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Order could not be placed as your cart is empty.</p>";
+         rzp1cc.renderError('Order could not be placed as your cart is empty.');
        } else if (e.response.code == 'ORDER_CREATION_FAILED'){
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Razorpay Error: Order could not be placed, please try again after sometime.</p>";
+         rzp1cc.renderError('Razorpay Error: Order could not be placed, please try again after sometime.');
        } else if (e.response.code == 'MIN_CART_AMOUNT_CHECK_FAILED' || e.response.code == 'WOOCOMMERCE_ORDER_CREATION_FAILED'){
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>"+e.response.message+"</p>"; // nosemgrep: insecure-innerhtml
+         rzp1cc.renderError(e.response.message);
        } else {
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
+         rzp1cc.renderError('Something went wrong, please try again after sometime.');
        }
 
      } else {
-         document.getElementById('error-message').innerHTML = "<p style='margin-top: revert;text-color: #e2401c !important;color: #e80707;'>Something went wrong, please try again after sometime.</p>";
+         rzp1cc.renderError('Something went wrong, please try again after sometime.');
      }
 
      rzp1cc.enableCheckoutButtons();

@@ -341,7 +341,7 @@ function getCouponList($request)
         $trackObject->rzpTrackDataLake('razorpay.1cc.get.coupons.processing.failed', $properties);
         rzpLogError(json_encode($properties));
 
-        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
+        return rzp1ccServerErrorResponse();
     }
 }
 

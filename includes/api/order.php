@@ -37,14 +37,13 @@ function createWcOrder(WP_REST_Request $request)
             }
         }
 
-        $nonce     = $request->get_header('X-WP-Nonce');
-        $verifyReq = wp_verify_nonce($nonce, 'wp_rest');
+        $authResult = checkAuthCredentials($request);
 
-        if ($verifyReq === false) {
+        if (is_wp_error($authResult)) {
             $response['status']  = false;
             $response['message'] = 'Authentication failed';
 
-            $statusCode            = 401;
+            $statusCode            = $authResult->get_error_data()['status'] ?? 403;
             $logObj['status_code'] = $statusCode;
             $logObj['response']    = $response;
             rzpLogError(json_encode($logObj));
@@ -314,7 +313,7 @@ function createWcOrder(WP_REST_Request $request)
         $trackObject->rzpTrackDataLake('razorpay.1cc.create.order.processing.failed', $properties);
         rzpLogError(json_encode($properties));
 
-        return new WP_REST_Response(['message' => "woocommerce server error : " . $e->getMessage()], 500);
+        return rzp1ccServerErrorResponse();
     }
 }
 

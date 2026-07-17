@@ -4,12 +4,46 @@
  * custom auth to secure 1cc APIs
  */
 
-require_once __DIR__ . '/../../razorpay-sdk/Razorpay.php';
-use Razorpay\Api\Errors;
-
-function checkAuthCredentials()
+function checkAuthCredentials($request = null)
 {
-    return true;
+    if ($request instanceof WP_REST_Request)
+    {
+        $nonce = $request->get_header('X-WP-Nonce');
+
+        if (empty($nonce) === false && wp_verify_nonce($nonce, 'wp_rest') !== false)
+        {
+            return true;
+        }
+
+        $hmacResult = checkHmacSignature($request);
+        if ($hmacResult === true)
+        {
+            return true;
+        }
+    }
+
+    return new WP_Error('rest_forbidden', __('Authentication failed'), array('status' => 403));
+}
+
+function checkRazorpayHmacCredentials($request)
+{
+    return checkHmacSignature($request);
+}
+
+function rzp1ccServerErrorResponse($logMessage = '')
+{
+    if (empty($logMessage) === false && function_exists('rzpLogError') === true)
+    {
+        rzpLogError($logMessage);
+    }
+
+    return new WP_REST_Response(
+        [
+            'message' => 'Something went wrong, please try again after sometime.',
+            'code'    => 'WOOCOMMERCE_SERVER_ERROR',
+        ],
+        500
+    );
 }
 
 /**
@@ -21,40 +55,42 @@ function checkAuthCredentials()
  */
 function checkHmacSignature($request)
 {
-	$signature = '';
-	if (isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']))
-	{
-		$signature = sanitize_text_field($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']);
-	}
+    $signature = ($request instanceof WP_REST_Request) ? $request->get_header('X-Razorpay-Signature') : '';
+    if (empty($signature) === true && isset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']))
+    {
+        $signature = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'];
+    }
 
-	if (empty($signature))
-	{
-		return new WP_Error('rest_forbidden', __('Signature missing'), array('status' => 403));
-	}
+    $signature = sanitize_text_field($signature);
 
-    $payload = file_get_contents('php://input');
+    if (empty($signature))
+    {
+        return new WP_Error('rest_forbidden', __('Signature missing'), array('status' => 403));
+    }
 
-	// Retrieve 1CC signing HMAC secret saved at plugin load time
+    $payload = ($request instanceof WP_REST_Request) ? $request->get_body() : file_get_contents('php://input');
+
+    if ($payload === false)
+    {
+        $payload = '';
+    }
+
+    // Retrieve 1CC signing HMAC secret saved at plugin load time
     $secret = get_option('rzp1cc_hmac_secret');
 
-	if (empty($secret))
-	{
-		return new WP_Error('rest_forbidden', __('Secret not configured'), array('status' => 403));
-	}
+    if (empty($secret))
+    {
+        return new WP_Error('rest_forbidden', __('Secret not configured'), array('status' => 403));
+    }
 
-	// Verify using Razorpay SDK (same as webhook)
-	try
-	{
-		$rzp = new WC_Razorpay(false);
-		$api = $rzp->getRazorpayApiInstance();
-		$api->utility->verifySignature($payload, $signature, $secret);
-	}
-	catch (Errors\SignatureVerificationError $e)
-	{
-		return new WP_Error('rest_forbidden', __('Invalid signature'), array('status' => 403));
-	}
+    $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
-	return true;
+    if (hash_equals($expectedSignature, $signature) === false)
+    {
+        return new WP_Error('rest_forbidden', __('Invalid signature'), array('status' => 403));
+    }
+
+    return true;
 }
 
 ?>

@@ -205,9 +205,26 @@ class RZP_Webhook
 
             $integration = "woocommerce";
 
-            $webhookEvents = $wpdb->get_results("SELECT rzp_webhook_data FROM $tableName where order_id=" . $data['woocommerce_order_id'] . " AND rzp_order_id='" . $rzpOrderId . "';");
+            $webhookEvents = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT rzp_webhook_data FROM $tableName WHERE order_id = %d AND rzp_order_id = %s",
+                    $data['woocommerce_order_id'],
+                    $rzpOrderId
+                )
+            );
 
-            $rzpWebhookData = (array) json_decode($webhookEvents['rzp_webhook_data']);
+            if (empty($webhookEvents) === true)
+            {
+                rzpLogError("Webhook event save skipped. Queue row not found for order:" . $data['woocommerce_order_id']);
+                return;
+            }
+
+            $rzpWebhookData = json_decode($webhookEvents->rzp_webhook_data, true);
+
+            if (is_array($rzpWebhookData) === false)
+            {
+                $rzpWebhookData = [];
+            }
 
             $rzpWebhookData[] = $data;
 
