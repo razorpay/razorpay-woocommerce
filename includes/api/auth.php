@@ -12,6 +12,22 @@ function checkAuthCredentials()
     return true;
 }
 
+function rzp1ccServerErrorResponse($logMessage = '')
+{
+    if (empty($logMessage) === false && function_exists('rzpLogError') === true)
+    {
+        rzpLogError($logMessage);
+    }
+
+    return new WP_REST_Response(
+        [
+            'message' => 'Something went wrong, please try again after sometime.',
+            'code'    => 'WOOCOMMERCE_SERVER_ERROR',
+        ],
+        500
+    );
+}
+
 /**
  * Validate HMAC signature using Razorpay Webhook Secret.
  * Expects header 'X-Razorpay-Signature' computed over raw request body with HMAC-SHA256.
@@ -34,7 +50,7 @@ function checkHmacSignature($request)
 
     $payload = file_get_contents('php://input');
 
-	// Retrieve 1CC signing HMAC secret saved at plugin load time
+    // Retrieve 1CC signing HMAC secret saved at plugin load time
     $secret = get_option('rzp1cc_hmac_secret');
 
 	if (empty($secret))
@@ -54,7 +70,7 @@ function checkHmacSignature($request)
 		return new WP_Error('rest_forbidden', __('Invalid signature'), array('status' => 403));
 	}
 
-	return true;
+    return true;
 }
 
 ?>

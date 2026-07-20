@@ -1,4 +1,6 @@
 .idea
 .DS_Store
 .phpunit.result.cache
+.env
+.wp-install/
 vendor
