@@ -37,13 +37,14 @@ function createWcOrder(WP_REST_Request $request)
             }
         }
 
-        $authResult = checkAuthCredentials($request);
+        $nonce     = $request->get_header('X-WP-Nonce');
+        $verifyReq = wp_verify_nonce($nonce, 'wp_rest');
 
-        if (is_wp_error($authResult)) {
+        if ($verifyReq === false) {
             $response['status']  = false;
             $response['message'] = 'Authentication failed';
 
-            $statusCode            = $authResult->get_error_data()['status'] ?? 403;
+            $statusCode            = 401;
             $logObj['status_code'] = $statusCode;
             $logObj['response']    = $response;
             rzpLogError(json_encode($logObj));

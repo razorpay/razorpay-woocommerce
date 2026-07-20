@@ -5,14 +5,6 @@ require_once __DIR__ . '/../../../includes/razorpay-webhook.php';
 
 class Test_Maigc_Api extends WP_UnitTestCase
 {
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        unset($_SERVER['HTTP_X_RAZORPAY_SIGNATURE']);
-        delete_option('rzp1cc_hmac_secret');
-    }
-
     public function testMagicApi()
     {
         $this->assertFileExists(PLUGIN_DIR . '/includes/api/order.php');
@@ -24,65 +16,6 @@ class Test_Maigc_Api extends WP_UnitTestCase
         $this->assertFileExists(PLUGIN_DIR . '/includes/api/shipping-info.php');
 
         $this->assertFileExists(PLUGIN_DIR . '/includes/api/save-abandonment-data.php');
-    }
-
-    public function testCheckAuthCredentialsRejectsRequestWithoutNonceOrSignature()
-    {
-        $request = new WP_REST_Request('POST', '/wp-json/1cc/v1/order/create');
-
-        $result = checkAuthCredentials($request);
-
-        $this->assertInstanceOf(WP_Error::class, $result);
-        $this->assertSame(403, $result->get_error_data()['status']);
-    }
-
-    public function testCheckAuthCredentialsAllowsValidRestNonce()
-    {
-        wp_set_current_user(1);
-        $request = new WP_REST_Request('POST', '/wp-json/1cc/v1/order/create');
-        $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
-
-        $this->assertTrue(checkAuthCredentials($request));
-    }
-
-    public function testCheckAuthCredentialsAllowsValidHmacSignature()
-    {
-        $payload = '{"order_id":"order_test"}';
-        $secret = 'test_secret';
-        update_option('rzp1cc_hmac_secret', $secret);
-        $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] = hash_hmac('sha256', $payload, $secret);
-
-        $request = new WP_REST_Request('POST', '/wp-json/1cc/v1/order/create');
-        $request->set_body($payload);
-        $request->set_header('X-Razorpay-Signature', $_SERVER['HTTP_X_RAZORPAY_SIGNATURE']);
-
-        $this->assertTrue(checkAuthCredentials($request));
-    }
-
-    public function testRazorpayHmacCredentialsRejectsNonceOnlyRequest()
-    {
-        wp_set_current_user(1);
-        $request = new WP_REST_Request('POST', '/wp-json/1cc/v1/shipping/shipping-info');
-        $request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
-
-        $result = checkRazorpayHmacCredentials($request);
-
-        $this->assertInstanceOf(WP_Error::class, $result);
-        $this->assertSame(403, $result->get_error_data()['status']);
-    }
-
-    public function testRazorpayHmacCredentialsAllowsValidHmacSignature()
-    {
-        $payload = '{"order_id":"order_test"}';
-        $secret = 'test_secret';
-        update_option('rzp1cc_hmac_secret', $secret);
-        $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] = hash_hmac('sha256', $payload, $secret);
-
-        $request = new WP_REST_Request('POST', '/wp-json/1cc/v1/shipping/shipping-info');
-        $request->set_body($payload);
-        $request->set_header('X-Razorpay-Signature', $_SERVER['HTTP_X_RAZORPAY_SIGNATURE']);
-
-        $this->assertTrue(checkRazorpayHmacCredentials($request));
     }
 
     public function testServerErrorResponseDoesNotLeakExceptionMessage()

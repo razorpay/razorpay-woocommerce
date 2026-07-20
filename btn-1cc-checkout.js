@@ -322,7 +322,6 @@ var rzp1cc = {
        };
        xhr.open('POST', rzp1cc.saveAbandonedCartApi, true);
        xhr.setRequestHeader('Content-Type', 'application/json');
-       xhr.setRequestHeader('X-WP-Nonce', rzp1ccCheckoutData.nonce);
        xhr.send(JSON.stringify(body));
      } catch (e) {
 

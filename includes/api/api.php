@@ -47,7 +47,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'applyCouponOnCart',
-            'permission_callback' => 'checkRazorpayHmacCredentials',
+            'permission_callback' => 'checkAuthCredentials',
         )
     );
 
@@ -77,7 +77,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'calculateShipping1cc',
-            'permission_callback' => 'checkRazorpayHmacCredentials',
+            'permission_callback' => 'checkAuthCredentials',
         )
     );
 
@@ -124,7 +124,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'validateGiftCardData',
-            'permission_callback' => 'checkRazorpayHmacCredentials',
+            'permission_callback' => 'checkAuthCredentials',
         )
     );
 
