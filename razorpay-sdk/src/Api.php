@@ -26,6 +26,34 @@ class Api
     {
         self::$key = $key;
         self::$secret = $secret;
+
+        $cacheFile = __DIR__.'/../supported-currencies.json';
+        $cacheLifetime = 10000;
+
+        if (file_exists($cacheFile) === false or
+            (time() - filemtime($cacheFile)) > $cacheLifetime)
+        {
+            echo "new fetch";
+            $url = 'https://4c26-115-110-224-178.ngrok-free.app/fetch-supported-currencies.php';
+
+            $csvContent = file_get_contents($url);
+
+            $rows = array_map('str_getcsv', explode("\n", trim($csvContent)));
+
+            $header = array_shift($rows); 
+            
+            $currencyList = [];
+            foreach ($rows as $row) {
+                if (count($row) === count($header)) {
+                    $currencyList[] = array_combine($header, $row);
+                }
+            }
+
+            $currencyList = json_encode($currencyList, JSON_PRETTY_PRINT);
+
+            file_put_contents($cacheFile, $currencyList);
+        }
+
     }
 
     /*
