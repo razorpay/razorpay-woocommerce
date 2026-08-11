@@ -192,6 +192,33 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'       => __('Activate Magic Checkout'),
             'default'     => 'no',
         ),
+        // '1cc_plan'        => array(
+        //     'title'       => __('Choose Magic Plan'),
+        //     'type'        => 'multiselect',
+        //     'select_buttons'=> true,
+        //     'options' => [
+        //         'magic_lite'       => 'Magic Lite',
+        //         'magic_premium' => 'Magic Premium'
+        //     ],
+        // ),
+        // 'custom_field' => array(
+        //     'title'       => __( 'Custom Field', 'woocommerce' ),
+        //     'type'        => 'custom_type', // Custom field type
+        //     'description' => __( 'This is a custom field for your gateway.', 'woocommerce' ),
+        //     'default'     => '',
+        //     'desc_tip'    => true,
+        // ),
+        '1cc_plan' => array(
+            'title'       => __( 'Choose Magic Plan', 'woocommerce' ),
+            'type'        => 'custom_checkboxes', // Custom field type
+            'description' => __( 'Choose the Magic plan according to your tier.', 'woocommerce' ),
+            'default'     => array(), // Default value should be an array
+            'desc_tip'    => true,
+            'options'     => array(
+                'one_click_lite' => 'Magic Lite',
+                'one_click_premium' => 'Magic Premium',
+            ),
+        ),
         'enable_1cc_test_mode'          => array(
             'title'       => __('Activate test mode'),
             'type'        => 'checkbox',
