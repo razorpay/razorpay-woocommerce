@@ -77,7 +77,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'calculateShipping1cc',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'checkHmacSignature',
         )
     );
 

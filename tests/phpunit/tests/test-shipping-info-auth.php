@@ -99,18 +99,14 @@ class Test_Shipping_Info_Auth extends WP_UnitTestCase
         return $zone;
     }
 
-    // ---- Auth layer (Task 11 makes these pass) ----
+    // ---- Auth layer (HMAC now enforced) ----
     //
-    // The three tests below encode the CONTRACT that Task 11 (switching this
-    // route's permission_callback from checkAuthCredentials to
-    // checkHmacSignature) must satisfy. They are intentionally left in place,
-    // skipped, as living documentation of the expected 403 behavior rather
-    // than being deleted or weakened.
+    // The shipping-info route's permission_callback is checkHmacSignature, so
+    // the three tests below now run and enforce the 403 contract for missing,
+    // invalid, and unconfigured-secret signatures.
 
     public function testMissingSignatureIsRejected()
     {
-        $this->markTestSkipped('Requires HMAC enforcement on this route (plan Task 11), deferred pending magic-checkout-service production signing verification. See docs/superpowers/plans/2026-08-25-shipping-info-idor.md.');
-
         $orderId = $this->makeOrder();
 
         $response = $this->dispatch(array(
@@ -124,8 +120,6 @@ class Test_Shipping_Info_Auth extends WP_UnitTestCase
 
     public function testInvalidSignatureIsRejected()
     {
-        $this->markTestSkipped('Requires HMAC enforcement on this route (plan Task 11), deferred pending magic-checkout-service production signing verification. See docs/superpowers/plans/2026-08-25-shipping-info-idor.md.');
-
         $orderId = $this->makeOrder();
 
         $response = $this->dispatch(array(
@@ -139,8 +133,6 @@ class Test_Shipping_Info_Auth extends WP_UnitTestCase
 
     public function testMissingSecretIsRejected()
     {
-        $this->markTestSkipped('Requires HMAC enforcement on this route (plan Task 11), deferred pending magic-checkout-service production signing verification. See docs/superpowers/plans/2026-08-25-shipping-info-idor.md.');
-
         $orderId = $this->makeOrder();
         delete_option('rzp1cc_hmac_secret');
 
