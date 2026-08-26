@@ -44,6 +44,60 @@ function calculateShipping1cc(WP_REST_Request $request)
         $addresses    = $params['addresses'];
         $rzpOrderId   = sanitize_text_field($params['razorpay_order_id']);
 
+        // Bind the request to the target order before touching any state.
+        // Without this, any caller can name an arbitrary order id and have its
+        // shipping metadata overwritten (CVSS 5.3 IDOR, Patchstack PSID
+        // 1b9300d255b0). The stored Razorpay order id is written at order
+        // creation time; see WC_Razorpay::getOrderSessionKey().
+        $order = wc_get_order($orderId);
+        if (!$order)
+        {
+            $response['status']         = false;
+            $response['failure_reason'] = 'Invalid order';
+            $response['failure_code']   = 'invalid_order';
+            $logObj['response']         = $response;
+            rzpLogError(json_encode($logObj));
+
+            return new WP_REST_Response($response, 400);
+        }
+
+        $is1ccOrder = $order->get_meta('is_magic_checkout_order');
+        if ($is1ccOrder === 'yes')
+        {
+            $sessionKey = 'razorpay_order_id_1cc' . $orderId;
+        }
+        else
+        {
+            $sessionKey = 'razorpay_order_id' . $orderId;
+        }
+
+        $storedRazorpayOrderId = $order->get_meta($sessionKey);
+
+        if (empty($storedRazorpayOrderId))
+        {
+            $response['status']         = false;
+            $response['failure_reason'] = 'Razorpay order not found for this order';
+            $response['failure_code']   = 'razorpay_order_not_found';
+            $logObj['response']         = $response;
+            rzpLogError(json_encode($logObj));
+
+            return new WP_REST_Response($response, 400);
+        }
+
+        if ($storedRazorpayOrderId !== $rzpOrderId)
+        {
+            $response['status']         = false;
+            $response['failure_reason'] = 'Razorpay order id mismatch';
+            $response['failure_code']   = 'razorpay_order_id_mismatch';
+            $logObj['response']         = $response;
+            rzpLogError(json_encode($logObj));
+
+            return new WP_REST_Response($response, 400);
+        }
+
+        // Use the stored value downstream, never the client-supplied one.
+        $rzpOrderId = $storedRazorpayOrderId;
+
         initCustomerSessionAndCart();
         // Cleanup cart.
         WC()->cart->empty_cart();
@@ -269,7 +323,7 @@ function prepareRatesResponse1cc($package, $vendorId, $orderId, $address, $rzpOr
         $order->update_meta_data( '1cc_shippinginfo', $response);
         $order->save();
     }else{
-       add_post_meta($orderId, '1cc_shippinginfo', $response);
+       update_post_meta($orderId, '1cc_shippinginfo', $response);
     }
 
     // Choosing the lowest shipping rate
