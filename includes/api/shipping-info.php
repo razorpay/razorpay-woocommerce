@@ -56,7 +56,7 @@ function calculateShipping1cc(WP_REST_Request $request)
             $response['failure_reason'] = 'Invalid order';
             $response['failure_code']   = 'invalid_order';
             $logObj['response']         = $response;
-            rzpLogError(json_encode($logObj));
+            rzpLogError(wp_json_encode($logObj));
 
             return new WP_REST_Response($response, 400);
         }
@@ -79,7 +79,7 @@ function calculateShipping1cc(WP_REST_Request $request)
             $response['failure_reason'] = 'Razorpay order not found for this order';
             $response['failure_code']   = 'razorpay_order_not_found';
             $logObj['response']         = $response;
-            rzpLogError(json_encode($logObj));
+            rzpLogError(wp_json_encode($logObj));
 
             return new WP_REST_Response($response, 400);
         }
@@ -90,7 +90,7 @@ function calculateShipping1cc(WP_REST_Request $request)
             $response['failure_reason'] = 'Razorpay order id mismatch';
             $response['failure_code']   = 'razorpay_order_id_mismatch';
             $logObj['response']         = $response;
-            rzpLogError(json_encode($logObj));
+            rzpLogError(wp_json_encode($logObj));
 
             return new WP_REST_Response($response, 400);
         }
