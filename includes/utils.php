@@ -105,6 +105,10 @@ function validateInput($route, $param)
 
                 $failure_reason = 'Field addresses is required.';
 
+            } elseif (empty(sanitize_text_field($param['razorpay_order_id'])) === true) {
+
+                $failure_reason = 'Field razorpay order id is required.';
+
             }
             break;
 
