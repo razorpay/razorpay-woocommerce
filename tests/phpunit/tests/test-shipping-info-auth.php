@@ -71,6 +71,34 @@ class Test_Shipping_Info_Auth extends WP_UnitTestCase
         );
     }
 
+    /**
+     * Registers a flat-rate shipping zone covering the country used by
+     * addressPayload() (IN), mirroring the WC_Shipping_Zone + flat_rate
+     * fixture pattern used by testGetShippingZone() in test-methods.php.
+     * Without a matching zone/method, WooCommerce calculates zero shipping
+     * rates and the meta-write path this guards never executes.
+     */
+    private function createFlatRateShippingZone()
+    {
+        $zone = new WC_Shipping_Zone();
+        $zone->set_zone_name('Test Zone - IN');
+        $zone->set_zone_order(0);
+        $zone->save();
+        $zone->add_location('IN', 'country');
+
+        $instanceId = $zone->add_shipping_method('flat_rate');
+
+        update_option('woocommerce_flat_rate_' . $instanceId . '_settings', array(
+            'title'      => 'Flat rate',
+            'tax_status' => 'none',
+            'cost'       => '10',
+        ));
+
+        WC_Cache_Helper::get_transient_version('shipping', true);
+
+        return $zone;
+    }
+
     // ---- Auth layer (Task 11 makes these pass) ----
 
     public function testMissingSignatureIsRejected()
@@ -238,9 +266,18 @@ class Test_Shipping_Info_Auth extends WP_UnitTestCase
     /**
      * Guards the add_post_meta -> update_post_meta fix. Two identical calls must
      * leave exactly one metadata value, not two stacked entries.
+     *
+     * A flat-rate shipping zone matching addressPayload()'s country (IN) is
+     * registered first so shippingCalculatePackages1cc() -> prepareRatesResponse1cc()
+     * actually calculates a rate and reaches the meta-write line at
+     * includes/api/shipping-info.php:321-327. Without it, $package[0]['rates'] is
+     * empty, prepareRatesResponse1cc() returns before the write, and the
+     * assertion below would be vacuously satisfied by zero stored values.
      */
     public function testRepeatedCallsDoNotStackShippingMeta()
     {
+        $this->createFlatRateShippingZone();
+
         $orderId = $this->makeOrder('order_ABC');
 
         $payload = array(
@@ -253,7 +290,7 @@ class Test_Shipping_Info_Auth extends WP_UnitTestCase
         $this->dispatch($payload);
 
         $values = get_post_meta($orderId, '1cc_shippinginfo', false);
-        $this->assertLessThanOrEqual(1, count($values),
+        $this->assertCount(1, $values,
             'repeated calls must overwrite, not append, shipping metadata');
     }
 
