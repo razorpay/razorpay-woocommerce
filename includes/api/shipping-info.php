@@ -84,7 +84,19 @@ function calculateShipping1cc(WP_REST_Request $request)
             return new WP_REST_Response($response, 400);
         }
 
-        if ($storedRazorpayOrderId !== $rzpOrderId)
+        // Magic Checkout sends razorpay_order_id WITHOUT the "order_" prefix on
+        // this route, while createOrGetRazorpayOrderId() stores the full id as
+        // returned by the Razorpay API. Both spellings name the same order, so
+        // strip the prefix from each side before comparing -- otherwise every
+        // legitimate call is rejected as a mismatch.
+        //
+        // Comparison-only: $storedRazorpayOrderId is still what flows downstream,
+        // so this does not widen what an attacker can supply. An id naming a
+        // different order fails in either spelling.
+        $storedForCompare   = preg_replace('/^order_/', '', $storedRazorpayOrderId);
+        $receivedForCompare = preg_replace('/^order_/', '', $rzpOrderId);
+
+        if ($storedForCompare !== $receivedForCompare)
         {
             $response['status']         = false;
             $response['failure_reason'] = 'Razorpay order id mismatch';

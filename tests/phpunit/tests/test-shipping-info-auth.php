@@ -169,6 +169,70 @@ class Test_Shipping_Info_Auth extends WP_UnitTestCase
             'victim order shipping metadata must not be written');
     }
 
+    /**
+     * MCS sends razorpay_order_id without the "order_" prefix on this route
+     * (see gateways/woocommerce/types/dtos.go), while the plugin stores the
+     * full id at order creation. Both forms name the same order, so the
+     * ownership check must accept either. Observed live: a correctly signed
+     * call was rejected with razorpay_order_id_mismatch on every attempt
+     * because "order_X" !== "X".
+     */
+    public function testUnprefixedRazorpayOrderIdIsAccepted()
+    {
+        $orderId = $this->makeOrder('order_ABC');
+
+        $response = $this->dispatch(array(
+            'order_id'          => $orderId,
+            'razorpay_order_id' => 'ABC',
+            'addresses'         => $this->addressPayload(),
+        ));
+
+        $this->assertNotEquals('razorpay_order_id_mismatch',
+            isset($response->get_data()['failure_code']) ? $response->get_data()['failure_code'] : '',
+            'unprefixed id naming the same order must not be treated as a mismatch');
+    }
+
+    /**
+     * The reverse skew: stored bare, received prefixed.
+     */
+    public function testPrefixedRazorpayOrderIdIsAcceptedWhenStoredBare()
+    {
+        $orderId = $this->makeOrder('ABC');
+
+        $response = $this->dispatch(array(
+            'order_id'          => $orderId,
+            'razorpay_order_id' => 'order_ABC',
+            'addresses'         => $this->addressPayload(),
+        ));
+
+        $this->assertNotEquals('razorpay_order_id_mismatch',
+            isset($response->get_data()['failure_code']) ? $response->get_data()['failure_code'] : '',
+            'prefixed id naming the same order must not be treated as a mismatch');
+    }
+
+    /**
+     * Normalisation must not weaken the IDOR check: a genuinely different
+     * order id is still rejected regardless of which side carries the prefix.
+     */
+    public function testForeignOrderIdIsStillRejectedAfterNormalisation()
+    {
+        $orderId = $this->makeOrder('order_ABC');
+
+        foreach (array('order_XYZ', 'XYZ') as $foreignId)
+        {
+            $response = $this->dispatch(array(
+                'order_id'          => $orderId,
+                'razorpay_order_id' => $foreignId,
+                'addresses'         => $this->addressPayload(),
+            ));
+
+            $this->assertEquals(400, $response->get_status());
+            $this->assertEquals('razorpay_order_id_mismatch',
+                $response->get_data()['failure_code'],
+                "foreign id {$foreignId} must still be rejected");
+        }
+    }
+
     public function testNonexistentOrderIsRejected()
     {
         $response = $this->dispatch(array(
