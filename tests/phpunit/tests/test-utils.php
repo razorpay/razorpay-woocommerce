@@ -37,7 +37,9 @@ class Test_Utils extends \PHPUnit_Framework_TestCase
 
         $this->assertSame('Field order id is required.', validateInput('apply', array('code' => 'ABC2407', 'order_id' => '')));
 
-        $this->assertSame(null,validateInput('shipping', array('order_id' => '11', 'addresses' => 'Bangalore')));
+        $this->assertSame(null, validateInput('shipping', array('order_id' => '11', 'addresses' => 'Bangalore', 'razorpay_order_id' => 'order_test123')));
+
+        $this->assertSame('Field razorpay order id is required.', validateInput('shipping', array('order_id' => '11', 'addresses' => 'Bangalore')));
 
         $this->assertSame('Field order id is required.', validateInput('shipping', array('order_id' => '', 'addresses' => 'Bangalore')));
 
