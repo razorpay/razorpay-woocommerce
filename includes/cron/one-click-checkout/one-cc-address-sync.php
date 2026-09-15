@@ -460,6 +460,7 @@ class OneCCAddressSync
                 $queryArgs = [
                     Constants::DATE_CREATED => '1...' . $this->upperCreatedAt,
                     'status'                => $this->getAddressSyncOrderStatuses(),
+                    'type'                  => 'shop_order',
                     'orderby'               => 'ID',
                     Constants::ORDER        => Constants::ASC,
                     Constants::LIMIT        => $this->batchSize,
@@ -568,7 +569,7 @@ class OneCCAddressSync
                 ];
                 $addresses[] = $address;
             }
-            catch (Exception $e)
+            catch (\Throwable $e)
             {
                 $orderId = method_exists($order, 'get_id') ? $order->get_id() : null;
                 rzpLogError("getAddressFromOrders: failed for order_id=" . $orderId . ", error=" . $e->getMessage());
@@ -662,6 +663,7 @@ class OneCCAddressSync
             $candidateUpper = wc_get_orders([
                 Constants::DATE_CREATED => '1...' . $this->upperCreatedAt,
                 'status'                => $this->getAddressSyncOrderStatuses(),
+                'type'                  => 'shop_order',
                 'orderby'               => 'ID',
                 Constants::ORDER        => 'DESC',
                 Constants::LIMIT        => 1,
