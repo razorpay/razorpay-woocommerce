@@ -29,16 +29,29 @@ function checkHmacSignature($request)
 
 	if (empty($signature))
 	{
+		rzpLogError('1cc_hmac_auth_failed: SIGNATURE_MISSING');
 		return new WP_Error('rest_forbidden', __('Signature missing'), array('status' => 403));
 	}
 
-    $payload = file_get_contents('php://input');
+	// Prefer the body WordPress already parsed; fall back to the raw stream.
+	// Both are the same bytes in production, but get_body() is populated under
+	// PHPUnit where php://input is empty, which makes this function testable.
+	$payload = '';
+	if ($request instanceof WP_REST_Request)
+	{
+		$payload = $request->get_body();
+	}
+	if (empty($payload))
+	{
+		$payload = file_get_contents('php://input');
+	}
 
 	// Retrieve 1CC signing HMAC secret saved at plugin load time
-    $secret = get_option('rzp1cc_hmac_secret');
+	$secret = get_option('rzp1cc_hmac_secret');
 
 	if (empty($secret))
 	{
+		rzpLogError('1cc_hmac_auth_failed: SECRET_NOT_CONFIGURED');
 		return new WP_Error('rest_forbidden', __('Secret not configured'), array('status' => 403));
 	}
 
@@ -51,6 +64,7 @@ function checkHmacSignature($request)
 	}
 	catch (Errors\SignatureVerificationError $e)
 	{
+		rzpLogError('1cc_hmac_auth_failed: SIGNATURE_INVALID');
 		return new WP_Error('rest_forbidden', __('Invalid signature'), array('status' => 403));
 	}
 
