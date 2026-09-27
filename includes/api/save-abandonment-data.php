@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../support/cartbounty.php';
 require_once __DIR__ . '/../support/wati.php';
 require_once __DIR__ . '/../support/abandoned-cart-hooks.php';
+require_once __DIR__ . '/../support/abandoned-checkouts.php';
 
 use Automattic\WooCommerce\Utilities\OrderUtil; 
 
@@ -64,6 +65,9 @@ function saveCartAbandonmentData(WP_REST_Request $request)
         $razorpay->UpdateOrderAddress($razorpayData, $order);
 
         abandonedPluginHook($razorpayData); // do_action to notify/send the abandonedCart data to 3rd party plugins
+
+        // Capture the abandoned checkout data in the WooCommerce backend for the merchant
+        rzpSaveAbandonedCheckout($razorpayData);
 
         initCustomerSessionAndCart();
 
@@ -211,7 +215,7 @@ function saveCartAbandonmentData(WP_REST_Request $request)
 
         } else {
             $response['status']    = true;
-            $response['message']   = 'No action performed';
+            $response['message']   = 'Abandoned checkout data saved in WooCommerce';
             $statusCode            = 200;
             $result['response']    = $result['response'].PHP_EOL." no abandonment plugin configured";
             $logObj['response']    = $response;

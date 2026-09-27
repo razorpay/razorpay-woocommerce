@@ -35,6 +35,7 @@ require_once __DIR__.'/includes/cron/cron.php';
 require_once __DIR__.'/includes/cron/plugin-fetch.php';
 require_once ABSPATH . '/wp-admin/includes/upgrade.php';
 require_once __DIR__.'/includes/support/smart-coupons.php';
+require_once __DIR__.'/includes/support/abandoned-checkouts.php';
 
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors;
@@ -2333,6 +2334,12 @@ EOT;
                     // Check Wati.io retargetting plugin is active or not
                     if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes' && is_plugin_active('wati-chat-and-notification/wati-chat-and-notification.php')){
                         handleWatiRecoveredOrder($orderId);
+                    }
+
+                    // Mark native abandoned checkout record as recovered
+                    if (is1ccEnabled() && !empty($is1ccOrder) && $is1ccOrder == 'yes')
+                    {
+                        rzpMarkAbandonedCheckoutRecovered($orderId);
                     }
 
                     $order->add_order_note("Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId");
