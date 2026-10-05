@@ -222,6 +222,12 @@ function woocommerce_razorpay_init()
 
         const PREPAY_COD_URL = '1cc/orders/cod/convert';
         const ONE_CC_MERCHANT_PREF = 'one_cc_merchant_preference';
+        // Seconds to wait for the magic-checkout-service 1cc preferences route
+        // before falling back to the legacy api route.
+        const ONE_CC_MERCHANT_PREF_TIMEOUT = 3;
+        // How long to remember a failed lookup, so a broken API is not hit on
+        // every admin page load.
+        const ONE_CC_MERCHANT_PREF_FAILURE_TTL = 300;
 
         const RZP_ORDER_CREATED = 0;
         const RZP_ORDER_PROCESSED_BY_CALLBACK = 1;
@@ -329,6 +335,39 @@ function woocommerce_razorpay_init()
         }
 
         /**
+         * Fetch the 1CC preferences that decide which Magic Checkout settings are shown.
+         * Calls magic-checkout-service first with a short timeout, then falls back to the
+         * legacy api route, which Razorpay can always route back to the api monolith.
+         *
+         * @return array
+         * @throws Exception when the legacy route also fails
+         */
+        public function fetch1ccMerchantPreferences()
+        {
+            $response = wp_remote_get(Api::getFullUrl('magic/merchant/1cc_preferences'), array(
+                'timeout' => self::ONE_CC_MERCHANT_PREF_TIMEOUT,
+                'headers' => array(
+                    'Authorization' => 'Basic ' . base64_encode($this->getSetting('key_id') . ':' . $this->getSetting('key_secret')),
+                ),
+            ));
+
+            if ((is_wp_error($response) === false) &&
+                ((int) wp_remote_retrieve_response_code($response) === 200))
+            {
+                $preferences = json_decode(wp_remote_retrieve_body($response), true);
+
+                if (is_array($preferences) === true)
+                {
+                    return $preferences;
+                }
+            }
+
+            $api = $this->getRazorpayApiInstance();
+
+            return $api->request->request('GET', 'merchant/1cc_preferences');
+        }
+
+        /**
          * @param boolean $hooks Whether or not to
          *                       setup the hooks on
          *                       calling the constructor
@@ -353,9 +392,10 @@ function woocommerce_razorpay_init()
 
             $merchantPreferences = get_transient(self::ONE_CC_MERCHANT_PREF);
 
-            // Load preference API call only for administrative interface + razorpay payment settings page.
+            // Load preference API call only for administrative interface + razorpay payment settings page,
+            // and only when nothing is cached (get_transient returns false when the transient is missing).
             if (current_user_can('administrator') &&
-                (empty($merchantPreferences['features']['one_click_checkout']) === true) &&
+                ($merchantPreferences === false) &&
                 (isset($_GET['tab']) === true) &&
                 ($_GET['tab'] === 'checkout') &&
                 (isset($_GET['section']) === true) &&
@@ -365,12 +405,13 @@ function woocommerce_razorpay_init()
                 {
                     try {
 
-                      $api = $this->getRazorpayApiInstance();
-                      $merchantPreferences = $api->request->request('GET', 'merchant/1cc_preferences');
+                      $merchantPreferences = $this->fetch1ccMerchantPreferences();
                       set_transient( self::ONE_CC_MERCHANT_PREF, $merchantPreferences, 7200 );
 
                     } catch (\Exception $e) {
                       rzpLogError($e->getMessage());
+                      $merchantPreferences = array();
+                      set_transient( self::ONE_CC_MERCHANT_PREF, $merchantPreferences, self::ONE_CC_MERCHANT_PREF_FAILURE_TTL );
                     }
                 }
             }
