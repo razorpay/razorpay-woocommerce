@@ -71,6 +71,7 @@ Razorpay is available for Store Owners and Merchants in
 
 = 4.8.8 =
 * Fixed unauthenticated IDOR vulnerability in the Magic Checkout shipping-info endpoint.
+* Added abandoned checkout capture in the WooCommerce backend: abandoned customer details and cart data are now stored natively and manageable under WooCommerce > Abandoned Checkouts, with status filters, search, detail view, recovery tracking, stats and CSV export.
 
 = 4.8.7 =
 * Version bump to 4.8.7.
