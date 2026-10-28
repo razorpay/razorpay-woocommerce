@@ -44,14 +44,30 @@ function applyCouponOnCart(WP_REST_Request $request)
         $email      = sanitize_text_field($params["email"]) ?? "";
         $orderId    = sanitize_text_field($params["order_id"]);
 
+        // Bind the request to the target order before touching any state, so a caller
+        // cannot read another order's total through the discount (WPScan #45854).
+        $verifiedRzpOrderId = rzp1ccGetVerifiedRazorpayOrderId($orderId, sanitize_text_field($params["razorpay_order_id"]));
+        if (is_wp_error($verifiedRzpOrderId)) {
+            $response["failure_reason"] = $verifiedRzpOrderId->get_error_message();
+            $response["failure_code"]   = $verifiedRzpOrderId->get_error_code();
+            $logObj["response"]         = $response;
+
+            rzpLogError(wp_json_encode($logObj));
+
+            return new WP_REST_Response($response, 400);
+        }
+
+        $order = wc_get_order($orderId);
+
         // initializes the session
         initCustomerSessionAndCart();
 
         if (is_plugin_active('wt-smart-coupons-for-woocommerce/wt-smart-coupon.php')) {
-            // Set current user for smart coupon plugin
-            if (empty($email) === false) {
-                $user = get_user_by('email', $email);
-                wp_set_current_user($user->id);
+            // The request email is typed by the shopper and unverified, so the user comes
+            // from the verified order, never from the email (WPScan #46468).
+            $customerId = $order->get_customer_id();
+            if (empty($customerId) === false) {
+                wp_set_current_user($customerId);
             }
 
             // Apply Smart Coupon if allowed for selected payment method (e.g., Razorpay)
@@ -145,7 +161,6 @@ function applyCouponOnCart(WP_REST_Request $request)
         $userLimit = $coupon->get_usage_limit_per_user();
         if (!empty($userLimit)) {
             $dataStore  = $coupon->get_data_store();
-            $order      = wc_get_order($orderId);
             $usageCount = $order->get_customer_id() ? $dataStore->get_usage_by_user_id($coupon, $order->get_customer_id()) : $dataStore->get_usage_by_email($coupon, $email);
 
             if (!empty($usageCount) && !empty($userLimit)) {
@@ -305,6 +320,8 @@ function validateApplyCouponApi($param)
         $failureReason = "Field code is required.";
     } elseif (empty(sanitize_text_field($param["order_id"])) === true) {
         $failureReason = "Field order id is required.";
+    } elseif (empty(sanitize_text_field($param["razorpay_order_id"])) === true) {
+        $failureReason = "Field razorpay order id is required.";
     }
     return $failureReason;
 }
