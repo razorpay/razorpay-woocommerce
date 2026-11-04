@@ -71,4 +71,38 @@ function checkHmacSignature($request)
 	return true;
 }
 
+/**
+ * Bind a 1CC request to its order: $rzpOrderId must name the Razorpay order stored on WC order $orderId.
+ * Without this, a caller can name any order id (Patchstack PSID 1b9300d255b0, WPScan #45854).
+ *
+ * @param int    $orderId
+ * @param string $rzpOrderId
+ * @return string|WP_Error the stored Razorpay order id, to be used downstream instead of the caller's
+ */
+function rzp1ccGetVerifiedRazorpayOrderId($orderId, $rzpOrderId)
+{
+	$order = wc_get_order($orderId);
+	if (!$order)
+	{
+		return new WP_Error('invalid_order', 'Invalid order');
+	}
+
+	$sessionKey = ($order->get_meta('is_magic_checkout_order') === 'yes') ? 'razorpay_order_id_1cc' : 'razorpay_order_id';
+	$storedRazorpayOrderId = $order->get_meta($sessionKey . $orderId);
+
+	if (empty($storedRazorpayOrderId))
+	{
+		return new WP_Error('razorpay_order_not_found', 'Razorpay order not found for this order');
+	}
+
+	// Magic Checkout sends the id without the "order_" prefix while createOrGetRazorpayOrderId()
+	// stores it with one; both name the same order, and a different order fails in either spelling.
+	if (preg_replace('/^order_/', '', $storedRazorpayOrderId) !== preg_replace('/^order_/', '', $rzpOrderId))
+	{
+		return new WP_Error('razorpay_order_id_mismatch', 'Razorpay order id mismatch');
+	}
+
+	return $storedRazorpayOrderId;
+}
+
 ?>

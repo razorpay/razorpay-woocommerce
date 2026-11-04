@@ -140,9 +140,9 @@ Base path: `/wp-json/1cc/v1/`
 | Method | Path | Handler | Auth |
 |--------|------|---------|------|
 | POST | `/coupon/list` | `getCouponList` | HMAC |
-| POST | `/coupon/apply` | `applyCouponOnCart` | Credentials |
+| POST | `/coupon/apply` | `applyCouponOnCart` | HMAC |
 | POST | `/order/create` | `createWcOrder` | Credentials |
-| POST | `/shipping/shipping-info` | `calculateShipping1cc` | Credentials |
+| POST | `/shipping/shipping-info` | `calculateShipping1cc` | HMAC |
 | POST | `/abandoned-cart` | `saveCartAbandonmentData` | Credentials |
 | POST | `/cart/fetch-cart` | `fetchCartData` | Credentials |
 | POST | `/cart/create-cart` | `createCartData` | Credentials |
