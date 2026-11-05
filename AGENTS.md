@@ -86,6 +86,7 @@ razorpay-woocommerce/
     │       └── one-cc-address-sync.php # Address sync job
     └── support/
         ├── abandoned-cart-hooks.php    # Abandoned cart integration
+        ├── abandoned-checkouts.php     # Native abandoned checkout capture + WC admin UI
         ├── cartbounty.php              # CartBounty plugin support
         ├── smart-coupons.php           # WC Smart Coupons support
         └── wati.php                    # Wati.io WhatsApp integration

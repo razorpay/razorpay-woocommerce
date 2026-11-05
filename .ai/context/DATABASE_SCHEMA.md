@@ -28,6 +28,35 @@ Created by the plugin during order creation (inline via `$wpdb->insert`). This t
 
 ---
 
+### `{prefix}rzp_abandoned_checkouts`
+
+Created by the plugin on load (inline via `dbDelta`, gated by the `rzp_abandoned_checkouts_setup` option). Stores abandoned checkout/customer details natively so merchants can manage and analyse them from WooCommerce (WooCommerce > Abandoned Checkouts), independent of third-party abandoned-cart plugins.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | BIGINT AUTO_INCREMENT | Primary key |
+| `wc_order_id` | BIGINT | WooCommerce order ID (RZP order `receipt`) |
+| `rzp_order_id` | VARCHAR(64) | Razorpay order ID |
+| `customer_name` | VARCHAR(255) | Customer name |
+| `customer_email` | VARCHAR(255) | Customer email |
+| `customer_phone` | VARCHAR(32) | Customer phone |
+| `customer_details` | LONGTEXT | JSON: `billing` / `shipping` address from Razorpay order |
+| `cart_items` | LONGTEXT | JSON array of order line items (name, product_id, variation_id, quantity, total) |
+| `cart_total` | DECIMAL(16,4) | Checkout value in display currency (RZP `amount` / 100) |
+| `currency` | VARCHAR(8) | Currency code |
+| `checkout_type` | VARCHAR(32) | `magic_checkout` |
+| `status` | VARCHAR(20) | `abandoned` or `recovered` |
+| `recovered_at` | DATETIME | When the checkout was recovered |
+| `created_at` / `updated_at` | DATETIME | Timestamps |
+
+**Key Operations:**
+- **INSERT/UPDATE**: `rzpSaveAbandonedCheckout()` — called from `saveCartAbandonmentData()` (`1cc/v1/abandoned-cart` REST API), upserts by `rzp_order_id`
+- **UPDATE (status)**: `rzpMarkAbandonedCheckoutRecovered()` — called from `WC_Razorpay::updateOrder()` on successful payment
+- **DELETE**: `rzpDeleteAbandonedCheckouts()` — admin list page / detail view delete actions
+- **SELECT**: Admin list page (search, status filter, sort, pagination), stats tiles, CSV export
+
+---
+
 ## WordPress Options
 
 ### Core Plugin Settings
@@ -46,6 +75,7 @@ Created by the plugin during order creation (inline via `$wpdb->insert`). This t
 | `rzp_rtb_enable` | string | `'yes'` or `'no'` — RTB widget available |
 | `rzp_afd_feature_checked` | string | `'yes'` when feature check completed |
 | `rzp_rtb_feature_checked` | string | `'yes'` when RTB check completed |
+| `rzp_abandoned_checkouts_setup` | string | `'yes'` once `{prefix}rzp_abandoned_checkouts` table exists |
 
 ### Transients (Temporary Options)
 
