@@ -50,6 +50,22 @@ function getCouponList($request)
             return new WP_REST_Response($response, $statusCode);
         }
 
+        // Bind the request to the target order before reading or writing any state,
+        // so a caller with a valid signature for their own order cannot read another
+        // order's total through the coupon list, or overwrite its billing/shipping
+        // contact details. The sibling endpoints were bound in 4.8.9 (WPScan #45854
+        // and PSID 1b9300d255b0); coupon/list was left out.
+        $verifiedRzpOrderId = rzp1ccGetVerifiedRazorpayOrderId($orderId, sanitize_text_field($params['razorpay_order_id'] ?? ''));
+        if (is_wp_error($verifiedRzpOrderId)) {
+            $response['failure_reason'] = 'Razorpay order verification failed';
+            $response['failure_code']   = 'VALIDATION_ERROR';
+            $statusCode                 = 400;
+            $logObj['response']         = $response;
+            rzpLogError(json_encode($logObj));
+
+            return new WP_REST_Response($response, $statusCode);
+        }
+
         // Allow listing coupons only if order still requires payment
         if ($order->needs_payment() === false)
         {
