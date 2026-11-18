@@ -37,21 +37,6 @@ function createWcOrder(WP_REST_Request $request)
             }
         }
 
-        $nonce     = $request->get_header('X-WP-Nonce');
-        $verifyReq = wp_verify_nonce($nonce, 'wp_rest');
-
-        if ($verifyReq === false) {
-            $response['status']  = false;
-            $response['message'] = 'Authentication failed';
-
-            $statusCode            = 401;
-            $logObj['status_code'] = $statusCode;
-            $logObj['response']    = $response;
-            rzpLogError(json_encode($logObj));
-
-            return new WP_REST_Response($response, $statusCode);
-        }
-        
         initCartCommon();
 
         // check if cart is empty
