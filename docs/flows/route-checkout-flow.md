@@ -136,7 +136,7 @@ graph TD
     B --> E[Cart Page Button]
     B --> F[Mini Cart Button: isMiniCartCheckoutEnabled]
 
-    G[Customer clicks 1CC button] --> H[btn-1cc-checkout.js]
+    G[Customer clicks 1CC button] --> H[magic-rzp.js]
     H --> I[POST /wp-json/1cc/v1/order/create]
     I --> J[WC Order created - checkout-draft]
     J --> K[Razorpay Order created with line_items]
@@ -153,7 +153,7 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant BTN as btn-1cc-checkout.js
+    participant BTN as magic-rzp.js
     participant REST as WordPress REST API
     participant API as includes/api/order.php
     participant WC as WooCommerce
@@ -165,7 +165,7 @@ sequenceDiagram
     Note over BTN,REST: Headers: X-WP-Nonce, Content-Type: application/json
     Note over BTN,REST: Body: {cookies: {wp_woocommerce_session_*}, token?, ...}
 
-    REST->>API: checkAuthCredentials() -> true
+    REST->>API: rzp1ccCheckRestNonce() - verifies X-WP-Nonce
     REST->>API: createWcOrder($request)
 
     API->>API: Extract session from cookies
