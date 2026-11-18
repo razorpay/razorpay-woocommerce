@@ -124,7 +124,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'validateGiftCardData',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'checkHmacSignature',
         )
     );
 
