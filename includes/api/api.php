@@ -62,7 +62,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'createWcOrder',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'rzp1ccCheckRestNonce',
         )
     );
 
@@ -88,7 +88,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'saveCartAbandonmentData',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'rzp1ccCheckRestNonce',
         )
     );
 
@@ -99,7 +99,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'fetchCartData',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'rzp1ccCheckRestNonce',
         )
     );
 
@@ -109,7 +109,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'createCartData',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'rzp1ccCheckRestNonce',
         )
     );
 
@@ -124,7 +124,7 @@ function rzp1ccInitRestApi()
         array(
             'methods'             => 'POST',
             'callback'            => 'validateGiftCardData',
-            'permission_callback' => 'checkAuthCredentials',
+            'permission_callback' => 'checkHmacSignature',
         )
     );
 
