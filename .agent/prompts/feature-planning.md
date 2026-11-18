@@ -41,7 +41,7 @@ List every file and method that needs to change:
 - Callback: `check_razorpay_response()`
 - Webhook: `RZP_Webhook::process()` and handlers
 - Refund: `process_refund()`
-- Frontend JS: `script.js` or `btn-1cc-checkout.js`
+- Frontend JS: `script.js` or `magic-rzp.js`
 - 1CC API: `includes/api/order.php`
 - DB: new meta keys or table columns
 

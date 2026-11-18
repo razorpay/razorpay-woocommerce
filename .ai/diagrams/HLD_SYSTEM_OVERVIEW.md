@@ -76,7 +76,7 @@ graph TB
 | `1CC REST API` | WP REST API (PHP) | Server-side endpoints for Magic Checkout flow |
 | `WP Cron` | WordPress Cron | Process unhandled payment.authorized events |
 | `script.js` | JavaScript | Open Razorpay checkout modal, submit callback form |
-| `btn-1cc-checkout.js` | JavaScript | Magic Checkout button rendering and flow |
+| `magic-rzp.js` (Razorpay CDN, source in razorpay/static) | JavaScript | Magic Checkout button rendering and flow |
 | `checkout-block.php` / `checkout_block.js` | PHP + JS | WooCommerce Blocks integration |
 | Razorpay PHP SDK | PHP | API client for all Razorpay API calls |
 

@@ -129,7 +129,7 @@ public function getDefaultCheckoutArguments($order)
 }
 ```
 
-If the new method needs a client-side option that can't be a PHP array (e.g., a callback), it needs to be set in `script.js` or `btn-1cc-checkout.js`.
+If the new method needs a client-side option that can't be a PHP array (e.g., a callback), it needs to be set in `script.js` or `magic-rzp.js`.
 
 ### Step 6 — Handle in process_payment() if backend changes are needed
 
@@ -184,7 +184,7 @@ In `admin_options()` (line ~1095) or the settings field description, document th
   - `getOrderCreationData()` (~line 1558) — Razorpay order creation params
   - `orderArg1CC()` (~line 1610) — 1CC-specific params
 - `script.js` — Frontend payment form handling
-- `btn-1cc-checkout.js` — 1CC frontend logic (if Magic Checkout affected)
+- `magic-rzp.js` (Razorpay CDN, source in razorpay/static) — 1CC frontend logic (if Magic Checkout affected)
 
 ---
 
