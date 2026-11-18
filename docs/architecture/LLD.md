@@ -81,7 +81,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Customer
-    participant BTN as btn-1cc-checkout.js
+    participant BTN as magic-rzp.js
     participant WP as WordPress REST API
     participant RZP as WC_Razorpay
     participant WC as WooCommerce
@@ -92,7 +92,7 @@ sequenceDiagram
     BTN->>WP: POST /wp-json/1cc/v1/order/create {cookies, cart_data}
     Note over WP: X-WP-Nonce header for auth
 
-    WP->>WP: checkAuthCredentials()
+    WP->>WP: rzp1ccCheckRestNonce()
     WP->>RZP: createWcOrder($request)
     RZP->>WC: initCartCommon() - init session, customer, cart
     RZP->>WC: WC()->checkout()->create_order([])

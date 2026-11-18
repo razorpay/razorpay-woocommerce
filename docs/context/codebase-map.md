@@ -11,7 +11,7 @@ Complete map of all files, their purposes, key functions, and relationships.
 | `woo-razorpay.php` | **Main plugin file** | `WC_Razorpay` class, plugin bootstrap, hook registration |
 | `checkout-block.php` | Gutenberg block support | `WC_Razorpay_Blocks` class |
 | `script.js` | Frontend checkout JS | Opens Razorpay modal, handles payment callbacks |
-| `btn-1cc-checkout.js` | Magic Checkout button | 1CC button logic, REST API calls to order/create |
+| `magic-rzp.js` (Razorpay CDN, source in razorpay/static) | Magic Checkout button | 1CC button logic, REST API calls to order/create |
 | `checkout_block.js` | Block editor checkout | Block-based checkout integration |
 | `composer.json` | PHP dependencies | Autoloading, dev dependencies |
 | `composer.wp-install.json` | WP plugin composer | WordPress-specific install config |
@@ -230,7 +230,8 @@ Registers all 1CC REST endpoints. Called on `rest_api_init` hook.
 
 | Function | Auth Method | Purpose |
 |----------|-------------|---------|
-| `checkAuthCredentials()` | None (returns true) | Placeholder - WP nonce used instead |
+| `checkAuthCredentials()` | None (returns true) | Open placeholder. Do not use for new routes |
+| `rzp1ccCheckRestNonce($request)` | WP nonce | Validates the `wp_rest` nonce in `X-WP-Nonce` for the browser-called routes |
 | `checkHmacSignature($request)` | HMAC-SHA256 | Validates X-Razorpay-Signature header against `rzp1cc_hmac_secret` |
 
 ---

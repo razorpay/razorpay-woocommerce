@@ -56,7 +56,6 @@ includes/
 razorpay-sdk/                      <- Razorpay PHP SDK
 checkout-block.php                 <- Gutenberg block support
 script.js                          <- Frontend checkout JS
-btn-1cc-checkout.js                <- Magic Checkout button JS
 checkout_block.js                  <- Block checkout JS
 templates/                         <- PHP templates
 tests/                             <- PHPUnit tests
@@ -77,7 +76,7 @@ tests/                             <- PHPUnit tests
 8. Order marked as `payment_complete`, cart cleared
 
 ### 2. Magic Checkout (1CC) Flow
-1. 1CC button shown via `btn-1cc-checkout.js`
+1. 1CC button shown via the CDN script `magic-rzp.js` (razorpay/static)
 2. REST: `POST /wp-json/1cc/v1/order/create` → `createWcOrder()`
 3. WC order created in `checkout-draft` status with `is_magic_checkout_order=yes`
 4. Razorpay order created with full `line_items` array
@@ -141,13 +140,13 @@ Base path: `/wp-json/1cc/v1/`
 |--------|------|---------|------|
 | POST | `/coupon/list` | `getCouponList` | HMAC |
 | POST | `/coupon/apply` | `applyCouponOnCart` | HMAC |
-| POST | `/order/create` | `createWcOrder` | Credentials |
+| POST | `/order/create` | `createWcOrder` | Nonce |
 | POST | `/shipping/shipping-info` | `calculateShipping1cc` | HMAC |
-| POST | `/abandoned-cart` | `saveCartAbandonmentData` | Credentials |
-| POST | `/cart/fetch-cart` | `fetchCartData` | Credentials |
-| POST | `/cart/create-cart` | `createCartData` | Credentials |
+| POST | `/abandoned-cart` | `saveCartAbandonmentData` | Nonce |
+| POST | `/cart/fetch-cart` | `fetchCartData` | Nonce |
+| POST | `/cart/create-cart` | `createCartData` | Nonce |
 | POST | `/giftcard/apply` | `validateGiftCardData` | Credentials |
-| POST | `/cod/order/prepay` | `prepayCODOrder` | Credentials |
+| POST | `/cod/order/prepay` | `prepayCODOrder` | HMAC |
 
 ---
 

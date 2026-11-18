@@ -37,7 +37,6 @@ razorpay-woocommerce/
 ├── checkout-block.php            # WC_Razorpay_Blocks for Gutenberg checkout
 ├── checkout_block.js             # JS for WC Blocks payment registration
 ├── script.js                     # Frontend JS (opens Razorpay checkout modal)
-├── btn-1cc-checkout.js           # Magic Checkout button JS logic
 ├── composer.json                 # Dev dependencies (PHPUnit, mockery)
 ├── phpunit.xml                   # PHPUnit configuration
 ├── readme.txt                    # WordPress.org plugin readme
@@ -45,7 +44,7 @@ razorpay-woocommerce/
 ├── includes/
 │   ├── api/
 │   │   ├── api.php               # REST route registration (1CC endpoints)
-│   │   ├── auth.php              # Auth callbacks: checkAuthCredentials, checkHmacSignature
+│   │   ├── auth.php              # Auth callbacks: rzp1ccCheckRestNonce, checkHmacSignature
 │   │   ├── order.php             # createWcOrder REST handler
 │   │   ├── shipping-info.php     # calculateShipping1cc REST handler
 │   │   ├── coupon-get.php        # getCouponList REST handler

@@ -128,15 +128,15 @@ All endpoints use base: `1cc/v1`
 |---|---|---|---|
 | POST | `/1cc/v1/coupon/list` | `getCouponList` | HMAC signature |
 | POST | `/1cc/v1/coupon/apply` | `applyCouponOnCart` | `checkAuthCredentials` (always true) |
-| POST | `/1cc/v1/order/create` | `createWcOrder` | `checkAuthCredentials` |
+| POST | `/1cc/v1/order/create` | `createWcOrder` | `rzp1ccCheckRestNonce` (WP nonce) |
 | POST | `/1cc/v1/shipping/shipping-info` | `calculateShipping1cc` | `checkAuthCredentials` |
-| POST | `/1cc/v1/abandoned-cart` | `saveCartAbandonmentData` | `checkAuthCredentials` |
-| POST | `/1cc/v1/cart/fetch-cart` | `fetchCartData` | `checkAuthCredentials` |
-| POST | `/1cc/v1/cart/create-cart` | `createCartData` | `checkAuthCredentials` |
-| POST | `/1cc/v1/giftcard/apply` | `validateGiftCardData` | `checkAuthCredentials` |
+| POST | `/1cc/v1/abandoned-cart` | `saveCartAbandonmentData` | `rzp1ccCheckRestNonce` (WP nonce) |
+| POST | `/1cc/v1/cart/fetch-cart` | `fetchCartData` | `rzp1ccCheckRestNonce` (WP nonce) |
+| POST | `/1cc/v1/cart/create-cart` | `createCartData` | `rzp1ccCheckRestNonce` (WP nonce) |
+| POST | `/1cc/v1/giftcard/apply` | `validateGiftCardData` | `checkAuthCredentials` (always true) |
 | POST | `/1cc/v1/cod/order/prepay` | `prepayCODOrder` | `checkAuthCredentials` |
 
-**Note:** `checkAuthCredentials` currently returns `true` unconditionally. The `createWcOrder` endpoint additionally validates a WP nonce header (`X-WP-Nonce`). The `/coupon/list` endpoint uses HMAC signature for stronger security.
+**Note:** The four routes the shopper's browser calls (`order/create`, `abandoned-cart`, `cart/fetch-cart`, `cart/create-cart`) use `rzp1ccCheckRestNonce`, which requires a valid `wp_rest` nonce in the `X-WP-Nonce` header. `checkAuthCredentials` returns `true` unconditionally: do not use it for new routes.
 
 ---
 

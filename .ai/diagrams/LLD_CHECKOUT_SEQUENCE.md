@@ -75,8 +75,7 @@ sequenceDiagram
 
     Customer->>BTN: Click "Buy Now" / Magic Checkout
     BTN->>WPR: POST /wp-json/1cc/v1/order/create {cookies, nonce}
-    WPR->>WPR: checkAuthCredentials() → true
-    WPR->>WPR: wp_verify_nonce(nonce, 'wp_rest')
+    WPR->>WPR: rzp1ccCheckRestNonce() - wp_verify_nonce(nonce, 'wp_rest')
     WPR->>WC: WC()->checkout()->create_order([])
     WC->>DB: INSERT order (status: checkout-draft)
     WPR->>DB: update_meta: is_magic_checkout_order = yes

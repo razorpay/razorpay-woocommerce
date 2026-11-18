@@ -77,7 +77,7 @@
       "description": "One-click checkout from product/cart page via Razorpay hosted experience",
       "entry_point": "POST /wp-json/1cc/v1/order/create",
       "steps": [
-        "btn-1cc-checkout.js - button click handler",
+        "magic-rzp.js - button click handler",
         "createWcOrder() - create WC order in checkout-draft status",
         "is_magic_checkout_order meta set to yes",
         "calculateShipping1cc() - calculate shipping for customer address",
