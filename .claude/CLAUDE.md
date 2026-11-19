@@ -145,7 +145,7 @@ Base path: `/wp-json/1cc/v1/`
 | POST | `/abandoned-cart` | `saveCartAbandonmentData` | Nonce |
 | POST | `/cart/fetch-cart` | `fetchCartData` | Nonce |
 | POST | `/cart/create-cart` | `createCartData` | Nonce |
-| POST | `/giftcard/apply` | `validateGiftCardData` | Credentials |
+| POST | `/giftcard/apply` | `validateGiftCardData` | HMAC |
 | POST | `/cod/order/prepay` | `prepayCODOrder` | HMAC |
 
 ---

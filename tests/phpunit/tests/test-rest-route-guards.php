@@ -22,6 +22,7 @@ class Test_Rest_Route_Guards extends WP_UnitTestCase
         '/1cc/v1/coupon/list',
         '/1cc/v1/coupon/apply',
         '/1cc/v1/shipping/shipping-info',
+        '/1cc/v1/giftcard/apply',
         '/1cc/v1/cod/order/prepay',
     );
 
@@ -62,6 +63,11 @@ class Test_Rest_Route_Guards extends WP_UnitTestCase
 
     // ---- Registration ----
 
+    public function testNoOpGuardIsGone()
+    {
+        $this->assertFalse(function_exists('checkAuthCredentials'));
+    }
+
     /**
      * Catches a route added later with no guard. WordPress's own namespace index handlers
      * (array callbacks) are skipped; every plugin handler is a function name.
@@ -72,8 +78,7 @@ class Test_Rest_Route_Guards extends WP_UnitTestCase
 
         foreach (rest_get_server()->get_routes() as $route => $handlers)
         {
-            // giftcard/apply gets its HMAC guard in the follow-up PR
-            if (strpos($route, '/1cc/v1') !== 0 || $route === '/1cc/v1/giftcard/apply')
+            if (strpos($route, '/1cc/v1') !== 0)
             {
                 continue;
             }
@@ -107,6 +112,32 @@ class Test_Rest_Route_Guards extends WP_UnitTestCase
         {
             $this->assertSame('checkHmacSignature', $this->permissionCallback($route), $route);
         }
+    }
+
+    // ---- giftcard/apply (the balance oracle) ----
+
+    public function testGiftCardApplyWithoutSignatureIsRejected()
+    {
+        $response = rest_get_server()->dispatch($this->post('/1cc/v1/giftcard/apply', array('gift_card_number' => 'GIFT-0042')));
+
+        $this->assertEquals(403, $response->get_status());
+        $this->assertArrayNotHasKey('gift_card_promotion', (array) $response->get_data());
+    }
+
+    public function testGiftCardApplyWithWrongSignatureIsRejected()
+    {
+        $request = $this->post('/1cc/v1/giftcard/apply', array('gift_card_number' => 'GIFT-0042'));
+        $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] = hash_hmac('sha256', $request->get_body(), 'wrongsecret000000000');
+
+        $this->assertEquals(403, rest_get_server()->dispatch($request)->get_status());
+    }
+
+    public function testGiftCardApplyWithValidSignaturePassesTheGuard()
+    {
+        $request = $this->post('/1cc/v1/giftcard/apply', array('gift_card_number' => 'GIFT-0042'));
+        $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] = hash_hmac('sha256', $request->get_body(), $this->secret);
+
+        $this->assertTrue(checkHmacSignature($request));
     }
 
     // ---- Browser routes ----
