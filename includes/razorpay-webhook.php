@@ -317,6 +317,15 @@ class RZP_Webhook
             return;
         }
 
+        // Gift card shortfall already refunded/flagged for this very payment: nothing to do (cron marks the row processed).
+        // A different payment id falls through so updateOrder can refund it.
+        if ($this->razorpay->isGiftCardPaymentHandled($order, $data['razorpay_payment_id'] ?? null))
+        {
+            rzpLogInfo("Woocommerce orderId: $orderId has gift card refund flag for this payment, exiting");
+
+            return;
+        }
+
         $orderStatus = $order->get_status();
         rzpLogInfo("Woocommerce orderId: $orderId order status: $orderStatus");
 
@@ -388,9 +397,19 @@ class RZP_Webhook
             }
         }
 
+        $this->razorpay->giftCardRetryPending = false;
+
         $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the updateOrder function");
+
+        // Retryable outcome (transient refund failure, lock held, 1cc update error): tell cron it is not done
+        if ($this->razorpay->giftCardRetryPending === true)
+        {
+            $this->razorpay->giftCardRetryPending = false;
+
+            return false;
+        }
     }
 
     /**
