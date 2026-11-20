@@ -25,6 +25,8 @@ require_once __DIR__ .'/includes/razorpay-route-actions.php';
 require_once __DIR__.'/includes/api/api.php';
 require_once __DIR__.'/includes/utils.php';
 require_once __DIR__.'/includes/state-map.php';
+require_once __DIR__.'/includes/iso3-country-map.php';
+require_once __DIR__.'/includes/order-details.php';
 require_once __DIR__.'/includes/plugin-instrumentation.php';
 require_once __DIR__.'/includes/support/cartbounty.php';
 require_once __DIR__.'/includes/support/wati.php';
@@ -1597,6 +1599,13 @@ function woocommerce_razorpay_init()
             {
                 $data = $this->orderArg1CC($data, $order);
                 rzpLogInfo("Called getOrderCreationData with params orderId $orderId and adding line_items_total");
+            }
+            else
+            {
+                // Standard checkout: the order already has the shipping and customer
+                // details, so pass them along with the line items at creation time.
+                $data = rzpAddOrderDetails($data, $order);
+                rzpLogInfo("Called getOrderCreationData with params orderId $orderId and adding customer details");
             }
 
             return $data;

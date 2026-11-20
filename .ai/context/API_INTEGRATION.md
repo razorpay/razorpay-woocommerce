@@ -50,10 +50,21 @@ $this->getRazorpayApiPublicInstance()                    // public, no secret
     "woocommerce_order_number": "123"
   },
   "transfers": [...],         // optional, Route module
-  "line_items_total": 150000, // 1CC only
-  "line_items": [...]         // 1CC only
+  "line_items_total": 150000, // 1CC: cart total; standard checkout: line item total after discounts, excl. tax
+  "line_items": [...],        // 1CC and standard checkout
+  "shipping_fee": 5000,       // standard checkout only, incl. shipping tax
+  "customer_details": {       // standard checkout only
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "contact": "9999999999",
+    "insights": { "has_account": true },
+    "billing_address": { "line1": "...", "city": "...", "state": "Karnataka", "zipcode": "560001", "country": "IND" },
+    "shipping_address": { "...": "same shape as billing_address" }
+  }
 }
 ```
+
+Address details are built by `includes/order-details.php` (amounts in the smallest currency unit). `customer_details.*.country` is mapped from the WooCommerce ISO-2 code to ISO-3 by `includes/iso3-country-map.php`.
 
 ---
 
