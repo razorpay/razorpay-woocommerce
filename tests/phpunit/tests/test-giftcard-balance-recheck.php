@@ -1127,4 +1127,97 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
 
         $this->assertEquals(2, $debited);
     }
+
+    private function callProtected($method, array $args = array())
+    {
+        $reflection = new ReflectionMethod('WC_Razorpay', $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invokeArgs($this->instance, $args);
+    }
+
+    /**
+     * Review #1: a retryable stop in updateOrder must leave the webhook row for cron to retry.
+     */
+    public function testCallbackLeavesWebhookRowWhenRetryPending()
+    {
+        $this->instance->giftCardRetryPending = true;
+        $this->instance->shouldReceive('markWebhookRowProcessedByCallback')->never();
+
+        $this->callProtected('markCallbackWebhookRow', array(123));
+
+        $this->assertTrue($this->instance->giftCardRetryPending);
+    }
+
+    public function testCallbackMarksWebhookRowWhenNoRetryPending()
+    {
+        $this->instance->giftCardRetryPending = false;
+        $this->instance->shouldReceive('markWebhookRowProcessedByCallback')->once()->with(123);
+
+        $this->callProtected('markCallbackWebhookRow', array(123));
+    }
+
+    /**
+     * Review #2: cron/webhook runs have no shopper session, so no notices are added there.
+     */
+    public function testCronRefundAddsNoShopperNotice()
+    {
+        $order = wc_create_order();
+
+        list(, , $transientNotices) = $this->runRefund($order, true, false, 'cURL timeout');
+        list(, , $successNotices)   = $this->runRefund($order, false, false);
+
+        $this->assertSame(array(), $transientNotices);
+        $this->assertSame(array(), $successNotices);
+    }
+
+    public function testInteractiveRefundStillAddsShopperNotice()
+    {
+        $order = wc_create_order();
+
+        list(, , $notices) = $this->runRefund($order, false, true);
+
+        $this->assertEquals(array(array('Payment refunded', 'error')), $notices);
+    }
+
+    /**
+     * Cron retries a transient refund failure every 5 minutes; the order note is added only once.
+     */
+    public function testTransientRetryNoteAddedOnce()
+    {
+        $order = wc_create_order();
+
+        $this->runRefund($order, true, false, 'cURL timeout');
+        $this->runRefund($order, true, false, 'cURL timeout');
+        list($fresh) = $this->runRefund($order, true, false, 'cURL timeout');
+
+        $this->assertEquals(1, substr_count($this->noteText($fresh), 'refund failed transiently'));
+        $this->assertEquals('pending', $fresh->get_status());
+    }
+
+    /**
+     * Orders without promotions do not get the idempotency marker.
+     */
+    public function testNoPromotionsWritesNoMarker()
+    {
+        $order = wc_create_order();
+
+        $result = $this->instance->handlePromotions(array('amount_paid' => 30000, 'promotions' => array()), $order, $order->get_id(), 'pay_X', 'card');
+
+        $this->assertSame(0, $result);
+        $this->assertSame('', wc_get_order($order->get_id())->get_meta('_rzp_1cc_promotions_applied'));
+    }
+
+    public function testPromotionsWriteMarker()
+    {
+        $this->activatePlugin('pw-woocommerce-gift-cards/pw-gift-cards.php');
+        $this->pimwickCard(array('500.0000'));
+
+        $order = wc_create_order();
+        $this->instance->shouldReceive('debitGiftCards')->once();
+
+        $this->instance->handlePromotions($this->razorpayData(30000), $order, $order->get_id(), 'pay_X', 'card');
+
+        $this->assertEquals(1, wc_get_order($order->get_id())->get_meta('_rzp_1cc_promotions_applied'));
+    }
 }

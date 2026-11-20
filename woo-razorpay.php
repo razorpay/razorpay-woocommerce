@@ -1883,6 +1883,20 @@ EOT;
         }
 
         /**
+         * Shopper notice for the gift card paths, only when a shopper is there to see it. Cron/webhook
+         * runs have no WooCommerce session, and wc_add_notice() is fatal there on older WooCommerce.
+         */
+        protected function addGiftCardNotice($message)
+        {
+            if ($this->isInteractiveRequest() === false)
+            {
+                return;
+            }
+
+            $this->add_notice($message, 'error');
+        }
+
+        /**
          * True when the order carries the gift card refund flag (any value). Blocks completion at any status.
          */
         public function isGiftCardGuardEnabled()
@@ -1943,6 +1957,22 @@ EOT;
         /**
          * Mark the rzp_webhook_requests row as processed so cron does not reprocess it (and flip the order).
          */
+        /**
+         * Callback finished: mark the webhook row done, unless updateOrder stopped for a retryable reason
+         * (1cc update exception, lock held). Then the row stays at 0 so the webhook cron retries the order.
+         */
+        protected function markCallbackWebhookRow($orderId)
+        {
+            if ($this->giftCardRetryPending === true)
+            {
+                rzpLogInfo("Callback left webhook row unprocessed for orderId: $orderId so cron retries it");
+
+                return;
+            }
+
+            $this->markWebhookRowProcessedByCallback($orderId);
+        }
+
         protected function markWebhookRowProcessedByCallback($orderId)
         {
             global $wpdb;
@@ -2045,14 +2075,22 @@ EOT;
                 if ($this->isAlreadyRefundedError($e))
                 {
                     $this->flagAndCancelGiftCardOrder($order, 'Gift card balance insufficient; payment was already refunded; order cancelled.', $razorpayPaymentId);
-                    $this->add_notice('Your gift card balance was insufficient. Your payment has been refunded.', 'error');
+                    $this->addGiftCardNotice('Your gift card balance was insufficient. Your payment has been refunded.');
                 }
                 else
                 {
                     // Transient/unknown: no meta, no cancel. Order stays pending, a replayed callback/webhook retries.
                     $this->giftCardRetryPending = true;
-                    $order->add_order_note('Gift card balance insufficient; refund failed transiently - will retry on next callback/webhook.');
-                    $this->add_notice('Your gift card balance was insufficient and we could not refund your payment automatically yet. It will be retried; if it is not refunded shortly, contact the store with your order number. Do not retry the payment.', 'error');
+
+                    // Note once: cron retries every 5 minutes and must not add a note each time
+                    $retryNote = 'Gift card balance insufficient; refund failed transiently - will retry on next callback/webhook.';
+
+                    if (in_array($retryNote, wp_list_pluck(wc_get_order_notes(array('order_id' => $orderId)), 'content'), true) === false)
+                    {
+                        $order->add_order_note($retryNote);
+                    }
+
+                    $this->addGiftCardNotice('Your gift card balance was insufficient and we could not refund your payment automatically yet. It will be retried; if it is not refunded shortly, contact the store with your order number. Do not retry the payment.');
                 }
 
                 return $this->finishGiftCardRefund($isInteractive, $orderId);
@@ -2095,7 +2133,7 @@ EOT;
 
             $this->flagAndCancelGiftCardOrder($order, $note, $razorpayPaymentId);
 
-            $this->add_notice("Payment refunded", "error");
+            $this->addGiftCardNotice('Payment refunded');
 
             return $this->finishGiftCardRefund($isInteractive, $orderId);
         }
@@ -2470,7 +2508,7 @@ EOT;
                 // updateOrder refuses to complete a gift-card-flagged order; do not send the shopper to thank-you
                 $this->redirectFlaggedOrderToCart($orderId);
 
-                $this->markWebhookRowProcessedByCallback($orderId);
+                $this->markCallbackWebhookRow($orderId);
                 $order = wc_get_order($orderId);
             }
 
@@ -3023,7 +3061,7 @@ EOT;
             if ($paymentDoneBy === 'cod')
             {
                 $this->flagAndCancelGiftCardOrder(wc_get_order($orderId), 'Gift card balance insufficient on COD order; cancelled.', $razorpayPaymentId);
-                $this->add_notice('Your gift card balance was insufficient, so your order could not be placed.', 'error');
+                $this->addGiftCardNotice('Your gift card balance was insufficient, so your order could not be placed.');
             }
             else
             {
@@ -3144,15 +3182,8 @@ EOT;
                     }
 
                 }else if($promotion['type'] == 'terra_wallet') {
-                    if (!is_plugin_active('woo-wallet/woo-wallet.php')) {
-                        return $this->failPromotion($orderId, $razorpayData, $razorpayPaymentId, $paymentDoneBy, 'Terra Wallet Plugin is not active');
-                    }
+                    // Plugin and balance already checked in pass 1
                     $viaWalletAmount = $promotion['value'] / 100;
-                    $walletBalance = woo_wallet()->wallet->get_wallet_balance($order->get_user_id(), 'edit');
-                    if ($walletBalance < $viaWalletAmount)
-                    {
-                            return $this->failPromotion($orderId, $razorpayData, $razorpayPaymentId, $paymentDoneBy, 'Terra Wallet Insufficient Balance');
-                    }
                     $this->addTerraWalletAmountAsPartialPaymentFee($viaWalletAmount, $order);
                     woo_wallet()->wallet->wallet_partial_payment($orderId);
                     $terraWalletTransactionID = get_post_meta($orderId, '_partial_pay_through_wallet_compleate', true);
@@ -3175,8 +3206,13 @@ EOT;
                 }
 
             }
-            $order->update_meta_data(self::PROMOTIONS_APPLIED_META, 1);
-            $order->save();
+
+            // Only orders that had promotions need the idempotency marker
+            if (empty($razorpayData['promotions']) === false)
+            {
+                $order->update_meta_data(self::PROMOTIONS_APPLIED_META, 1);
+                $order->save();
+            }
 
             return $rzpGiftAndCouponAmount;
         }
