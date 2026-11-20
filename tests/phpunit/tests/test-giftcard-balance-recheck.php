@@ -48,11 +48,40 @@ if (class_exists('YITH_YWGC_Gift_Card') === false)
     }
 }
 
+if (function_exists('woo_wallet') === false)
+{
+    /**
+     * Minimal Terra Wallet (woo-wallet) stand-in; the balance is driven through $GLOBALS.
+     */
+    function woo_wallet()
+    {
+        $wallet = new class
+        {
+            public function get_wallet_balance($userId, $context = 'view')
+            {
+                return isset($GLOBALS['rzp_test_woo_wallet_balance']) ? $GLOBALS['rzp_test_woo_wallet_balance'] : 0;
+            }
+        };
+
+        return (object) array('wallet' => $wallet);
+    }
+}
+
 class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
 {
+    // Verifies once()/never() expectations and counts them as assertions
+    use \Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+
     private $instance;
 
     private $guardOn = true;
+
+    // Current runRefund() stubs; the Mockery expectations are registered once and read these
+    private $refundApi = null;
+
+    private $refundNotices = array();
+
+    private $refundMocksRegistered = false;
 
     public function setUp(): void
     {
@@ -69,6 +98,12 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
 
         YITH_YWGC_Gift_Card::$updatedBalance = null;
         YITH_YWGC_Gift_Card::$fixture        = array('exists' => true, 'balance' => 0, 'id' => 0);
+
+        $this->refundApi             = null;
+        $this->refundNotices         = array();
+        $this->refundMocksRegistered = false;
+
+        $GLOBALS['rzp_test_woo_wallet_balance'] = 0;
     }
 
     public function tearDown(): void
@@ -330,19 +365,34 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
             }
         };
 
-        $api = (object) array('payment' => $payment);
-
-        $tracker = Mockery::mock('stdClass');
-        $tracker->shouldReceive('rzpTrackDataLake')->andReturn(null);
-
-        $notices = array();
-
-        $this->instance->shouldReceive('getRazorpayApiInstance')->andReturn($api);
-        $this->instance->shouldReceive('newTrackPluginInstrumentation')->andReturn($tracker);
-        $this->instance->shouldReceive('add_notice')->andReturnUsing(function ($message, $type = 'notice') use (&$notices)
+        // wc_create_refund() rejects a refund larger than the order total, so give the order room for it
+        if ((float) $order->get_total() < 1000)
         {
-            $notices[] = array($message, $type);
-        });
+            $order->set_total(1000);
+            $order->save();
+        }
+
+        $this->refundApi     = (object) array('payment' => $payment);
+        $this->refundNotices = array();
+
+        // Register once: Mockery keeps matching the first expectation, so a second registration would be ignored
+        if ($this->refundMocksRegistered === false)
+        {
+            $tracker = Mockery::mock('stdClass');
+            $tracker->shouldReceive('rzpTrackDataLake')->andReturn(null);
+
+            $this->instance->shouldReceive('getRazorpayApiInstance')->andReturnUsing(function ()
+            {
+                return $this->refundApi;
+            });
+            $this->instance->shouldReceive('newTrackPluginInstrumentation')->andReturn($tracker);
+            $this->instance->shouldReceive('add_notice')->andReturnUsing(function ($message, $type = 'notice')
+            {
+                $this->refundNotices[] = array($message, $type);
+            });
+
+            $this->refundMocksRegistered = true;
+        }
 
         if ($interactive === false)
         {
@@ -367,7 +417,7 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
 
         remove_filter('wp_doing_cron', '__return_true');
 
-        return array(wc_get_order($order->get_id()), $calls, $notices);
+        return array(wc_get_order($order->get_id()), $calls, $this->refundNotices);
     }
 
     private function noteText($order)
