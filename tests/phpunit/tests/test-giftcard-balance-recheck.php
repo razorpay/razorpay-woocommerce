@@ -338,6 +338,7 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
         $this->assertNotNull($this->failure(array($this->giftCard('GC1', 30000))));
     }
 
+    // Older YITH versions can return a trashed card; current YITH does not find it at all (covered by the missing-card test)
     public function testYithTrashedCardFails()
     {
         $this->yithCard(true, 500, 'trash');
@@ -606,6 +607,78 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
         }
     }
 
+    public function testSecondBlockOnAlreadyBlockedOrderTakesNoAction()
+    {
+        $order = $this->pendingOrder();
+        $this->blockFlag($order);
+        $order->update_status('cancelled');
+        $payment = $this->payment();
+
+        // Run as the browser callback so the shopper message is observable
+        $this->instance->shouldReceive('add_notice')->once()
+            ->with('Your gift card balance was insufficient, so your order could not be placed. Any amount charged will be refunded.', 'error');
+        add_filter('wp_redirect', function ($location)
+        {
+            throw new RuntimeException('redirect:' . $location);
+        });
+        remove_all_actions('woocommerce_api_razorpay');
+        add_action('woocommerce_api_razorpay', function () use ($order, $payment)
+        {
+            $this->block($order, $payment);
+        });
+
+        try
+        {
+            do_action('woocommerce_api_razorpay');
+            $this->fail('expected a redirect');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->assertEquals('redirect:' . wc_get_cart_url(), $e->getMessage());
+        }
+
+        $fresh = wc_get_order($order->get_id());
+        $this->assertCount(0, $payment->refunds);
+        $this->assertEquals('cancelled', $fresh->get_status());
+        $this->assertStringContainsString('already blocked, no action taken', $this->noteText($fresh));
+        $this->assertStringNotContainsString('check in the Razorpay Dashboard', $this->noteText($fresh));
+    }
+
+    public function testSecondBlockWhileFirstStillPendingAsksMerchantToCheck()
+    {
+        $order = $this->pendingOrder();
+        $this->blockFlag($order); // the first run flagged it but has not settled it (still pending)
+        $payment = $this->payment();
+
+        $fresh = $this->block($order, $payment);
+
+        $this->assertCount(0, $payment->refunds);
+        $this->assertEquals('pending', $fresh->get_status());
+        $this->assertStringContainsString('check in the Razorpay Dashboard that payment pay_X was refunded', $this->noteText($fresh));
+    }
+
+    public function testRefundFailureHoldsTheOrderBeforeTelemetry()
+    {
+        $order                 = $this->pendingOrder();
+        $payment               = $this->payment();
+        $payment->throwMessage = 'gateway timeout';
+        $statusAtTelemetry     = null;
+        $notesAtTelemetry      = '';
+
+        $tracker = Mockery::mock('stdClass');
+        $tracker->shouldReceive('rzpTrackDataLake')->once()->andReturnUsing(function () use ($order, &$statusAtTelemetry, &$notesAtTelemetry)
+        {
+            $statusAtTelemetry = wc_get_order($order->get_id())->get_status();
+            $notesAtTelemetry  = $this->noteText($order);
+        });
+        $this->instance->shouldReceive('newTrackPluginInstrumentation')->andReturn($tracker);
+
+        $this->block($order, $payment);
+
+        $this->assertEquals('on-hold', $statusAtTelemetry);
+        $this->assertStringContainsString('Automatic refund of payment pay_X failed', $notesAtTelemetry);
+    }
+
     public function testBrowserCallbackGetsNoticeAndCartRedirect()
     {
         $order = $this->pendingOrder();
@@ -681,7 +754,10 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
         $order = $this->pendingOrder();
         $this->stubApi(array($this->giftCard('GC1', 30000)), $this->payment());
 
-        $this->instance->shouldReceive('handlePromotions')->once()->andReturn(30000);
+        $fetched = array('promotions' => array($this->giftCard('GC1', 30000)), 'notes' => array(), 'line_items_total' => 0, 'shipping_fee' => 0);
+        $this->instance->shouldReceive('handlePromotions')->once()
+            ->with($fetched, Mockery::type('WC_Order'), $order->get_id(), 'pay_X')
+            ->andReturn(30000);
 
         $this->assertNotFalse($this->instance->update1ccOrderWC($order, $order->get_id(), 'pay_X'));
         $this->assertSame('', wc_get_order($order->get_id())->get_meta(WC_Razorpay::GIFTCARD_BLOCKED_META));

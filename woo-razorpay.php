@@ -2754,6 +2754,7 @@ EOT;
             {
                 $card = new YITH_YWGC_Gift_Card(array('gift_card_number' => $code));
 
+                // Current YITH only finds published cards; the trash check covers older versions
                 if ($card->exists() === false || get_post_status($card->ID) === 'trash')
                 {
                     return null;
@@ -2784,20 +2785,13 @@ EOT;
         }
 
         /**
-         * Stop a gift card order that failed the re-check. The flag is written first, so nothing can complete
-         * the order even if a later step dies. Browser callback: notice + cart redirect + exit; otherwise returns.
+         * Move the money and status of a just-blocked gift card order. True when it ends cancelled
+         * (refunded or nothing to refund), false when it is left for the merchant to review.
          */
-        protected function blockGiftCardOrder($orderId, $payment, $failure)
+        protected function settleBlockedGiftCardOrder($order, $payment)
         {
-            $order     = wc_get_order($orderId);
+            $orderId   = $order->get_id();
             $paymentId = $payment['id'];
-
-            $order->update_meta_data(self::GIFTCARD_BLOCKED_META, $failure);
-            $order->add_order_note("Gift card check after payment failed: $failure. Order blocked.");
-            $order->save();
-
-            $cancelledMessage = 'Your gift card balance was insufficient, so your order could not be placed. Any amount charged will be refunded.';
-            $reviewMessage    = 'There is a problem with the gift card on your order. The store will contact you.';
 
             if ($order->has_status(array('pending', 'failed', 'cancelled', 'checkout-draft', 'draft')) === false)
             {
@@ -2813,66 +2807,99 @@ EOT;
                     $order->add_order_note($note);
                 }
 
-                $message = $reviewMessage;
+                return false;
+            }
+
+            // Paise actually held by Razorpay for this payment (already reflects offers, coupons, shipping, tax, COD fee)
+            $refundable = (int) $payment['amount'] - (int) ($payment['amount_refunded'] ?? 0);
+
+            if ($payment['method'] === 'cod')
+            {
+                $note = 'Cash on delivery: nothing to refund.';
+            }
+            else if ($payment['status'] === 'authorized' && $this->getSetting('payment_action') === self::AUTHORIZE)
+            {
+                $note = "Payment $paymentId is only authorized: do not capture it.";
+            }
+            else if ($refundable <= 0)
+            {
+                $note = "Payment $paymentId is already refunded.";
             }
             else
             {
-                // Paise actually held by Razorpay for this payment (already reflects offers, coupons, shipping, tax, COD fee)
-                $refundable = (int) $payment['amount'] - (int) ($payment['amount_refunded'] ?? 0);
-                $holdNote   = null;
+                try
+                {
+                    $refund = $payment->refund(array(
+                        'amount' => $refundable,
+                        'notes'  => array(
+                            'reason'              => 'Gift card balance insufficient',
+                            'order_id'            => $orderId,
+                            'refund_from_website' => true,
+                            'source'              => 'woocommerce',
+                        ),
+                    ));
 
-                if ($payment['method'] === 'cod')
-                {
-                    $note = 'Cash on delivery: nothing to refund.';
+                    $note = "Payment $paymentId refunded (Refund Id: {$refund->id}).";
                 }
-                else if ($payment['status'] === 'authorized' && $this->getSetting('payment_action') === self::AUTHORIZE)
+                catch (Throwable $e)
                 {
-                    $note = "Payment $paymentId is only authorized: do not capture it.";
-                }
-                else if ($refundable <= 0)
-                {
-                    $note = "Payment $paymentId is already refunded.";
-                }
-                else
-                {
-                    try
-                    {
-                        $refund = $payment->refund(array(
-                            'amount' => $refundable,
-                            'notes'  => array(
-                                'reason'              => 'Gift card balance insufficient',
-                                'order_id'            => $orderId,
-                                'refund_from_website' => true,
-                                'source'              => 'woocommerce',
-                            ),
-                        ));
+                    rzpLogError("Gift card refund failed for orderId: $orderId payment: $paymentId: " . $e->getMessage());
 
-                        $note = "Payment $paymentId refunded (Refund Id: {$refund->id}).";
-                    }
-                    catch (Throwable $e)
-                    {
-                        rzpLogError("Gift card refund failed for orderId: $orderId payment: $paymentId: " . $e->getMessage());
-                        $this->newTrackPluginInstrumentation()->rzpTrackDataLake('razorpay.refund.with.giftcard.failed', array('error' => $e->getMessage()));
+                    // Note and hold first: on-hold hooks run before WC's own transition note (and drafts get none),
+                    // and the telemetry call below is synchronous and slow, so the request may not survive it
+                    $order->add_order_note("Automatic refund of payment $paymentId failed: " . $e->getMessage() . ' Refund it from the Razorpay Dashboard if it has not already been refunded.');
+                    $order->update_status('on-hold');
+                    $this->newTrackPluginInstrumentation()->rzpTrackDataLake('razorpay.refund.with.giftcard.failed', array('error' => $e->getMessage()));
 
-                        $holdNote = "Automatic refund of payment $paymentId failed: " . $e->getMessage() . ' Refund it from the Razorpay Dashboard if it has not already been refunded.';
-                    }
-                }
-
-                if ($holdNote !== null)
-                {
-                    $order->update_status('on-hold', $holdNote);
-                    $message = $reviewMessage;
-                }
-                else
-                {
-                    // update_status() only adds its note on a status change, and the order may already be cancelled
-                    $order->add_order_note($note);
-                    $order->update_status('cancelled');
-                    $message = $cancelledMessage;
+                    return false;
                 }
             }
 
-            rzpLogInfo("Gift card order blocked, orderId: $orderId, payment: $paymentId, reason: $failure");
+            // update_status() only adds its note on a status change, and the order may already be cancelled
+            $order->add_order_note($note);
+            $order->update_status('cancelled');
+
+            return true;
+        }
+
+        /**
+         * Stop a gift card order that failed the re-check. The flag is written first, so nothing can complete
+         * the order even if a later step dies. Browser callback: notice + cart redirect + exit; otherwise returns.
+         */
+        protected function blockGiftCardOrder($orderId, $payment, $failure)
+        {
+            $order     = wc_get_order($orderId);
+            $paymentId = $payment['id'];
+
+            $cancelledMessage = 'Your gift card balance was insufficient, so your order could not be placed. Any amount charged will be refunded.';
+            $reviewMessage    = 'There is a problem with the gift card on your order. The store will contact you.';
+
+            if ($this->isGiftCardOrderBlocked($order))
+            {
+                // A concurrent run already blocked it and handles the money: act once only
+                $note = "Gift card check failed again for payment $paymentId; the order was already blocked, no action taken.";
+
+                if ($order->has_status(array('pending', 'failed', 'checkout-draft', 'draft')))
+                {
+                    // The other run may still be refunding, or may have died before it could
+                    $note .= " If the order stays '{$order->get_status()}', check in the Razorpay Dashboard that payment $paymentId was refunded.";
+                }
+
+                $order->add_order_note($note);
+                $message = $order->has_status('cancelled') ? $cancelledMessage : $reviewMessage;
+
+                rzpLogInfo("Gift card order already blocked, orderId: $orderId, payment: $paymentId");
+            }
+            else
+            {
+                $order->update_meta_data(self::GIFTCARD_BLOCKED_META, $failure);
+                $order->add_order_note("Gift card check after payment failed: $failure. Order blocked.");
+                $order->save();
+
+                $message = $this->settleBlockedGiftCardOrder($order, $payment) ? $cancelledMessage : $reviewMessage;
+
+                rzpLogInfo("Gift card order blocked, orderId: $orderId, payment: $paymentId, reason: $failure");
+            }
 
             // Only the browser callback has a shopper session to show a notice and redirect
             if (doing_action('woocommerce_api_' . $this->id))
