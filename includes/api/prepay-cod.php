@@ -82,6 +82,12 @@ function prepayCODOrder(WP_REST_Request $request): WP_REST_Response {
             return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
         }
 
+        // PLUG-04: an order blocked by the gift card check must not be paid and completed through prepay
+        if ($wcRazorpay->isGiftCardOrderBlocked($order))
+        {
+            return new WP_REST_Response(['code' => 'woocommerce_order_gift_card_blocked'], 400);
+        }
+
         $order->set_status('pending');
         $order->save();
         $couponInput = [];
@@ -120,11 +126,6 @@ function prepayCODOrder(WP_REST_Request $request): WP_REST_Response {
         }
         $order->set_payment_method($wcRazorpay->id);
         $order->set_payment_method_title($wcRazorpay->title);
-        // Defense-in-depth: never complete an order flagged after a gift card shortfall refund
-        if ($wcRazorpay->isGiftCardFlagged($order))
-        {
-            return new WP_REST_Response(['error' => 'Order flagged after gift card refund'], 409);
-        }
         $order->payment_complete($razorpayPaymentId);
         $order->set_status("processing");
         $order->save();
