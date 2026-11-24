@@ -389,6 +389,15 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
         $this->assertNotNull($this->failure(array($this->giftCard('GC1', 6000), $this->giftCard('GC1', 6000))));
     }
 
+    public function testSameCardInDifferentCaseOrSpacingIsOneCard()
+    {
+        $this->yithCard(true, 200);
+
+        $this->assertNotNull($this->failure(array($this->giftCard('ABCD', 15000), $this->giftCard('abcd', 15000))));
+        $this->assertNotNull($this->failure(array($this->giftCard('ABCD', 15000), $this->giftCard(' abcd ', 15000))));
+        $this->assertNull($this->failure(array($this->giftCard('ABCD', 10000), $this->giftCard('abcd', 10000))));
+    }
+
     public function testSecondCardInvalidFailsTheOrder()
     {
         $this->pimwickCard(array('500.0000'));
@@ -708,6 +717,76 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
         $this->assertEquals('cancelled', wc_get_order($order->get_id())->get_status());
     }
 
+    public function testBlockedOrderRedirectShowsTheMessageForItsStatus()
+    {
+        add_filter('wp_redirect', function ($location)
+        {
+            throw new RuntimeException('redirect:' . $location);
+        });
+
+        $cases = array(
+            'cancelled' => 'Your gift card balance was insufficient, so your order could not be placed. Any amount charged will be refunded.',
+            'on-hold'   => 'There is a problem with the gift card on your order. The store will contact you.',
+        );
+
+        foreach ($cases as $status => $message)
+        {
+            $order = $this->pendingOrder();
+            $order->update_status($status);
+
+            $this->instance->shouldReceive('add_notice')->once()->with($message, 'error');
+
+            try
+            {
+                $this->callProtected('redirectBlockedGiftCardShopper', array(wc_get_order($order->get_id())));
+                $this->fail('expected a redirect');
+            }
+            catch (RuntimeException $e)
+            {
+                $this->assertEquals('redirect:' . wc_get_cart_url(), $e->getMessage());
+            }
+        }
+    }
+
+    public function testLateCallbackOnBlockedOrderGoesToCartNotThankYouPage()
+    {
+        add_filter('wp_redirect', function ($location)
+        {
+            throw new RuntimeException('redirect:' . $location);
+        });
+
+        // Blocked earlier (for example by the webhook cron): cart with notice
+        $blocked = $this->pendingOrder();
+        $this->blockFlag($blocked);
+        $blocked->update_status('cancelled');
+        $this->instance->shouldReceive('add_notice')->once()
+            ->with('Your gift card balance was insufficient, so your order could not be placed. Any amount charged will be refunded.', 'error');
+
+        try
+        {
+            $this->callProtected('redirectUser', array(wc_get_order($blocked->get_id())));
+            $this->fail('expected a redirect');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->assertEquals('redirect:' . wc_get_cart_url(), $e->getMessage());
+        }
+
+        // Not blocked: thank-you page as before
+        $placed = $this->pendingOrder();
+        $placed->update_status('processing');
+
+        try
+        {
+            $this->callProtected('redirectUser', array(wc_get_order($placed->get_id())));
+            $this->fail('expected a redirect');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->assertStringContainsString('order-received', $e->getMessage());
+        }
+    }
+
     public function testWebhookOrCronGetsNoNoticeAndNoRedirect()
     {
         $order = $this->pendingOrder();
@@ -778,6 +857,84 @@ class Test_GiftCardBalanceRecheck extends WP_UnitTestCase
         $this->assertEquals('cancelled', $fresh->get_status());
         $this->assertCount(1, $payment->refunds);
         $this->assertStringContainsString('cannot cover', $fresh->get_meta(WC_Razorpay::GIFTCARD_BLOCKED_META));
+    }
+
+    public function testShortCardIsBlockedBeforeTheAddressStep()
+    {
+        $this->yithCard(true, 100);
+        $order = $this->pendingOrder();
+        $this->stubApi(array($this->giftCard('GC1', 30000)), $this->payment());
+
+        // The address step can throw (for example on an email WordPress rejects), so the check must come first
+        $this->instance->shouldReceive('updateOrderAddress')->never();
+        $this->instance->shouldReceive('handlePromotions')->never();
+
+        $this->assertFalse($this->instance->update1ccOrderWC($order, $order->get_id(), 'pay_X'));
+        $this->assertStringContainsString('cannot cover', wc_get_order($order->get_id())->get_meta(WC_Razorpay::GIFTCARD_BLOCKED_META));
+    }
+
+    public function testUpdateFailingAfterAPassingCheckBlocksInsteadOfCompleting()
+    {
+        $this->yithCard(true, 500);
+        $order   = $this->pendingOrder();
+        $payment = $this->payment();
+        $this->enable1cc($order);
+        $this->stubApi(array($this->giftCard('GC1', 30000)), $payment);
+
+        // The card passes, then the address step throws before the card is debited
+        $this->instance->shouldReceive('updateOrderAddress')->once()
+            ->andThrow(new WC_Data_Exception('order_invalid_billing_email', 'Invalid billing email address'));
+        $this->instance->shouldReceive('handlePromotions')->never();
+
+        $this->instance->updateOrder($order, true, '', 'pay_X', null, true);
+
+        $fresh = wc_get_order($order->get_id());
+        $this->assertEquals('cancelled', $fresh->get_status());
+        $this->assertCount(1, $payment->refunds);
+        $this->assertStringContainsString('before any gift card or wallet debit', $fresh->get_meta(WC_Razorpay::GIFTCARD_BLOCKED_META));
+        $this->assertStringNotContainsString('Razorpay payment successful', $this->noteText($fresh));
+    }
+
+    public function testFailureInsidePromotionsBeforeAnyDebitBlocks()
+    {
+        $this->pimwickCard(array('500.0000'));
+        $order   = $this->pendingOrder();
+        $payment = $this->payment();
+        $this->enable1cc($order);
+        $coupon = array('type' => 'coupon', 'code' => 'SAVE10', 'value' => 1000);
+        $this->stubApi(array($coupon, $this->giftCard('GC1', 30000)), $payment);
+
+        // The coupon runs first and throws, so the card is never debited
+        $this->instance->shouldReceive('applyCoupon')->once()->andThrow(new Exception('coupon failed'));
+        $this->instance->shouldReceive('debitGiftCards')->never();
+
+        $this->instance->updateOrder($order, true, '', 'pay_X', null, true);
+
+        $fresh = wc_get_order($order->get_id());
+        $this->assertEquals('cancelled', $fresh->get_status());
+        $this->assertCount(1, $payment->refunds);
+        $this->assertStringContainsString('before any gift card or wallet debit', $fresh->get_meta(WC_Razorpay::GIFTCARD_BLOCKED_META));
+    }
+
+    public function testFailureAfterTheDebitStartedCompletesLikeBefore()
+    {
+        $this->pimwickCard(array('500.0000'));
+        $order   = $this->pendingOrder();
+        $payment = $this->payment();
+        $this->enable1cc($order);
+        $coupon = array('type' => 'coupon', 'code' => 'SAVE10', 'value' => 1000);
+        $this->stubApi(array($this->giftCard('GC1', 30000), $coupon), $payment);
+
+        // The card is debited, then the coupon throws: refunding now would leave the shopper without the debited balance
+        $this->instance->shouldReceive('debitGiftCards')->once();
+        $this->instance->shouldReceive('applyCoupon')->once()->andThrow(new Exception('coupon failed'));
+
+        $this->instance->updateOrder($order, true, '', 'pay_X', null, true);
+
+        $fresh = wc_get_order($order->get_id());
+        $this->assertCount(0, $payment->refunds);
+        $this->assertSame('', $fresh->get_meta(WC_Razorpay::GIFTCARD_BLOCKED_META));
+        $this->assertStringContainsString('Razorpay payment successful', $this->noteText($fresh));
     }
 
     public function testExceptionInTheCheckBlocksTheOrder()
