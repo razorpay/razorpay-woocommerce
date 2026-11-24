@@ -269,6 +269,9 @@ function readCartCB($wcOrderId)
         $productQuantity       = $product['quantity'];
         $productVariationPrice = '';
         $productTax            = '';
+        $variationAttributes   = array();
+        $productVariationID    = '';
+        $productAttributes     = '';
 
         if (isset($product['line_total'])) {
             $productVariationPrice = $product['line_total'];
@@ -279,17 +282,31 @@ function readCartCB($wcOrderId)
             $productTax = $product['line_tax'];
         }
 
-        // Handling product variations
-        if ($product['variation_id']) {
-            //If user has chosen a variation
-            $singleVariation = new WC_Product_Variation($product['variation_id']);
+        if (CARTBOUNTY_VERSION_NUMBER >= '8.0.1')
+        {
+            //Handling product variations
+            if( isset( $product['variation'] ) ){
+                if( is_array( $product['variation'] ) ){
+                    foreach( $product['variation'] as $key => $variation ){
+                        $variationAttributes[$key] = $variation;
+                    }
+                }
+            }
+            if( isset( $product['variation_id'] ) ){ //If user has chosen a variation
+                $productVariationID = $product['variation_id'];
+                $productAttributes = $cartbountyPublic->get_attribute_names( $variationAttributes, $product['product_id'] );
+            }
 
-            //Handling variable product title output with attributes
-            $productAttributes  = $cartbountyPublic->attribute_slug_to_title($singleVariation->get_variation_attributes());
-            $productVariationID = $product['variation_id'];
         } else {
-            $productAttributes  = false;
-            $productVariationID = '';
+            // Handling product variations
+            if ($product['variation_id']) {
+                //If user has chosen a variation
+                $singleVariation = new WC_Product_Variation($product['variation_id']);
+
+                //Handling variable product title output with attributes
+                $productAttributes = $cartbountyPublic->attribute_slug_to_title($singleVariation->get_variation_attributes());
+                $productVariationID = $product['variation_id'];
+            }
         }
 
         $productData = array(
@@ -300,6 +317,11 @@ function readCartCB($wcOrderId)
             'product_variation_price' => $productVariationPrice,
             'product_tax'             => $productTax,
         );
+
+        if (CARTBOUNTY_VERSION_NUMBER >= '8.0.1')
+        {
+            $productData['product_variation_attributes'] = $variationAttributes;
+        }
 
         $productArray[] = $productData;
     }
