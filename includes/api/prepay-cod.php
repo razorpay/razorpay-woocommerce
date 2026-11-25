@@ -82,6 +82,12 @@ function prepayCODOrder(WP_REST_Request $request): WP_REST_Response {
             return new WP_REST_Response(['code' => 'woocommerce_order_not_in_on_hold_status'], 400);
         }
 
+        // PLUG-04: an order blocked by the gift card check must not be paid and completed through prepay
+        if ($wcRazorpay->isGiftCardOrderBlocked($order))
+        {
+            return new WP_REST_Response(['code' => 'woocommerce_order_gift_card_blocked'], 400);
+        }
+
         $order->set_status('pending');
         $order->save();
         $couponInput = [];

@@ -267,6 +267,13 @@ function addMagicCheckoutSettingFields(&$defaultFormFields)
             'label'      =>  __('Allow customers to create store Account'),
             'default' => 'No',
         ),
+        'giftcard_balance_guard'        => array(
+            'title'       => __('Gift card balance check'),
+            'type'        => 'checkbox',
+            'description' => 'Re-checks gift card balances after payment. If a card can no longer cover the order, the order is not completed and the payment is refunded. Keep this enabled; turn it off only if Razorpay support asks you to.',
+            'label'       => __('Check gift card balance after payment'),
+            'default'     => 'yes',
+        ),
     );
 
     $defaultFormFields = array_merge($defaultFormFields, $magicCheckoutConfigFields);

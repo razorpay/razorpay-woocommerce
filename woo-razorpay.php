@@ -3,8 +3,8 @@
  * Plugin Name: 1 Razorpay
  * Plugin URI: https://razorpay.com
  * Description: Razorpay Payment Gateway Integration for WooCommerce.Razorpay Welcome Back Offer: New to Razorpay? Sign up to enjoy FREE payments* of INR 2 lakh till March 31st! Transact before January 10th to grab the offer.
- * Version: 4.8.9
- * Stable tag: 4.8.9
+ * Version: 4.8.10
+ * Stable tag: 4.8.10
  * Author: Team Razorpay
  * WC tested up to: 10.6.2
  * Author URI: https://razorpay.com
@@ -396,6 +396,7 @@ function woocommerce_razorpay_init()
                 '1cc_min_cart_amount',
                 '1cc_min_COD_slab_amount',
                 '1cc_max_COD_slab_amount',
+                'giftcard_balance_guard',
               ));
 
               if ($isAccCreationAvailable) {
@@ -2196,6 +2197,13 @@ EOT;
 
         protected function redirectUser($order)
         {
+            // PLUG-04: an order the gift card check blocked (for example by the webhook cron, before this callback)
+            // was not placed, so the shopper goes to the cart with a notice, not to the thank-you page
+            if ($this->isGiftCardOrderBlocked($order))
+            {
+                $this->redirectBlockedGiftCardShopper($order);
+            }
+
             $redirectUrl = $this->get_return_url($order);
 
             wp_redirect($redirectUrl);
@@ -2284,6 +2292,14 @@ EOT;
 
                 rzpLogInfo("updateOrder orderId: $orderId , razorpayPaymentId: $razorpayPaymentId , success: $success");
 
+                // PLUG-04: an order blocked by the gift card check is never completed or failed, whichever path calls this
+                if ($this->isGiftCardOrderBlocked(wc_get_order($orderId)))
+                {
+                    rzpLogInfo("updateOrder: orderId $orderId is blocked by the gift card check, not processing");
+
+                    return;
+                }
+
                 if ($success === true)
                 {
                     try
@@ -2305,13 +2321,34 @@ EOT;
                             {
                                 rzpLogInfo("Order details update initiated step 2 for the orderId: $orderId");
 
-                                $this->update1ccOrderWC($order, $orderId, $razorpayPaymentId);
+                                // false only when the gift card check blocked the order (PLUG-04)
+                                if ($this->update1ccOrderWC($order, $orderId, $razorpayPaymentId) === false)
+                                {
+                                    return;
+                                }
                             }
 
                         }
                     } catch (Exception $e) {
                         $message = $e->getMessage();
                         rzpLogError("Failed to update 1cc flow with error : $message");
+
+                        // PLUG-04: a checked gift card order whose update failed before any gift card or wallet debit
+                        // must not be completed below, or the card keeps its balance and can be spent again. Once a
+                        // debit has started, it completes as before so the shopper does not lose the debited balance.
+                        if ($this->giftCardCheckedOrderId === (int) $orderId && $this->giftCardDebitStartedOrderId !== (int) $orderId)
+                        {
+                            $payment = $this->getRazorpayApiInstance()->payment->fetch($razorpayPaymentId);
+                            $this->blockGiftCardOrder($orderId, $payment, "order update failed before any gift card or wallet debit: $message");
+
+                            return;
+                        }
+                    }
+
+                    // PLUG-04: a concurrent run may have blocked this gift card order while this one was processing it
+                    if ($this->giftCardCheckedOrderId === (int) $orderId && $this->isGiftCardOrderBlocked(wc_get_order($orderId)))
+                    {
+                        return;
                     }
 
                     $payment_method=$order->get_payment_method();
@@ -2412,6 +2449,31 @@ EOT;
             }
 
             $razorpayData = $api->order->fetch($razorpayOrderId);
+
+            // PLUG-04: orders with a gift card re-check balances first. Anything below can throw (for example an email
+            // that WordPress rejects), and updateOrder then completes the order without running promotions. On failure
+            // the order is blocked and nothing below runs. Orders without a gift card continue unchanged.
+            if ($this->isGiftCardGuardEnabled() && $this->hasGiftCardPromotion($razorpayData))
+            {
+                $this->giftCardCheckedOrderId = (int) $wcOrderId;
+
+                try
+                {
+                    $giftCardFailure = $this->giftCardPromotionFailure($razorpayData, $order);
+                }
+                catch (Throwable $e)
+                {
+                    // Fail closed: if the check itself breaks, the card was not verified
+                    $giftCardFailure = 'gift card check error: ' . $e->getMessage();
+                }
+
+                if ($giftCardFailure !== null)
+                {
+                    $this->blockGiftCardOrder($wcOrderId, $api->payment->fetch($razorpayPaymentId), $giftCardFailure);
+
+                    return false;
+                }
+            }
 
             $this->UpdateOrderAddress($razorpayData, $order);
 
@@ -2623,6 +2685,267 @@ EOT;
             }
         }
 
+        // PLUG-04 (gift card double spend): set on orders blocked by the post-payment gift card re-check
+        const GIFTCARD_BLOCKED_META = '_rzp_giftcard_blocked';
+
+        // Order id whose gift card promotions this request checked; used by the pre-completion re-check
+        protected $giftCardCheckedOrderId = null;
+
+        // Order id whose gift card or wallet debits this request started
+        protected $giftCardDebitStartedOrderId = null;
+
+        // Kill switch: on unless the merchant explicitly set it to 'no'
+        public function isGiftCardGuardEnabled()
+        {
+            return $this->getSetting('giftcard_balance_guard') !== 'no';
+        }
+
+        // A blocked order is never completed or failed later. Ignores the kill switch: the meta only exists if the guard was on.
+        public function isGiftCardOrderBlocked($order)
+        {
+            return $order && $order->get_meta(self::GIFTCARD_BLOCKED_META) !== '';
+        }
+
+        protected function hasGiftCardPromotion($razorpayData)
+        {
+            foreach ($razorpayData['promotions'] ?? array() as $promotion)
+            {
+                if (($promotion['type'] ?? null) === 'gift_card')
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * Why the gift card (and Terra wallet) promotions can no longer be honoured, or null. Compared in paise against
+         * each card's total use; the wallet is checked here so a wallet failure cannot follow a card debit.
+         */
+        protected function giftCardPromotionFailure($razorpayData, $order)
+        {
+            $cards       = array();
+            $walletPaise = 0;
+
+            foreach ($razorpayData['promotions'] as $promotion)
+            {
+                if ($promotion['type'] === 'gift_card')
+                {
+                    // Card lookups ignore case, so "ABCD" and "abcd" are one card: sum them together
+                    $code = (string) $promotion['code'];
+                    $key  = strtoupper(trim($code));
+
+                    $cards[$key]['code']  = $cards[$key]['code'] ?? $code;
+                    $cards[$key]['paise'] = ($cards[$key]['paise'] ?? 0) + (int) $promotion['value'];
+                }
+                else if ($promotion['type'] === 'terra_wallet')
+                {
+                    $walletPaise += (int) $promotion['value'];
+                }
+            }
+
+            foreach ($cards as $card)
+            {
+                if ($this->isBalanceInsufficient($this->giftCardBalance($card['code']), $card['paise']))
+                {
+                    // Card codes are bearer values: keep only the last 4 characters in notes and logs
+                    return 'gift card ending ' . substr($card['code'], -4) . ' cannot cover ' . ($card['paise'] / 100);
+                }
+            }
+
+            if ($walletPaise > 0)
+            {
+                if (is_plugin_active('woo-wallet/woo-wallet.php') === false)
+                {
+                    return 'Terra Wallet plugin is not active';
+                }
+
+                // Same comparison as the wallet step in handlePromotions, so we never pass what it would then reject
+                if (woo_wallet()->wallet->get_wallet_balance($order->get_user_id(), 'edit') < $walletPaise / 100)
+                {
+                    return 'Terra Wallet balance cannot cover ' . ($walletPaise / 100);
+                }
+            }
+
+            return null;
+        }
+
+        // Balance of a usable gift card in store currency, else null. Same plugin precedence and rules as giftcard/apply.
+        protected function giftCardBalance($code)
+        {
+            global $wpdb;
+
+            if (is_plugin_active('yith-woocommerce-gift-cards/init.php'))
+            {
+                $card = new YITH_YWGC_Gift_Card(array('gift_card_number' => $code));
+
+                // Current YITH only finds published cards; the trash check covers older versions
+                if ($card->exists() === false || get_post_status($card->ID) === 'trash')
+                {
+                    return null;
+                }
+
+                return $card->get_balance();
+            }
+
+            if (is_plugin_active('pw-woocommerce-gift-cards/pw-gift-cards.php'))
+            {
+                $card = $wpdb->get_row($wpdb->prepare("SELECT * FROM `{$wpdb->pimwick_gift_card}` WHERE `number` = %s AND `active` = %s", $code, 1));
+
+                if ($card === null)
+                {
+                    return null;
+                }
+
+                return $wpdb->get_var($wpdb->prepare("SELECT SUM(amount) FROM {$wpdb->pimwick_gift_card_activity} WHERE pimwick_gift_card_id = %d", $card->pimwick_gift_card_id));
+            }
+
+            return null;
+        }
+
+        // Balance in store currency; amount in paise
+        protected function isBalanceInsufficient($balance, $paise)
+        {
+            return is_numeric($balance) === false || (int) round((float) $balance * 100) < (int) $paise;
+        }
+
+        /**
+         * Move the money and status of a just-blocked gift card order. True when it ends cancelled
+         * (refunded or nothing to refund), false when it is left for the merchant to review.
+         */
+        protected function settleBlockedGiftCardOrder($order, $payment)
+        {
+            $orderId   = $order->get_id();
+            $paymentId = $payment['id'];
+
+            if ($order->has_status(array('pending', 'failed', 'cancelled', 'checkout-draft', 'draft')) === false)
+            {
+                // Completed by a parallel request (lock-held path): stop shipping, no refund. Other statuses: leave as is.
+                $note = "Order status is '{$order->get_status()}'. Do not ship it; review payment $paymentId and the gift card.";
+
+                if ($order->has_status(array('processing', 'completed')))
+                {
+                    $order->update_status('on-hold', $note);
+                }
+                else
+                {
+                    $order->add_order_note($note);
+                }
+
+                return false;
+            }
+
+            // Paise actually held by Razorpay for this payment (already reflects offers, coupons, shipping, tax, COD fee)
+            $refundable = (int) $payment['amount'] - (int) ($payment['amount_refunded'] ?? 0);
+
+            if ($payment['method'] === 'cod')
+            {
+                $note = 'Cash on delivery: nothing to refund.';
+            }
+            else if ($payment['status'] === 'authorized' && $this->getSetting('payment_action') === self::AUTHORIZE)
+            {
+                $note = "Payment $paymentId is only authorized: do not capture it.";
+            }
+            else if ($refundable <= 0)
+            {
+                $note = "Payment $paymentId is already refunded.";
+            }
+            else
+            {
+                try
+                {
+                    $refund = $payment->refund(array(
+                        'amount' => $refundable,
+                        'notes'  => array(
+                            'reason'              => 'Gift card balance insufficient',
+                            'order_id'            => $orderId,
+                            'refund_from_website' => true,
+                            'source'              => 'woocommerce',
+                        ),
+                    ));
+
+                    $note = "Payment $paymentId refunded (Refund Id: {$refund->id}).";
+                }
+                catch (Throwable $e)
+                {
+                    rzpLogError("Gift card refund failed for orderId: $orderId payment: $paymentId: " . $e->getMessage());
+
+                    // Note and hold first: on-hold hooks run before WC's own transition note (and drafts get none),
+                    // and the telemetry call below is synchronous and slow, so the request may not survive it
+                    $order->add_order_note("Automatic refund of payment $paymentId failed: " . $e->getMessage() . ' Refund it from the Razorpay Dashboard if it has not already been refunded.');
+                    $order->update_status('on-hold');
+                    $this->newTrackPluginInstrumentation()->rzpTrackDataLake('razorpay.refund.with.giftcard.failed', array('error' => $e->getMessage()));
+
+                    return false;
+                }
+            }
+
+            // update_status() only adds its note on a status change, and the order may already be cancelled
+            $order->add_order_note($note);
+            $order->update_status('cancelled');
+
+            return true;
+        }
+
+        /**
+         * Stop a gift card order that failed the re-check. The flag is written first, so nothing can complete
+         * the order even if a later step dies. Browser callback: notice + cart redirect + exit; otherwise returns.
+         */
+        protected function blockGiftCardOrder($orderId, $payment, $failure)
+        {
+            $order     = wc_get_order($orderId);
+            $paymentId = $payment['id'];
+
+            if ($this->isGiftCardOrderBlocked($order))
+            {
+                // A concurrent run already blocked it and handles the money: act once only
+                $note = "Gift card check failed again for payment $paymentId; the order was already blocked, no action taken.";
+
+                if ($order->has_status(array('pending', 'failed', 'checkout-draft', 'draft')))
+                {
+                    // The other run may still be refunding, or may have died before it could
+                    $note .= " If the order stays '{$order->get_status()}', check in the Razorpay Dashboard that payment $paymentId was refunded.";
+                }
+
+                $order->add_order_note($note);
+
+                rzpLogInfo("Gift card order already blocked, orderId: $orderId, payment: $paymentId");
+            }
+            else
+            {
+                $order->update_meta_data(self::GIFTCARD_BLOCKED_META, $failure);
+                $order->add_order_note("Gift card check after payment failed: $failure. Order blocked.");
+                $order->save();
+
+                $this->settleBlockedGiftCardOrder($order, $payment);
+
+                rzpLogInfo("Gift card order blocked, orderId: $orderId, payment: $paymentId, reason: $failure");
+            }
+
+            // Only the browser callback has a shopper session to show a notice and redirect
+            if (doing_action('woocommerce_api_' . $this->id))
+            {
+                $this->redirectBlockedGiftCardShopper($order);
+            }
+        }
+
+        /**
+         * Browser callback for a blocked gift card order: tell the shopper and send them to the cart, never to the
+         * thank-you page. Cancelled means the payment was settled (refunded, or nothing to refund); otherwise the
+         * merchant has to review it.
+         */
+        protected function redirectBlockedGiftCardShopper($order)
+        {
+            $message = $order->has_status('cancelled')
+                ? 'Your gift card balance was insufficient, so your order could not be placed. Any amount charged will be refunded.'
+                : 'There is a problem with the gift card on your order. The store will contact you.';
+
+            $this->add_notice($message, 'error');
+            wp_redirect(wc_get_cart_url());
+            exit;
+        }
+
         public function handlePromotions($razorpayData, $order, $orderId, $razorpayPaymentId)
         {
             global $woocommerce;
@@ -2631,6 +2954,12 @@ EOT;
             foreach($razorpayData['promotions'] as $promotion)
             {
                 $rzpGiftAndCouponAmount += $promotion['value'];
+
+                // PLUG-04: from here a balance may be debited, so a later failure in updateOrder no longer blocks the order
+                if (in_array($promotion['type'], array('gift_card', 'terra_wallet'), true))
+                {
+                    $this->giftCardDebitStartedOrderId = (int) $orderId;
+                }
 
                 if($promotion['type'] == 'gift_card'){
 
