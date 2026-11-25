@@ -568,7 +568,7 @@ class OneCCAddressSync
                 ];
                 $addresses[] = $address;
             }
-            catch (Exception $e)
+            catch (Throwable $e)
             {
                 $orderId = method_exists($order, 'get_id') ? $order->get_id() : null;
                 rzpLogError("getAddressFromOrders: failed for order_id=" . $orderId . ", error=" . $e->getMessage());
