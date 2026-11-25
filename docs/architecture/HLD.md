@@ -244,10 +244,10 @@ graph TD
     B -->|Yes| C[Show Magic Checkout Button]
 
     C --> D[Customer clicks 1CC button]
-    D --> E[btn-1cc-checkout.js fires]
+    D --> E[magic-rzp.js fires]
     E --> F[POST /wp-json/1cc/v1/order/create]
 
-    F --> G[checkAuthCredentials]
+    F --> G[rzp1ccCheckRestNonce]
     G --> H[createWcOrder handler]
     H --> I[WC()->checkout()->create_order]
     I --> J[Set status: checkout-draft]

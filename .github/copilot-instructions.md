@@ -142,7 +142,7 @@ register_rest_route(
     [
         'methods'             => 'POST',
         'callback'            => 'myHandlerFunction',
-        'permission_callback' => 'checkAuthCredentials', // or 'checkHmacSignature'
+        'permission_callback' => 'rzp1ccCheckRestNonce', // browser route. Use 'checkHmacSignature' for routes Razorpay servers call. Never 'checkAuthCredentials' (always true)
     ]
 );
 

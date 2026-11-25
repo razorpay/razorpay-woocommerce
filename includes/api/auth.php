@@ -7,8 +7,29 @@
 require_once __DIR__ . '/../../razorpay-sdk/Razorpay.php';
 use Razorpay\Api\Errors;
 
+// Still open: only giftcard/apply uses this until its HMAC guard ships (ISS-1545016).
 function checkAuthCredentials()
 {
+    return true;
+}
+
+/**
+ * Guard for the 1CC routes the shopper's browser calls. The page hands out this nonce in
+ * rzp1ccCheckoutData, so it stops requests forged from another site, not a scripted caller.
+ *
+ * @param WP_REST_Request $request
+ * @return bool|WP_Error
+ */
+function rzp1ccCheckRestNonce($request)
+{
+    $nonce = ($request instanceof WP_REST_Request) ? $request->get_header('X-WP-Nonce') : '';
+
+    if (empty($nonce) || wp_verify_nonce($nonce, 'wp_rest') === false)
+    {
+        rzpLogError('1cc_nonce_auth_failed');
+        return new WP_Error('rest_forbidden', __('Authentication failed'), array('status' => 403));
+    }
+
     return true;
 }
 

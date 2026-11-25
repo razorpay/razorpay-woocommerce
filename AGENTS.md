@@ -44,7 +44,6 @@ razorpay-woocommerce/
 ├── woo-razorpay.php                    # Main plugin file + WC_Razorpay class
 ├── checkout-block.php                  # Gutenberg block integration (WC_Razorpay_Blocks)
 ├── script.js                           # Frontend checkout JS - opens Razorpay modal
-├── btn-1cc-checkout.js                 # Magic Checkout (1CC) button JS
 ├── checkout_block.js                   # Block-based checkout JS
 ├── composer.json                       # PHP dependencies
 ├── composer.wp-install.json            # WP-specific composer config
@@ -175,7 +174,7 @@ Payment webhooks are not processed synchronously. Instead:
 **Pre-conditions:** `enable_1cc=yes`, merchant has 1CC feature on Razorpay account.
 
 **Steps:**
-1. `btn-1cc-checkout.js` handles button click
+1. `magic-rzp.js` (loaded from the Razorpay CDN, source in razorpay/static) handles button click
 2. REST POST `/wp-json/1cc/v1/order/create` authenticated via nonce
 3. `createWcOrder()` handler:
    - Initializes WC session, cart
@@ -404,7 +403,7 @@ return new WP_REST_Response($response, $statusCode);
        [
            'methods'             => 'POST',
            'callback'            => 'myHandler',
-           'permission_callback' => 'checkAuthCredentials', // or checkHmacSignature
+           'permission_callback' => 'rzp1ccCheckRestNonce', // browser route. Use checkHmacSignature for routes Razorpay servers call. Never checkAuthCredentials (always true)
        ]
    );
    ```
