@@ -87,6 +87,9 @@ class Test_OrderMethods extends WP_UnitTestCase
     {
         $order = wc_create_order();
 
+        $order->set_payment_method('razorpay');
+        $order->save();
+
         $defaultmessage = "Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.";
 
         $message = "The order was successful.";
@@ -102,6 +105,9 @@ class Test_OrderMethods extends WP_UnitTestCase
     {
         $order = wc_create_order();
 
+        $order->set_payment_method('razorpay');
+        $order->save();
+
         $defaultmessage = 'Thank you for shopping with us. Your account has been charged and your transaction is successful. We will be processing your order soon.';
 
         $this->instance->shouldReceive('getSetting')->with('order_success_message');
@@ -109,6 +115,20 @@ class Test_OrderMethods extends WP_UnitTestCase
         $response = $this->instance->getCustomOrdercreationMessage("", $order);
 
         $this->assertSame($defaultmessage, $response);
+    }
+
+    public function testGetCustomOrderCreationMessageForNonRazorpayOrder()
+    {
+        $order = wc_create_order();
+
+        $order->set_payment_method('cod');
+        $order->save();
+
+        $thankYouTitle = "Thank you. Your order has been received.";
+
+        $response = $this->instance->getCustomOrdercreationMessage($thankYouTitle, $order);
+
+        $this->assertSame($thankYouTitle, $response);
     }
 
     public function testGetDefaultCheckoutArguments()
