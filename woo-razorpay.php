@@ -320,6 +320,11 @@ function woocommerce_razorpay_init()
 
         public function getCustomOrdercreationMessage($thank_you_title, $order)
         {
+            if ( ! $order || $order->get_payment_method() !== $this->id )
+            {
+                return $thank_you_title;
+            }
+
             $message =  $this->getSetting('order_success_message');
             if (isset($message) === false)
             {
