@@ -1132,8 +1132,8 @@ function productTransferDataFields()
         $LA_transfer_count = count($LA_number_arr);
         for ($i = 0; $i < $LA_transfer_count; $i++) {
             if (!empty($LA_number_arr[$i]) && !empty($LA_amount_arr[$i])) {
-                echo '<p><input type="text" name="LA_number[]" placeholder="Linked Account Number" value="' . $LA_number_arr[$i] . '">
-                <input type="number" name="LA_transfer_amount[]" class="LA_transfer_amount" placeholder="Amount" value="' . $LA_amount_arr[$i] . '">
+                echo '<p><input type="text" name="LA_number[]" placeholder="Linked Account Number" value="' . esc_attr($LA_number_arr[$i]) . '">
+                <input type="number" name="LA_transfer_amount[]" class="LA_transfer_amount" placeholder="Amount" value="' . esc_attr($LA_amount_arr[$i]) . '">
                 <label class="trf_settlement_label">Hold Settlement:</label>  <select name="LA_transfer_status[]"><optgroup label="On Hold">';
                 echo '<option value="1"';
                 if ($LA_trf_status_arr[$i] == 1) {
@@ -1167,18 +1167,16 @@ function productTransferDataFields()
 
 function woocommerce_process_transfer_meta_fields_save( $post_id ){
 
-    $wcRadio = isset( $_POST['rzp_transfer_from'] ) ? $_POST['rzp_transfer_from'] : '';
+    // These values are printed back into the product screen, so markup is stripped before they are stored.
+    // update_post_meta() removes the slashes WordPress adds to $_POST, as before.
+    $wcRadio = isset( $_POST['rzp_transfer_from'] ) ? sanitize_text_field( $_POST['rzp_transfer_from'] ) : '';
     update_post_meta( $post_id, 'rzp_transfer_from', $wcRadio );
 
-    if(isset($_POST['LA_number']) && !empty($_POST['LA_number'])) {
-        update_post_meta( $post_id, 'LA_number', $_POST['LA_number'] );
-    }
-
-    if(isset($_POST['LA_transfer_amount']) && !empty($_POST['LA_transfer_amount'])) {
-        update_post_meta( $post_id, 'LA_transfer_amount', $_POST['LA_transfer_amount'] );
-    }
-    if(isset($_POST['LA_transfer_status']) && !empty($_POST['LA_transfer_status'])) {
-        update_post_meta( $post_id, 'LA_transfer_status', $_POST['LA_transfer_status'] );
+    foreach (array('LA_number', 'LA_transfer_amount', 'LA_transfer_status') as $field) {
+        if(isset($_POST[$field]) && !empty($_POST[$field])) {
+            $value = $_POST[$field];
+            update_post_meta( $post_id, $field, is_array($value) ? array_map( 'sanitize_text_field', $value ) : sanitize_text_field( $value ) );
+        }
     }
 
 }
