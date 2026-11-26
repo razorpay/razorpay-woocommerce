@@ -560,7 +560,10 @@ function woocommerce_razorpay_init()
             //Affordability Widget Code
             $currentSection = isset($_GET["section"]) ? sanitize_text_field($_GET["section"]) : "";
 
+            // is_admin() is also true on admin-post.php, which serves the webhook URL to anonymous callers, so the
+            // probe (Razorpay API calls with posted or stored keys, then option writes) needs a capability check
             if (is_admin() and
+                current_user_can('manage_woocommerce') and
                 (($currentSection === "razorpay") or
                 ($currentSection === "affordability-widget")))
             {
