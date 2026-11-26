@@ -1521,7 +1521,8 @@ function woocommerce_razorpay_init()
                 ];
                 $trackObject->rzpTrackDataLake('razorpay.order.amount.validation.failed', $properties);
 
-                return "RAZORPAY ERROR: Order fetch failed with the message '$message'";
+                // Not verified: the caller creates a fresh Razorpay order instead of reusing this one
+                return false;
             }
 
             $orderCreationData = $this->getOrderCreationData($orderId);
@@ -2081,6 +2082,14 @@ EOT;
                     $success = true;
                     $razorpayPaymentId = sanitize_text_field($_POST[self::RAZORPAY_PAYMENT_ID]);
 
+                    // A valid signature stays valid for ever, so a callback can be replayed after the payment was
+                    // refunded (for example by a failed wallet or gift card promotion) or has failed
+                    if ($this->isPaymentRefundedOrFailed($razorpayPaymentId))
+                    {
+                        $success = false;
+                        $error = 'WOOCOMMERCE_ERROR: Payment to Razorpay Failed. The payment is refunded or failed.';
+                    }
+
                     $cartHash = get_transient(RZP_1CC_CART_HASH.$orderId);
 
                     if ($cartHash != false)
@@ -2154,9 +2163,10 @@ EOT;
                 exit;
             }
 
-            $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
+            $finalised = $this->updateOrder($order, $success, $error, $razorpayPaymentId, null);
 
-            if ($success)
+            // false: another run holds this Magic Checkout order, so the queue row stays open for the webhook cron
+            if ($success && $finalised !== false)
             {
                 try
                 {
@@ -2195,6 +2205,31 @@ EOT;
             $this->redirectUser($order);
         }
 
+        /**
+         * True when Razorpay reports the payment as refunded or failed. If the payment cannot be fetched this
+         * returns false: the verified signature already proves the payment was authorised, and a Razorpay outage
+         * must not leave a paid order unpaid.
+         */
+        protected function isPaymentRefundedOrFailed($razorpayPaymentId)
+        {
+            try
+            {
+                $payment = $this->getRazorpayApiInstance()->payment->fetch($razorpayPaymentId);
+
+                $status = $payment['status'];
+            }
+            catch (Exception $e)
+            {
+                rzpLogError("Payment status check failed for $razorpayPaymentId : " . $e->getMessage());
+
+                return false;
+            }
+
+            rzpLogInfo("Payment status check for $razorpayPaymentId : $status");
+
+            return in_array($status, array('refunded', 'failed'), true);
+        }
+
         protected function redirectUser($order)
         {
             // PLUG-04: an order the gift card check blocked (for example by the webhook cron, before this callback)
@@ -2216,6 +2251,12 @@ EOT;
 
             global $woocommerce;
 
+            // With a blank key secret the HMAC key is empty, so anyone can compute a signature that verifies
+            if (empty($this->getSetting('key_secret')))
+            {
+                throw new Errors\SignatureVerificationError('Razorpay key secret is not configured');
+            }
+
             $api = $this->getRazorpayApiInstance();
 
             $attributes = array(
@@ -2234,7 +2275,14 @@ EOT;
                 $razorpayOrderId = get_post_meta($orderId, $sessionKey, true);
             }
 
-            $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId?? '';
+            // The signature binds the payment to the Razorpay order this plugin created for the order. Without a
+            // stored id (for example an order placed with another gateway) there is nothing to bind it to.
+            if (empty($razorpayOrderId))
+            {
+                throw new Errors\SignatureVerificationError('No Razorpay order is stored for this order');
+            }
+
+            $attributes[self::RAZORPAY_ORDER_ID] = $razorpayOrderId;
             rzpLogInfo("verifySignature attr");
             rzpLogInfo(json_encode($attributes));
             $api->utility->verifyPaymentSignature($attributes);
@@ -2281,6 +2329,7 @@ EOT;
          * Modifies existing order and handles success case
          *
          * @param $success, & $order
+         * @return false|null false when a Magic Checkout order was left for the run that already holds it
          */
         public function updateOrder(& $order, $success, $errorMessage, $razorpayPaymentId, $virtualAccountId = null, $webhook = false)
         {
@@ -2326,6 +2375,15 @@ EOT;
                                 {
                                     return;
                                 }
+                            }
+                            else
+                            {
+                                // Another run is finalising this order, or an earlier one refunded the payment and
+                                // exited. Completing it here would mark it paid without the shipping, promotion and
+                                // refund checks in update1ccOrderWC. Callers treat false as "not finalised".
+                                rzpLogInfo("updateOrder: orderId $orderId is under process by another run, not completing");
+
+                                return false;
                             }
 
                         }

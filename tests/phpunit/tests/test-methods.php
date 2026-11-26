@@ -78,22 +78,34 @@ class Test_Class_Fuctions extends WP_UnitTestCase
     {
         $this->expectNotToPerformAssertions();
 
-        $_POST['razorpay_payment_id'] = 'razorpay_payment_id';
-        $_POST['razorpay_signature'] = '9b942da85dde97f283166465cc056a20c980388fd9099c8159091ab5bffa22a1';
-        $_POST['razorpay_order_id'] = 'razorpay_order_id';
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+        update_post_meta($orderId, 'razorpay_order_id' . $orderId, 'razorpay_order_id');
 
-        $this->instance->verifySignature('orderId');
+        $this->instance->shouldReceive('getSetting')->with('key_id')->andReturn('key_id');
+        $this->instance->shouldReceive('getSetting')->with('key_secret')->andReturn('key_secret');
+
+        $_POST['razorpay_payment_id'] = 'razorpay_payment_id';
+        $_POST['razorpay_signature'] = hash_hmac('sha256', 'razorpay_order_id|razorpay_payment_id', 'key_secret');
+
+        $this->instance->verifySignature($orderId);
     }
 
     public function testInvalidverifySignature()
     {
         $this->expectException(SignatureVerificationError::class);
 
+        $order = wc_create_order();
+        $orderId = $order->get_id();
+        update_post_meta($orderId, 'razorpay_order_id' . $orderId, 'razorpay_order_id');
+
+        $this->instance->shouldReceive('getSetting')->with('key_id')->andReturn('key_id');
+        $this->instance->shouldReceive('getSetting')->with('key_secret')->andReturn('key_secret');
+
         $_POST['razorpay_payment_id'] = 'razorpay_payment_id';
         $_POST['razorpay_signature'] = 'razorpay_signature';
-        $_POST['razorpay_order_id'] = 'razorpay_order_id';
 
-        $this->instance->verifySignature('orderId');
+        $this->instance->verifySignature($orderId);
     }
 
     public function testReceiptPage()
