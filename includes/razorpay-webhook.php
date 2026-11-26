@@ -448,6 +448,13 @@ class RZP_Webhook
             return;
         }
 
+        if ($this->isPaymentForOrder($payment, $order) === false)
+        {
+            rzpLogError("Woocommerce orderId: $orderId payment pending webhook ignored, payment $razorpayPaymentId is not for this order");
+
+            return;
+        }
+
         $success      = false;
         $errorMessage = 'The payment has failed.';
 
@@ -555,6 +562,35 @@ class RZP_Webhook
         exit;
     }
 
+    /**
+     * The order id in the payment notes can be changed by the buyer's browser at checkout, so a handler that
+     * finds the order through the notes checks here that the payment really is for that order: it was made on
+     * the Razorpay order stored on the WooCommerce order, or the order was completed with this payment.
+     *
+     * @param array|ArrayAccess $payment Payment entity fetched from Razorpay
+     * @param WC_Order          $order
+     * @return bool
+     */
+    protected function isPaymentForOrder($payment, $order)
+    {
+        $paymentId      = isset($payment['id']) ? $payment['id'] : '';
+        $paymentOrderId = isset($payment['order_id']) ? $payment['order_id'] : '';
+
+        if (empty($paymentId) === false and $order->get_transaction_id() === $paymentId)
+        {
+            return true;
+        }
+
+        // Same keys as WC_Razorpay::getOrderSessionKey()
+        $sessionKey = ($order->get_meta('is_magic_checkout_order') === 'yes')
+            ? WC_Razorpay::RAZORPAY_ORDER_ID_1CC . $order->get_id()
+            : WC_Razorpay::RAZORPAY_ORDER_ID . $order->get_id();
+
+        $storedRazorpayOrderId = $order->get_meta($sessionKey);
+
+        return (empty($storedRazorpayOrderId) === false and $storedRazorpayOrderId === $paymentOrderId);
+    }
+
     protected function getPaymentEntity($razorpayPaymentId, $data)
     {
         try
@@ -648,6 +684,13 @@ class RZP_Webhook
 
         // If it is already marked as unpaid, ignore the event
         if ($order->needs_payment() === true) {
+            return;
+        }
+
+        if ($this->isPaymentForOrder($payment, $order) === false)
+        {
+            rzpLogError("Woocommerce orderId: $orderId refund webhook ignored, payment $razorpayPaymentId is not for this order");
+
             return;
         }
 
