@@ -1691,24 +1691,26 @@ function woocommerce_razorpay_init()
         {
             $url = Api::getFullUrl("checkout/embedded");
 
+            // Every value below comes from the order (buyer name, email, contact) or from settings and lands in
+            // an HTML attribute, so each one is escaped
             $formFields = "";
             foreach ($data as $fieldKey => $val) {
                 if(in_array($fieldKey, array('notes', 'prefill', '_')))
                 {
                     foreach ($data[$fieldKey] as $field => $fieldVal) {
-                        $formFields .= "<input type='hidden' name='$fieldKey" ."[$field]"."' value='$fieldVal'> \n";
+                        $formFields .= "<input type='hidden' name='" . esc_attr($fieldKey . "[$field]") . "' value='" . esc_attr($fieldVal) . "'> \n";
                     }
                 }
             }
 
-            return '<form method="POST" action="'.$url.'" id="checkoutForm">
-                    <input type="hidden" name="key_id" value="'.$data['key'].'">
-                    <input type="hidden" name="order_id" value="'.$data['order_id'].'">
-                    <input type="hidden" name="name" value="'.$data['name'].'">
-                    <input type="hidden" name="description" value="'.$data['description'].'">
-                    <input type="hidden" name="image" value="'.$data['preference']['image'].'">
-                    <input type="hidden" name="callback_url" value="'.$data['callback_url'].'">
-                    <input type="hidden" name="cancel_url" value="'.$data['cancel_url'].'">
+            return '<form method="POST" action="'.esc_url($url).'" id="checkoutForm">
+                    <input type="hidden" name="key_id" value="'.esc_attr($data['key']).'">
+                    <input type="hidden" name="order_id" value="'.esc_attr($data['order_id']).'">
+                    <input type="hidden" name="name" value="'.esc_attr($data['name']).'">
+                    <input type="hidden" name="description" value="'.esc_attr($data['description']).'">
+                    <input type="hidden" name="image" value="'.esc_attr($data['preference']['image']).'">
+                    <input type="hidden" name="callback_url" value="'.esc_attr($data['callback_url']).'">
+                    <input type="hidden" name="cancel_url" value="'.esc_attr($data['cancel_url']).'">
                     '. $formFields .'
                 </form>';
 
