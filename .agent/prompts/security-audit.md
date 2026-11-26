@@ -68,7 +68,7 @@ Is there any path where `$razorpayWebhookSecret` could be empty and still procee
 - [ ] Is there an integer overflow risk with `amount` fields from the API?
 
 #### B3. Amount Manipulation Prevention
-- [ ] Is `verifyOrderAmount()` called to cross-check payment amount vs WC order amount?
+- [ ] Is the paid amount cross-checked against the WC order amount? (`verifyOrderAmount()` only checks the stored Razorpay order on the pay page, not the payment.)
 - [ ] Could a merchant or customer manipulate the amount passed to Razorpay?
 - [ ] Is the amount from the Razorpay API response used (not from user input) for order updates?
 
@@ -153,7 +153,7 @@ Based on the codebase architecture, pay extra attention to:
 
 2. **`includes/razorpay-webhook.php::process()`** — The webhook handler. Empty secret edge case documented in the code; verify the fallback chain can't be exploited.
 
-3. **`woo-razorpay.php::verifyOrderAmount()`** — Prevents amount manipulation. Must be called before `updateOrder()`.
+3. **`woo-razorpay.php::verifyOrderAmount()`** — Decides whether a stored Razorpay order can be reused on the pay page (called only from `createOrGetRazorpayOrderId()`). It is not an amount guard on the payment path: `updateOrder()` does not call it.
 
 4. **`includes/api/auth.php`** — HMAC auth for 1CC coupon endpoints. Price-sensitive data; HMAC bypass = free coupon exploit.
 

@@ -388,7 +388,14 @@ class RZP_Webhook
             }
         }
 
-        $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
+        $finalised = $this->razorpay->updateOrder($order, $success, $errorMessage, $razorpayPaymentId, null, true);
+
+        if ($finalised === false)
+        {
+            // Another run holds this Magic Checkout order. Throwing keeps the queue row open, so the cron
+            // retries on its next run instead of marking an order processed that it did not finalise.
+            throw new Exception("Woocommerce orderId: $orderId is under process by another run");
+        }
 
         rzpLogInfo("Woocommerce orderId: $orderId webhook process finished the updateOrder function");
     }
