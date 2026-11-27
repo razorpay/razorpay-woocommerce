@@ -568,7 +568,10 @@ class OneCCAddressSync
                 ];
                 $addresses[] = $address;
             }
-            catch (Exception $e)
+            // Throwable, not Exception: a WC_Order_Refund in the batch throws an
+            // Error (undefined get_shipping_* method), which is not an Exception.
+            // Catching it here lets the batch be logged, skipped and the cursor advanced.
+            catch (\Throwable $e)
             {
                 $orderId = method_exists($order, 'get_id') ? $order->get_id() : null;
                 rzpLogError("getAddressFromOrders: failed for order_id=" . $orderId . ", error=" . $e->getMessage());
